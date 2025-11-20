@@ -34,31 +34,19 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Set up npm
-        uses: npm/action-setup@v3
-        with:
-          version: 9
-
-      - name: Get npm store directory
-        id: npm-cache
-        run: echo "STORE_PATH=$(npm store path)" >> $GITHUB_OUTPUT
-
-      - name: Cache npm store
+      - name: Cache npm dependencies
         uses: actions/cache@v4
         with:
-          path: ${{ steps.npm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/npm-lock.yaml') }}
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
 
       # ------------------------------
       # Dependencies & Build
       # ------------------------------
-      - name: Fetch dependencies
-        run: npm fetch --frozen-lockfile
-
       - name: Install dependencies
-        run: npm install --frozen-lockfile
+        run: npm ci
 
       - name: Build application
         run: npm run generate
@@ -155,14 +143,3 @@ jobs:
           body: |
             Automated Android build for version **${{ steps.package_version.outputs.VERSION }}**
             Commit: ${{ github.sha }}
-
-      - name: Upload AAB to Internal Testing
-        uses: r0adkll/upload-google-play@v1
-        if: contains(github.event.head_commit.message, '[play deploy]')
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GP_SERVICE_ACCOUNT_JSON }}
-          packageName: eu.budbuddy # <-- IMPORTANT: Change this
-          releaseName: Automated build v${{ steps.package_version.outputs.VERSION }}
-          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
-          track: internal # Speficy the track you want to deploy to
-          status: completed
