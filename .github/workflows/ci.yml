@@ -34,34 +34,34 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v3
+      - name: Set up npm
+        uses: npm/action-setup@v3
         with:
           version: 9
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - name: Get npm store directory
+        id: npm-cache
+        run: echo "STORE_PATH=$(npm store path)" >> $GITHUB_OUTPUT
 
-      - name: Cache pnpm store
+      - name: Cache npm store
         uses: actions/cache@v4
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          path: ${{ steps.npm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/npm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-
+            ${{ runner.os }}-npm-
 
       # ------------------------------
       # Dependencies & Build
       # ------------------------------
       - name: Fetch dependencies
-        run: pnpm fetch --frozen-lockfile
+        run: npm fetch --frozen-lockfile
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm install --frozen-lockfile
 
       - name: Build application
-        run: pnpm run generate
+        run: npm run generate
 
       # --------------------------------
       # Capacitor setup & caching
