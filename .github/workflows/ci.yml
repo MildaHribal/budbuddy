@@ -97,6 +97,10 @@ jobs:
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "VERSION_NAME=${{ steps.package_version.outputs.VERSION }}" >> $GITHUB_ENV
 
+      # FIX: Add permission for gradlew
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
       - name: Build Debug APK
         env:
           KEYSTORE_PATH: "../keystore.jks"
