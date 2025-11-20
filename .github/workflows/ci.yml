@@ -1,34 +1,168 @@
-name: ci
+name: Build and push docker image
 
-on: push
+on: [workflow_dispatch, push]
+
+concurrency:
+  group: build-and-push-image
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: 24
 
 jobs:
-  ci:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        node: [22]
+  build-android:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[sb]')"
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      # ------------------------------
+      # Checkout & Setup
+      # ------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - name: Read version from package.json
+        id: package_version
+        run: echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
 
-      - name: Install node
-        uses: actions/setup-node@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
-          cache: pnpm
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # ------------------------------
+      # Dependencies & Build
+      # ------------------------------
+      - name: Fetch dependencies
+        run: pnpm fetch --frozen-lockfile
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm run lint
+      - name: Build application
+        run: pnpm run generate
 
-      - name: Typecheck
-        run: pnpm run typecheck
+      # --------------------------------
+      # Capacitor setup & caching
+      # --------------------------------
+      - name: Cache Capacitor assets
+        uses: actions/cache@v4
+        with:
+          path: |
+            android/app/src/main/assets/public
+            android/app/src/main/res
+          key: ${{ runner.os }}-capacitor-${{ hashFiles('.output/**') }}
+
+      - name: Sync Capacitor (Android)
+        run: npx cap sync android
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Cache Gradle directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # --------------------------------
+      # Android build setup
+      # --------------------------------
+      - name: Update Android version info
+        run: |
+          # Use YY + day of year + run number (max 99 per day)
+          YEAR=$(date +%y)
+          DAY_OF_YEAR=$(date +%j)
+          RUN_NUMBER=$(printf "%02d" $((${{ github.run_number }} % 100)))
+          VERSION_CODE="${YEAR}${DAY_OF_YEAR}${RUN_NUMBER}"
+          echo "Generated VERSION_CODE: $VERSION_CODE (YYDDDNN format)"
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "VERSION_NAME=${{ steps.package_version.outputs.VERSION }}" >> $GITHUB_ENV
+
+      - name: Build Debug APK
+        env:
+          KEYSTORE_PATH: "../keystore.jks"
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew assembleDebug \
+            -PversionCode=${{ env.VERSION_CODE }} \
+            -PversionName=${{ env.VERSION_NAME }} \
+            --no-daemon --parallel --build-cache
+
+      - name: Build Signed Release APK and AAB
+        env:
+          KEYSTORE_PATH: "../keystore.jks"
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew assembleRelease bundleRelease \
+            -PversionCode=${{ env.VERSION_CODE }} \
+            -PversionName=${{ env.VERSION_NAME }} \
+            --no-daemon --parallel --build-cache
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-builds
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+          tag_name: build-v${{ steps.package_version.outputs.VERSION }}-${{ github.sha }}
+          body: |
+            Automated Android build for version **${{ steps.package_version.outputs.VERSION }}**
+            Commit: ${{ github.sha }}
+
+      - name: Upload AAB to Internal Testing
+        uses: r0adkll/upload-google-play@v1
+        if: contains(github.event.head_commit.message, '[play deploy]')
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GP_SERVICE_ACCOUNT_JSON }}
+          packageName: eu.budbuddy # <-- IMPORTANT: Change this
+          releaseName: Automated build v${{ steps.package_version.outputs.VERSION }}
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal # Speficy the track you want to deploy to
+          status: completed
