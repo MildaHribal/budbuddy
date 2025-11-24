@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
     url: "http://192.168.1.196:3000",
     cleartext: true,
   },
-  plugins: {}
+  plugins: {  }
 }
 
 export default config;

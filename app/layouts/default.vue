@@ -1,30 +1,19 @@
 <template>
+  <div class="min-h-screen flex flex-col" :style="{ backgroundColor: 'var(--app-bg)' }">
+    <div class="flex-1 flex flex-col page-bg">
+      <slot />
+    </div>
 
-  <div>
-    <UHeader :ui="{
-    right: 'hidden',
-    left: 'flex gap-0'
-  }">
-      <template #left>
-        <NuxtImg src="/icon.webp" class="h-full " height="30"/>
-
-        <h1 class="text-xl">BudBuddy</h1>
-      </template>
-    </UHeader>
+    <DownBar class="sticky bottom-0 z-50" />
   </div>
-
-
-
-  <div>
-<slot/>
-  </div>
-
-  <div>
-    <DownBar/>
-  </div>
-
 </template>
 
-
 <script setup lang="ts">
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  if (typeof document !== 'undefined') {
+    document.body.classList.remove('bg-white')
+  }
+})
 </script>

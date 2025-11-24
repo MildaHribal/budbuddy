@@ -15,4 +15,42 @@
   --color-green-800: #016538;
   --color-green-900: #0A5331;
   --color-green-950: #052E16;
+
+
+  --accent: #7bc74d;
+  --page-bg: #eeeeee;
+  --app-bg: #191a1b;
+}
+
+@layer base {
+  html, body, #__nuxt, #app {
+    height: 100%;
+    background-color: var(--app-bg) !important;
+  }
+
+  body.bg-white, body[class*="bg-"] {
+    background-color: var(--app-bg) !important;
+  }
+
+  :root, :root * {
+    --ui-bg: var(--app-bg) !important;
+    --ui-bg-muted: var(--app-bg) !important;
+    --ui-bg-elevated: var(--app-bg) !important;
+  }
+
+  body {
+    --ion-background-color: var(--app-bg) !important;
+    --ion-item-background: var(--app-bg) !important;
+  }
+
+  .page-bg {
+    background-color: var(--page-bg) !important;
+    color: #111827; /* dark text on light page background */
+  }
+
+  .accent { color: var(--accent); }
+  .icon-accent { color: var(--accent); }
+  .btn-accent { background-color: var(--accent); color: white; }
+
+  body { font-family: var(--font-sans); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 }
