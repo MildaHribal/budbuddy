@@ -18,8 +18,8 @@
 
 
   --accent: #7bc74d;
-  --page-bg: #eeeeee;
   --app-bg: #191a1b;
+  --bg-ui: #191a1b;
 }
 
 @layer base {
@@ -43,10 +43,6 @@
     --ion-item-background: var(--app-bg) !important;
   }
 
-  .page-bg {
-    background-color: var(--page-bg) !important;
-    color: #111827; /* dark text on light page background */
-  }
 
   .accent { color: var(--accent); }
   .icon-accent { color: var(--accent); }

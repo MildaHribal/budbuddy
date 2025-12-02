@@ -19,6 +19,11 @@ function loadPlantsFromStorage() {
 function savePlantsToStorage() {
   if (typeof window === 'undefined') return;
   try {
+    // Debug: if saving empty array, print stack to find caller
+    if (Array.isArray(plants.value) && plants.value.length === 0) {
+      console.warn('[usePlants] saving empty plants array to storage — stack trace:');
+      try { console.trace(); } catch (e) { console.warn('trace not available'); }
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(plants.value));
   } catch (e) {
     console.error('usePlants: failed to save to storage', e);
@@ -26,11 +31,13 @@ function savePlantsToStorage() {
 }
 
 function addPlant(p: any) {
+  console.log('[usePlants] addPlant', p && p.id);
   plants.value.push(p);
   savePlantsToStorage();
 }
 
 function clearPlants() {
+  console.warn('[usePlants] clearPlants called — clearing all plants');
   plants.value = [];
   savePlantsToStorage();
 }
@@ -48,4 +55,3 @@ export function usePlants() {
     clearPlants,
   };
 }
-

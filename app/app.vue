@@ -4,24 +4,24 @@ import { IonApp, IonContent, IonPage } from '@ionic/vue'
 
 <template>
   <UApp>
-    <ion-page>
-      <ion-content>
+    <IonApp class="min-h-screen">
+      <ion-page>
         <NuxtLayout>
-          <IonApp class="min-h-screen">
-            <IonContent>
               <UMain>
                 <NuxtPage />
               </UMain>
-            </IonContent>
-          </IonApp>
         </NuxtLayout>
-      </ion-content>
     </ion-page>
-
+    </IonApp>
   </UApp>
 </template>
 
 <style>
+ion-content {
+  --background: #121212;
+}
+
+
 ion-action-sheet.sheet {
   --background: #0b0f13;
   --backdrop-opacity: 0.55;

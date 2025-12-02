@@ -9,7 +9,7 @@ export default defineNuxtConfig({
     "@nuxtjs/ionic",
   ],
 
-  ssr: true,
+  ssr: false,
 
   devtools: {
     enabled: false
@@ -41,7 +41,7 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': { prerender: true }
-  },
+   },
 
   compatibilityDate: '2025-01-15',
 

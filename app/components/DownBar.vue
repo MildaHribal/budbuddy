@@ -1,29 +1,28 @@
 <template>
-  <ion-footer class="downbar-ionic">
-    <ion-toolbar class="toolbar">
+    <div class="downbar">
       <div class="row">
         <NuxtLink to="/" class="btn">
-          <ion-icon :icon="icons.homeOutline" class="icon" />
+          <Icon icon="tabler:home"  height="30" />
         </NuxtLink>
 
         <NuxtLink to="/my-trees" class="btn">
-          <ion-icon :icon="icons.leafOutline" class="icon" />
+          <Icon icon="tabler:leaf" height="30" />
         </NuxtLink>
 
         <NuxtLink to="/" class="btn center-btn" aria-label="Přidat">
-          <ion-icon :icon="icons.addCircleOutline" class="icon" />
+          <Icon icon="tabler:line-scan" height="30" />
         </NuxtLink>
 
         <NuxtLink to="/nutriens-calc" class="btn">
-          <ion-icon :icon="icons.calculatorOutline" class="icon" />
+          <Icon icon="solar:calculator-broken"  height="30" />
         </NuxtLink>
       </div>
-    </ion-toolbar>
-  </ion-footer>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { homeOutline, leafOutline, addCircleOutline, calculatorOutline, menuOutline } from 'ionicons/icons'
+import { Icon } from "@iconify/vue";
 
 const icons = {
   homeOutline,
@@ -60,18 +59,14 @@ const icons = {
   color: currentColor;
 }
 
-ion-toolbar {
-  --background: #202123;
+.downbar {
+  background-color: #202123;
 }
 
 
-@media (min-width: 768px) {
-  .downbar-ionic { display: none; }
-}
 </style>
 
 <style>
-/* Globální pravidlo: skryje downbar při otevřeném modalu (třída přidána na body) */
 body.downbar-hidden .downbar-ionic {
   transform: translateY(100%);
   transition: transform 0.18s ease;
@@ -79,8 +74,4 @@ body.downbar-hidden .downbar-ionic {
   opacity: 0;
 }
 
-/* Zajistíme plynulý návrat, pokud třída bude odstraněna */
-.downbar-ionic {
-  transition: transform 0.18s ease, opacity 0.12s ease;
-}
 </style>
