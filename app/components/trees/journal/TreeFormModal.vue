@@ -20,7 +20,7 @@ const strain = ref('');
 const photoFile = ref<File | null>(null);
 const photoPreview = ref<string | null>(null);
 const potSize = ref('');
-const plantingDate = ref(new Date().toISOString().split('T')[0]); // Dnešní datum jako default
+const plantingDate = ref(new Date().toISOString().split('T')[0]);
 const location = ref<'indoor' | 'outdoor'>('indoor');
 const medium = ref('soil');
 
@@ -59,7 +59,7 @@ async function save() {
   const plant = {
     id: Date.now(),
     stage: props.stage,
-    name: name.value || 'Unnamed Plant', // Fallback, aby jméno nebylo prázdné
+    name: name.value || 'Unnamed Plant',
     strain: strain.value,
     potSize: potSize.value,
     plantingDate: plantingDate.value,
@@ -90,7 +90,7 @@ function close() {
 </script>
 
 <template>
-    <div class="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-[#121212]">
+    <div class="flex items-center justify-center px-4 py-3 border-b border-neutral-800 bg-[#121212]">
       <div>
         <h3 class="text-lg font-semibold text-white">New Plant</h3>
         <div class="text-sm text-[#7bc74d]">Starting at: {{ props.stage }}</div>
