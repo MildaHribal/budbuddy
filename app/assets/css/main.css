@@ -18,12 +18,28 @@
 
 
   --accent: #7bc74d;
-  --app-bg: #191a1b;
-  --bg-ui: #191a1b;
+  --accent-dark: #5a9e3a;
+  --accent-light: #9fe76d;
+  --app-bg: #0a0a0a;
+  --bg-ui: #1a1a1a;
+  --bg-card: rgba(30, 30, 30, 0.9);
+  --border-color: rgba(123, 199, 77, 0.15);
+  --text-primary: #ffffff;
+  --text-secondary: #999999;
+  --text-tertiary: #666666;
 }
 
 @layer base {
-  html, body, #__nuxt, #app {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html, body, #__nuxt {
     height: 100%;
     background-color: var(--app-bg) !important;
   }
@@ -41,12 +57,74 @@
   body {
     --ion-background-color: var(--app-bg) !important;
     --ion-item-background: var(--app-bg) !important;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: var(--text-primary);
   }
 
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
 
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(123, 199, 77, 0.3);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(123, 199, 77, 0.5);
+  }
+
+  /* Utility classes */
   .accent { color: var(--accent); }
   .icon-accent { color: var(--accent); }
-  .btn-accent { background-color: var(--accent); color: white; }
+  .btn-accent {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    will-change: transform;
+  }
+  .btn-accent:active {
+    transform: scale(0.98);
+  }
 
-  body { font-family: var(--font-sans); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+  /* Performance optimizations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* UModal overrides for fullscreen */
+  .fullscreen [role="dialog"] {
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .fullscreen .bg-white {
+    background: transparent !important;
+  }
+
+  /* Safe area support */
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 16px);
+  }
+
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+  }
 }
