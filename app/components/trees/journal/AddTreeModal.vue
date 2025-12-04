@@ -123,7 +123,6 @@ async function save() {
     window.dispatchEvent(new CustomEvent('plants-updated', { detail: plant }));
   }
 
-  // Reset form
   name.value = '';
   strain.value = '';
   potSize.value = '';
