@@ -35,8 +35,15 @@
         <h2 class="section-title">Harvest History</h2>
         <div class="chart-container">
           <div class="chart-bars">
-            <div class="chart-bar" v-for="(harvest, index) in harvestHistory" :key="index">
-              <div class="bar-fill" :style="{ height: (harvest.amount / maxHarvest * 100) + '%' }">
+            <div
+              class="chart-bar"
+              v-for="(harvest, index) in harvestHistory"
+              :key="index"
+            >
+              <div
+                class="bar-fill"
+                :style="{ height: (harvest.amount / maxHarvest) * 100 + '%' }"
+              >
                 <div class="bar-value">{{ harvest.amount }}g</div>
               </div>
               <div class="bar-label">{{ harvest.month }}</div>
@@ -49,7 +56,11 @@
       <section class="section">
         <h2 class="section-title">Best Strains</h2>
         <div class="strains-list">
-          <div class="strain-item" v-for="(strain, index) in topStrains" :key="index">
+          <div
+            class="strain-item"
+            v-for="(strain, index) in topStrains"
+            :key="index"
+          >
             <div class="strain-rank">{{ index + 1 }}</div>
             <div class="strain-info">
               <div class="strain-name">{{ strain.name }}</div>
@@ -60,7 +71,11 @@
               </div>
             </div>
             <div class="strain-rating">
-              <Icon icon="tabler:star-filled" :height="16" style="color: #ffd700" />
+              <Icon
+                icon="tabler:star-filled"
+                :height="16"
+                style="color: #ffd700"
+              />
               <span>{{ strain.rating }}</span>
             </div>
           </div>
@@ -122,26 +137,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed } from "vue";
 import { Icon } from "@iconify/vue";
 import Header from "~/components/Header.vue";
 
 const harvestHistory = ref([
-  { month: 'Led', amount: 85 },
-  { month: 'Úno', amount: 92 },
-  { month: 'Bře', amount: 78 },
-  { month: 'Dub', amount: 105 },
-  { month: 'Kvě', amount: 98 },
-  { month: 'Čer', amount: 115 }
+  { month: "Jan", amount: 85 },
+  { month: "Feb", amount: 92 },
+  { month: "Mar", amount: 78 },
+  { month: "Apr", amount: 105 },
+  { month: "May", amount: 98 },
+  { month: "Jun", amount: 115 },
 ]);
 
-const maxHarvest = computed(() => Math.max(...harvestHistory.value.map(h => h.amount)));
+const maxHarvest = computed(() =>
+  Math.max(...harvestHistory.value.map((h) => h.amount)),
+);
 
 const topStrains = ref([
-  { name: 'Northern Lights', harvests: 4, avgYield: 105, rating: 4.8 },
-  { name: 'AK-47', harvests: 3, avgYield: 98, rating: 4.6 },
-  { name: 'White Widow', harvests: 3, avgYield: 92, rating: 4.5 },
-  { name: 'OG Kush', harvests: 2, avgYield: 88, rating: 4.4 }
+  { name: "Northern Lights", harvests: 4, avgYield: 105, rating: 4.8 },
+  { name: "AK-47", harvests: 3, avgYield: 98, rating: 4.6 },
+  { name: "White Widow", harvests: 3, avgYield: 92, rating: 4.5 },
+  { name: "OG Kush", harvests: 2, avgYield: 88, rating: 4.4 },
 ]);
 </script>
 
@@ -175,7 +192,11 @@ const topStrains = ref([
 
 .stat-box {
   padding: 20px;
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.9) 0%, rgba(20, 20, 20, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 30, 0.9) 0%,
+    rgba(20, 20, 20, 0.9) 100%
+  );
   border: 1px solid rgba(123, 199, 77, 0.15);
   border-radius: 18px;
   text-align: center;
@@ -203,7 +224,11 @@ const topStrains = ref([
 
 .chart-container {
   padding: 24px 20px;
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.9) 0%, rgba(20, 20, 20, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 30, 0.9) 0%,
+    rgba(20, 20, 20, 0.9) 100%
+  );
   border: 1px solid rgba(123, 199, 77, 0.15);
   border-radius: 18px;
 }
@@ -261,7 +286,11 @@ const topStrains = ref([
   align-items: center;
   gap: 14px;
   padding: 16px;
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.9) 0%, rgba(20, 20, 20, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 30, 0.9) 0%,
+    rgba(20, 20, 20, 0.9) 100%
+  );
   border: 1px solid rgba(123, 199, 77, 0.15);
   border-radius: 16px;
 }
@@ -324,7 +353,11 @@ const topStrains = ref([
   align-items: center;
   gap: 10px;
   padding: 24px 16px;
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.9) 0%, rgba(20, 20, 20, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 30, 0.9) 0%,
+    rgba(20, 20, 20, 0.9) 100%
+  );
   border: 1px solid rgba(123, 199, 77, 0.15);
   border-radius: 16px;
   text-align: center;
@@ -356,7 +389,11 @@ const topStrains = ref([
   align-items: center;
   gap: 14px;
   padding: 16px;
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.9) 0%, rgba(20, 20, 20, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 30, 0.9) 0%,
+    rgba(20, 20, 20, 0.9) 100%
+  );
   border: 1px solid rgba(123, 199, 77, 0.15);
   border-radius: 16px;
 }
@@ -386,4 +423,3 @@ const topStrains = ref([
   font-weight: 700;
 }
 </style>
-

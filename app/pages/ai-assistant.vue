@@ -87,7 +87,11 @@
       </div>
 
       <div class="input-wrapper">
-        <button @click="pickImage" class="image-btn" :class="{ active: uploadedImage }">
+        <button
+          @click="pickImage"
+          class="image-btn"
+          :class="{ active: uploadedImage }"
+        >
           <Icon icon="tabler:camera" :height="22" />
         </button>
 
@@ -108,12 +112,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick } from "vue";
 import { Icon } from "@iconify/vue";
 import Header from "~/components/Header.vue";
 
 interface Message {
-  type: 'user' | 'bot';
+  type: "user" | "bot";
   text: string;
   time: string;
   image?: string;
@@ -125,16 +129,16 @@ interface QuickQuestion {
 }
 
 const messages = ref<Message[]>([]);
-const inputMessage = ref('');
+const inputMessage = ref("");
 const uploadedImage = ref<string | null>(null);
 const isTyping = ref(false);
 const chatContainer = ref<HTMLElement | null>(null);
 
 const quickQuestions: QuickQuestion[] = [
-  { text: 'How to recognize nutrient deficiency?', icon: 'tabler:leaf-off' },
-  { text: 'When to transplant plant?', icon: 'tabler:plant' },
-  { text: 'Optimal pH value?', icon: 'tabler:droplet' },
-  { text: 'What are growth stages?', icon: 'tabler:timeline' }
+  { text: "How to recognize nutrient deficiency?", icon: "tabler:leaf-off" },
+  { text: "When to transplant plant?", icon: "tabler:plant" },
+  { text: "Optimal pH value?", icon: "tabler:droplet" },
+  { text: "What are growth stages?", icon: "tabler:timeline" },
 ];
 
 const canSend = computed(() => {
@@ -143,7 +147,7 @@ const canSend = computed(() => {
 
 const getCurrentTime = () => {
   const now = new Date();
-  return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  return `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 };
 
 const scrollToBottom = async () => {
@@ -157,15 +161,15 @@ const sendMessage = async () => {
   if (!canSend.value) return;
 
   const userMessage: Message = {
-    type: 'user',
+    type: "user",
     text: inputMessage.value,
     time: getCurrentTime(),
-    image: uploadedImage.value || undefined
+    image: uploadedImage.value || undefined,
   };
 
   messages.value.push(userMessage);
   const userQuestion = inputMessage.value;
-  inputMessage.value = '';
+  inputMessage.value = "";
   uploadedImage.value = null;
 
   await scrollToBottom();
@@ -178,9 +182,9 @@ const sendMessage = async () => {
 
     const botResponse = getBotResponse(userQuestion);
     messages.value.push({
-      type: 'bot',
+      type: "bot",
       text: botResponse,
-      time: getCurrentTime()
+      time: getCurrentTime(),
     });
 
     scrollToBottom();
@@ -195,56 +199,77 @@ const sendQuickQuestion = (question: QuickQuestion) => {
 const getBotResponse = (question: string): string => {
   const lowerQuestion = question.toLowerCase();
 
-  if (lowerQuestion.includes('živin') || lowerQuestion.includes('deficiency')) {
-    return '🌿 Nedostatek živin se projevuje různě:\n\n' +
-           '• Žluté listy (spodní) = nedostatek dusíku (N)\n' +
-           '• Hnědé okraje listů = nedostatek draslíku (K)\n' +
-           '• Fialové zabarvení = nedostatek fosforu (P)\n' +
-           '• Světle zelené listy = nedostatek hořčíku (Mg)\n\n' +
-           'Doporuču udělat foto rostliny pro přesnější diagnostiku! 📸';
+  if (
+    lowerQuestion.includes("živin") ||
+    lowerQuestion.includes("deficiency") ||
+    lowerQuestion.includes("nutrient")
+  ) {
+    return (
+      "🌿 Nutrient deficiencies show in different ways:\n\n" +
+      "• Yellow leaves (lower) = Nitrogen (N) deficiency\n" +
+      "• Brown leaf edges = Potassium (K) deficiency\n" +
+      "• Purple tint = Phosphorus (P) deficiency\n" +
+      "• Light green leaves = Magnesium (Mg) deficiency\n\n" +
+      "I recommend taking a photo of your plant for a more accurate diagnosis! 📸"
+    );
   }
 
-  if (lowerQuestion.includes('přesad') || lowerQuestion.includes('transplant')) {
-    return '🪴 Přesazování:\n\n' +
-           '• Sazenice: po 2-3 týdnech nebo při 3-4 pravých listech\n' +
-           '• Vegetativní fáze: když kořeny vyplní nádobu\n' +
-           '• Nejlepší čas: před zalitím (suchá půda)\n' +
-           '• Po přesazení: menší dávka vody první dny\n\n' +
-           'Vyhni se přesazování během květu! 🌸';
+  if (
+    lowerQuestion.includes("přesad") ||
+    lowerQuestion.includes("transplant")
+  ) {
+    return (
+      "🪴 Transplanting tips:\n\n" +
+      "• Seedling: after 2–3 weeks or when 3–4 true leaves appear\n" +
+      "• Vegetative: when roots fill the container\n" +
+      "• Best time: before watering (dry soil)\n" +
+      "• After transplant: less water for the first few days\n\n" +
+      "Avoid transplanting during flowering! 🌸"
+    );
   }
 
-  if (lowerQuestion.includes('ph')) {
-    return '💧 Optimální pH hodnoty:\n\n' +
-           '• Půda: 6.0 - 7.0\n' +
-           '• Hydroponie: 5.5 - 6.5\n' +
-           '• Kokos: 5.5 - 6.5\n\n' +
-           'Špatné pH znemožňuje příjem živin, i když jsou dostupné! Měř pravidelně. 📊';
+  if (lowerQuestion.includes("ph")) {
+    return (
+      "💧 Optimal pH values:\n\n" +
+      "• Soil: 6.0 – 7.0\n" +
+      "• Hydroponics: 5.5 – 6.5\n" +
+      "• Coco: 5.5 – 6.5\n\n" +
+      "Wrong pH prevents nutrient uptake even if nutrients are available! Check regularly. 📊"
+    );
   }
 
-  if (lowerQuestion.includes('fáze') || lowerQuestion.includes('stage')) {
-    return '🌱 Fáze růstu konopí:\n\n' +
-           '1. Klíčení (1-7 dní)\n' +
-           '2. Sazenice (2-3 týdny)\n' +
-           '3. Vegetace (3-16 týdnů)\n' +
-           '4. Předkvět (1-2 týdny)\n' +
-           '5. Květení (6-12 týdnů)\n' +
-           '6. Zrání (1-2 týdny)\n\n' +
-           'Každá fáze má jiné potřeby! 🌿';
+  if (
+    lowerQuestion.includes("fáze") ||
+    lowerQuestion.includes("stage") ||
+    lowerQuestion.includes("growth")
+  ) {
+    return (
+      "🌱 Growth stages:\n\n" +
+      "1. Germination (1–7 days)\n" +
+      "2. Seedling (2–3 weeks)\n" +
+      "3. Vegetative (3–16 weeks)\n" +
+      "4. Pre-flower (1–2 weeks)\n" +
+      "5. Flowering (6–12 weeks)\n" +
+      "6. Ripening (1–2 weeks)\n\n" +
+      "Each stage has different needs! 🌿"
+    );
   }
 
-  return '🌿 Zajímavá otázka! Jako AI asistent ti můžu pomoci s:\n\n' +
-         '• Diagnostikou problémů z fotek\n' +
-         '• Radami k výživě a pH\n' +
-         '• Tipům k osvětlení a ventilaci\n' +
-         '• Rozpoznáním fází růstu\n\n' +
-         'Zkus mi poslat foto rostliny nebo se zeptej konkrétněji! 📸';
+  return (
+    "🌿 Great question! As your AI assistant I can help with:\n\n" +
+    "• Diagnosing problems from photos\n" +
+    "• Nutrition and pH advice\n" +
+    "• Lighting and ventilation tips\n" +
+    "• Identifying growth stages\n\n" +
+    "Try sending me a photo of your plant or ask a more specific question! 📸"
+  );
 };
 
 const pickImage = () => {
   // Simulace výběru obrázku - v produkci použij Capacitor Camera API
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
   input.onchange = (e: Event) => {
     const target = e.target as HTMLInputElement;
     const file = target.files?.[0];
@@ -292,8 +317,13 @@ const removeImage = () => {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .welcome-message h2 {
@@ -444,7 +474,9 @@ const removeImage = () => {
 }
 
 @keyframes typing {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     opacity: 0.3;
     transform: scale(0.8);
   }
@@ -496,7 +528,11 @@ const removeImage = () => {
 
 .input-container {
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) 16px;
-  background: linear-gradient(180deg, rgba(15, 15, 15, 0.95) 0%, rgba(10, 10, 10, 0.95) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(15, 15, 15, 0.95) 0%,
+    rgba(10, 10, 10, 0.95) 100%
+  );
   border-top: 1px solid rgba(123, 199, 77, 0.15);
   backdrop-filter: blur(20px);
 }
@@ -617,4 +653,3 @@ const removeImage = () => {
   }
 }
 </style>
-

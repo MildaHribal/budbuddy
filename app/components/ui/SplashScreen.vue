@@ -9,7 +9,7 @@
       </div>
 
       <h1 class="app-name">BudBuddy</h1>
-      <p class="app-tagline">Tvůj pěstitelský asistent</p>
+      <p class="app-tagline">Your grow companion</p>
 
       <div class="loading-bar">
         <div class="loading-bar-fill"></div>
@@ -20,14 +20,14 @@
 
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import { onMounted } from 'vue';
+import { onMounted } from "vue";
 
 onMounted(() => {
   // Po 2 sekundách skrýt splash screen
   setTimeout(() => {
-    const splash = document.querySelector('.splash-screen');
+    const splash = document.querySelector(".splash-screen");
     if (splash) {
-      splash.classList.add('fade-out');
+      splash.classList.add("fade-out");
       setTimeout(() => {
         splash.remove();
       }, 500);
@@ -88,7 +88,11 @@ onMounted(() => {
 .logo-glow {
   position: absolute;
   inset: -20px;
-  background: radial-gradient(circle, rgba(123, 199, 77, 0.4) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(123, 199, 77, 0.4) 0%,
+    transparent 70%
+  );
   border-radius: 50%;
   z-index: 1;
   animation: pulse 2s ease-in-out infinite;
@@ -159,7 +163,8 @@ onMounted(() => {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
   25% {
@@ -174,7 +179,8 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.4;
     transform: scale(1);
   }
@@ -199,4 +205,3 @@ onMounted(() => {
   }
 }
 </style>
-
