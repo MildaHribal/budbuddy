@@ -41,7 +41,11 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': { prerender: true }
-   },
+  },
+
+  nitro: {
+    preset: 'github-pages'
+  },
 
   compatibilityDate: '2025-01-15',
 
