@@ -39,7 +39,7 @@ onMounted(() => {
 
 .app-content {
   width: 100%;
-  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }
 </style>
 

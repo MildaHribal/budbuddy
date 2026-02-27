@@ -98,7 +98,7 @@ import { Icon } from "@iconify/vue";
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
-  padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+  padding: 10px 8px calc(16px + env(safe-area-inset-bottom, 0px));
   position: relative;
 }
 
