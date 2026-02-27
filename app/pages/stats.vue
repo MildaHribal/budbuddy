@@ -148,6 +148,9 @@ import { Icon } from "@iconify/vue";
 import Header from "~/components/Header.vue";
 import { usePlants } from "~/composables/usePlants";
 import { usePlantJournal } from "~/composables/usePlantJournal";
+import { useHead } from "#imports";
+
+useHead({ title: 'Statistics' });
 
 const { plants, loadPlantsFromStorage } = usePlants();
 const loading = ref(true);

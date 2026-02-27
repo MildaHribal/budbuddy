@@ -3,6 +3,9 @@ import { ref, computed, onMounted, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { usePlants } from "~/composables/usePlants";
 import { usePlantJournal } from "~/composables/usePlantJournal";
+import { useHead } from "#imports";
+
+useHead({ title: 'Gallery' });
 
 const { plants, loadPlantsFromStorage } = usePlants();
 
@@ -111,13 +114,13 @@ function prevPhoto() {
   if (!lightboxItem.value) return;
   const items = displayedItems.value;
   const idx = items.findIndex((i) => i.id === lightboxItem.value!.id);
-  if (idx > 0) lightboxItem.value = items[idx - 1];
+  if (idx > 0) lightboxItem.value = items[idx - 1] || null;
 }
 function nextPhoto() {
   if (!lightboxItem.value) return;
   const items = displayedItems.value;
   const idx = items.findIndex((i) => i.id === lightboxItem.value!.id);
-  if (idx < items.length - 1) lightboxItem.value = items[idx + 1];
+  if (idx < items.length - 1) lightboxItem.value = items[idx + 1] || null;
 }
 
 const lightboxIdx = computed(() => {
@@ -242,7 +245,7 @@ function fmtDate(iso: string) {
     <Teleport to="body">
       <div v-if="lightboxItem" class="lightbox" @click.self="closeLightbox">
         <!-- Close -->
-        <button class="lb-close" @click="closeLightbox">
+        <button class="lb-close" @click="closeLightbox" aria-label="Close Lightbox">
           <Icon icon="tabler:x" :height="22" />
         </button>
 
@@ -251,6 +254,7 @@ function fmtDate(iso: string) {
           class="lb-nav prev"
           v-if="lightboxIdx > 0"
           @click.stop="prevPhoto"
+          aria-label="Previous photo"
         >
           <Icon icon="tabler:chevron-left" :height="26" />
         </button>
@@ -287,6 +291,7 @@ function fmtDate(iso: string) {
           class="lb-nav next"
           v-if="lightboxIdx < displayedItems.length - 1"
           @click.stop="nextPhoto"
+          aria-label="Next photo"
         >
           <Icon icon="tabler:chevron-right" :height="26" />
         </button>

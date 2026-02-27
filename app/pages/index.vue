@@ -3,6 +3,11 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { Icon } from "@iconify/vue";
 import { usePlants } from "~/composables/usePlants";
 import { useDayActions } from "~/composables/useDayActions";
+import { useHead } from "#imports";
+
+useHead({
+  title: 'Dashboard'
+});
 
 const { plants, loadPlantsFromStorage } = usePlants();
 
@@ -283,7 +288,7 @@ onUnmounted(() => {
             <Icon icon="tabler:checklist" :height="22" />
             <span>Today's Tasks</span>
           </div>
-          <button class="add-task-btn" @click="isAddingTask = !isAddingTask">
+          <button class="add-task-btn" @click="isAddingTask = !isAddingTask" aria-label="Toggle add task">
             <Icon
               :icon="isAddingTask ? 'tabler:x' : 'tabler:plus'"
               :height="18"
@@ -305,6 +310,7 @@ onUnmounted(() => {
             class="task-save-btn"
             @click="addTask"
             :disabled="!newTaskText.trim()"
+            aria-label="Save task"
           >
             <Icon icon="tabler:check" :height="18" />
           </button>
@@ -339,11 +345,12 @@ onUnmounted(() => {
               class="task-check"
               :class="{ checked: task.done }"
               @click="toggleTask(task.id, !task.done)"
+              aria-label="Toggle task status"
             >
               <Icon v-if="task.done" icon="tabler:check" :height="14" />
             </button>
             <span class="task-label">{{ task.label }}</span>
-            <button class="task-delete" @click="removeTask(task.id)">
+            <button class="task-delete" @click="removeTask(task.id)" aria-label="Delete task">
               <Icon icon="tabler:trash" :height="14" />
             </button>
           </div>
@@ -533,8 +540,8 @@ onUnmounted(() => {
           <span class="tip-tap">Tap for next</span>
         </div>
         <div class="tip-body">
-          <Icon :icon="currentTip.icon" :height="28" class="tip-icon" />
-          <p class="tip-text">{{ currentTip.text }}</p>
+          <Icon v-if="currentTip" :icon="currentTip.icon" :height="28" class="tip-icon" />
+          <p v-if="currentTip" class="tip-text">{{ currentTip.text }}</p>
         </div>
       </section>
     </div>
@@ -665,8 +672,6 @@ onUnmounted(() => {
 }
 
 /* ── Section layout ────────────────────────────────── */
-.section {
-}
 
 .section-header {
   display: flex;

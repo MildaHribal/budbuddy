@@ -1,7 +1,26 @@
 <script setup>
+import { useHead } from '#imports'
 import { IonApp, IonContent, IonPage } from '@ionic/vue'
-</script>
 
+useHead({
+  titleTemplate: (titleChunk) => {
+    return titleChunk ? `${titleChunk} | BudBuddy` : 'BudBuddy - Smart Plant Care & Tracking';
+  },
+  htmlAttrs: {
+    lang: 'en'
+  },
+  meta: [
+    { name: 'description', content: 'Track, manage, and optimize your plant growth with BudBuddy. Enjoy AI-assisted help, nutrient calculators, and photo journals for your indoor garden.' },
+    { property: 'og:title', content: 'BudBuddy - Smart Plant Care' },
+    { property: 'og:description', content: 'Your personal assistant for tracking plant growth and maximizing yields.' },
+    { property: 'og:type', content: 'website' },
+    { name: 'theme-color', content: '#0a0a0a' }
+  ],
+  link: [
+    { rel: 'icon', type: 'image/png', href: '/favicon.ico' } // Assuming a favicon exists or will be added
+  ]
+})
+</script>
 <template>
   <UApp>
     <IonApp class="min-h-screen">

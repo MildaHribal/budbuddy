@@ -81,7 +81,7 @@
     <div class="input-container">
       <div v-if="uploadedImage" class="uploaded-preview">
         <img :src="uploadedImage" alt="Preview" />
-        <button @click="removeImage" class="remove-image">
+        <button @click="removeImage" class="remove-image" aria-label="Remove image">
           <Icon icon="tabler:x" :height="16" />
         </button>
       </div>
@@ -91,6 +91,7 @@
           @click="pickImage"
           class="image-btn"
           :class="{ active: uploadedImage }"
+          aria-label="Upload photo"
         >
           <Icon icon="tabler:camera" :height="22" />
         </button>
@@ -103,7 +104,7 @@
           class="message-input"
         />
 
-        <button @click="sendMessage" class="send-btn" :disabled="!canSend">
+        <button @click="sendMessage" class="send-btn" :disabled="!canSend" aria-label="Send message">
           <Icon icon="tabler:send" :height="22" />
         </button>
       </div>
@@ -115,6 +116,9 @@
 import { ref, computed, nextTick } from "vue";
 import { Icon } from "@iconify/vue";
 import Header from "~/components/Header.vue";
+import { useHead } from "#imports";
+
+useHead({ title: 'AI Assistant' });
 
 interface Message {
   type: "user" | "bot";

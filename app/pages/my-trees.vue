@@ -3,6 +3,9 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { usePlants } from '~/composables/usePlants';
 import { Icon } from "@iconify/vue";
 import AddTreeModal from '~/components/trees/journal/AddTreeModal.vue';
+import { useHead } from "#imports";
+
+useHead({ title: 'My Plants' });
 
 const { plants, loadPlantsFromStorage } = usePlants();
 const isAddModalOpen = ref(false);
@@ -106,7 +109,7 @@ function getDaysSince(plant: any): number {
     <Teleport to="body">
       <div v-if="isAddModalOpen" class="modal-overlay" @click.self="closeAddModal">
         <div class="modal-container-wrapper">
-          <button @click="closeAddModal" class="modal-close-btn">
+          <button @click="closeAddModal" class="modal-close-btn" aria-label="Close add plant modal">
             <Icon icon="tabler:x" :height="24" />
           </button>
           <AddTreeModal @close-all="closeAddModal" />
