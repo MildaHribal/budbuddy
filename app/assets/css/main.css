@@ -2,20 +2,19 @@
 @import "@nuxt/ui";
 
 @theme static {
-  --font-sans: 'Public Sans', sans-serif;
+  --font-sans: "Public Sans", sans-serif;
 
-  --color-green-50: #EFFDF5;
-  --color-green-100: #D9FBE8;
-  --color-green-200: #B3F5D1;
-  --color-green-300: #75EDAE;
-  --color-green-400: #00DC82;
-  --color-green-500: #00C16A;
-  --color-green-600: #00A155;
-  --color-green-700: #007F45;
+  --color-green-50: #effdf5;
+  --color-green-100: #d9fbe8;
+  --color-green-200: #b3f5d1;
+  --color-green-300: #75edae;
+  --color-green-400: #00dc82;
+  --color-green-500: #00c16a;
+  --color-green-600: #00a155;
+  --color-green-700: #007f45;
   --color-green-800: #016538;
-  --color-green-900: #0A5331;
-  --color-green-950: #052E16;
-
+  --color-green-900: #0a5331;
+  --color-green-950: #052e16;
 
   --accent: #7bc74d;
   --accent-dark: #5a9e3a;
@@ -39,16 +38,20 @@
     scroll-behavior: smooth;
   }
 
-  html, body, #__nuxt {
+  html,
+  body,
+  #__nuxt {
     height: 100%;
     background-color: var(--app-bg) !important;
   }
 
-  body.bg-white, body[class*="bg-"] {
+  body.bg-white,
+  body[class*="bg-"] {
     background-color: var(--app-bg) !important;
   }
 
-  :root, :root * {
+  :root,
+  :root * {
     --ui-bg: var(--app-bg) !important;
     --ui-bg-muted: var(--app-bg) !important;
     --ui-bg-elevated: var(--app-bg) !important;
@@ -83,10 +86,18 @@
   }
 
   /* Utility classes */
-  .accent { color: var(--accent); }
-  .icon-accent { color: var(--accent); }
+  .accent {
+    color: var(--accent);
+  }
+  .icon-accent {
+    color: var(--accent);
+  }
   .btn-accent {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--accent) 0%,
+      var(--accent-dark) 100%
+    );
     color: white;
     border: none;
     padding: 12px 24px;
@@ -126,5 +137,15 @@
 
   .safe-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 16px);
+  }
+}
+
+/* Desktop: prevent double scrolling when phone frame is active */
+@media (min-width: 769px) {
+  html,
+  body,
+  #__nuxt {
+    overflow: hidden !important;
+    height: 100vh !important;
   }
 }

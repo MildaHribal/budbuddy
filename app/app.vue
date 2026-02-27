@@ -1,6 +1,7 @@
 <script setup>
 import { useHead } from '#imports'
 import { IonApp, IonContent, IonPage } from '@ionic/vue'
+import PhoneFrame from '~/components/ui/PhoneFrame.vue'
 
 useHead({
   titleTemplate: (titleChunk) => {
@@ -24,15 +25,17 @@ useHead({
 </script>
 <template>
   <UApp>
-    <IonApp class="min-h-screen">
-      <ion-page>
-        <NuxtLayout>
-              <UMain>
-                <NuxtPage />
-              </UMain>
-        </NuxtLayout>
-    </ion-page>
-    </IonApp>
+    <PhoneFrame>
+      <IonApp class="min-h-screen">
+        <ion-page>
+          <NuxtLayout>
+                <UMain>
+                  <NuxtPage />
+                </UMain>
+          </NuxtLayout>
+      </ion-page>
+      </IonApp>
+    </PhoneFrame>
   </UApp>
 </template>
 
