@@ -43,14 +43,6 @@ export default defineNuxtConfig({
     '/': { prerender: true }
   },
 
-  nitro: {
-    preset: 'github-pages'
-  },
-
-  app: {
-    baseURL: '/budbuddy/'
-  },
-
   compatibilityDate: '2025-01-15',
 
   eslint: {
