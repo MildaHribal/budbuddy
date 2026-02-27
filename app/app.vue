@@ -25,6 +25,7 @@ useHead({
 <template>
   <UApp>
     <IonApp class="min-h-screen">
+      <div class="desktop-gesture-bar" />
       <ion-page>
         <NuxtLayout>
               <UMain>

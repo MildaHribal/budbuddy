@@ -127,4 +127,69 @@
   .safe-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 16px);
   }
+
+  /* Phone Emulator Wrapper for Desktop */
+  @media (pointer: fine) {
+    html, body, #__nuxt {
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      background: radial-gradient(circle at center, var(--color-green-950) 0%, var(--app-bg) 100%) !important;
+      height: 100vh !important;
+      width: 100vw !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    ion-app {
+      position: relative !important;
+      width: 390px !important;
+      height: 844px !important;
+      max-height: 95vh !important;
+      max-width: 95vw !important;
+      border-radius: 55px !important; /* Smoother corner radius */
+      overflow: hidden !important;
+      /* Premium device frame using multiple shadows and borders */
+      background: #000 !important;
+      border: 12px solid #1a1a1a !important;
+      border-top-width: 45px !important; /* Proper bezel area to clear app headers */
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.7),
+        0 0 0 2px #333, /* Subtle outer metal edge */
+        0 0 20px rgba(0, 220, 130, 0.1) !important; /* Subtle theme-colored glow */
+      margin: auto !important;
+      transform: translateZ(0);
+    }
+
+    /* Side Buttons Simulation */
+    ion-app::before {
+      content: '';
+      position: absolute;
+      left: -15px;
+      top: 150px;
+      width: 4px;
+      height: 50px;
+      background: #333;
+      border-radius: 4px 0 0 4px;
+      box-shadow: 
+        0 60px 0 #333, /* Second button */
+        403px -20px 0 #333; /* Power button on the right */
+      z-index: -1;
+    }
+
+    /* Bottom Gesture Bar (Global) */
+    .desktop-gesture-bar {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      z-index: 9999;
+      pointer-events: none;
+    }
+  }
 }
