@@ -15,7 +15,7 @@ import DownBar from '~/components/DownBar.vue'
 onMounted(() => {
   if (typeof document !== 'undefined') {
     document.body.classList.remove('bg-white')
-    // Nastavení meta theme-color pro mobilní prohlížeče
+    // Set meta theme-color for mobile browsers
     const metaTheme = document.querySelector('meta[name="theme-color"]')
     if (metaTheme) {
       metaTheme.setAttribute('content', '#0a0a0a')

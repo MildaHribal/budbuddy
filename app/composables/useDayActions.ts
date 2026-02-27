@@ -20,7 +20,7 @@ export type DayStore = {
 
 const stores = new Map<string, DayStore>()
 
-// Pomocná funkce pro lokální datum YYYY-MM-DD
+// Helper function for local date YYYY-MM-DD
 const getLocalISODate = (d?: Date | string) => {
   const date = d ? new Date(d) : new Date();
   const offset = date.getTimezoneOffset();
@@ -29,7 +29,7 @@ const getLocalISODate = (d?: Date | string) => {
 }
 
 export const useDayActions = (dateParam?: Date | string): DayStore => {
-  // Klíč musí být podle lokálního data
+  // Key must match local date
   const dateKey = getLocalISODate(dateParam);
   const key = `actions:${dateKey}`
 
@@ -41,14 +41,14 @@ export const useDayActions = (dateParam?: Date | string): DayStore => {
   const actions = ref<DayAction[]>([])
 
   const save = async () => {
-    // Ukládáme hlubokou kopii hodnoty
+    // Save a deep copy of the value
     await setObject(key, actions.value)
   }
 
   const load = async () => {
     try {
       const stored = await getObject<DayAction[]>(key)
-      // Pokud nic není uloženo, nastavíme prázdné pole, jinak načtená data
+      // If nothing is stored, set empty array, otherwise use loaded data
       actions.value = stored || []
     } catch (e) {
       console.error('Error loading actions', e)
@@ -103,7 +103,7 @@ export const useDayActions = (dateParam?: Date | string): DayStore => {
     clear,
   }
 
-  // Iniciální načtení
+  // Initial load
   load()
 
   stores.set(key, store)

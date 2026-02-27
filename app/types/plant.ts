@@ -1,4 +1,4 @@
-// Typy pro rostliny a pěstování
+// Types for plants and growing
 
 export interface Plant {
   id: number
@@ -14,12 +14,12 @@ export interface Plant {
 }
 
 export type GrowthStage =
-  | 'germination'  // Klíčení
-  | 'seedling'     // Sazenice
-  | 'vegetative'   // Vegetace
-  | 'pre-flower'   // Předkvět
-  | 'flowering'    // Květení
-  | 'ripening'     // Zrání
+  | 'germination'  // Germination
+  | 'seedling'     // Seedling
+  | 'vegetative'   // Vegetative
+  | 'pre-flower'   // Pre-flower
+  | 'flowering'    // Flowering
+  | 'ripening'     // Ripening
 
 export interface GrowthStageInfo {
   name: string
@@ -41,19 +41,19 @@ export interface Action {
 }
 
 export type ActionType =
-  | 'water'        // Zalévání
-  | 'feed'         // Hnojení
-  | 'prune'        // Ořez
-  | 'train'        // Trénink
-  | 'transplant'   // Přesazení
-  | 'note'         // Poznámka
-  | 'photo'        // Fotka
+  | 'water'        // Watering
+  | 'feed'         // Feeding
+  | 'prune'        // Pruning
+  | 'train'        // Training
+  | 'transplant'   // Transplanting
+  | 'note'         // Note
+  | 'photo'        // Photo
 
 export interface Nutrient {
   name: string
-  n: number  // Dusík
-  p: number  // Fosfor
-  k: number  // Draslík
+  n: number  // Nitrogen
+  p: number  // Phosphorus
+  k: number  // Potassium
 }
 
 export interface EnvironmentData {
@@ -74,83 +74,83 @@ export interface HarvestRecord {
   notes?: string
 }
 
-// Konstanty pro fáze růstu
+// Growth stage constants
 export const GROWTH_STAGES: Record<GrowthStage, GrowthStageInfo> = {
   germination: {
-    name: 'Klíčení',
+    name: 'Germination',
     icon: 'tabler:seeding',
-    duration: '1-7 dní',
+    duration: '1-7 days',
     days: 7,
-    description: 'Semínko klíčí a vytváří první kořínky a listy.',
+    description: 'The seed is sprouting and developing its first roots and leaves.',
     tips: [
-      'Udržuj vlhkost 70-90%',
-      'Teplota 22-25°C',
-      'Minimální světlo'
+      'Keep humidity at 70-90%',
+      'Temperature 22-25°C',
+      'Minimal light'
     ]
   },
   seedling: {
-    name: 'Sazenice',
+    name: 'Seedling',
     icon: 'tabler:plant',
-    duration: '2-3 týdny',
+    duration: '2-3 weeks',
     days: 21,
-    description: 'Rostlina vytváří první pravé listy a posiluje kořenový systém.',
+    description: 'The plant develops its first true leaves and strengthens the root system.',
     tips: [
-      'Světlo 18/6 hodin',
-      'Jemné hnojení',
-      'Pozor na přelití'
+      'Light cycle 18/6 hours',
+      'Light feeding',
+      'Watch for overwatering'
     ]
   },
   vegetative: {
-    name: 'Vegetace',
+    name: 'Vegetative',
     icon: 'tabler:tree',
-    duration: '3-16 týdnů',
+    duration: '3-16 weeks',
     days: 56,
-    description: 'Rychlý růst vegetativní hmoty, tvorba větví a listů.',
+    description: 'Rapid growth of vegetative mass, formation of branches and leaves.',
     tips: [
-      'Více dusíku (N)',
-      'Trénink a ořez',
-      'Silné osvětlení'
+      'More nitrogen (N)',
+      'Training and pruning',
+      'Strong lighting'
     ]
   },
   'pre-flower': {
-    name: 'Předkvět',
+    name: 'Pre-flower',
     icon: 'tabler:flower',
-    duration: '1-2 týdny',
+    duration: '1-2 weeks',
     days: 14,
-    description: 'Přechod na květení, začínají se tvořit první pistily.',
+    description: 'Transition to flowering, first pistils begin to form.',
     tips: [
-      'Změna na 12/12',
-      'Snížit dusík',
-      'Zvýšit fosfor (P)'
+      'Switch to 12/12',
+      'Reduce nitrogen',
+      'Increase phosphorus (P)'
     ]
   },
   flowering: {
-    name: 'Květení',
+    name: 'Flowering',
     icon: 'tabler:cannabis',
-    duration: '6-12 týdnů',
+    duration: '6-12 weeks',
     days: 63,
-    description: 'Tvorba květů a pryskyřice, hlavní produkční fáze.',
+    description: 'Bud and resin production, the main production phase.',
     tips: [
-      'Více fosforu a draslíku',
-      'Kontrola vlhkosti',
-      'Sleduj trichomy'
+      'More phosphorus and potassium',
+      'Monitor humidity',
+      'Watch trichomes'
     ]
   },
   ripening: {
-    name: 'Zrání',
+    name: 'Ripening',
     icon: 'tabler:adjustments',
-    duration: '1-2 týdny',
+    duration: '1-2 weeks',
     days: 14,
-    description: 'Finální dozrávání, propláchnutí před sklizní.',
+    description: 'Final ripening, flushing before harvest.',
     tips: [
-      'Proplach čistou vodou',
-      'Sleduj trichomy',
-      'Příprava na sklizeň'
+      'Flush with plain water',
+      'Watch trichomes',
+      'Prepare for harvest'
     ]
   }
 }
 
-// Helper funkce
+// Helper functions
 export const getStageIcon = (stage: GrowthStage): string => {
   return GROWTH_STAGES[stage].icon
 }
@@ -162,4 +162,3 @@ export const getStageName = (stage: GrowthStage): string => {
 export const getStageInfo = (stage: GrowthStage): GrowthStageInfo => {
   return GROWTH_STAGES[stage]
 }
-

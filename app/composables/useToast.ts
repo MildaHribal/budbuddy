@@ -1,70 +1,69 @@
 import { ref } from 'vue'
+
+interface ToastOptions {
+  message: string
+  title?: string
+  type?: 'success' | 'error' | 'warning' | 'info'
+  duration?: number
 }
-  }
-    info
-    warning,
-    error,
-    success,
-    remove,
-    show,
-    toasts,
-  return {
 
-  }
-    return show({ message, title, type: 'info' })
-  const info = (message: string, title?: string) => {
-
-  }
-    return show({ message, title, type: 'warning' })
-  const warning = (message: string, title?: string) => {
-
-  }
-    return show({ message, title, type: 'error' })
-  const error = (message: string, title?: string) => {
-
-  }
-    return show({ message, title, type: 'success' })
-  const success = (message: string, title?: string) => {
-
-  }
-    }
-      toasts.value.splice(index, 1)
-    if (index > -1) {
-    const index = toasts.value.findIndex(t => t.id === id)
-  const remove = (id: number) => {
-
-  }
-    return toast.id
-
-    }
-      }, toast.duration)
-        remove(toast.id)
-      setTimeout(() => {
-    if (toast.duration > 0) {
-
-    toasts.value.push(toast)
-
-    }
-      duration: options.duration || 3000
-      type: options.type || 'info',
-      id: nextId++,
-      ...options,
-    const toast: Toast = {
-  const show = (options: ToastOptions) => {
-export const useToast = () => {
+interface Toast extends ToastOptions {
+  id: number
+}
 
 let nextId = 0
 const toasts = ref<Toast[]>([])
 
+export const useToast = () => {
+  const show = (options: ToastOptions) => {
+    const toast: Toast = {
+      ...options,
+      id: nextId++,
+      type: options.type || 'info',
+      duration: options.duration || 3000
+    }
+
+    toasts.value.push(toast)
+
+    if (toast.duration && toast.duration > 0) {
+      setTimeout(() => {
+        remove(toast.id)
+      }, toast.duration)
+    }
+
+    return toast.id
+  }
+
+  const remove = (id: number) => {
+    const index = toasts.value.findIndex(t => t.id === id)
+    if (index > -1) {
+      toasts.value.splice(index, 1)
+    }
+  }
+
+  const success = (message: string, title?: string) => {
+    return show({ message, title, type: 'success' })
+  }
+
+  const error = (message: string, title?: string) => {
+    return show({ message, title, type: 'error' })
+  }
+
+  const warning = (message: string, title?: string) => {
+    return show({ message, title, type: 'warning' })
+  }
+
+  const info = (message: string, title?: string) => {
+    return show({ message, title, type: 'info' })
+  }
+
+  return {
+    toasts,
+    show,
+    remove,
+    success,
+    error,
+    warning,
+    info
+  }
 }
-  id: number
-interface Toast extends ToastOptions {
-
-}
-  duration?: number
-  type?: 'success' | 'error' | 'warning' | 'info'
-  title?: string
-  message: string
-interface ToastOptions {
-
-

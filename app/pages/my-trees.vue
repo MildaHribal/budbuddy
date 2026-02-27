@@ -32,6 +32,13 @@ const closeAddModal = () => {
   isAddModalOpen.value = false;
   loadPlantsFromStorage();
 };
+
+function getDaysSince(plant: any): number {
+  const dateStr = plant.plantingDate || plant.createdAt;
+  if (!dateStr) return 0;
+  const diff = Date.now() - new Date(dateStr).getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
+}
 </script>
 
 <template>
@@ -74,7 +81,7 @@ const closeAddModal = () => {
             <div class="plant-meta">
               <div class="meta-item">
                 <Icon icon="tabler:calendar" :height="14" />
-                <span>Day {{ (plant as any).currentDay || 0 }}</span>
+                <span>Day {{ getDaysSince(plant) }}</span>
               </div>
               <div class="meta-item">
                 <Icon icon="tabler:heart" :height="14" />

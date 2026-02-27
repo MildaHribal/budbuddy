@@ -5,7 +5,7 @@
 
     <nav class="nav-row">
       <!-- Home -->
-      <NuxtLink to="/" class="nav-item" aria-label="Domů">
+      <NuxtLink to="/" class="nav-item" aria-label="Home">
         <div class="nav-icon-wrap">
           <Icon icon="tabler:home-2" height="22" />
         </div>
@@ -14,7 +14,7 @@
       </NuxtLink>
 
       <!-- My Plants -->
-      <NuxtLink to="/my-trees" class="nav-item" aria-label="Rostliny">
+      <NuxtLink to="/my-trees" class="nav-item" aria-label="Plants">
         <div class="nav-icon-wrap">
           <Icon icon="tabler:leaf" height="22" />
         </div>
@@ -26,7 +26,7 @@
       <NuxtLink
         to="/ai-assistant"
         class="nav-item ai-btn"
-        aria-label="AI Asistent"
+        aria-label="AI Assistant"
       >
         <div class="ai-glow"></div>
         <div class="ai-ring"></div>
@@ -34,7 +34,7 @@
       </NuxtLink>
 
       <!-- Gallery -->
-      <NuxtLink to="/nutriens-calc" class="nav-item" aria-label="Galerie">
+      <NuxtLink to="/nutriens-calc" class="nav-item" aria-label="Gallery">
         <div class="nav-icon-wrap">
           <Icon icon="tabler:photo" height="22" />
         </div>
@@ -43,7 +43,7 @@
       </NuxtLink>
 
       <!-- Stats -->
-      <NuxtLink to="/stats" class="nav-item" aria-label="Statistiky">
+      <NuxtLink to="/stats" class="nav-item" aria-label="Statistics">
         <div class="nav-icon-wrap">
           <Icon icon="tabler:chart-bar" height="22" />
         </div>

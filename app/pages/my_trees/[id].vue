@@ -358,7 +358,7 @@ const editForm = ref({
 
 function openEditModal() {
   if (!plant.value) return;
-  console.log("[EditModal] Opening with plant:", plant.value); // Přidáno
+
   editForm.value = {
     name: plant.value.name,
     strain: (plant.value as any).strain || "",
@@ -373,14 +373,14 @@ function openEditModal() {
 
 function saveEdit() {
   if (!plant.value) return;
-  console.log("[EditModal] Saving plantId:", plantId, "with data:", editForm.value); // Přidáno
+
   editPlant(plantId, editForm.value);
   showEditModal.value = false;
 }
 
 function handleDeletePlant() {
   if (confirm("Are you sure you want to delete this plant?")) {
-    console.log("[Delete] Deleting plantId:", plantId); // Přidáno
+
     deletePlant(plantId);
     router.push("/my-trees");
   }
@@ -1340,6 +1340,7 @@ function handleDeletePlant() {
 
 /* ── Entries section ──────────────────────── */
 .entries-section {
+  margin-top: 8px;
 }
 .entries-header {
   display: flex;
