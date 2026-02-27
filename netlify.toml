@@ -5,8 +5,9 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "ALLOWALL"
     X-XSS-Protection = "1; mode=block"
+    Content-Security-Policy = "frame-ancestors 'self' https://hribal.site https://*.hribal.site"
 
 [[redirects]]
   from = "/*"
