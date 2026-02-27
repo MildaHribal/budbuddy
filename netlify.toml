@@ -1,16 +1,13 @@
-[build]
-  command = "npm run generate"
-  publish = "dist"
-
 [[headers]]
   for = "/*"
   [headers.values]
+    # Povolí vložení stránky do iframu (nutné pro tvé portfolio)
     X-Frame-Options = "ALLOWALL"
-    X-XSS-Protection = "1; mode=block"
-    Content-Security-Policy = "frame-ancestors 'self' https://hribal.site https://*.hribal.site"
+    
+    # Bezpečnostní pravidlo: říká, kdo smí tuhle stránku vkládat do iframu
+    # Povolujeme: samotnou aplikaci, tvé portfolio na webu i tvůj localhost pro vývoj
+    Content-Security-Policy = "frame-ancestors 'self' https://hribal.site https://*.hribal.site http://localhost:*"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+    # Volitelné: vynucení HTTPS a ochrana proti podvržení typu obsahu
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
