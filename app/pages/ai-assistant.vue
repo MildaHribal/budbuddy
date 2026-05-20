@@ -751,7 +751,7 @@ const removeImage = () => {
 
 .input-container {
   /* Bottom padding clears the fixed DownBar nav so the input sits above it. */
-  padding: 12px 16px calc(90px + env(safe-area-inset-bottom)) 16px;
+  padding: 12px 16px calc(112px + env(safe-area-inset-bottom)) 16px;
   background: linear-gradient(
     180deg,
     rgba(15, 15, 15, 0.95) 0%,
