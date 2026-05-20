@@ -345,16 +345,14 @@ const sendMessage = async () => {
 
   messages.value.push(userMessage)
   const userQuestion = inputMessage.value
-  const userImage = uploadedImage.value
   inputMessage.value = ''
   uploadedImage.value = null
 
   await scrollToBottom()
   isTyping.value = true
-  void userImage
 
-  // Try the real AI: the user's own key (if set) or the shared server proxy.
-  // If neither is reachable, fall back to the built-in offline answers.
+  // Send the full history (images included) to the AI. If it can't be reached
+  // we fall back to the built-in offline answers so the user always gets a reply.
   try {
     const history: ChatTurn[] = messages.value.map(m => ({
       role: m.type === 'user' ? 'user' : 'model',
@@ -369,9 +367,11 @@ const sendMessage = async () => {
     const code = err instanceof Error ? err.message : ''
     let text: string
     if (code === 'INVALID_API_KEY') {
-      text = '🔑 Your Gemini API key seems invalid or out of quota. Tap the ⚙️ icon to update it.'
-    } else if (code === 'NO_BACKEND' || code === 'NO_API_KEY') {
-      // No AI backend available — answer from the offline guide silently.
+      text = '🔑 Your Gemini API key looks invalid. Tap the ⚙️ icon to fix it.'
+    } else if (code === 'QUOTA') {
+      text = '⏳ Your Gemini key is out of quota for now. Try again later or add your own key via ⚙️.\n\n' + getBotResponse(userQuestion)
+    } else if (code === 'NO_BACKEND') {
+      // No AI backend reachable — answer from the offline guide silently.
       text = getBotResponse(userQuestion)
     } else {
       text = '⚠️ I couldn\'t reach the AI service. Check your connection and try again.\n\n' + getBotResponse(userQuestion)
@@ -456,7 +456,6 @@ const getBotResponse = (question: string): string => {
 }
 
 const pickImage = () => {
-  // Simulace výběru obrázku - v produkci použij Capacitor Camera API
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'

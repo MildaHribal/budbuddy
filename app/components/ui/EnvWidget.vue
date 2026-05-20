@@ -1,10 +1,19 @@
 <template>
   <div :class="['env-widget', size]">
     <div class="widget-header">
-      <div class="widget-icon" :style="{ background: iconBg }">
-        <Icon :icon="icon" :height="iconSize" :style="{ color: iconColor }" />
+      <div
+        class="widget-icon"
+        :style="{ background: iconBg }"
+      >
+        <Icon
+          :icon="icon"
+          :height="iconSize"
+          :style="{ color: iconColor }"
+        />
       </div>
-      <div class="widget-title">{{ title }}</div>
+      <div class="widget-title">
+        {{ title }}
+      </div>
     </div>
 
     <div class="widget-value">
@@ -13,49 +22,51 @@
     </div>
 
     <div class="widget-footer">
-      <div :class="['status-indicator', status]"></div>
-      <div class="status-text">{{ statusText }}</div>
+      <div :class="['status-indicator', status]" />
+      <div class="status-text">
+        {{ statusText }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
-import { computed } from 'vue';
+import { Icon } from '@iconify/vue'
+import { computed } from 'vue'
 
 interface Props {
-  icon: string;
-  title: string;
-  value: number | string;
-  unit: string;
-  status: 'optimal' | 'warning' | 'danger';
-  size?: 'small' | 'medium' | 'large';
-  iconColor?: string;
-  iconBg?: string;
+  icon: string
+  title: string
+  value: number | string
+  unit: string
+  status: 'optimal' | 'warning' | 'danger'
+  size?: 'small' | 'medium' | 'large'
+  iconColor?: string
+  iconBg?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'medium',
   iconColor: '#7bc74d',
   iconBg: 'rgba(123, 199, 77, 0.15)'
-});
+})
 
 const statusText = computed(() => {
   switch (props.status) {
-    case 'optimal': return 'Optimální';
-    case 'warning': return 'Pozor';
-    case 'danger': return 'Kritické';
-    default: return 'Neznámé';
+    case 'optimal': return 'Optimální'
+    case 'warning': return 'Pozor'
+    case 'danger': return 'Kritické'
+    default: return 'Neznámé'
   }
-});
+})
 
 const iconSize = computed(() => {
   switch (props.size) {
-    case 'small': return 20;
-    case 'large': return 28;
-    default: return 24;
+    case 'small': return 20
+    case 'large': return 28
+    default: return 24
   }
-});
+})
 </script>
 
 <style scoped>
@@ -226,4 +237,3 @@ const iconSize = computed(() => {
   color: #ff4444;
 }
 </style>
-

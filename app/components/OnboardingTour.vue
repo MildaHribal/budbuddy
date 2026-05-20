@@ -10,8 +10,10 @@
         v-if="rect"
         class="onb-spotlight"
         :style="spotlightStyle"
-        @click.stop="onUserNext"
-      />
+        @click.stop="next"
+      >
+        <span class="onb-tap-hint">Tap to continue</span>
+      </div>
       <!-- Full dim for steps without a target (welcome / finish) -->
       <div
         v-else
@@ -24,12 +26,36 @@
         :style="tipStyle"
         @click.stop
       >
-        <button
-          class="onb-skip"
-          @click="finish"
-        >
-          Skip
-        </button>
+        <!-- Autoplay countdown bar; freezes when paused. -->
+        <div class="onb-progress">
+          <div
+            :key="`${step}-${runId}`"
+            class="onb-progress-fill"
+            :style="{
+              animationDuration: AUTOPLAY_MS + 'ms',
+              animationPlayState: playing ? 'running' : 'paused'
+            }"
+          />
+        </div>
+
+        <div class="onb-tip-top">
+          <button
+            class="onb-icon-btn"
+            :aria-label="playing ? 'Pause tour' : 'Play tour'"
+            @click="togglePlay"
+          >
+            <Icon
+              :icon="playing ? 'tabler:player-pause-filled' : 'tabler:player-play-filled'"
+              :height="16"
+            />
+          </button>
+          <button
+            class="onb-skip"
+            @click="finish"
+          >
+            Skip
+          </button>
+        </div>
 
         <div
           class="onb-tip-icon"
@@ -54,6 +80,7 @@
             v-for="(s, i) in steps"
             :key="i"
             :class="['onb-dot', { active: i === step }]"
+            @click="goTo(i)"
           />
         </div>
 
@@ -67,7 +94,7 @@
           </button>
           <button
             class="onb-next"
-            @click="onUserNext"
+            @click="next"
           >
             <span>{{ isLast ? "Start growing 🌱" : "Next" }}</span>
             <Icon
@@ -89,7 +116,7 @@ import { Icon } from '@iconify/vue'
 import { useNativeStorage } from '~/composables/useNativeStorage'
 
 const ONBOARDED_KEY = 'budbuddy-onboarded'
-const AUTOPLAY_MS = 2200
+const AUTOPLAY_MS = 3200
 
 interface Step {
   target?: string // CSS selector of the element to highlight
@@ -106,7 +133,9 @@ const storage = useNativeStorage()
 const visible = ref(false)
 const step = ref(0)
 const rect = ref<DOMRect | null>(null)
-let autoplay = true
+const playing = ref(true)
+// Bumped on every (re)start so the CSS progress bar restarts its animation.
+const runId = ref(0)
 let timer: ReturnType<typeof setTimeout> | null = null
 
 const steps: Step[] = [
@@ -181,6 +210,15 @@ const clearTimer = () => {
   }
 }
 
+// Restart the autoplay timer (and the progress bar) for the current step.
+const scheduleAutoplay = () => {
+  clearTimer()
+  runId.value++
+  if (playing.value && visible.value) {
+    timer = setTimeout(() => next(), AUTOPLAY_MS)
+  }
+}
+
 // Navigate to the step's page (really clicking through the app), then locate
 // the element to spotlight and schedule the next step when auto-playing.
 const showStep = async () => {
@@ -196,9 +234,7 @@ const showStep = async () => {
   const el = s.target ? document.querySelector(s.target) : null
   rect.value = el ? el.getBoundingClientRect() : null
 
-  if (autoplay && visible.value) {
-    timer = setTimeout(() => next(), AUTOPLAY_MS)
-  }
+  scheduleAutoplay()
 }
 
 const measure = () => {
@@ -254,32 +290,30 @@ onBeforeUnmount(() => {
 
 watch(step, () => showStep())
 
-// Any manual control (Back/Next/Skip/tap) stops the automatic playback.
-const stopAutoplay = () => {
-  autoplay = false
-  clearTimer()
-}
-
-// Used by autoplay (keeps playing).
+// Advance / go back. The step watcher reschedules autoplay, so manual taps
+// don't stop the tour — only the pause button does.
 const next = () => {
   if (isLast.value) finish()
   else step.value++
 }
 
-// Used by buttons / taps — takes over from autoplay.
-const onUserNext = () => {
-  stopAutoplay()
-  next()
-}
-
 const prev = () => {
-  stopAutoplay()
   if (step.value > 0) step.value--
 }
 
+const goTo = (i: number) => {
+  if (i !== step.value) step.value = i
+}
+
+const togglePlay = () => {
+  playing.value = !playing.value
+  if (playing.value) scheduleAutoplay()
+  else clearTimer()
+}
+
 const onBackdropClick = () => {
-  // Tapping the dimmed area skips ahead (and takes over from autoplay).
-  onUserNext()
+  // Tapping the dimmed area skips ahead to the next step.
+  next()
 }
 
 const finish = async () => {
@@ -310,7 +344,22 @@ const finish = async () => {
   border: 2px solid rgba(123, 199, 77, 0.9);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
+  cursor: pointer;
   animation: onbPulse 2s ease-in-out infinite;
+}
+
+.onb-tap-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -28px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #9fe76d;
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 @keyframes onbPulse {
@@ -346,10 +395,60 @@ const finish = async () => {
   }
 }
 
-.onb-skip {
+.onb-progress {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 20px 20px 0 0;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.onb-progress-fill {
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #7bc74d 0%, #9fe76d 100%);
+  animation: onbProgress linear forwards;
+}
+
+@keyframes onbProgress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.onb-tip-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.onb-icon-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: rgba(123, 199, 77, 0.14);
+  border: 1px solid rgba(123, 199, 77, 0.25);
+  color: #9fe76d;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.onb-icon-btn:active {
+  transform: scale(0.92);
+}
+
+.onb-skip {
   background: none;
   border: none;
   color: #7c857a;
@@ -397,6 +496,7 @@ const finish = async () => {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.18);
   transition: all 0.25s ease;
+  cursor: pointer;
 }
 
 .onb-dot.active {

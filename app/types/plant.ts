@@ -13,13 +13,13 @@ export interface Plant {
   imageUrl?: string
 }
 
-export type GrowthStage =
-  | 'germination'  // Germination
-  | 'seedling'     // Seedling
-  | 'vegetative'   // Vegetative
-  | 'pre-flower'   // Pre-flower
-  | 'flowering'    // Flowering
-  | 'ripening'     // Ripening
+export type GrowthStage
+  = | 'germination' // Germination
+    | 'seedling' // Seedling
+    | 'vegetative' // Vegetative
+    | 'pre-flower' // Pre-flower
+    | 'flowering' // Flowering
+    | 'ripening' // Ripening
 
 export interface GrowthStageInfo {
   name: string
@@ -40,20 +40,20 @@ export interface Action {
   unit?: string
 }
 
-export type ActionType =
-  | 'water'        // Watering
-  | 'feed'         // Feeding
-  | 'prune'        // Pruning
-  | 'train'        // Training
-  | 'transplant'   // Transplanting
-  | 'note'         // Note
-  | 'photo'        // Photo
+export type ActionType
+  = | 'water' // Watering
+    | 'feed' // Feeding
+    | 'prune' // Pruning
+    | 'train' // Training
+    | 'transplant' // Transplanting
+    | 'note' // Note
+    | 'photo' // Photo
 
 export interface Nutrient {
   name: string
-  n: number  // Nitrogen
-  p: number  // Phosphorus
-  k: number  // Potassium
+  n: number // Nitrogen
+  p: number // Phosphorus
+  k: number // Potassium
 }
 
 export interface EnvironmentData {
@@ -76,7 +76,7 @@ export interface HarvestRecord {
 
 // Growth stage constants
 export const GROWTH_STAGES: Record<GrowthStage, GrowthStageInfo> = {
-  germination: {
+  'germination': {
     name: 'Germination',
     icon: 'tabler:seeding',
     duration: '1-7 days',
@@ -88,7 +88,7 @@ export const GROWTH_STAGES: Record<GrowthStage, GrowthStageInfo> = {
       'Minimal light'
     ]
   },
-  seedling: {
+  'seedling': {
     name: 'Seedling',
     icon: 'tabler:plant',
     duration: '2-3 weeks',
@@ -100,7 +100,7 @@ export const GROWTH_STAGES: Record<GrowthStage, GrowthStageInfo> = {
       'Watch for overwatering'
     ]
   },
-  vegetative: {
+  'vegetative': {
     name: 'Vegetative',
     icon: 'tabler:tree',
     duration: '3-16 weeks',
@@ -124,7 +124,7 @@ export const GROWTH_STAGES: Record<GrowthStage, GrowthStageInfo> = {
       'Increase phosphorus (P)'
     ]
   },
-  flowering: {
+  'flowering': {
     name: 'Flowering',
     icon: 'tabler:cannabis',
     duration: '6-12 weeks',
@@ -136,7 +136,7 @@ export const GROWTH_STAGES: Record<GrowthStage, GrowthStageInfo> = {
       'Watch trichomes'
     ]
   },
-  ripening: {
+  'ripening': {
     name: 'Ripening',
     icon: 'tabler:adjustments',
     duration: '1-2 weeks',

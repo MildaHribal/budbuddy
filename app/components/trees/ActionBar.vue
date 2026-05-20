@@ -8,18 +8,18 @@ import {
   waterOutline,
   flaskOutline,
   bugOutline,
-  cutOutline,
+  cutOutline
 } from 'ionicons/icons'
 import { useDayActions } from '../../composables/useDayActions'
 import { computed, ref, watch, type Ref } from 'vue'
 
 const props = defineProps<{ date?: string | Ref<string> }>()
 const dateStr = computed(() => {
-  if (!props.date) return new Date().toISOString().slice(0,10)
+  if (!props.date) return new Date().toISOString().slice(0, 10)
   return typeof props.date === 'string' ? props.date : props.date.value
 })
 
-const store = ref<any>(useDayActions(dateStr.value))
+const store = ref<ReturnType<typeof useDayActions>>(useDayActions(dateStr.value))
 watch(dateStr, (d) => {
   store.value = useDayActions(d)
 })
@@ -29,14 +29,14 @@ const emit = defineEmits<{
 }>()
 
 const actionLabels: Record<string, string> = {
-  action: 'General action',
+  'action': 'General action',
   'tree-log': 'Open tree log',
-  photo: 'Take photo',
-  more: 'More...',
-  water: 'Water plants',
-  nutrients: 'Add nutrients',
-  repellent: 'Apply repellent',
-  trim: 'Trim branches',
+  'photo': 'Take photo',
+  'more': 'More...',
+  'water': 'Water plants',
+  'nutrients': 'Add nutrients',
+  'repellent': 'Apply repellent',
+  'trim': 'Trim branches'
 }
 
 const actionableKeys = new Set(['water', 'nutrients', 'repellent', 'trim'])
@@ -56,28 +56,55 @@ function onClick(key: string) {
   <div class="action-bar">
     <div class="action-box action-box-top">
       <div class="row">
-        <button type="button" class="action-btn" @click="onClick('action')">
-          <IonIcon :icon="playOutline" class="icon" />
+        <button
+          type="button"
+          class="action-btn"
+          @click="onClick('action')"
+        >
+          <IonIcon
+            :icon="playOutline"
+            class="icon"
+          />
           <span class="label">Action</span>
         </button>
 
-        <button type="button" class="action-btn" @click="onClick('tree-log')">
-          <IonIcon :icon="listOutline" class="icon" />
+        <button
+          type="button"
+          class="action-btn"
+          @click="onClick('tree-log')"
+        >
+          <IonIcon
+            :icon="listOutline"
+            class="icon"
+          />
           <span class="label">Tree log</span>
         </button>
 
-        <button type="button" class="action-btn" @click="onClick('photo')">
-          <IonIcon :icon="cameraOutline" class="icon" />
+        <button
+          type="button"
+          class="action-btn"
+          @click="onClick('photo')"
+        >
+          <IonIcon
+            :icon="cameraOutline"
+            class="icon"
+          />
           <span class="label">Photo</span>
         </button>
 
-        <button type="button" class="action-btn" @click="onClick('more')">
-          <IonIcon :icon="ellipsisHorizontalOutline" class="icon" />
+        <button
+          type="button"
+          class="action-btn"
+          @click="onClick('more')"
+        >
+          <IonIcon
+            :icon="ellipsisHorizontalOutline"
+            class="icon"
+          />
           <span class="label">More</span>
         </button>
       </div>
     </div>
-
 
     <div class="action-box action-box-bottom">
       <div>
@@ -85,23 +112,51 @@ function onClick(key: string) {
       </div>
 
       <div class="row">
-        <button type="button" class="action-btn" @click="onClick('water')">
-          <IonIcon :icon="waterOutline" class="icon" />
+        <button
+          type="button"
+          class="action-btn"
+          @click="onClick('water')"
+        >
+          <IonIcon
+            :icon="waterOutline"
+            class="icon"
+          />
           <span class="label">Water</span>
         </button>
 
-        <button type="button" class="action-btn" @click="onClick('nutrients')">
-          <IonIcon :icon="flaskOutline" class="icon" />
+        <button
+          type="button"
+          class="action-btn"
+          @click="onClick('nutrients')"
+        >
+          <IonIcon
+            :icon="flaskOutline"
+            class="icon"
+          />
           <span class="label">Nutrients</span>
         </button>
 
-        <button type="button" class="action-btn" @click="onClick('repellent')">
-          <IonIcon :icon="bugOutline" class="icon" />
+        <button
+          type="button"
+          class="action-btn"
+          @click="onClick('repellent')"
+        >
+          <IonIcon
+            :icon="bugOutline"
+            class="icon"
+          />
           <span class="label">Repellent</span>
         </button>
 
-        <button type="button" class="action-btn" @click="onClick('trim')">
-          <IonIcon :icon="cutOutline" class="icon" />
+        <button
+          type="button"
+          class="action-btn"
+          @click="onClick('trim')"
+        >
+          <IonIcon
+            :icon="cutOutline"
+            class="icon"
+          />
           <span class="label">Trim</span>
         </button>
       </div>

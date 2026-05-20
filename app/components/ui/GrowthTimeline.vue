@@ -1,6 +1,8 @@
 <template>
   <div class="growth-timeline">
-    <h3 class="timeline-title">Časová osa růstu</h3>
+    <h3 class="timeline-title">
+      Časová osa růstu
+    </h3>
 
     <div class="timeline">
       <div
@@ -14,30 +16,62 @@
       >
         <div class="timeline-marker">
           <div class="marker-dot">
-            <Icon v-if="index < currentStageIndex" icon="tabler:check" height="16" />
-            <Icon v-else-if="index === currentStageIndex" icon="tabler:loader" height="16" class="rotating" />
-            <Icon v-else :icon="stage.icon" height="16" />
+            <Icon
+              v-if="index < currentStageIndex"
+              icon="tabler:check"
+              height="16"
+            />
+            <Icon
+              v-else-if="index === currentStageIndex"
+              icon="tabler:loader"
+              height="16"
+              class="rotating"
+            />
+            <Icon
+              v-else
+              :icon="stage.icon"
+              height="16"
+            />
           </div>
-          <div v-if="index < stages.length - 1" class="marker-line"></div>
+          <div
+            v-if="index < stages.length - 1"
+            class="marker-line"
+          />
         </div>
 
         <div class="timeline-content">
           <div class="stage-header">
             <div class="stage-icon">
-              <Icon :icon="stage.icon" height="24" />
+              <Icon
+                :icon="stage.icon"
+                height="24"
+              />
             </div>
             <div class="stage-info">
-              <div class="stage-name">{{ stage.name }}</div>
-              <div class="stage-duration">{{ stage.duration }}</div>
+              <div class="stage-name">
+                {{ stage.name }}
+              </div>
+              <div class="stage-duration">
+                {{ stage.duration }}
+              </div>
             </div>
-            <div v-if="index === currentStageIndex" class="stage-badge">
+            <div
+              v-if="index === currentStageIndex"
+              class="stage-badge"
+            >
               Probíhá
             </div>
           </div>
 
-          <div v-if="index === currentStageIndex" class="stage-progress">
+          <div
+            v-if="index === currentStageIndex"
+            class="stage-progress"
+          >
             <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: stageProgress + '%' }"></div>
+              <div
+                class="progress-fill"
+                :style="{ width: stageProgress + '%' }"
+              />
             </div>
             <div class="progress-text">
               <span>Den {{ currentDay }}</span>
@@ -45,11 +79,23 @@
             </div>
           </div>
 
-          <div class="stage-description">{{ stage.description }}</div>
+          <div class="stage-description">
+            {{ stage.description }}
+          </div>
 
-          <div v-if="stage.tips && stage.tips.length > 0" class="stage-tips">
-            <div class="tip" v-for="(tip, tipIndex) in stage.tips" :key="tipIndex">
-              <Icon icon="tabler:bulb" height="14" />
+          <div
+            v-if="stage.tips && stage.tips.length > 0"
+            class="stage-tips"
+          >
+            <div
+              v-for="(tip, tipIndex) in stage.tips"
+              :key="tipIndex"
+              class="tip"
+            >
+              <Icon
+                icon="tabler:bulb"
+                height="14"
+              />
               <span>{{ tip }}</span>
             </div>
           </div>
@@ -60,21 +106,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Icon } from "@iconify/vue";
+import { computed } from 'vue'
+import { Icon } from '@iconify/vue'
 
 interface Stage {
-  name: string;
-  icon: string;
-  duration: string;
-  days: number;
-  description: string;
-  tips?: string[];
+  name: string
+  icon: string
+  duration: string
+  days: number
+  description: string
+  tips?: string[]
 }
 
 const props = defineProps<{
-  currentDay: number;
-}>();
+  currentDay: number
+}>()
 
 const stages: Stage[] = [
   {
@@ -149,33 +195,33 @@ const stages: Stage[] = [
       'Příprava na sklizeň'
     ]
   }
-];
+]
 
 const currentStageIndex = computed(() => {
-  let totalDays = 0;
+  let totalDays = 0
   for (let i = 0; i < stages.length; i++) {
-    totalDays += stages[i]?.days ?? 0;
+    totalDays += stages[i]?.days ?? 0
     if (props.currentDay <= totalDays) {
-      return i;
+      return i
     }
   }
-  return stages.length - 1;
-});
+  return stages.length - 1
+})
 
-const currentStage = computed(() => stages[currentStageIndex.value]);
+const currentStage = computed(() => stages[currentStageIndex.value])
 
 const daysIntoCurrentStage = computed(() => {
-  let totalDays = 0;
+  let totalDays = 0
   for (let i = 0; i < currentStageIndex.value; i++) {
-    totalDays += stages[i]?.days ?? 0;
+    totalDays += stages[i]?.days ?? 0
   }
-  return props.currentDay - totalDays;
-});
+  return props.currentDay - totalDays
+})
 
 const stageProgress = computed(() => {
-  if (!currentStage.value) return 0;
-  return Math.min(Math.round((daysIntoCurrentStage.value / currentStage.value.days) * 100), 100);
-});
+  if (!currentStage.value) return 0
+  return Math.min(Math.round((daysIntoCurrentStage.value / currentStage.value.days) * 100), 100)
+})
 </script>
 
 <style scoped>
@@ -433,4 +479,3 @@ const stageProgress = computed(() => {
   border-left-color: #666;
 }
 </style>
-

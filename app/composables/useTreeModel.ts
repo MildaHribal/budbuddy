@@ -1,7 +1,7 @@
-export function useTreeModel ()  {
-  const selectedTree = useState<string | null>("selectedTree", () => null)
+export function useTreeModel() {
+  const selectedTree = useState<string | null>('selectedTree', () => null)
 
-  return{
+  return {
     selectedTree
   }
 }

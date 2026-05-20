@@ -2,22 +2,22 @@
 import { ref } from 'vue'
 import { useNativeStorage } from './useNativeStorage'
 
-export type JournalEntryType =
-  | 'water'
-  | 'nutrients'
-  | 'trim'
-  | 'repellent'
-  | 'note'
-  | 'photo'
+export type JournalEntryType
+  = | 'water'
+    | 'nutrients'
+    | 'trim'
+    | 'repellent'
+    | 'note'
+    | 'photo'
 
 export interface JournalEntry {
   id: string
   plantId: string | number
-  date: string        // YYYY-MM-DD
+  date: string // YYYY-MM-DD
   type: JournalEntryType
   note?: string
-  photo?: string      // base64 data URL
-  amount?: string     // e.g. "500 ml" for water / nutrients dose
+  photo?: string // base64 data URL
+  amount?: string // e.g. "500 ml" for water / nutrients dose
   createdAt: string
 }
 
@@ -51,7 +51,7 @@ export const usePlantJournal = (plantId: string | number) => {
       id: Date.now().toString(),
       plantId,
       createdAt: new Date().toISOString(),
-      ...data,
+      ...data
     }
     entries.value.unshift(entry)
     await save()

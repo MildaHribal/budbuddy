@@ -1,91 +1,91 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { Icon } from "@iconify/vue";
-import { usePlants } from "~/composables/usePlants";
-import { useDayActions } from "~/composables/useDayActions";
-import { useHead } from "#imports";
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Icon } from '@iconify/vue'
+import { usePlants } from '~/composables/usePlants'
+import { useDayActions } from '~/composables/useDayActions'
+import { useHead } from '#imports'
 
 useHead({
   title: 'Dashboard'
-});
+})
 
-const { plants, loadPlantsFromStorage } = usePlants();
+const { plants, loadPlantsFromStorage } = usePlants()
 
 // Today date info
-const today = new Date();
+const today = new Date()
 const todayKey = (() => {
-  const offset = today.getTimezoneOffset();
-  const local = new Date(today.getTime() - offset * 60 * 1000);
-  return local.toISOString().split("T")[0];
-})();
+  const offset = today.getTimezoneOffset()
+  const local = new Date(today.getTime() - offset * 60 * 1000)
+  return local.toISOString().split('T')[0]
+})()
 
 const dayNames = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday'
+]
 const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-const todayName = dayNames[today.getDay()];
-const todayDate = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December'
+]
+const todayName = dayNames[today.getDay()]
+const todayDate = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`
 
 // Global day actions (tasks) for today
-const dayStore = useDayActions(todayKey);
-const globalTasks = computed(() => dayStore.actions.value);
+const dayStore = useDayActions(todayKey)
+const globalTasks = computed(() => dayStore.actions.value)
 const completedTasks = computed(
-  () => globalTasks.value.filter((t) => t.done).length,
-);
-const totalTasks = computed(() => globalTasks.value.length);
+  () => globalTasks.value.filter(t => t.done).length
+)
+const totalTasks = computed(() => globalTasks.value.length)
 const taskProgress = computed(() =>
   totalTasks.value > 0
     ? Math.round((completedTasks.value / totalTasks.value) * 100)
-    : 0,
-);
+    : 0
+)
 
 // New task input
-const newTaskText = ref("");
-const isAddingTask = ref(false);
+const newTaskText = ref('')
+const isAddingTask = ref(false)
 
 async function addTask() {
-  const label = newTaskText.value.trim();
-  if (!label) return;
-  await dayStore.add(label);
-  newTaskText.value = "";
-  isAddingTask.value = false;
+  const label = newTaskText.value.trim()
+  if (!label) return
+  await dayStore.add(label)
+  newTaskText.value = ''
+  isAddingTask.value = false
 }
 
 async function toggleTask(id: string, done: boolean) {
-  await dayStore.toggle(id, done);
+  await dayStore.toggle(id, done)
 }
 
 async function removeTask(id: string) {
-  await dayStore.remove(id);
+  await dayStore.remove(id)
 }
 
 // Per-plant stats computed from real data
-const activePlants = computed(() => plants.value);
+const activePlants = computed(() => plants.value)
 
 function getDaysSince(dateStr: string): number {
-  if (!dateStr) return 0;
-  const start = new Date(dateStr);
-  const diff = today.getTime() - start.getTime();
-  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  if (!dateStr) return 0
+  const start = new Date(dateStr)
+  const diff = today.getTime() - start.getTime()
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
 }
 
 function getStageDays(stage: string): number {
@@ -93,135 +93,147 @@ function getStageDays(stage: string): number {
     Germination: 7,
     Seedling: 21,
     Vegetative: 56,
-    Flowering: 63,
-  };
-  return map[stage] ?? 30;
+    Flowering: 63
+  }
+  return map[stage] ?? 30
 }
 
 function getStageColor(stage: string): string {
   const map: Record<string, string> = {
-    Germination: "#9fe76d",
-    Seedling: "#7bc74d",
-    Vegetative: "#4db8ff",
-    Flowering: "#ff7eb0",
-  };
-  return map[stage] ?? "#7bc74d";
+    Germination: '#9fe76d',
+    Seedling: '#7bc74d',
+    Vegetative: '#4db8ff',
+    Flowering: '#ff7eb0'
+  }
+  return map[stage] ?? '#7bc74d'
 }
 
 function getStageIcon(stage: string): string {
   const map: Record<string, string> = {
-    Germination: "tabler:seeding",
-    Seedling: "tabler:plant",
-    Vegetative: "tabler:tree",
-    Flowering: "tabler:flower",
-  };
-  return map[stage] ?? "tabler:plant";
+    Germination: 'tabler:seeding',
+    Seedling: 'tabler:plant',
+    Vegetative: 'tabler:tree',
+    Flowering: 'tabler:flower'
+  }
+  return map[stage] ?? 'tabler:plant'
 }
 
 function getHealthIcon(pct: number): string {
-  if (pct >= 80) return "tabler:heart-filled";
-  if (pct >= 50) return "tabler:heart-half";
-  return "tabler:heart-broken";
+  if (pct >= 80) return 'tabler:heart-filled'
+  if (pct >= 50) return 'tabler:heart-half'
+  return 'tabler:heart-broken'
 }
 
 function getHealthColor(pct: number): string {
-  if (pct >= 80) return "#7bc74d";
-  if (pct >= 50) return "#ffaa00";
-  return "#ff4444";
+  if (pct >= 80) return '#7bc74d'
+  if (pct >= 50) return '#ffaa00'
+  return '#ff4444'
 }
 
 // Overall stats
-const totalActivePlants = computed(() => plants.value.length);
+const totalActivePlants = computed(() => plants.value.length)
 const avgHealth = computed(() => {
-  if (!plants.value.length) return 100;
+  if (!plants.value.length) return 100
   const total = plants.value.reduce(
-    (acc: number, p: any) => acc + (p.health ?? 100),
-    0,
-  );
-  return Math.round(total / plants.value.length);
-});
+    (acc, p) => acc + (p.health ?? 100),
+    0
+  )
+  return Math.round(total / plants.value.length)
+})
 const totalDaysGrowing = computed(() => {
-  if (!plants.value.length) return 0;
+  if (!plants.value.length) return 0
   return plants.value.reduce(
-    (acc: number, p: any) => acc + getDaysSince(p.plantingDate || p.createdAt),
-    0,
-  );
-});
+    (acc, p) => acc + getDaysSince(p.plantingDate || p.createdAt),
+    0
+  )
+})
 
 // Grow tips carousel
 const tips = [
   {
-    icon: "tabler:droplet",
-    text: "Water when the top 2–3 cm of soil is dry to the touch.",
+    icon: 'tabler:droplet',
+    text: 'Water when the top 2–3 cm of soil is dry to the touch.'
   },
   {
-    icon: "tabler:temperature",
-    text: "Keep temps between 20–28 °C during the light cycle.",
+    icon: 'tabler:temperature',
+    text: 'Keep temps between 20–28 °C during the light cycle.'
   },
   {
-    icon: "tabler:wind",
-    text: "Good airflow prevents mold and strengthens stems.",
+    icon: 'tabler:wind',
+    text: 'Good airflow prevents mold and strengthens stems.'
   },
   {
-    icon: "tabler:sun",
-    text: "Monitor VPD to optimize transpiration and nutrient uptake.",
+    icon: 'tabler:sun',
+    text: 'Monitor VPD to optimize transpiration and nutrient uptake.'
   },
   {
-    icon: "tabler:test-pipe",
-    text: "Check and adjust pH before every watering session.",
-  },
-];
-const tipIndex = ref(Math.floor(Math.random() * tips.length));
-const currentTip = computed(() => tips[tipIndex.value]);
+    icon: 'tabler:test-pipe',
+    text: 'Check and adjust pH before every watering session.'
+  }
+]
+const tipIndex = ref(Math.floor(Math.random() * tips.length))
+const currentTip = computed(() => tips[tipIndex.value])
 function nextTip() {
-  tipIndex.value = (tipIndex.value + 1) % tips.length;
+  tipIndex.value = (tipIndex.value + 1) % tips.length
 }
 
 // Reload on plant changes
 function onPlantsUpdated() {
-  loadPlantsFromStorage();
+  loadPlantsFromStorage()
 }
 onMounted(() => {
-  loadPlantsFromStorage();
-  if (typeof window !== "undefined") {
-    window.addEventListener("plants-updated", onPlantsUpdated);
+  loadPlantsFromStorage()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('plants-updated', onPlantsUpdated)
   }
-});
+})
 onUnmounted(() => {
-  if (typeof window !== "undefined") {
-    window.removeEventListener("plants-updated", onPlantsUpdated);
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('plants-updated', onPlantsUpdated)
   }
-});
+})
 </script>
 
 <template>
   <div class="home-page">
     <!-- ── Hero / Date Banner ─────────────────────────────── -->
     <div class="hero-banner">
-      <div class="hero-glow"></div>
+      <div class="hero-glow" />
       <div class="hero-content">
         <div class="hero-greeting">
-          <Icon icon="tabler:leaf" :height="22" class="hero-leaf" />
+          <Icon
+            icon="tabler:leaf"
+            :height="22"
+            class="hero-leaf"
+          />
           <span>Good growing!</span>
         </div>
         <div class="hero-date-block">
-          <div class="hero-day">{{ todayName }}</div>
-          <div class="hero-full-date">{{ todayDate }}</div>
+          <div class="hero-day">
+            {{ todayName }}
+          </div>
+          <div class="hero-full-date">
+            {{ todayDate }}
+          </div>
         </div>
         <div class="hero-badges">
           <div class="hero-badge green">
-            <Icon icon="tabler:plant-2" :height="14" />
-            <span
-              >{{ totalActivePlants }} active plant{{
-                totalActivePlants !== 1 ? "s" : ""
-              }}</span
-            >
+            <Icon
+              icon="tabler:plant-2"
+              :height="14"
+            />
+            <span>{{ totalActivePlants }} active plant{{
+              totalActivePlants !== 1 ? "s" : ""
+            }}</span>
           </div>
           <div
             class="hero-badge"
             :class="taskProgress === 100 ? 'gold' : 'neutral'"
           >
-            <Icon icon="tabler:checks" :height="14" />
+            <Icon
+              icon="tabler:checks"
+              :height="14"
+            />
             <span>{{ completedTasks }}/{{ totalTasks }} tasks</span>
           </div>
         </div>
@@ -234,21 +246,35 @@ onUnmounted(() => {
         <div class="stats-row">
           <div class="stat-pill">
             <div class="stat-pill-icon green">
-              <Icon icon="tabler:plant-2" :height="20" />
+              <Icon
+                icon="tabler:plant-2"
+                :height="20"
+              />
             </div>
             <div>
-              <div class="stat-pill-value">{{ totalActivePlants }}</div>
-              <div class="stat-pill-label">Plants</div>
+              <div class="stat-pill-value">
+                {{ totalActivePlants }}
+              </div>
+              <div class="stat-pill-label">
+                Plants
+              </div>
             </div>
           </div>
 
           <div class="stat-pill">
             <div class="stat-pill-icon blue">
-              <Icon icon="tabler:calendar" :height="20" />
+              <Icon
+                icon="tabler:calendar"
+                :height="20"
+              />
             </div>
             <div>
-              <div class="stat-pill-value">{{ totalDaysGrowing }}</div>
-              <div class="stat-pill-label">Total days</div>
+              <div class="stat-pill-value">
+                {{ totalDaysGrowing }}
+              </div>
+              <div class="stat-pill-label">
+                Total days
+              </div>
             </div>
           </div>
 
@@ -264,18 +290,29 @@ onUnmounted(() => {
               />
             </div>
             <div>
-              <div class="stat-pill-value">{{ avgHealth }}%</div>
-              <div class="stat-pill-label">Avg health</div>
+              <div class="stat-pill-value">
+                {{ avgHealth }}%
+              </div>
+              <div class="stat-pill-label">
+                Avg health
+              </div>
             </div>
           </div>
 
           <div class="stat-pill">
             <div class="stat-pill-icon yellow">
-              <Icon icon="tabler:check" :height="20" />
+              <Icon
+                icon="tabler:check"
+                :height="20"
+              />
             </div>
             <div>
-              <div class="stat-pill-value">{{ taskProgress }}%</div>
-              <div class="stat-pill-label">Done today</div>
+              <div class="stat-pill-value">
+                {{ taskProgress }}%
+              </div>
+              <div class="stat-pill-label">
+                Done today
+              </div>
             </div>
           </div>
         </div>
@@ -285,10 +322,17 @@ onUnmounted(() => {
       <section class="section">
         <div class="section-header">
           <div class="section-title">
-            <Icon icon="tabler:checklist" :height="22" />
+            <Icon
+              icon="tabler:checklist"
+              :height="22"
+            />
             <span>Today's Tasks</span>
           </div>
-          <button class="add-task-btn" @click="isAddingTask = !isAddingTask" aria-label="Toggle add task">
+          <button
+            class="add-task-btn"
+            aria-label="Toggle add task"
+            @click="isAddingTask = !isAddingTask"
+          >
             <Icon
               :icon="isAddingTask ? 'tabler:x' : 'tabler:plus'"
               :height="18"
@@ -297,31 +341,40 @@ onUnmounted(() => {
         </div>
 
         <!-- Add task input -->
-        <div v-if="isAddingTask" class="add-task-row">
+        <div
+          v-if="isAddingTask"
+          class="add-task-row"
+        >
           <input
             v-model="newTaskText"
             type="text"
             placeholder="Add a task for today..."
             class="task-input"
-            @keyup.enter="addTask"
             autofocus
-          />
+            @keyup.enter="addTask"
+          >
           <button
             class="task-save-btn"
-            @click="addTask"
             :disabled="!newTaskText.trim()"
             aria-label="Save task"
+            @click="addTask"
           >
-            <Icon icon="tabler:check" :height="18" />
+            <Icon
+              icon="tabler:check"
+              :height="18"
+            />
           </button>
         </div>
 
         <!-- Task progress bar -->
-        <div v-if="totalTasks > 0" class="task-progress-bar">
+        <div
+          v-if="totalTasks > 0"
+          class="task-progress-bar"
+        >
           <div
             class="task-progress-fill"
             :style="{ width: taskProgress + '%' }"
-          ></div>
+          />
         </div>
 
         <!-- Empty state -->
@@ -329,12 +382,18 @@ onUnmounted(() => {
           v-if="globalTasks.length === 0 && !isAddingTask"
           class="tasks-empty"
         >
-          <Icon icon="tabler:clipboard-list" :height="36" />
+          <Icon
+            icon="tabler:clipboard-list"
+            :height="36"
+          />
           <span>No tasks for today. Tap + to add one!</span>
         </div>
 
         <!-- Task list -->
-        <div v-else class="tasks-list">
+        <div
+          v-else
+          class="tasks-list"
+        >
           <div
             v-for="task in globalTasks"
             :key="task.id"
@@ -344,14 +403,25 @@ onUnmounted(() => {
             <button
               class="task-check"
               :class="{ checked: task.done }"
-              @click="toggleTask(task.id, !task.done)"
               aria-label="Toggle task status"
+              @click="toggleTask(task.id, !task.done)"
             >
-              <Icon v-if="task.done" icon="tabler:check" :height="14" />
+              <Icon
+                v-if="task.done"
+                icon="tabler:check"
+                :height="14"
+              />
             </button>
             <span class="task-label">{{ task.label }}</span>
-            <button class="task-delete" @click="removeTask(task.id)" aria-label="Delete task">
-              <Icon icon="tabler:trash" :height="14" />
+            <button
+              class="task-delete"
+              aria-label="Delete task"
+              @click="removeTask(task.id)"
+            >
+              <Icon
+                icon="tabler:trash"
+                :height="14"
+              />
             </button>
           </div>
         </div>
@@ -361,27 +431,51 @@ onUnmounted(() => {
       <section class="section">
         <div class="section-header">
           <div class="section-title">
-            <Icon icon="tabler:leaf" :height="22" />
+            <Icon
+              icon="tabler:leaf"
+              :height="22"
+            />
             <span>Active Plants</span>
           </div>
-          <NuxtLink to="/my-trees" class="section-link">
+          <NuxtLink
+            to="/my-trees"
+            class="section-link"
+          >
             View all
-            <Icon icon="tabler:chevron-right" :height="16" />
+            <Icon
+              icon="tabler:chevron-right"
+              :height="16"
+            />
           </NuxtLink>
         </div>
 
         <!-- Empty state -->
-        <div v-if="activePlants.length === 0" class="plants-empty">
-          <Icon icon="tabler:plant-off" :height="48" />
+        <div
+          v-if="activePlants.length === 0"
+          class="plants-empty"
+        >
+          <Icon
+            icon="tabler:plant-off"
+            :height="48"
+          />
           <p>No plants yet</p>
-          <NuxtLink to="/my-trees" class="empty-cta">
-            <Icon icon="tabler:plus" :height="16" />
+          <NuxtLink
+            to="/my-trees"
+            class="empty-cta"
+          >
+            <Icon
+              icon="tabler:plus"
+              :height="16"
+            />
             Add your first plant
           </NuxtLink>
         </div>
 
         <!-- Plant cards -->
-        <div v-else class="plants-scroll">
+        <div
+          v-else
+          class="plants-scroll"
+        >
           <NuxtLink
             v-for="plant in activePlants"
             :key="plant.id"
@@ -394,8 +488,11 @@ onUnmounted(() => {
                 v-if="plant.photoPreview"
                 :src="plant.photoPreview"
                 :alt="plant.name"
-              />
-              <div v-else class="plant-card-placeholder">
+              >
+              <div
+                v-else
+                class="plant-card-placeholder"
+              >
                 <Icon
                   :icon="getStageIcon((plant as any).stage || 'Seedling')"
                   :height="32"
@@ -410,7 +507,7 @@ onUnmounted(() => {
                     getStageColor((plant as any).stage || 'Seedling') + '22',
                   color: getStageColor((plant as any).stage || 'Seedling'),
                   borderColor:
-                    getStageColor((plant as any).stage || 'Seedling') + '55',
+                    getStageColor((plant as any).stage || 'Seedling') + '55'
                 }"
               >
                 <Icon
@@ -430,16 +527,12 @@ onUnmounted(() => {
 
               <!-- Day progress -->
               <div class="plant-day-info">
-                <span class="plant-day-num"
-                  >Day
+                <span class="plant-day-num">Day
                   {{
                     getDaysSince((plant as any).plantingDate || plant.createdAt)
-                  }}</span
-                >
-                <span class="plant-day-total"
-                  >/ {{ getStageDays((plant as any).stage || "Seedling") }}d
-                  phase</span
-                >
+                  }}</span>
+                <span class="plant-day-total">/ {{ getStageDays((plant as any).stage || "Seedling") }}d
+                  phase</span>
               </div>
 
               <div class="plant-mini-progress">
@@ -450,16 +543,16 @@ onUnmounted(() => {
                       Math.min(
                         100,
                         (getDaysSince(
-                          (plant as any).plantingDate || plant.createdAt,
-                        ) /
-                          getStageDays((plant as any).stage || 'Seedling')) *
-                          100,
+                          (plant as any).plantingDate || plant.createdAt
+                        )
+                          / getStageDays((plant as any).stage || 'Seedling'))
+                          * 100
                       ) + '%',
                     background: getStageColor(
-                      (plant as any).stage || 'Seedling',
-                    ),
+                      (plant as any).stage || 'Seedling'
+                    )
                   }"
-                ></div>
+                />
               </div>
 
               <!-- Health -->
@@ -468,12 +561,12 @@ onUnmounted(() => {
                   :icon="getHealthIcon((plant as any).health ?? 100)"
                   :height="13"
                   :style="{
-                    color: getHealthColor((plant as any).health ?? 100),
+                    color: getHealthColor((plant as any).health ?? 100)
                   }"
                 />
                 <span
                   :style="{
-                    color: getHealthColor((plant as any).health ?? 100),
+                    color: getHealthColor((plant as any).health ?? 100)
                   }"
                 >
                   {{ (plant as any).health ?? 100 }}%
@@ -486,28 +579,60 @@ onUnmounted(() => {
 
       <!-- ── Quick Actions ─────────────────────────────────── -->
       <section class="section">
-        <div class="section-title" style="margin-bottom: 14px">
-          <Icon icon="tabler:bolt" :height="22" />
+        <div
+          class="section-title"
+          style="margin-bottom: 14px"
+        >
+          <Icon
+            icon="tabler:bolt"
+            :height="22"
+          />
           <span>Quick Actions</span>
         </div>
 
         <div class="quick-actions-grid">
-          <NuxtLink to="/my-trees" class="qa-btn">
-            <div class="qa-icon" style="background: rgba(123, 199, 77, 0.15)">
-              <Icon icon="tabler:plant-2" :height="26" style="color: #7bc74d" />
+          <NuxtLink
+            to="/my-trees"
+            class="qa-btn"
+          >
+            <div
+              class="qa-icon"
+              style="background: rgba(123, 199, 77, 0.15)"
+            >
+              <Icon
+                icon="tabler:plant-2"
+                :height="26"
+                style="color: #7bc74d"
+              />
             </div>
             <span>My Plants</span>
           </NuxtLink>
 
-          <NuxtLink to="/ai-assistant" class="qa-btn">
-            <div class="qa-icon" style="background: rgba(79, 195, 247, 0.15)">
-              <Icon icon="tabler:brain" :height="26" style="color: #4fc3f7" />
+          <NuxtLink
+            to="/ai-assistant"
+            class="qa-btn"
+          >
+            <div
+              class="qa-icon"
+              style="background: rgba(79, 195, 247, 0.15)"
+            >
+              <Icon
+                icon="tabler:brain"
+                :height="26"
+                style="color: #4fc3f7"
+              />
             </div>
             <span>AI Help</span>
           </NuxtLink>
 
-          <NuxtLink to="/nutriens-calc" class="qa-btn">
-            <div class="qa-icon" style="background: rgba(255, 170, 0, 0.15)">
+          <NuxtLink
+            to="/nutriens-calc"
+            class="qa-btn"
+          >
+            <div
+              class="qa-icon"
+              style="background: rgba(255, 170, 0, 0.15)"
+            >
               <Icon
                 icon="solar:calculator-broken"
                 :height="26"
@@ -517,8 +642,14 @@ onUnmounted(() => {
             <span>Nutrients</span>
           </NuxtLink>
 
-          <NuxtLink to="/stats" class="qa-btn">
-            <div class="qa-icon" style="background: rgba(167, 139, 250, 0.15)">
+          <NuxtLink
+            to="/stats"
+            class="qa-btn"
+          >
+            <div
+              class="qa-icon"
+              style="background: rgba(167, 139, 250, 0.15)"
+            >
               <Icon
                 icon="tabler:chart-bar"
                 :height="26"
@@ -531,17 +662,34 @@ onUnmounted(() => {
       </section>
 
       <!-- ── Grow Tip ──────────────────────────────────────── -->
-      <section class="section tip-section" @click="nextTip">
+      <section
+        class="section tip-section"
+        @click="nextTip"
+      >
         <div class="tip-header">
           <div class="tip-title">
-            <Icon icon="tabler:bulb" :height="18" style="color: #ffaa00" />
+            <Icon
+              icon="tabler:bulb"
+              :height="18"
+              style="color: #ffaa00"
+            />
             <span>Grow Tip</span>
           </div>
           <span class="tip-tap">Tap for next</span>
         </div>
         <div class="tip-body">
-          <Icon v-if="currentTip" :icon="currentTip.icon" :height="28" class="tip-icon" />
-          <p v-if="currentTip" class="tip-text">{{ currentTip.text }}</p>
+          <Icon
+            v-if="currentTip"
+            :icon="currentTip.icon"
+            :height="28"
+            class="tip-icon"
+          />
+          <p
+            v-if="currentTip"
+            class="tip-text"
+          >
+            {{ currentTip.text }}
+          </p>
         </div>
       </section>
     </div>

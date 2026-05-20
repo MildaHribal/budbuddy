@@ -16,7 +16,6 @@ const items = ref<DropdownMenuItem[]>([
     icon: 'i-lucide-cog'
   }
 ])
-
 </script>
 
 <template>
@@ -31,7 +30,12 @@ const items = ref<DropdownMenuItem[]>([
       content: 'w-48'
     }"
   >
-    <UButton aria-label="Open menu" icon="i-lucide-menu" color="neutral" variant="outline" />
+    <UButton
+      aria-label="Open menu"
+      icon="i-lucide-menu"
+      color="neutral"
+      variant="outline"
+    />
   </UDropdownMenu>
 </template>
 

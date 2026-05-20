@@ -1,34 +1,50 @@
 <template>
   <div class="stats-card">
-    <div class="stats-icon" :style="{ background: iconBg }">
-      <Icon :icon="icon" :height="iconSize" :style="{ color: iconColor }" />
+    <div
+      class="stats-icon"
+      :style="{ background: iconBg }"
+    >
+      <Icon
+        :icon="icon"
+        :height="iconSize"
+        :style="{ color: iconColor }"
+      />
     </div>
     <div class="stats-content">
-      <div class="stats-label">{{ label }}</div>
-      <div class="stats-value">{{ value }}</div>
-      <div v-if="subtitle" class="stats-subtitle">{{ subtitle }}</div>
+      <div class="stats-label">
+        {{ label }}
+      </div>
+      <div class="stats-value">
+        {{ value }}
+      </div>
+      <div
+        v-if="subtitle"
+        class="stats-subtitle"
+      >
+        {{ subtitle }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
+import { Icon } from '@iconify/vue'
 
 interface Props {
-  icon: string;
-  label: string;
-  value: string | number;
-  subtitle?: string;
-  iconColor?: string;
-  iconBg?: string;
-  iconSize?: number;
+  icon: string
+  label: string
+  value: string | number
+  subtitle?: string
+  iconColor?: string
+  iconBg?: string
+  iconSize?: number
 }
 
 withDefaults(defineProps<Props>(), {
   iconSize: 24,
   iconColor: '#7bc74d',
   iconBg: 'rgba(123, 199, 77, 0.15)'
-});
+})
 </script>
 
 <style scoped>
@@ -89,4 +105,3 @@ withDefaults(defineProps<Props>(), {
   font-weight: 500;
 }
 </style>
-

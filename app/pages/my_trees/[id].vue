@@ -1,388 +1,374 @@
 <script setup lang="ts">
-import { useRoute, useRouter } from "vue-router";
-import { computed, ref, onMounted, nextTick } from "vue";
-import { Icon } from "@iconify/vue";
-import { usePlants } from "~/composables/usePlants";
-import { usePlantJournal } from "~/composables/usePlantJournal";
-import type { JournalEntryType } from "~/composables/usePlantJournal";
+import { useRoute, useRouter } from 'vue-router'
+import { computed, ref, onMounted, nextTick } from 'vue'
+import { Icon } from '@iconify/vue'
+import { usePlants } from '~/composables/usePlants'
+import { usePlantJournal } from '~/composables/usePlantJournal'
+import type { JournalEntryType } from '~/composables/usePlantJournal'
 
-const route = useRoute();
-const router = useRouter();
-const { plants, loadPlantsFromStorage, editPlant, deletePlant } = usePlants();
+const route = useRoute()
+const router = useRouter()
+const { plants, loadPlantsFromStorage, editPlant, deletePlant } = usePlants()
 
 // ── Route & plant ────────────────────────────────
-const plantId = route.params.id as string;
-onMounted(() => loadPlantsFromStorage());
+const plantId = route.params.id as string
+onMounted(() => loadPlantsFromStorage())
 
 const plant = computed(
-  () => plants.value.find((p) => String(p.id) === String(plantId)) ?? null,
-);
+  () => plants.value.find(p => String(p.id) === String(plantId)) ?? null
+)
 
 // ── Journal composable ───────────────────────────
-const journal = usePlantJournal(plantId);
+const journal = usePlantJournal(plantId)
 
 // ── Date selector ────────────────────────────────
-const selectedDate = ref(localToday());
+const selectedDate = ref(localToday())
 function localToday() {
-  const d = new Date();
-  const off = d.getTimezoneOffset();
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
+  const d = new Date()
+  const off = d.getTimezoneOffset()
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10)
 }
 
 // Week: Mon – Sun
 function buildWeek() {
-  const base = new Date(selectedDate.value + "T12:00:00");
-  const dow = base.getDay() === 0 ? 6 : base.getDay() - 1;
-  const mon = new Date(base);
-  mon.setDate(base.getDate() - dow);
+  const base = new Date(selectedDate.value + 'T12:00:00')
+  const dow = base.getDay() === 0 ? 6 : base.getDay() - 1
+  const mon = new Date(base)
+  mon.setDate(base.getDate() - dow)
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(mon);
-    d.setDate(mon.getDate() + i);
-    const off = d.getTimezoneOffset();
-    const iso = new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
-    const short = d.toLocaleDateString("en", { weekday: "short" }).slice(0, 1);
-    return { iso, day: d.getDate(), label: short };
-  });
+    const d = new Date(mon)
+    d.setDate(mon.getDate() + i)
+    const off = d.getTimezoneOffset()
+    const iso = new Date(d.getTime() - off * 60000).toISOString().slice(0, 10)
+    const short = d.toLocaleDateString('en', { weekday: 'short' }).slice(0, 1)
+    return { iso, day: d.getDate(), label: short }
+  })
 }
-const week = computed(() => buildWeek());
+const week = computed(() => buildWeek())
 
 function selectDate(iso: string) {
-  selectedDate.value = iso;
+  selectedDate.value = iso
 }
 function prevWeek() {
-  const d = new Date(selectedDate.value + "T12:00:00");
-  d.setDate(d.getDate() - 7);
-  const off = d.getTimezoneOffset();
+  const d = new Date(selectedDate.value + 'T12:00:00')
+  d.setDate(d.getDate() - 7)
+  const off = d.getTimezoneOffset()
   selectedDate.value = new Date(d.getTime() - off * 60000)
     .toISOString()
-    .slice(0, 10);
+    .slice(0, 10)
 }
 function nextWeek() {
-  const d = new Date(selectedDate.value + "T12:00:00");
-  d.setDate(d.getDate() + 7);
-  const off = d.getTimezoneOffset();
+  const d = new Date(selectedDate.value + 'T12:00:00')
+  d.setDate(d.getDate() + 7)
+  const off = d.getTimezoneOffset()
   selectedDate.value = new Date(d.getTime() - off * 60000)
     .toISOString()
-    .slice(0, 10);
+    .slice(0, 10)
 }
 
 // ── Tab navigation ───────────────────────────────
-type Tab = "journal" | "info" | "gallery";
-const activeTab = ref<Tab>("journal");
+type Tab = 'journal' | 'info' | 'gallery'
+const activeTab = ref<Tab>('journal')
 
 // ── Journal entries for selected date ───────────
-const todayEntries = computed(() => journal.entriesForDate(selectedDate.value));
-const allPhotos = computed(() => journal.allPhotos());
+const todayEntries = computed(() => journal.entriesForDate(selectedDate.value))
+const allPhotos = computed(() => journal.allPhotos())
 
 // ── Action buttons ───────────────────────────────
 interface ActionBtn {
-  key: JournalEntryType;
-  label: string;
-  icon: string;
-  color: string;
-  bg: string;
+  key: JournalEntryType
+  label: string
+  icon: string
+  color: string
+  bg: string
 }
 const actionButtons: ActionBtn[] = [
   {
-    key: "water",
-    label: "Water",
-    icon: "tabler:droplet-filled",
-    color: "#4fc3f7",
-    bg: "rgba(79,195,247,0.15)",
+    key: 'water',
+    label: 'Water',
+    icon: 'tabler:droplet-filled',
+    color: '#4fc3f7',
+    bg: 'rgba(79,195,247,0.15)'
   },
   {
-    key: "nutrients",
-    label: "Nutrients",
-    icon: "tabler:flask",
-    color: "#a78bfa",
-    bg: "rgba(167,139,250,0.15)",
+    key: 'nutrients',
+    label: 'Nutrients',
+    icon: 'tabler:flask',
+    color: '#a78bfa',
+    bg: 'rgba(167,139,250,0.15)'
   },
   {
-    key: "trim",
-    label: "Trim",
-    icon: "tabler:cut",
-    color: "#34d399",
-    bg: "rgba(52,211,153,0.15)",
+    key: 'trim',
+    label: 'Trim',
+    icon: 'tabler:cut',
+    color: '#34d399',
+    bg: 'rgba(52,211,153,0.15)'
   },
   {
-    key: "repellent",
-    label: "Repellent",
-    icon: "tabler:bug",
-    color: "#f97316",
-    bg: "rgba(249,115,22,0.15)",
+    key: 'repellent',
+    label: 'Repellent',
+    icon: 'tabler:bug',
+    color: '#f97316',
+    bg: 'rgba(249,115,22,0.15)'
   },
   {
-    key: "note",
-    label: "Note",
-    icon: "tabler:notes",
-    color: "#fbbf24",
-    bg: "rgba(251,191,36,0.15)",
+    key: 'note',
+    label: 'Note',
+    icon: 'tabler:notes',
+    color: '#fbbf24',
+    bg: 'rgba(251,191,36,0.15)'
   },
   {
-    key: "photo",
-    label: "Photo",
-    icon: "tabler:camera",
-    color: "#ec4899",
-    bg: "rgba(236,72,153,0.15)",
-  },
-];
+    key: 'photo',
+    label: 'Photo',
+    icon: 'tabler:camera',
+    color: '#ec4899',
+    bg: 'rgba(236,72,153,0.15)'
+  }
+]
 
 const entryColors: Record<JournalEntryType, string> = {
-  water: "#4fc3f7",
-  nutrients: "#a78bfa",
-  trim: "#34d399",
-  repellent: "#f97316",
-  note: "#fbbf24",
-  photo: "#ec4899",
-};
+  water: '#4fc3f7',
+  nutrients: '#a78bfa',
+  trim: '#34d399',
+  repellent: '#f97316',
+  note: '#fbbf24',
+  photo: '#ec4899'
+}
 const entryIcons: Record<JournalEntryType, string> = {
-  water: "tabler:droplet-filled",
-  nutrients: "tabler:flask",
-  trim: "tabler:cut",
-  repellent: "tabler:bug",
-  note: "tabler:notes",
-  photo: "tabler:camera",
-};
-
-// ── Quick action (water / nutrients / trim / repellent) ──────
-async function quickAction(key: JournalEntryType) {
-  if (key === "note") {
-    openNoteModal();
-    return;
-  }
-  if (key === "photo") {
-    triggerPhotoPicker();
-    return;
-  }
-  await journal.addEntry({ type: key, date: selectedDate.value });
+  water: 'tabler:droplet-filled',
+  nutrients: 'tabler:flask',
+  trim: 'tabler:cut',
+  repellent: 'tabler:bug',
+  note: 'tabler:notes',
+  photo: 'tabler:camera'
 }
 
 // ── Note modal ────────────────────────────────────
-const showNoteModal = ref(false);
-const noteText = ref("");
-const noteEditId = ref<string | null>(null);
-const noteAmount = ref("");
+const showNoteModal = ref(false)
+const noteText = ref('')
+const noteEditId = ref<string | null>(null)
+const noteAmount = ref('')
 
 function openNoteModal(id?: string) {
-  noteEditId.value = id ?? null;
+  noteEditId.value = id ?? null
   if (id) {
-    const e = journal.entries.value.find((x) => x.id === id);
-    noteText.value = e?.note ?? "";
-    noteAmount.value = e?.amount ?? "";
+    const e = journal.entries.value.find(x => x.id === id)
+    noteText.value = e?.note ?? ''
+    noteAmount.value = e?.amount ?? ''
   } else {
-    noteText.value = "";
-    noteAmount.value = "";
+    noteText.value = ''
+    noteAmount.value = ''
   }
-  showNoteModal.value = true;
+  showNoteModal.value = true
   nextTick(() =>
-    (document.querySelector(".note-textarea") as HTMLTextAreaElement)?.focus(),
-  );
+    (document.querySelector('.note-textarea') as HTMLTextAreaElement)?.focus()
+  )
 }
 
 async function saveNote() {
-  if (!noteText.value.trim()) return;
+  if (!noteText.value.trim()) return
   if (noteEditId.value) {
     await journal.updateEntry(noteEditId.value, {
       note: noteText.value.trim(),
-      amount: noteAmount.value.trim(),
-    });
+      amount: noteAmount.value.trim()
+    })
   } else {
     await journal.addEntry({
-      type: "note",
+      type: 'note',
       date: selectedDate.value,
       note: noteText.value.trim(),
-      amount: noteAmount.value.trim(),
-    });
+      amount: noteAmount.value.trim()
+    })
   }
-  showNoteModal.value = false;
-  noteText.value = "";
-  noteAmount.value = "";
-  noteEditId.value = null;
+  showNoteModal.value = false
+  noteText.value = ''
+  noteAmount.value = ''
+  noteEditId.value = null
 }
 
 // ── Amount modal (for water / nutrients) ───────────
-const showAmountModal = ref(false);
-const amountModalType = ref<JournalEntryType>("water");
-const amountValue = ref("");
+const showAmountModal = ref(false)
+const amountModalType = ref<JournalEntryType>('water')
+const amountValue = ref('')
 
 function openAmountModal(type: JournalEntryType) {
-  amountModalType.value = type;
-  amountValue.value = "";
-  showAmountModal.value = true;
+  amountModalType.value = type
+  amountValue.value = ''
+  showAmountModal.value = true
   nextTick(() =>
-    (document.querySelector(".amount-input") as HTMLInputElement)?.focus(),
-  );
+    (document.querySelector('.amount-input') as HTMLInputElement)?.focus()
+  )
 }
 
 async function saveAmount() {
   await journal.addEntry({
     type: amountModalType.value,
     date: selectedDate.value,
-    amount: amountValue.value.trim(),
-  });
-  showAmountModal.value = false;
+    amount: amountValue.value.trim()
+  })
+  showAmountModal.value = false
 }
 
-// Override quickAction for water/nutrients to ask for amount
+// Water/nutrients ask for an amount first; other actions log immediately.
 async function handleAction(key: JournalEntryType) {
-  if (key === "note") {
-    openNoteModal();
-    return;
+  if (key === 'note') {
+    openNoteModal()
+    return
   }
-  if (key === "photo") {
-    triggerPhotoPicker();
-    return;
+  if (key === 'photo') {
+    triggerPhotoPicker()
+    return
   }
-  if (key === "water" || key === "nutrients") {
-    openAmountModal(key);
-    return;
+  if (key === 'water' || key === 'nutrients') {
+    openAmountModal(key)
+    return
   }
-  await journal.addEntry({ type: key, date: selectedDate.value });
+  await journal.addEntry({ type: key, date: selectedDate.value })
 }
 
 // ── Photo picker ──────────────────────────────────
-const photoInputRef = ref<HTMLInputElement | null>(null);
+const photoInputRef = ref<HTMLInputElement | null>(null)
 function triggerPhotoPicker() {
-  photoInputRef.value?.click();
+  photoInputRef.value?.click()
 }
 
 async function onPhotoSelected(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  const reader = new FileReader()
   reader.onload = async (ev) => {
-    const base64 = ev.target?.result as string;
+    const base64 = ev.target?.result as string
     await journal.addEntry({
-      type: "photo",
+      type: 'photo',
       date: selectedDate.value,
-      photo: base64,
-    });
-  };
+      photo: base64
+    })
+  }
   reader.readAsDataURL(file);
-  (e.target as HTMLInputElement).value = "";
+  (e.target as HTMLInputElement).value = ''
 }
 
 // ── Lightbox ──────────────────────────────────────
-const lightboxPhoto = ref<string | null>(null);
+const lightboxPhoto = ref<string | null>(null)
 
 // ── Delete entry ──────────────────────────────────
 async function deleteEntry(id: string) {
-  await journal.removeEntry(id);
+  await journal.removeEntry(id)
 }
 
 // ── Plant helpers ─────────────────────────────────
 function getDaysSince(dateStr: string): number {
-  if (!dateStr) return 0;
-  const diff = Date.now() - new Date(dateStr).getTime();
-  return Math.max(0, Math.floor(diff / 86400000));
+  if (!dateStr) return 0
+  const diff = Date.now() - new Date(dateStr).getTime()
+  return Math.max(0, Math.floor(diff / 86400000))
 }
 function getStageTotalDays(stage: string): number {
   return (
     { Germination: 7, Seedling: 21, Vegetative: 56, Flowering: 63 }[
       stage as never
     ] ?? 30
-  );
+  )
 }
 function getStageColor(stage: string): string {
   return (
     {
-      Germination: "#9fe76d",
-      Seedling: "#7bc74d",
-      Vegetative: "#4fc3f7",
-      Flowering: "#f472b6",
-    }[stage as never] ?? "#7bc74d"
-  );
+      Germination: '#9fe76d',
+      Seedling: '#7bc74d',
+      Vegetative: '#4fc3f7',
+      Flowering: '#f472b6'
+    }[stage as never] ?? '#7bc74d'
+  )
 }
 function getStageIcon(stage: string): string {
   return (
     {
-      Germination: "tabler:seeding",
-      Seedling: "tabler:plant",
-      Vegetative: "tabler:tree",
-      Flowering: "tabler:flower",
-    }[stage as never] ?? "tabler:plant"
-  );
+      Germination: 'tabler:seeding',
+      Seedling: 'tabler:plant',
+      Vegetative: 'tabler:tree',
+      Flowering: 'tabler:flower'
+    }[stage as never] ?? 'tabler:plant'
+  )
 }
 
-const plantStage = computed(() => (plant.value as any)?.stage ?? "Seedling");
+const plantStage = computed(() => plant.value?.stage ?? 'Seedling')
 const plantDate = computed(
-  () => (plant.value as any)?.plantingDate ?? plant.value?.createdAt ?? "",
-);
-const daysInGrow = computed(() => getDaysSince(plantDate.value));
+  () => plant.value?.plantingDate ?? plant.value?.createdAt ?? ''
+)
+const daysInGrow = computed(() => getDaysSince(plantDate.value))
 const stagePct = computed(() =>
   Math.min(
     100,
-    Math.round((daysInGrow.value / getStageTotalDays(plantStage.value)) * 100),
-  ),
-);
+    Math.round((daysInGrow.value / getStageTotalDays(plantStage.value)) * 100)
+  )
+)
 
 function fmtDate(iso: string): string {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}.${m}.${y}`;
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  return `${d}.${m}.${y}`
 }
 
 // ── Entry label ───────────────────────────────────
 function entryLabel(type: JournalEntryType): string {
   return (
     {
-      water: "Watered",
-      nutrients: "Nutrients",
-      trim: "Trimmed",
-      repellent: "Repellent",
-      note: "Note",
-      photo: "Photo",
+      water: 'Watered',
+      nutrients: 'Nutrients',
+      trim: 'Trimmed',
+      repellent: 'Repellent',
+      note: 'Note',
+      photo: 'Photo'
     }[type] ?? type
-  );
+  )
 }
 
 // Format time
 function fmtTime(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+  const d = new Date(iso)
+  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
 }
 
-const goBack = () => router.push("/my-trees");
+const goBack = () => router.push('/my-trees')
 
 // ── Edit Plant Modal ──────────────────────────────
-const showEditModal = ref(false);
+const showEditModal = ref(false)
 const editForm = ref({
-  name: "",
-  strain: "",
-  potSize: "",
-  location: "",
-  medium: "",
-  plantingDate: "",
-  stage: "",
-});
+  name: '',
+  strain: '',
+  potSize: '',
+  location: '',
+  medium: '',
+  plantingDate: '',
+  stage: ''
+})
 
 function openEditModal() {
-  if (!plant.value) return;
+  if (!plant.value) return
 
   editForm.value = {
     name: plant.value.name,
-    strain: (plant.value as any).strain || "",
-    potSize: (plant.value as any).potSize || "",
-    location: (plant.value as any).location || "",
-    medium: (plant.value as any).medium || "",
-    plantingDate: (plant.value as any).plantingDate || "",
-    stage: (plant.value as any).stage || "Seedling",
-  };
-  showEditModal.value = true;
+    strain: plant.value.strain || '',
+    potSize: plant.value.potSize || '',
+    location: plant.value.location || '',
+    medium: plant.value.medium || '',
+    plantingDate: plant.value.plantingDate || '',
+    stage: plant.value.stage || 'Seedling'
+  }
+  showEditModal.value = true
 }
 
 function saveEdit() {
-  if (!plant.value) return;
+  if (!plant.value) return
 
-  editPlant(plantId, editForm.value);
-  showEditModal.value = false;
+  editPlant(plantId, editForm.value)
+  showEditModal.value = false
 }
 
 function handleDeletePlant() {
-  if (confirm("Are you sure you want to delete this plant?")) {
-
-    deletePlant(plantId);
-    router.push("/my-trees");
+  if (confirm('Are you sure you want to delete this plant?')) {
+    deletePlant(plantId)
+    router.push('/my-trees')
   }
 }
 </script>
@@ -392,15 +378,31 @@ function handleDeletePlant() {
     <!-- ═══════════════════════════════════════════
          LOADING / NOT FOUND
     ═══════════════════════════════════════════ -->
-    <div v-if="!plant && plants.length === 0" class="state-screen">
-      <div class="spinner"></div>
+    <div
+      v-if="!plant && plants.length === 0"
+      class="state-screen"
+    >
+      <div class="spinner" />
       <p>Loading…</p>
     </div>
-    <div v-else-if="!plant" class="state-screen">
-      <Icon icon="tabler:plant-off" :height="64" style="color: #555" />
+    <div
+      v-else-if="!plant"
+      class="state-screen"
+    >
+      <Icon
+        icon="tabler:plant-off"
+        :height="64"
+        style="color: #555"
+      />
       <h2>Plant not found</h2>
-      <button class="btn-accent" @click="goBack">
-        <Icon icon="tabler:arrow-left" :height="18" /> Go back
+      <button
+        class="btn-accent"
+        @click="goBack"
+      >
+        <Icon
+          icon="tabler:arrow-left"
+          :height="18"
+        /> Go back
       </button>
     </div>
 
@@ -416,26 +418,38 @@ function handleDeletePlant() {
           :src="plant.photoPreview"
           class="hero-img"
           :alt="plant.name"
-        />
+        >
         <div
           v-else
           class="hero-gradient"
           :style="{
-            background: `linear-gradient(135deg, ${getStageColor(plantStage)}22 0%, #0a0a0a 100%)`,
+            background: `linear-gradient(135deg, ${getStageColor(plantStage)}22 0%, #0a0a0a 100%)`
           }"
-        ></div>
+        />
 
         <!-- overlay -->
-        <div class="hero-overlay"></div>
+        <div class="hero-overlay" />
 
         <!-- back button -->
-        <button class="back-btn" @click="goBack">
-          <Icon icon="tabler:arrow-left" :height="22" />
+        <button
+          class="back-btn"
+          @click="goBack"
+        >
+          <Icon
+            icon="tabler:arrow-left"
+            :height="22"
+          />
         </button>
 
         <!-- edit button -->
-        <button class="edit-btn" @click="openEditModal">
-          <Icon icon="tabler:pencil" :height="20" />
+        <button
+          class="edit-btn"
+          @click="openEditModal"
+        >
+          <Icon
+            icon="tabler:pencil"
+            :height="20"
+          />
         </button>
 
         <!-- stage badge -->
@@ -444,16 +458,21 @@ function handleDeletePlant() {
           :style="{
             background: getStageColor(plantStage) + '22',
             borderColor: getStageColor(plantStage) + '66',
-            color: getStageColor(plantStage),
+            color: getStageColor(plantStage)
           }"
         >
-          <Icon :icon="getStageIcon(plantStage)" :height="14" />
+          <Icon
+            :icon="getStageIcon(plantStage)"
+            :height="14"
+          />
           <span>{{ plantStage }}</span>
         </div>
 
         <!-- hero info -->
         <div class="hero-info">
-          <h1 class="hero-name">{{ plant.name || "Unnamed Plant" }}</h1>
+          <h1 class="hero-name">
+            {{ plant.name || "Unnamed Plant" }}
+          </h1>
           <p class="hero-strain">
             {{ (plant as any).strain || "Unknown strain" }}
           </p>
@@ -462,19 +481,17 @@ function handleDeletePlant() {
           <div class="hero-progress">
             <div class="progress-labels">
               <span>Day {{ daysInGrow }}</span>
-              <span
-                >{{ stagePct }}% of {{ getStageTotalDays(plantStage) }}d
-                phase</span
-              >
+              <span>{{ stagePct }}% of {{ getStageTotalDays(plantStage) }}d
+                phase</span>
             </div>
             <div class="progress-track">
               <div
                 class="progress-fill"
                 :style="{
                   width: stagePct + '%',
-                  background: getStageColor(plantStage),
+                  background: getStageColor(plantStage)
                 }"
-              ></div>
+              />
             </div>
           </div>
         </div>
@@ -507,11 +524,20 @@ function handleDeletePlant() {
       <!-- ════════════════════════════════════════
            TAB: JOURNAL
       ════════════════════════════════════════ -->
-      <div v-show="activeTab === 'journal'" class="tab-content">
+      <div
+        v-show="activeTab === 'journal'"
+        class="tab-content"
+      >
         <!-- Week date picker -->
         <div class="week-picker">
-          <button class="week-nav" @click="prevWeek">
-            <Icon icon="tabler:chevron-left" :height="18" />
+          <button
+            class="week-nav"
+            @click="prevWeek"
+          >
+            <Icon
+              icon="tabler:chevron-left"
+              :height="18"
+            />
           </button>
           <div class="week-days">
             <button
@@ -521,8 +547,8 @@ function handleDeletePlant() {
                 'day-btn',
                 {
                   active: d.iso === selectedDate,
-                  today: d.iso === localToday(),
-                },
+                  today: d.iso === localToday()
+                }
               ]"
               @click="selectDate(d.iso)"
             >
@@ -530,8 +556,14 @@ function handleDeletePlant() {
               <span class="day-num">{{ d.day }}</span>
             </button>
           </div>
-          <button class="week-nav" @click="nextWeek">
-            <Icon icon="tabler:chevron-right" :height="18" />
+          <button
+            class="week-nav"
+            @click="nextWeek"
+          >
+            <Icon
+              icon="tabler:chevron-right"
+              :height="18"
+            />
           </button>
         </div>
 
@@ -545,7 +577,10 @@ function handleDeletePlant() {
             @click="handleAction(btn.key)"
           >
             <div class="action-btn-icon">
-              <Icon :icon="btn.icon" :height="24" />
+              <Icon
+                :icon="btn.icon"
+                :height="24"
+              />
             </div>
             <span>{{ btn.label }}</span>
           </button>
@@ -554,22 +589,37 @@ function handleDeletePlant() {
         <!-- Entries for selected date -->
         <div class="entries-section">
           <div class="entries-header">
-            <Icon icon="tabler:list" :height="16" />
+            <Icon
+              icon="tabler:list"
+              :height="16"
+            />
             <span>{{ fmtDate(selectedDate) }}</span>
-            <span class="entries-count" v-if="todayEntries.length">{{
+            <span
+              v-if="todayEntries.length"
+              class="entries-count"
+            >{{
               todayEntries.length
             }}</span>
           </div>
 
-          <div v-if="todayEntries.length === 0" class="entries-empty">
-            <Icon icon="tabler:mood-empty" :height="36" />
+          <div
+            v-if="todayEntries.length === 0"
+            class="entries-empty"
+          >
+            <Icon
+              icon="tabler:mood-empty"
+              :height="36"
+            />
             <p>
-              No entries for this day.<br />Use the actions above to log
+              No entries for this day.<br>Use the actions above to log
               something.
             </p>
           </div>
 
-          <div v-else class="entries-list">
+          <div
+            v-else
+            class="entries-list"
+          >
             <div
               v-for="entry in todayEntries"
               :key="entry.id"
@@ -579,7 +629,7 @@ function handleDeletePlant() {
               <div
                 class="entry-line"
                 :style="{ background: entryColors[entry.type] }"
-              ></div>
+              />
 
               <div class="entry-body">
                 <div class="entry-left">
@@ -596,14 +646,20 @@ function handleDeletePlant() {
                   <div class="entry-text">
                     <div class="entry-label">
                       {{ entryLabel(entry.type) }}
-                      <span v-if="entry.amount" class="entry-amount"
-                        >· {{ entry.amount }}</span
-                      >
+                      <span
+                        v-if="entry.amount"
+                        class="entry-amount"
+                      >· {{ entry.amount }}</span>
                     </div>
-                    <div v-if="entry.note" class="entry-note">
+                    <div
+                      v-if="entry.note"
+                      class="entry-note"
+                    >
                       {{ entry.note }}
                     </div>
-                    <div class="entry-time">{{ fmtTime(entry.createdAt) }}</div>
+                    <div class="entry-time">
+                      {{ fmtTime(entry.createdAt) }}
+                    </div>
                   </div>
                 </div>
 
@@ -613,20 +669,29 @@ function handleDeletePlant() {
                     class="entry-action-btn"
                     @click="openNoteModal(entry.id)"
                   >
-                    <Icon icon="tabler:pencil" :height="15" />
+                    <Icon
+                      icon="tabler:pencil"
+                      :height="15"
+                    />
                   </button>
                   <button
                     v-if="entry.photo"
                     class="entry-action-btn"
                     @click="lightboxPhoto = entry.photo!"
                   >
-                    <Icon icon="tabler:eye" :height="15" />
+                    <Icon
+                      icon="tabler:eye"
+                      :height="15"
+                    />
                   </button>
                   <button
                     class="entry-action-btn danger"
                     @click="deleteEntry(entry.id)"
                   >
-                    <Icon icon="tabler:trash" :height="15" />
+                    <Icon
+                      icon="tabler:trash"
+                      :height="15"
+                    />
                   </button>
                 </div>
               </div>
@@ -637,7 +702,7 @@ function handleDeletePlant() {
                 :src="entry.photo"
                 class="entry-photo"
                 @click="lightboxPhoto = entry.photo"
-              />
+              >
             </div>
           </div>
         </div>
@@ -647,43 +712,83 @@ function handleDeletePlant() {
       <!-- ════════════════════════════════════════
            TAB: INFO
       ════════════════════════════════════════ -->
-      <div v-show="activeTab === 'info'" class="tab-content">
+      <div
+        v-show="activeTab === 'info'"
+        class="tab-content"
+      >
         <div class="info-card">
           <div class="info-row">
             <div class="info-label">
-              <Icon icon="tabler:plant" :height="16" /> Strain
+              <Icon
+                icon="tabler:plant"
+                :height="16"
+              /> Strain
             </div>
-            <div class="info-val">{{ (plant as any).strain || "—" }}</div>
+            <div class="info-val">
+              {{ (plant as any).strain || "—" }}
+            </div>
           </div>
 
-          <div class="info-row" v-if="(plant as any).potSize">
+          <div
+            v-if="(plant as any).potSize"
+            class="info-row"
+          >
             <div class="info-label">
-              <Icon icon="tabler:bucket" :height="16" /> Pot size
+              <Icon
+                icon="tabler:bucket"
+                :height="16"
+              /> Pot size
             </div>
-            <div class="info-val">{{ (plant as any).potSize }}</div>
+            <div class="info-val">
+              {{ (plant as any).potSize }}
+            </div>
           </div>
 
-          <div class="info-row" v-if="(plant as any).location">
+          <div
+            v-if="(plant as any).location"
+            class="info-row"
+          >
             <div class="info-label">
-              <Icon icon="tabler:home" :height="16" /> Location
+              <Icon
+                icon="tabler:home"
+                :height="16"
+              /> Location
             </div>
-            <div class="info-val" style="text-transform: capitalize">
+            <div
+              class="info-val"
+              style="text-transform: capitalize"
+            >
               {{ (plant as any).location }}
             </div>
           </div>
 
-          <div class="info-row" v-if="(plant as any).medium">
+          <div
+            v-if="(plant as any).medium"
+            class="info-row"
+          >
             <div class="info-label">
-              <Icon icon="tabler:droplet" :height="16" /> Medium
+              <Icon
+                icon="tabler:droplet"
+                :height="16"
+              /> Medium
             </div>
-            <div class="info-val" style="text-transform: capitalize">
+            <div
+              class="info-val"
+              style="text-transform: capitalize"
+            >
               {{ (plant as any).medium }}
             </div>
           </div>
 
-          <div class="info-row" v-if="(plant as any).plantingDate">
+          <div
+            v-if="(plant as any).plantingDate"
+            class="info-row"
+          >
             <div class="info-label">
-              <Icon icon="tabler:calendar" :height="16" /> Planted
+              <Icon
+                icon="tabler:calendar"
+                :height="16"
+              /> Planted
             </div>
             <div class="info-val">
               {{ fmtDate((plant as any).plantingDate) }}
@@ -692,16 +797,26 @@ function handleDeletePlant() {
 
           <div class="info-row">
             <div class="info-label">
-              <Icon icon="tabler:calendar-time" :height="16" /> Day in grow
+              <Icon
+                icon="tabler:calendar-time"
+                :height="16"
+              /> Day in grow
             </div>
-            <div class="info-val">Day {{ daysInGrow }}</div>
+            <div class="info-val">
+              Day {{ daysInGrow }}
+            </div>
           </div>
 
           <div class="info-row">
             <div class="info-label">
-              <Icon icon="tabler:chart-line" :height="16" /> Stage progress
+              <Icon
+                icon="tabler:chart-line"
+                :height="16"
+              /> Stage progress
             </div>
-            <div class="info-val">{{ stagePct }}%</div>
+            <div class="info-val">
+              {{ stagePct }}%
+            </div>
           </div>
         </div>
 
@@ -713,10 +828,13 @@ function handleDeletePlant() {
               :style="{
                 color: getStageColor(plantStage),
                 background: getStageColor(plantStage) + '22',
-                borderColor: getStageColor(plantStage) + '44',
+                borderColor: getStageColor(plantStage) + '44'
               }"
             >
-              <Icon :icon="getStageIcon(plantStage)" :height="14" />
+              <Icon
+                :icon="getStageIcon(plantStage)"
+                :height="14"
+              />
               {{ plantStage }}
             </div>
             <span class="stage-pct">{{ stagePct }}%</span>
@@ -726,9 +844,9 @@ function handleDeletePlant() {
               class="big-fill"
               :style="{
                 width: stagePct + '%',
-                background: getStageColor(plantStage),
+                background: getStageColor(plantStage)
               }"
-            ></div>
+            />
           </div>
           <div class="big-labels">
             <span>Day {{ daysInGrow }}</span>
@@ -750,21 +868,33 @@ function handleDeletePlant() {
             <span class="jstat-label">Waterings</span>
           </div>
           <div class="jstat">
-            <Icon icon="tabler:flask" :height="20" style="color: #a78bfa" />
+            <Icon
+              icon="tabler:flask"
+              :height="20"
+              style="color: #a78bfa"
+            />
             <span class="jstat-num">{{
               journal.entries.value.filter((e) => e.type === "nutrients").length
             }}</span>
             <span class="jstat-label">Feedings</span>
           </div>
           <div class="jstat">
-            <Icon icon="tabler:cut" :height="20" style="color: #34d399" />
+            <Icon
+              icon="tabler:cut"
+              :height="20"
+              style="color: #34d399"
+            />
             <span class="jstat-num">{{
               journal.entries.value.filter((e) => e.type === "trim").length
             }}</span>
             <span class="jstat-label">Trims</span>
           </div>
           <div class="jstat">
-            <Icon icon="tabler:camera" :height="20" style="color: #ec4899" />
+            <Icon
+              icon="tabler:camera"
+              :height="20"
+              style="color: #ec4899"
+            />
             <span class="jstat-num">{{
               journal.entries.value.filter((e) => e.type === "photo").length
             }}</span>
@@ -776,9 +906,18 @@ function handleDeletePlant() {
       <!-- ════════════════════════════════════════
            TAB: GALLERY
       ════════════════════════════════════════ -->
-      <div v-show="activeTab === 'gallery'" class="tab-content">
-        <div v-if="allPhotos.length === 0" class="gallery-empty">
-          <Icon icon="tabler:photo-off" :height="52" />
+      <div
+        v-show="activeTab === 'gallery'"
+        class="tab-content"
+      >
+        <div
+          v-if="allPhotos.length === 0"
+          class="gallery-empty"
+        >
+          <Icon
+            icon="tabler:photo-off"
+            :height="52"
+          />
           <p>No photos yet</p>
           <button
             class="btn-accent"
@@ -787,23 +926,34 @@ function handleDeletePlant() {
               triggerPhotoPicker();
             "
           >
-            <Icon icon="tabler:camera" :height="16" /> Add first photo
+            <Icon
+              icon="tabler:camera"
+              :height="16"
+            /> Add first photo
           </button>
         </div>
 
-        <div v-else class="gallery-grid">
+        <div
+          v-else
+          class="gallery-grid"
+        >
           <div
             v-for="entry in allPhotos"
             :key="entry.id"
             class="gallery-item"
             @click="lightboxPhoto = entry.photo!"
           >
-            <img :src="entry.photo!" :alt="'Photo ' + entry.date" />
-            <div class="gallery-date">{{ fmtDate(entry.date) }}</div>
+            <img
+              :src="entry.photo!"
+              :alt="'Photo ' + entry.date"
+            >
+            <div class="gallery-date">
+              {{ fmtDate(entry.date) }}
+            </div>
           </div>
         </div>
-      </div> </template
-    ><!-- /main content -->
+      </div>
+    </template><!-- /main content -->
 
     <!-- ═══════════════════════════════════════════
          NOTE MODAL
@@ -815,7 +965,7 @@ function handleDeletePlant() {
         @click.self="showNoteModal = false"
       >
         <div class="modal-sheet">
-          <div class="modal-handle"></div>
+          <div class="modal-handle" />
           <h3 class="modal-title">
             {{ noteEditId ? "Edit note" : "Add note" }}
           </h3>
@@ -825,25 +975,31 @@ function handleDeletePlant() {
             class="note-textarea"
             placeholder="Write your observation…"
             rows="5"
-          ></textarea>
+          />
 
           <input
             v-model="noteAmount"
             type="text"
             class="modal-input"
             placeholder="Amount (optional, e.g. 500 ml)"
-          />
+          >
 
           <div class="modal-footer">
-            <button class="modal-cancel" @click="showNoteModal = false">
+            <button
+              class="modal-cancel"
+              @click="showNoteModal = false"
+            >
               Cancel
             </button>
             <button
               class="modal-save"
-              @click="saveNote"
               :disabled="!noteText.trim()"
+              @click="saveNote"
             >
-              <Icon icon="tabler:check" :height="18" /> Save
+              <Icon
+                icon="tabler:check"
+                :height="18"
+              /> Save
             </button>
           </div>
         </div>
@@ -860,11 +1016,11 @@ function handleDeletePlant() {
         @click.self="showAmountModal = false"
       >
         <div class="modal-sheet">
-          <div class="modal-handle"></div>
+          <div class="modal-handle" />
           <div
             class="modal-icon-header"
             :style="{
-              color: amountModalType === 'water' ? '#4fc3f7' : '#a78bfa',
+              color: amountModalType === 'water' ? '#4fc3f7' : '#a78bfa'
             }"
           >
             <Icon
@@ -890,14 +1046,23 @@ function handleDeletePlant() {
                 : 'Dose (e.g. 5 ml/L)'
             "
             @keyup.enter="saveAmount"
-          />
+          >
 
           <div class="modal-footer">
-            <button class="modal-cancel" @click="showAmountModal = false">
+            <button
+              class="modal-cancel"
+              @click="showAmountModal = false"
+            >
               Cancel
             </button>
-            <button class="modal-save" @click="saveAmount">
-              <Icon icon="tabler:check" :height="18" /> Log
+            <button
+              class="modal-save"
+              @click="saveAmount"
+            >
+              <Icon
+                icon="tabler:check"
+                :height="18"
+              /> Log
             </button>
           </div>
         </div>
@@ -914,8 +1079,10 @@ function handleDeletePlant() {
         @click.self="showEditModal = false"
       >
         <div class="modal-sheet">
-          <div class="modal-handle"></div>
-          <h3 class="modal-title">Edit Plant</h3>
+          <div class="modal-handle" />
+          <h3 class="modal-title">
+            Edit Plant
+          </h3>
 
           <div class="edit-form">
             <label>Name</label>
@@ -924,7 +1091,7 @@ function handleDeletePlant() {
               type="text"
               class="modal-input"
               placeholder="Plant Name"
-            />
+            >
 
             <label>Strain</label>
             <input
@@ -932,7 +1099,7 @@ function handleDeletePlant() {
               type="text"
               class="modal-input"
               placeholder="Strain"
-            />
+            >
 
             <label>Pot Size</label>
             <input
@@ -940,37 +1107,78 @@ function handleDeletePlant() {
               type="text"
               class="modal-input"
               placeholder="Pot Size"
-            />
+            >
 
             <label>Location</label>
-            <select v-model="editForm.location" class="modal-input">
-              <option value="indoor">Indoor</option>
-              <option value="outdoor">Outdoor</option>
-              <option value="greenhouse">Greenhouse</option>
+            <select
+              v-model="editForm.location"
+              class="modal-input"
+            >
+              <option value="indoor">
+                Indoor
+              </option>
+              <option value="outdoor">
+                Outdoor
+              </option>
+              <option value="greenhouse">
+                Greenhouse
+              </option>
             </select>
 
             <label>Medium</label>
-            <select v-model="editForm.medium" class="modal-input">
-              <option value="soil">Soil</option>
-              <option value="coco">Coco</option>
-              <option value="hydro">Hydroponics</option>
+            <select
+              v-model="editForm.medium"
+              class="modal-input"
+            >
+              <option value="soil">
+                Soil
+              </option>
+              <option value="coco">
+                Coco
+              </option>
+              <option value="hydro">
+                Hydroponics
+              </option>
             </select>
 
             <label>Stage</label>
-            <select v-model="editForm.stage" class="modal-input">
-              <option value="Germination">Germination</option>
-              <option value="Seedling">Seedling</option>
-              <option value="Vegetative">Vegetative</option>
-              <option value="Flowering">Flowering</option>
+            <select
+              v-model="editForm.stage"
+              class="modal-input"
+            >
+              <option value="Germination">
+                Germination
+              </option>
+              <option value="Seedling">
+                Seedling
+              </option>
+              <option value="Vegetative">
+                Vegetative
+              </option>
+              <option value="Flowering">
+                Flowering
+              </option>
             </select>
           </div>
 
           <div class="modal-footer">
-            <button class="modal-cancel danger" @click="handleDeletePlant">
-              <Icon icon="tabler:trash" :height="18" /> Delete
+            <button
+              class="modal-cancel danger"
+              @click="handleDeletePlant"
+            >
+              <Icon
+                icon="tabler:trash"
+                :height="18"
+              /> Delete
             </button>
-            <button class="modal-save" @click="saveEdit">
-              <Icon icon="tabler:check" :height="18" /> Save
+            <button
+              class="modal-save"
+              @click="saveEdit"
+            >
+              <Icon
+                icon="tabler:check"
+                :height="18"
+              /> Save
             </button>
           </div>
         </div>
@@ -981,11 +1189,21 @@ function handleDeletePlant() {
          LIGHTBOX
     ═══════════════════════════════════════════ -->
     <Teleport to="body">
-      <div v-if="lightboxPhoto" class="lightbox" @click="lightboxPhoto = null">
+      <div
+        v-if="lightboxPhoto"
+        class="lightbox"
+        @click="lightboxPhoto = null"
+      >
         <button class="lightbox-close">
-          <Icon icon="tabler:x" :height="24" />
+          <Icon
+            icon="tabler:x"
+            :height="24"
+          />
         </button>
-        <img :src="lightboxPhoto" class="lightbox-img" />
+        <img
+          :src="lightboxPhoto"
+          class="lightbox-img"
+        >
       </div>
     </Teleport>
 
@@ -997,7 +1215,7 @@ function handleDeletePlant() {
       capture="environment"
       style="display: none"
       @change="onPhotoSelected"
-    />
+    >
   </div>
 </template>
 

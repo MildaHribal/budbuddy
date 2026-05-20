@@ -1,29 +1,42 @@
 <template>
-  <NuxtLink :to="to" class="quick-action">
-    <div class="action-icon" :style="{ background: iconBg }">
-      <Icon :icon="icon" height="28" :style="{ color: iconColor }" />
+  <NuxtLink
+    :to="to"
+    class="quick-action"
+  >
+    <div
+      class="action-icon"
+      :style="{ background: iconBg }"
+    >
+      <Icon
+        :icon="icon"
+        height="28"
+        :style="{ color: iconColor }"
+      />
     </div>
     <div class="action-label">{{ label }}</div>
-    <div v-if="badge" class="action-badge">{{ badge }}</div>
+    <div
+      v-if="badge"
+      class="action-badge"
+    >{{ badge }}</div>
   </NuxtLink>
 </template>
 
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
+import { Icon } from '@iconify/vue'
 
 interface Props {
-  icon: string;
-  label: string;
-  to: string;
-  badge?: string | number;
-  iconColor?: string;
-  iconBg?: string;
+  icon: string
+  label: string
+  to: string
+  badge?: string | number
+  iconColor?: string
+  iconBg?: string
 }
 
 withDefaults(defineProps<Props>(), {
   iconColor: '#7bc74d',
   iconBg: 'rgba(123, 199, 77, 0.15)'
-});
+})
 </script>
 
 <style scoped>
@@ -81,4 +94,3 @@ withDefaults(defineProps<Props>(), {
   box-shadow: 0 2px 8px rgba(255, 68, 68, 0.4);
 }
 </style>
-

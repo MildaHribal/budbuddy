@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
-import { Icon } from "@iconify/vue";
-import { usePlants } from '~/composables/usePlants';
+import { ref, nextTick } from 'vue'
+import { Icon } from '@iconify/vue'
+import { usePlants } from '~/composables/usePlants'
 
-import germinationImg from '~/assets/germination.png';
-import seedlingImg from '~/assets/seedling.png';
-import vegetativeImg from '~/assets/vegetative.png';
-import floweringImg from '~/assets/flowering.png';
+import germinationImg from '~/assets/germination.png'
+import seedlingImg from '~/assets/seedling.png'
+import vegetativeImg from '~/assets/vegetative.png'
+import floweringImg from '~/assets/flowering.png'
 
-const emit = defineEmits(['close-all']);
+const emit = defineEmits(['close-all'])
 
-const { addPlant } = usePlants();
+const { addPlant } = usePlants()
 
-const scrollContainer = ref<HTMLElement | null>(null);
-const selectedStage = ref<string | null>(null);
+const scrollContainer = ref<HTMLElement | null>(null)
+const selectedStage = ref<string | null>(null)
 
-const name = ref('');
-const strain = ref('');
-const photoFile = ref<File | null>(null);
-const photoPreview = ref<string | null>(null);
-const potSize = ref('');
-const plantingDate = ref(new Date().toISOString().split('T')[0]);
-const location = ref<'indoor' | 'outdoor'>('indoor');
-const medium = ref('soil');
+const name = ref('')
+const strain = ref('')
+const photoFile = ref<File | null>(null)
+const photoPreview = ref<string | null>(null)
+const potSize = ref('')
+const plantingDate = ref(new Date().toISOString().split('T')[0])
+const location = ref<'indoor' | 'outdoor'>('indoor')
+const medium = ref('soil')
 
 const stages = [
   {
@@ -45,65 +45,73 @@ const stages = [
     image: floweringImg,
     description: 'Bud production.'
   }
-];
+]
 
 const selectStage = async (stageName: string) => {
-  selectedStage.value = stageName;
-  await nextTick();
+  selectedStage.value = stageName
+  await nextTick()
 
   if (scrollContainer.value) {
     scrollContainer.value.scrollTo({
       top: scrollContainer.value.scrollHeight,
       behavior: 'smooth'
-    });
+    })
   }
-};
+}
 
 const goBack = async () => {
   if (scrollContainer.value) {
     scrollContainer.value.scrollTo({
       top: 0,
       behavior: 'smooth'
-    });
+    })
   }
 
   setTimeout(() => {
-    selectedStage.value = null;
-  }, 400);
-};
+    selectedStage.value = null
+  }, 400)
+}
 
 function revokePreview() {
   if (photoPreview.value && photoPreview.value.startsWith('blob:')) {
-    try { URL.revokeObjectURL(photoPreview.value); } catch (e) {}
+    try {
+      URL.revokeObjectURL(photoPreview.value)
+    } catch {
+      // ignore revoke failures
+    }
   }
-  photoPreview.value = null;
+  photoPreview.value = null
 }
 
 function onPhotoChange(e: Event) {
-  const input = e.target as HTMLInputElement;
+  const input = e.target as HTMLInputElement
   if (input.files && input.files[0]) {
-    revokePreview();
-    photoFile.value = input.files[0];
-    photoPreview.value = URL.createObjectURL(photoFile.value);
+    revokePreview()
+    photoFile.value = input.files[0]
+    photoPreview.value = URL.createObjectURL(photoFile.value)
   }
 }
 
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
+    const r = new FileReader()
+    r.onload = () => resolve(String(r.result))
+    r.onerror = reject
+    r.readAsDataURL(file)
+  })
 }
 
 async function save() {
-  if (!selectedStage.value) return;
+  if (!selectedStage.value) return
 
-  let photoData: string | undefined = photoPreview.value ?? undefined;
+  let photoData: string | undefined = photoPreview.value ?? undefined
 
   if (photoFile.value) {
-    try { photoData = await fileToDataUrl(photoFile.value); } catch (e) { console.error(e); }
+    try {
+      photoData = await fileToDataUrl(photoFile.value)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const plant = {
@@ -116,56 +124,79 @@ async function save() {
     location: location.value,
     medium: medium.value,
     photoPreview: photoData
-  };
+  }
 
-  addPlant(plant);
+  addPlant(plant)
 
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('plants-updated', { detail: plant }));
+    window.dispatchEvent(new CustomEvent('plants-updated', { detail: plant }))
   }
 
   // Reset
-  name.value = '';
-  strain.value = '';
-  potSize.value = '';
-  plantingDate.value = new Date().toISOString().split('T')[0];
-  location.value = 'indoor';
-  medium.value = 'soil';
-  revokePreview();
-  photoFile.value = null;
-  selectedStage.value = null;
+  name.value = ''
+  strain.value = ''
+  potSize.value = ''
+  plantingDate.value = new Date().toISOString().split('T')[0]
+  location.value = 'indoor'
+  medium.value = 'soil'
+  revokePreview()
+  photoFile.value = null
+  selectedStage.value = null
 
-  emit('close-all');
+  emit('close-all')
 }
 </script>
 
 <template>
-  <div ref="scrollContainer" class="modal-container">
+  <div
+    ref="scrollContainer"
+    class="modal-container"
+  >
     <!-- First Screen - Stage Selection -->
     <div class="modal-screen">
       <div class="screen-content">
         <div class="modal-header">
-          <div class="header-icon">🌱</div>
-          <h2 class="header-title">Select Growth Stage</h2>
-          <p class="header-subtitle">Choose your plant's current stage</p>
+          <div class="header-icon">
+            🌱
+          </div>
+          <h2 class="header-title">
+            Select Growth Stage
+          </h2>
+          <p class="header-subtitle">
+            Choose your plant's current stage
+          </p>
         </div>
 
         <div class="stages-grid">
           <div
             v-for="stage in stages"
             :key="stage.name"
-            @click="selectStage(stage.name)"
             :class="['stage-card', { selected: selectedStage === stage.name }]"
+            @click="selectStage(stage.name)"
           >
             <div class="stage-image-container">
-              <img :src="stage.image" :alt="stage.name" class="stage-image" />
+              <img
+                :src="stage.image"
+                :alt="stage.name"
+                class="stage-image"
+              >
             </div>
             <div class="stage-info">
-              <h3 class="stage-name">{{ stage.name }}</h3>
-              <p class="stage-description">{{ stage.description }}</p>
+              <h3 class="stage-name">
+                {{ stage.name }}
+              </h3>
+              <p class="stage-description">
+                {{ stage.description }}
+              </p>
             </div>
-            <div v-if="selectedStage === stage.name" class="stage-checkmark">
-              <Icon icon="tabler:check" :height="16" />
+            <div
+              v-if="selectedStage === stage.name"
+              class="stage-checkmark"
+            >
+              <Icon
+                icon="tabler:check"
+                :height="16"
+              />
             </div>
           </div>
         </div>
@@ -175,27 +206,48 @@ async function save() {
     <!-- Second Screen - Plant Details -->
     <div class="modal-screen">
       <div class="screen-header">
-        <button @click="goBack" class="back-btn">
-          <Icon icon="tabler:arrow-left" :height="20" />
+        <button
+          class="back-btn"
+          @click="goBack"
+        >
+          <Icon
+            icon="tabler:arrow-left"
+            :height="20"
+          />
           <span>Back</span>
         </button>
       </div>
 
       <div class="screen-content scrollable">
         <div class="form-section">
-          <div class="photo-upload" @click="($refs.fileInput as any)?.click()">
+          <div
+            class="photo-upload"
+            @click="($refs.fileInput as any)?.click()"
+          >
             <input
               ref="fileInput"
               type="file"
               accept="image/*"
-              @change="onPhotoChange"
               class="hidden-input"
-            />
-            <div v-if="photoPreview" class="photo-preview">
-              <img :src="photoPreview" alt="Preview" />
+              @change="onPhotoChange"
+            >
+            <div
+              v-if="photoPreview"
+              class="photo-preview"
+            >
+              <img
+                :src="photoPreview"
+                alt="Preview"
+              >
             </div>
-            <div v-else class="photo-placeholder">
-              <Icon icon="tabler:camera" :height="40" />
+            <div
+              v-else
+              class="photo-placeholder"
+            >
+              <Icon
+                icon="tabler:camera"
+                :height="40"
+              />
               <span>Add Photo</span>
             </div>
           </div>
@@ -207,7 +259,7 @@ async function save() {
               type="text"
               placeholder="e.g., Northern Lights #1"
               class="form-input"
-            />
+            >
           </div>
 
           <div class="form-group">
@@ -217,7 +269,7 @@ async function save() {
               type="text"
               placeholder="e.g., Northern Lights"
               class="form-input"
-            />
+            >
           </div>
 
           <div class="form-row">
@@ -228,7 +280,7 @@ async function save() {
                 type="text"
                 placeholder="e.g., 5 gal"
                 class="form-input"
-              />
+              >
             </div>
 
             <div class="form-group">
@@ -237,25 +289,41 @@ async function save() {
                 v-model="plantingDate"
                 type="date"
                 class="form-input"
-              />
+              >
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Location</label>
-              <select v-model="location" class="form-select">
-                <option value="indoor">🏠 Indoor</option>
-                <option value="outdoor">☀️ Outdoor</option>
+              <select
+                v-model="location"
+                class="form-select"
+              >
+                <option value="indoor">
+                  🏠 Indoor
+                </option>
+                <option value="outdoor">
+                  ☀️ Outdoor
+                </option>
               </select>
             </div>
 
             <div class="form-group">
               <label class="form-label">Medium</label>
-              <select v-model="medium" class="form-select">
-                <option value="soil">🌱 Soil</option>
-                <option value="coco">🥥 Coco</option>
-                <option value="hydro">💧 Hydro</option>
+              <select
+                v-model="medium"
+                class="form-select"
+              >
+                <option value="soil">
+                  🌱 Soil
+                </option>
+                <option value="coco">
+                  🥥 Coco
+                </option>
+                <option value="hydro">
+                  💧 Hydro
+                </option>
               </select>
             </div>
           </div>
@@ -263,8 +331,15 @@ async function save() {
       </div>
 
       <div class="screen-footer">
-        <button @click="save" :disabled="!selectedStage" class="save-btn">
-          <Icon icon="tabler:check" :height="20" />
+        <button
+          :disabled="!selectedStage"
+          class="save-btn"
+          @click="save"
+        >
+          <Icon
+            icon="tabler:check"
+            :height="20"
+          />
           <span>Save Plant</span>
         </button>
       </div>
@@ -565,4 +640,3 @@ async function save() {
   box-shadow: none;
 }
 </style>
-

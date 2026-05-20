@@ -22,15 +22,15 @@ const stores = new Map<string, DayStore>()
 
 // Helper function for local date YYYY-MM-DD
 const getLocalISODate = (d?: Date | string) => {
-  const date = d ? new Date(d) : new Date();
-  const offset = date.getTimezoneOffset();
-  const local = new Date(date.getTime() - (offset * 60 * 1000));
-  return local.toISOString().split('T')[0];
+  const date = d ? new Date(d) : new Date()
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - (offset * 60 * 1000))
+  return local.toISOString().split('T')[0]
 }
 
 export const useDayActions = (dateParam?: Date | string): DayStore => {
   // Key must match local date
-  const dateKey = getLocalISODate(dateParam);
+  const dateKey = getLocalISODate(dateParam)
   const key = `actions:${dateKey}`
 
   if (stores.has(key)) {
@@ -61,7 +61,7 @@ export const useDayActions = (dateParam?: Date | string): DayStore => {
       id: Date.now().toString(),
       label,
       done: false,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date().toISOString()
     }
     actions.value.push(item)
     await save()
@@ -100,7 +100,7 @@ export const useDayActions = (dateParam?: Date | string): DayStore => {
     toggle,
     remove,
     updateLabel,
-    clear,
+    clear
   }
 
   // Initial load

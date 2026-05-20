@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
-import { Icon } from "@iconify/vue";
-import { usePlants } from "~/composables/usePlants";
-import { usePlantJournal } from "~/composables/usePlantJournal";
-import { useHead } from "#imports";
+import { ref, computed, onMounted, watch } from 'vue'
+import { Icon } from '@iconify/vue'
+import { usePlants } from '~/composables/usePlants'
+import { usePlantJournal } from '~/composables/usePlantJournal'
+import { useHead } from '#imports'
 
-useHead({ title: 'Gallery' });
+useHead({ title: 'Gallery' })
 
-const { plants, loadPlantsFromStorage } = usePlants();
+const { plants, loadPlantsFromStorage } = usePlants()
 
 // All gallery items: profile photo + journal photos for every plant
 interface GalleryItem {
-  id: string;
-  photo: string;
-  plantId: string | number;
-  plantName: string;
-  date: string;
-  isProfile: boolean;
+  id: string
+  photo: string
+  plantId: string | number
+  plantName: string
+  date: string
+  isProfile: boolean
 }
 
-const galleryItems = ref<GalleryItem[]>([]);
-const loading = ref(true);
+const galleryItems = ref<GalleryItem[]>([])
+const loading = ref(true)
 
 async function buildGallery() {
-  loading.value = true;
-  const items: GalleryItem[] = [];
+  loading.value = true
+  const items: GalleryItem[] = []
 
   for (const plant of plants.value) {
     // 1) Profile photo
@@ -33,105 +33,105 @@ async function buildGallery() {
         id: `profile-${plant.id}`,
         photo: plant.photoPreview,
         plantId: plant.id,
-        plantName: plant.name || "Unnamed",
-        date: (plant as any).plantingDate || plant.createdAt || "",
-        isProfile: true,
-      });
+        plantName: plant.name || 'Unnamed',
+        date: plant.plantingDate || plant.createdAt || '',
+        isProfile: true
+      })
     }
 
     // 2) Journal photos – load composable and await
-    const j = usePlantJournal(plant.id);
-    await j.load();
+    const j = usePlantJournal(plant.id)
+    await j.load()
     for (const entry of j.allPhotos()) {
       if (entry.photo) {
         items.push({
           id: `journal-${entry.id}`,
           photo: entry.photo,
           plantId: plant.id,
-          plantName: plant.name || "Unnamed",
+          plantName: plant.name || 'Unnamed',
           date: entry.date,
-          isProfile: false,
-        });
+          isProfile: false
+        })
       }
     }
   }
 
   // Sort newest first
-  galleryItems.value = items.sort((a, b) => b.date.localeCompare(a.date));
-  loading.value = false;
+  galleryItems.value = items.sort((a, b) => b.date.localeCompare(a.date))
+  loading.value = false
 }
 
 onMounted(async () => {
-  await loadPlantsFromStorage();
-  await buildGallery();
-});
+  await loadPlantsFromStorage()
+  await buildGallery()
+})
 
 watch(
   () => plants.value.length,
   async () => {
-    await buildGallery();
-  },
-);
+    await buildGallery()
+  }
+)
 
 // ── Filters ──────────────────────────────────────────
-type Filter = "all" | "profile" | "journal";
-const activeFilter = ref<Filter>("all");
+type Filter = 'all' | 'profile' | 'journal'
+const activeFilter = ref<Filter>('all')
 
 const filteredItems = computed(() => {
-  if (activeFilter.value === "profile")
-    return galleryItems.value.filter((i) => i.isProfile);
-  if (activeFilter.value === "journal")
-    return galleryItems.value.filter((i) => !i.isProfile);
-  return galleryItems.value;
-});
+  if (activeFilter.value === 'profile')
+    return galleryItems.value.filter(i => i.isProfile)
+  if (activeFilter.value === 'journal')
+    return galleryItems.value.filter(i => !i.isProfile)
+  return galleryItems.value
+})
 
 // Group by plant name for "All" view
 const plantNames = computed(() => {
-  const names = new Set<string>();
-  galleryItems.value.forEach((i) => names.add(i.plantName));
-  return ["All plants", ...Array.from(names)];
-});
-const selectedPlant = ref("All plants");
+  const names = new Set<string>()
+  galleryItems.value.forEach(i => names.add(i.plantName))
+  return ['All plants', ...Array.from(names)]
+})
+const selectedPlant = ref('All plants')
 
 const displayedItems = computed(() => {
-  let items = filteredItems.value;
-  if (selectedPlant.value !== "All plants") {
-    items = items.filter((i) => i.plantName === selectedPlant.value);
+  let items = filteredItems.value
+  if (selectedPlant.value !== 'All plants') {
+    items = items.filter(i => i.plantName === selectedPlant.value)
   }
-  return items;
-});
+  return items
+})
 
 // ── Lightbox ─────────────────────────────────────────
-const lightboxItem = ref<GalleryItem | null>(null);
+const lightboxItem = ref<GalleryItem | null>(null)
 function openLightbox(item: GalleryItem) {
-  lightboxItem.value = item;
+  lightboxItem.value = item
 }
 function closeLightbox() {
-  lightboxItem.value = null;
+  lightboxItem.value = null
 }
 
 function prevPhoto() {
-  if (!lightboxItem.value) return;
-  const items = displayedItems.value;
-  const idx = items.findIndex((i) => i.id === lightboxItem.value!.id);
-  if (idx > 0) lightboxItem.value = items[idx - 1] || null;
+  if (!lightboxItem.value) return
+  const items = displayedItems.value
+  const idx = items.findIndex(i => i.id === lightboxItem.value!.id)
+  if (idx > 0) lightboxItem.value = items[idx - 1] || null
 }
 function nextPhoto() {
-  if (!lightboxItem.value) return;
-  const items = displayedItems.value;
-  const idx = items.findIndex((i) => i.id === lightboxItem.value!.id);
-  if (idx < items.length - 1) lightboxItem.value = items[idx + 1] || null;
+  if (!lightboxItem.value) return
+  const items = displayedItems.value
+  const idx = items.findIndex(i => i.id === lightboxItem.value!.id)
+  if (idx < items.length - 1) lightboxItem.value = items[idx + 1] || null
 }
 
 const lightboxIdx = computed(() => {
-  if (!lightboxItem.value) return -1;
-  return displayedItems.value.findIndex((i) => i.id === lightboxItem.value!.id);
-});
+  if (!lightboxItem.value) return -1
+  return displayedItems.value.findIndex(i => i.id === lightboxItem.value!.id)
+})
 
 function fmtDate(iso: string) {
-  if (!iso) return "";
-  const [y, m, d] = iso.slice(0, 10).split("-");
-  return `${d}.${m}.${y}`;
+  if (!iso) return ''
+  const [y, m, d] = iso.slice(0, 10).split('-')
+  return `${d}.${m}.${y}`
 }
 </script>
 
@@ -141,10 +141,17 @@ function fmtDate(iso: string) {
     <div class="gallery-header">
       <div class="header-top">
         <div class="header-title">
-          <Icon icon="tabler:photo-album" :height="26" style="color: #7bc74d" />
+          <Icon
+            icon="tabler:photo-album"
+            :height="26"
+            style="color: #7bc74d"
+          />
           <span>Gallery</span>
         </div>
-        <div class="photo-count" v-if="galleryItems.length > 0">
+        <div
+          v-if="galleryItems.length > 0"
+          class="photo-count"
+        >
           {{ galleryItems.length }} photo{{
             galleryItems.length !== 1 ? "s" : ""
           }}
@@ -177,7 +184,10 @@ function fmtDate(iso: string) {
       </div>
 
       <!-- Plant filter (horizontal scroll) -->
-      <div v-if="plantNames.length > 2" class="plant-filter-scroll">
+      <div
+        v-if="plantNames.length > 2"
+        class="plant-filter-scroll"
+      >
         <button
           v-for="name in plantNames"
           :key="name"
@@ -190,29 +200,48 @@ function fmtDate(iso: string) {
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="gallery-loading">
-      <div class="spinner"></div>
+    <div
+      v-if="loading"
+      class="gallery-loading"
+    >
+      <div class="spinner" />
       <p>Loading photos…</p>
     </div>
 
     <!-- Empty state -->
-    <div v-else-if="displayedItems.length === 0" class="gallery-empty">
+    <div
+      v-else-if="displayedItems.length === 0"
+      class="gallery-empty"
+    >
       <div class="empty-icon-wrap">
-        <Icon icon="tabler:photo-off" :height="52" style="color: #444" />
+        <Icon
+          icon="tabler:photo-off"
+          :height="52"
+          style="color: #444"
+        />
       </div>
       <h2>No photos yet</h2>
       <p>
         Add photos to your plants via the plant detail page (📷 Photo button in
         Journal).
       </p>
-      <NuxtLink to="/my-trees" class="empty-cta">
-        <Icon icon="tabler:leaf" :height="16" />
+      <NuxtLink
+        to="/my-trees"
+        class="empty-cta"
+      >
+        <Icon
+          icon="tabler:leaf"
+          :height="16"
+        />
         Go to My Plants
       </NuxtLink>
     </div>
 
     <!-- Gallery grid -->
-    <div v-else class="gallery-grid">
+    <div
+      v-else
+      class="gallery-grid"
+    >
       <div
         v-for="(item, index) in displayedItems"
         :key="item.id"
@@ -220,12 +249,19 @@ function fmtDate(iso: string) {
         :class="{ featured: index % 7 === 0 }"
         @click="openLightbox(item)"
       >
-        <img :src="item.photo" :alt="item.plantName" loading="lazy" />
+        <img
+          :src="item.photo"
+          :alt="item.plantName"
+          loading="lazy"
+        >
 
         <div class="cell-overlay">
           <div class="cell-info">
             <div class="cell-plant">
-              <div class="cell-badge" :class="{ profile: item.isProfile }">
+              <div
+                class="cell-badge"
+                :class="{ profile: item.isProfile }"
+              >
                 <Icon
                   :icon="
                     item.isProfile ? 'tabler:user-circle' : 'tabler:notebook'
@@ -235,7 +271,9 @@ function fmtDate(iso: string) {
               </div>
               {{ item.plantName }}
             </div>
-            <div class="cell-date">{{ fmtDate(item.date) }}</div>
+            <div class="cell-date">
+              {{ fmtDate(item.date) }}
+            </div>
           </div>
         </div>
       </div>
@@ -243,31 +281,51 @@ function fmtDate(iso: string) {
 
     <!-- Lightbox -->
     <Teleport to="body">
-      <div v-if="lightboxItem" class="lightbox" @click.self="closeLightbox">
+      <div
+        v-if="lightboxItem"
+        class="lightbox"
+        @click.self="closeLightbox"
+      >
         <!-- Close -->
-        <button class="lb-close" @click="closeLightbox" aria-label="Close Lightbox">
-          <Icon icon="tabler:x" :height="22" />
+        <button
+          class="lb-close"
+          aria-label="Close Lightbox"
+          @click="closeLightbox"
+        >
+          <Icon
+            icon="tabler:x"
+            :height="22"
+          />
         </button>
 
         <!-- Nav prev -->
         <button
-          class="lb-nav prev"
           v-if="lightboxIdx > 0"
-          @click.stop="prevPhoto"
+          class="lb-nav prev"
           aria-label="Previous photo"
+          @click.stop="prevPhoto"
         >
-          <Icon icon="tabler:chevron-left" :height="26" />
+          <Icon
+            icon="tabler:chevron-left"
+            :height="26"
+          />
         </button>
 
         <!-- Image -->
-        <div class="lb-content" @click.stop>
+        <div
+          class="lb-content"
+          @click.stop
+        >
           <img
             :src="lightboxItem.photo"
             class="lb-img"
             :alt="lightboxItem.plantName"
-          />
+          >
           <div class="lb-meta">
-            <div class="lb-badge" :class="{ profile: lightboxItem.isProfile }">
+            <div
+              class="lb-badge"
+              :class="{ profile: lightboxItem.isProfile }"
+            >
               <Icon
                 :icon="
                   lightboxItem.isProfile
@@ -278,8 +336,12 @@ function fmtDate(iso: string) {
               />
               {{ lightboxItem.isProfile ? "Profile" : "Journal" }}
             </div>
-            <div class="lb-plant">{{ lightboxItem.plantName }}</div>
-            <div class="lb-date">{{ fmtDate(lightboxItem.date) }}</div>
+            <div class="lb-plant">
+              {{ lightboxItem.plantName }}
+            </div>
+            <div class="lb-date">
+              {{ fmtDate(lightboxItem.date) }}
+            </div>
           </div>
           <div class="lb-counter">
             {{ lightboxIdx + 1 }} / {{ displayedItems.length }}
@@ -288,12 +350,15 @@ function fmtDate(iso: string) {
 
         <!-- Nav next -->
         <button
-          class="lb-nav next"
           v-if="lightboxIdx < displayedItems.length - 1"
-          @click.stop="nextPhoto"
+          class="lb-nav next"
           aria-label="Next photo"
+          @click.stop="nextPhoto"
         >
-          <Icon icon="tabler:chevron-right" :height="26" />
+          <Icon
+            icon="tabler:chevron-right"
+            :height="26"
+          />
         </button>
       </div>
     </Teleport>
