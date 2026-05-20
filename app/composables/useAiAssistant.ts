@@ -39,8 +39,12 @@ export const useAiAssistant = () => {
   const apiKey = ref<string>('')
   const keyLoaded = ref(false)
 
+  // Absolute fallback so the bundled APK (and any build that didn't get the
+  // AI_PROXY_URL set) still reaches a real proxy instead of a relative path
+  // that only resolves on the Netlify-hosted web build.
+  const DEFAULT_PROXY = 'https://budbuddy-demo.netlify.app/api/chat'
   const config = useRuntimeConfig()
-  const proxyUrl = (config.public.aiProxyUrl as string) || '/api/chat'
+  const proxyUrl = (config.public.aiProxyUrl as string)?.trim() || DEFAULT_PROXY
 
   const loadKey = async () => {
     apiKey.value = (await storage.getItem(KEY_STORAGE)) || ''
