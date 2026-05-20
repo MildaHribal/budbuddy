@@ -100,7 +100,7 @@ function close() {
     <div class="p-4 space-y-4 bg-[#121212]">
 
       <div class="flex justify-center mb-6">
-        <div class="relative w-32 h-32 bg-gray-800 rounded-full flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-600 hover:border-[#7bc74d] transition cursor-pointer" @click="$refs.fileInput.click()">
+        <div class="relative w-32 h-32 bg-gray-800 rounded-full flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-600 hover:border-[#7bc74d] transition cursor-pointer" @click="($refs.fileInput as HTMLInputElement)?.click()">
           <img v-if="photoPreview" :src="photoPreview" class="w-full h-full object-cover" />
           <div v-else class="text-center p-2">
             <span class="text-2xl">📷</span>

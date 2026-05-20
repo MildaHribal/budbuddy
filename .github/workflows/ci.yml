@@ -114,7 +114,7 @@ jobs:
             -PversionName=${{ env.VERSION_NAME }} \
             --no-daemon --parallel --build-cache
 
-      - name: Build Signed Release APK and AAB
+      - name: Build Signed Release APK
         env:
           KEYSTORE_PATH: "../keystore.jks"
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -122,10 +122,16 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
-          ./gradlew assembleRelease bundleRelease \
+          ./gradlew assembleRelease \
             -PversionCode=${{ env.VERSION_CODE }} \
             -PversionName=${{ env.VERSION_NAME }} \
             --no-daemon --parallel --build-cache
+
+      # Publish a single, clearly named installable APK (no .aab)
+      - name: Prepare release APK
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             BudBuddy-v${{ steps.package_version.outputs.VERSION }}.apk
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -133,17 +139,16 @@ jobs:
           name: android-builds
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
-            android/app/build/outputs/apk/release/app-release.apk
-            android/app/build/outputs/bundle/release/app-release.aab
+            BudBuddy-v${{ steps.package_version.outputs.VERSION }}.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            android/app/build/outputs/apk/debug/app-debug.apk
-            android/app/build/outputs/apk/release/app-release.apk
-            android/app/build/outputs/bundle/release/app-release.aab
+            BudBuddy-v${{ steps.package_version.outputs.VERSION }}.apk
           tag_name: build-v${{ steps.package_version.outputs.VERSION }}-${{ github.sha }}
           body: |
-            Automated Android build for version **${{ steps.package_version.outputs.VERSION }}**
+            📱 **BudBuddy ${{ steps.package_version.outputs.VERSION }}** — automated Android build.
+
+            Download `BudBuddy-v${{ steps.package_version.outputs.VERSION }}.apk` below and install it on your Android device.
             Commit: ${{ github.sha }}

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f7a33"/>
+      <stop offset="1" stop-color="#0f3d1b"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9be15d"/>
+      <stop offset="1" stop-color="#3fae46"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="1024" height="1024" rx="200" fill="url(#bg)"/>
+
+  <!-- cannabis leaf: 7 leaflets mirrored around center x=512 -->
+  <g transform="translate(512 470)" fill="url(#leaf)" stroke="#256b2c" stroke-width="6" stroke-linejoin="round">
+    <!-- right leaflets -->
+    <path d="M0 110 C 40 60 70 -40 60 -160 C 130 -120 150 -40 130 30 C 150 -10 230 -30 300 -10 C 240 40 190 70 120 80 C 170 80 210 110 240 160 C 180 160 120 140 70 110 Z"/>
+    <!-- left leaflets (mirror) -->
+    <path d="M0 110 C -40 60 -70 -40 -60 -160 C -130 -120 -150 -40 -130 30 C -150 -10 -230 -30 -300 -10 C -240 40 -190 70 -120 80 C -170 80 -210 110 -240 160 C -180 160 -120 140 -70 110 Z"/>
+    <!-- center top leaflet -->
+    <path d="M0 110 C 30 30 30 -120 0 -260 C -30 -120 -30 30 0 110 Z"/>
+  </g>
+
+  <!-- stem -->
+  <rect x="505" y="560" width="14" height="70" rx="7" fill="#256b2c"/>
+
+  <!-- wordmark -->
+  <text x="512" y="760" text-anchor="middle" font-family="'DejaVu Sans','Arial',sans-serif" font-weight="800" font-size="150" fill="#ffffff" letter-spacing="-4">BudBuddy</text>
+  <text x="512" y="840" text-anchor="middle" font-family="'DejaVu Sans','Arial',sans-serif" font-weight="500" font-size="56" fill="#9be15d" letter-spacing="6">GROW TRACKER</text>
+</svg>

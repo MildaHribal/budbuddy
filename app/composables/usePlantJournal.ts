@@ -65,8 +65,9 @@ export const usePlantJournal = (plantId: string | number) => {
 
   const updateEntry = async (id: string, patch: Partial<JournalEntry>) => {
     const idx = entries.value.findIndex(e => e.id === id)
-    if (idx !== -1) {
-      entries.value[idx] = { ...entries.value[idx], ...patch }
+    const existing = entries.value[idx]
+    if (existing) {
+      entries.value[idx] = { ...existing, ...patch }
       await save()
     }
   }
