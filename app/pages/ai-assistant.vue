@@ -505,14 +505,23 @@ const removeImage = () => {
 
 <style scoped>
 .ai-assistant-page {
+  /* Fill the whole screen so the message input is always visible without
+     scrolling. Fixed positioning takes the page out of the layout flow
+     (which adds bottom padding for the nav), and dvh tracks the real mobile
+     viewport. */
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background: #0a0a0a;
+  overflow: hidden;
 }
 
 .chat-container {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 0 16px 16px;
   scroll-behavior: smooth;
@@ -741,7 +750,8 @@ const removeImage = () => {
 }
 
 .input-container {
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) 16px;
+  /* Bottom padding clears the fixed DownBar nav so the input sits above it. */
+  padding: 12px 16px calc(90px + env(safe-area-inset-bottom)) 16px;
   background: linear-gradient(
     180deg,
     rgba(15, 15, 15, 0.95) 0%,

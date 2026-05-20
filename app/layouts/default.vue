@@ -5,12 +5,14 @@
     </div>
 
     <DownBar />
+    <OnboardingTour />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import DownBar from '~/components/DownBar.vue'
+import OnboardingTour from '~/components/OnboardingTour.vue'
 
 onMounted(() => {
   if (typeof document !== 'undefined') {
@@ -42,4 +44,3 @@ onMounted(() => {
   padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }
 </style>
-
