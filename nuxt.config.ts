@@ -33,10 +33,10 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      // Absolute URL of the AI proxy function. Leave empty for web builds
-      // (uses the relative /api/chat path); set NUXT_PUBLIC_AI_PROXY_URL to the
-      // full Netlify function URL for the bundled Android APK.
-      aiProxyUrl: ''
+      // Absolute URL of the AI proxy function (Netlify). Used by the web build
+      // and the bundled Android APK so the AI assistant works with no user
+      // setup. Override with NUXT_PUBLIC_AI_PROXY_URL if the site moves.
+      aiProxyUrl: 'https://budbuddy-demo.netlify.app/api/chat'
     }
   },
 
