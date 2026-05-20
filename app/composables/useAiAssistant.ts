@@ -1,5 +1,11 @@
 import { ref } from 'vue'
+import { useRuntimeConfig } from '#imports'
 import { useNativeStorage } from './useNativeStorage'
+
+interface GeminiResponse {
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+  promptFeedback?: { blockReason?: string }
+}
 
 // BudBuddy uses Google's Gemini API for the AI assistant. Gemini has a
 // generous free tier (https://aistudio.google.com/app/apikey) and supports
@@ -34,6 +40,12 @@ export const useAiAssistant = () => {
   const apiKey = ref<string>('')
   const keyLoaded = ref(false)
 
+  // The server-side proxy keeps a shared key hidden so users don't need to
+  // configure anything. Configurable via NUXT_PUBLIC_AI_PROXY_URL; defaults to
+  // the relative Netlify function path for web builds.
+  const config = useRuntimeConfig()
+  const proxyUrl = (config.public.aiProxyUrl as string) || '/api/chat'
+
   const loadKey = async () => {
     apiKey.value = (await storage.getItem(KEY_STORAGE)) || ''
     keyLoaded.value = true
@@ -61,13 +73,9 @@ export const useAiAssistant = () => {
     return m ? m[1] : 'image/jpeg'
   }
 
-  // Calls Gemini with the full conversation history for context.
-  const ask = async (history: ChatTurn[]): Promise<string> => {
-    if (!hasKey()) {
-      throw new Error('NO_API_KEY')
-    }
-
-    const contents = history.map((turn) => {
+  // Turns the chat history into Gemini "contents".
+  const buildContents = (history: ChatTurn[]) =>
+    history.map((turn) => {
       const parts: Array<Record<string, unknown>> = []
       if (turn.imageBase64) {
         parts.push({
@@ -82,42 +90,69 @@ export const useAiAssistant = () => {
       return { role: turn.role, parts }
     })
 
-    const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey.value)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1024
-        }
-      })
-    })
-
-    if (!res.ok) {
-      const detail = await res.text().catch(() => '')
-      if (res.status === 400 || res.status === 403) {
-        throw new Error('INVALID_API_KEY')
-      }
-      throw new Error(`Gemini API error ${res.status}: ${detail.slice(0, 200)}`)
-    }
-
-    const data = await res.json()
-    const text = data?.candidates?.[0]?.content?.parts
-      ?.map((p: { text?: string }) => p.text || '')
+  const extractText = (data: GeminiResponse): string => {
+    const text = (data?.candidates?.[0]?.content?.parts || [])
+      .map(p => p.text || '')
       .join('')
       .trim()
-
     if (!text) {
-      const blocked = data?.promptFeedback?.blockReason
-      if (blocked) {
+      if (data?.promptFeedback?.blockReason) {
         return '⚠️ I couldn\'t answer that one. Try rephrasing your question about your grow.'
       }
       throw new Error('Empty response from Gemini.')
     }
     return text
   }
+
+  // Calls Gemini directly using the user's own API key.
+  const askWithKey = async (history: ChatTurn[]): Promise<string> => {
+    const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey.value)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: buildContents(history),
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+      })
+    })
+
+    if (!res.ok) {
+      if (res.status === 400 || res.status === 403) throw new Error('INVALID_API_KEY')
+      const detail = await res.text().catch(() => '')
+      throw new Error(`Gemini API error ${res.status}: ${detail.slice(0, 200)}`)
+    }
+    return extractText(await res.json() as GeminiResponse)
+  }
+
+  // Calls the shared server proxy (key stays on the server). Throws NO_BACKEND
+  // when no proxy is reachable (e.g. on a plain static host) so the caller can
+  // fall back to the offline guide.
+  const askViaProxy = async (history: ChatTurn[]): Promise<string> => {
+    let res: Response
+    try {
+      res = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: buildContents(history) })
+      })
+    } catch {
+      throw new Error('NO_BACKEND')
+    }
+
+    const contentType = res.headers.get('content-type') || ''
+    if (res.status === 404 || res.status === 503 || !contentType.includes('application/json')) {
+      throw new Error('NO_BACKEND')
+    }
+
+    const data = await res.json().catch(() => null) as { text?: string, error?: string } | null
+    if (!res.ok || !data) throw new Error(data?.error || `AI service error ${res.status}`)
+    if (!data.text) throw new Error('Empty response from AI.')
+    return data.text
+  }
+
+  // The user's own key takes priority; otherwise use the shared proxy.
+  const ask = (history: ChatTurn[]): Promise<string> =>
+    hasKey() ? askWithKey(history) : askViaProxy(history)
 
   return { apiKey, keyLoaded, loadKey, saveKey, hasKey, ask }
 }

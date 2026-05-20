@@ -49,6 +49,10 @@ jobs:
         run: npm ci
 
       - name: Build application
+        # Bake the AI proxy URL into the APK's web build (set the AI_PROXY_URL
+        # repository variable to e.g. https://<site>.netlify.app/api/chat).
+        env:
+          NUXT_PUBLIC_AI_PROXY_URL: ${{ vars.AI_PROXY_URL }}
         run: npm run generate
 
       # --------------------------------

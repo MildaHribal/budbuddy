@@ -362,47 +362,34 @@ const sendMessage = async () => {
 
   await scrollToBottom()
   isTyping.value = true
+  void userImage
 
-  // If the user supplied a Gemini key, use the real AI. Otherwise fall back
-  // to the built-in offline answers so the feature still works without a key.
-  if (ai.hasKey()) {
-    try {
-      const history: ChatTurn[] = messages.value.map(m => ({
-        role: m.type === 'user' ? 'user' : 'model',
-        text: m.text,
-        imageBase64: m.image
-      }))
-      const answer = await ai.ask(history)
-      isTyping.value = false
-      messages.value.push({ type: 'bot', text: answer, time: getCurrentTime() })
-    } catch (err) {
-      isTyping.value = false
-      const code = err instanceof Error ? err.message : ''
-      let text: string
-      if (code === 'INVALID_API_KEY') {
-        text = '🔑 Your Gemini API key seems invalid or out of quota. Tap the ⚙️ icon to update it.'
-      } else if (code === 'NO_API_KEY') {
-        text = getBotResponse(userQuestion)
-      } else {
-        text = '⚠️ I couldn\'t reach the AI service. Check your connection and try again.\n\n' + getBotResponse(userQuestion)
-      }
-      messages.value.push({ type: 'bot', text, time: getCurrentTime() })
-    }
-    await scrollToBottom()
-    return
-  }
-
-  // Offline fallback (no API key configured)
-  setTimeout(() => {
+  // Try the real AI: the user's own key (if set) or the shared server proxy.
+  // If neither is reachable, fall back to the built-in offline answers.
+  try {
+    const history: ChatTurn[] = messages.value.map(m => ({
+      role: m.type === 'user' ? 'user' : 'model',
+      text: m.text,
+      imageBase64: m.image
+    }))
+    const answer = await ai.ask(history)
     isTyping.value = false
-    void userImage
-    messages.value.push({
-      type: 'bot',
-      text: getBotResponse(userQuestion),
-      time: getCurrentTime()
-    })
-    scrollToBottom()
-  }, 900)
+    messages.value.push({ type: 'bot', text: answer, time: getCurrentTime() })
+  } catch (err) {
+    isTyping.value = false
+    const code = err instanceof Error ? err.message : ''
+    let text: string
+    if (code === 'INVALID_API_KEY') {
+      text = '🔑 Your Gemini API key seems invalid or out of quota. Tap the ⚙️ icon to update it.'
+    } else if (code === 'NO_BACKEND' || code === 'NO_API_KEY') {
+      // No AI backend available — answer from the offline guide silently.
+      text = getBotResponse(userQuestion)
+    } else {
+      text = '⚠️ I couldn\'t reach the AI service. Check your connection and try again.\n\n' + getBotResponse(userQuestion)
+    }
+    messages.value.push({ type: 'bot', text, time: getCurrentTime() })
+  }
+  await scrollToBottom()
 }
 
 const sendQuickQuestion = (question: QuickQuestion) => {
