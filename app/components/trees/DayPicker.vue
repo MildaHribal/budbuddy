@@ -67,8 +67,10 @@ const idx = weekDays.value.findIndex(w => w.iso === todayIso)
 if (idx >= 0) selectedIndex.value = idx
 
 function selectDay(i: number) {
+  const day = weekDays.value[i]
+  if (!day) return
   selectedIndex.value = i
-  emit('update:date', weekDays.value[i].iso)
+  emit('update:date', day.iso)
 }
 </script>
 

@@ -154,7 +154,7 @@ const stages: Stage[] = [
 const currentStageIndex = computed(() => {
   let totalDays = 0;
   for (let i = 0; i < stages.length; i++) {
-    totalDays += stages[i].days;
+    totalDays += stages[i]?.days ?? 0;
     if (props.currentDay <= totalDays) {
       return i;
     }
@@ -167,7 +167,7 @@ const currentStage = computed(() => stages[currentStageIndex.value]);
 const daysIntoCurrentStage = computed(() => {
   let totalDays = 0;
   for (let i = 0; i < currentStageIndex.value; i++) {
-    totalDays += stages[i].days;
+    totalDays += stages[i]?.days ?? 0;
   }
   return props.currentDay - totalDays;
 });

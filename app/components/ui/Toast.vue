@@ -22,14 +22,9 @@
 import { ref, onMounted } from 'vue';
 import { Icon } from "@iconify/vue";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   message: string;
   title?: string;
-  type?: 'success' | 'error' | 'warning' | 'info';
-  duration?: number;
-}>();
-
-withDefaults(defineProps<{
   type?: 'success' | 'error' | 'warning' | 'info';
   duration?: number;
 }>(), {
