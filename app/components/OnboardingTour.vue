@@ -2,9 +2,28 @@
   <Transition name="onb-fade">
     <div
       v-if="visible"
-      class="onb-overlay"
+      class="onb-root"
+      @click="onBackdropClick"
     >
-      <div class="onb-card">
+      <!-- Spotlight cut-out around the highlighted element -->
+      <div
+        v-if="rect"
+        class="onb-spotlight"
+        :style="spotlightStyle"
+        @click.stop="next"
+      />
+      <!-- Full dim for steps without a target (welcome / finish) -->
+      <div
+        v-else
+        class="onb-dim"
+      />
+
+      <!-- Tooltip / step card -->
+      <div
+        class="onb-tip"
+        :style="tipStyle"
+        @click.stop
+      >
         <button
           class="onb-skip"
           @click="finish"
@@ -13,107 +32,203 @@
         </button>
 
         <div
-          :key="step"
-          class="onb-slide"
+          class="onb-tip-icon"
+          :style="{ background: current.glow }"
         >
-          <div
-            class="onb-icon"
-            :style="{ background: slides[step]!.glow }"
-          >
-            <Icon
-              :icon="slides[step]!.icon"
-              :height="56"
-              :style="{ color: slides[step]!.color }"
-            />
-          </div>
-          <h2 class="onb-title">
-            {{ slides[step]!.title }}
-          </h2>
-          <p class="onb-text">
-            {{ slides[step]!.text }}
-          </p>
+          <Icon
+            :icon="current.icon"
+            :height="30"
+            :style="{ color: current.color }"
+          />
         </div>
+
+        <h3 class="onb-tip-title">
+          {{ current.title }}
+        </h3>
+        <p class="onb-tip-text">
+          {{ current.text }}
+        </p>
 
         <div class="onb-dots">
           <span
-            v-for="(s, i) in slides"
+            v-for="(s, i) in steps"
             :key="i"
             :class="['onb-dot', { active: i === step }]"
-            @click="step = i"
           />
         </div>
 
-        <button
-          class="onb-next"
-          @click="next"
-        >
-          <span>{{ isLast ? "Start growing 🌱" : "Next" }}</span>
-          <Icon
-            v-if="!isLast"
-            icon="tabler:arrow-right"
-            :height="20"
-          />
-        </button>
+        <div class="onb-actions">
+          <button
+            v-if="step > 0"
+            class="onb-back"
+            @click="prev"
+          >
+            Back
+          </button>
+          <button
+            class="onb-next"
+            @click="next"
+          >
+            <span>{{ isLast ? "Start growing 🌱" : "Next" }}</span>
+            <Icon
+              v-if="!isLast"
+              icon="tabler:arrow-right"
+              :height="18"
+            />
+          </button>
+        </div>
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useNativeStorage } from '~/composables/useNativeStorage'
 
 const ONBOARDED_KEY = 'budbuddy-onboarded'
 
+interface Step {
+  target?: string // CSS selector of the element to highlight
+  icon: string
+  color: string
+  glow: string
+  title: string
+  text: string
+}
+
 const storage = useNativeStorage()
 const visible = ref(false)
 const step = ref(0)
+const rect = ref<DOMRect | null>(null)
 
-const slides = [
+const steps: Step[] = [
   {
     icon: 'tabler:plant-2',
     color: '#7bc74d',
     glow: 'rgba(123, 199, 77, 0.15)',
     title: 'Welcome to BudBuddy 🌿',
-    text: 'Your personal grow companion. Track every plant from seed to harvest, all on your device.'
+    text: 'Quick tour! Let\'s walk through the app so you know where everything is. Tap Next.'
   },
   {
-    icon: 'tabler:notebook',
+    target: '[aria-label="Home"]',
+    icon: 'tabler:home-2',
     color: '#7bc74d',
     glow: 'rgba(123, 199, 77, 0.15)',
-    title: 'Track your plants',
-    text: 'Add your plants, log watering, feeding and notes, and follow each growth stage on a clear timeline.'
+    title: 'Dashboard',
+    text: 'Your home screen — today\'s tasks and a quick overview of all your plants.'
   },
   {
+    target: '[aria-label="Plants"]',
+    icon: 'tabler:leaf',
+    color: '#7bc74d',
+    glow: 'rgba(123, 199, 77, 0.15)',
+    title: 'My Plants',
+    text: 'Add your plants here and log watering, feeding, notes and growth stages for each one.'
+  },
+  {
+    target: '[aria-label="AI Assistant"]',
     icon: 'tabler:brain',
     color: '#9fe76d',
     glow: 'rgba(159, 231, 109, 0.15)',
-    title: 'Ask the AI assistant',
-    text: 'Get cultivation tips and diagnose problems from photos. Add a free Gemini key in the AI tab to unlock it.'
+    title: 'AI Assistant',
+    text: 'Ask anything about growing and get a diagnosis from a photo of your plant. No setup needed!'
   },
   {
+    target: '[aria-label="Gallery"]',
+    icon: 'tabler:photo',
+    color: '#7bc74d',
+    glow: 'rgba(123, 199, 77, 0.15)',
+    title: 'Gallery',
+    text: 'Every photo from your grow journals, gathered in one place.'
+  },
+  {
+    target: '[aria-label="Statistics"]',
     icon: 'tabler:chart-bar',
     color: '#7bc74d',
     glow: 'rgba(123, 199, 77, 0.15)',
-    title: 'Gallery & stats',
-    text: 'Browse all your grow photos and watch your progress and achievements grow. Follow your local laws. 🌍'
+    title: 'Stats & achievements',
+    text: 'Track your progress and unlock achievements. Always follow your local laws. 🌍'
   }
 ]
 
-const isLast = computed(() => step.value === slides.length - 1)
+const current = computed(() => steps[step.value]!)
+const isLast = computed(() => step.value === steps.length - 1)
+const placeAbove = computed(() => {
+  if (!rect.value) return false
+  return rect.value.top > window.innerHeight / 2
+})
+
+const PAD = 8
+
+const measure = async () => {
+  await nextTick()
+  const sel = current.value.target
+  if (!sel) {
+    rect.value = null
+    return
+  }
+  const el = document.querySelector(sel)
+  rect.value = el ? el.getBoundingClientRect() : null
+}
+
+const spotlightStyle = computed(() => {
+  const r = rect.value
+  if (!r) return {}
+  return {
+    top: `${r.top - PAD}px`,
+    left: `${r.left - PAD}px`,
+    width: `${r.width + PAD * 2}px`,
+    height: `${r.height + PAD * 2}px`
+  }
+})
+
+const tipStyle = computed(() => {
+  const r = rect.value
+  // Centered card for steps without a target.
+  if (!r) {
+    return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+  }
+  const vw = window.innerWidth
+  const tipW = Math.min(320, vw - 24)
+  const centerX = r.left + r.width / 2
+  const left = Math.max(12, Math.min(centerX - tipW / 2, vw - tipW - 12))
+  const style: Record<string, string> = { width: `${tipW}px`, left: `${left}px` }
+  if (placeAbove.value) {
+    style.bottom = `${window.innerHeight - r.top + PAD + 14}px`
+  } else {
+    style.top = `${r.bottom + PAD + 14}px`
+  }
+  return style
+})
+
+const onResize = () => measure()
 
 onMounted(async () => {
   const seen = await storage.getItem(ONBOARDED_KEY)
-  if (!seen) visible.value = true
+  if (seen) return
+  visible.value = true
+  await measure()
+  window.addEventListener('resize', onResize)
 })
 
+onBeforeUnmount(() => window.removeEventListener('resize', onResize))
+
+watch(step, () => measure())
+
 const next = () => {
-  if (isLast.value) {
-    finish()
-  } else {
-    step.value++
-  }
+  if (isLast.value) finish()
+  else step.value++
+}
+
+const prev = () => {
+  if (step.value > 0) step.value--
+}
+
+const onBackdropClick = () => {
+  // Tapping the dimmed area advances the tour too.
+  next()
 }
 
 const finish = async () => {
@@ -123,125 +238,159 @@ const finish = async () => {
 </script>
 
 <style scoped>
-.onb-overlay {
+.onb-root {
   position: fixed;
   inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(5, 8, 5, 0.92);
-  backdrop-filter: blur(8px);
+  z-index: 10000;
 }
 
-.onb-card {
-  position: relative;
-  width: 100%;
-  max-width: 380px;
-  padding: 40px 24px 24px;
-  background: linear-gradient(160deg, #16201a 0%, #0c120e 100%);
-  border: 1px solid rgba(123, 199, 77, 0.2);
-  border-radius: 24px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-  text-align: center;
-}
-
-.onb-skip {
+.onb-dim {
   position: absolute;
-  top: 14px;
-  right: 16px;
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  inset: 0;
+  background: rgba(5, 8, 5, 0.88);
 }
 
-.onb-slide {
-  animation: onbIn 0.35s ease;
+.onb-spotlight {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(5, 8, 5, 0.82);
+  border: 2px solid rgba(123, 199, 77, 0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  animation: onbPulse 2s ease-in-out infinite;
+}
+
+@keyframes onbPulse {
+  0%, 100% {
+    border-color: rgba(123, 199, 77, 0.5);
+  }
+  50% {
+    border-color: rgba(159, 231, 109, 1);
+  }
+}
+
+.onb-tip {
+  position: fixed;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  padding: 20px 18px 16px;
+  background: linear-gradient(160deg, #16201a 0%, #0c120e 100%);
+  border: 1px solid rgba(123, 199, 77, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
+  text-align: center;
+  animation: onbIn 0.3s ease;
 }
 
 @keyframes onbIn {
   from {
     opacity: 0;
-    transform: translateX(16px);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-.onb-icon {
-  width: 110px;
-  height: 110px;
-  margin: 8px auto 24px;
-  border-radius: 28px;
+.onb-skip {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #7c857a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.onb-tip-icon {
+  width: 64px;
+  height: 64px;
+  margin: 4px auto 14px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(123, 199, 77, 0.25);
 }
 
-.onb-title {
-  margin: 0 0 12px;
-  font-size: 22px;
+.onb-tip-title {
+  margin: 0 0 8px;
+  font-size: 19px;
   font-weight: 800;
   color: #fff;
 }
 
-.onb-text {
-  margin: 0 auto 28px;
-  max-width: 300px;
-  font-size: 15px;
-  line-height: 1.55;
+.onb-tip-text {
+  margin: 0 auto 18px;
+  font-size: 14px;
+  line-height: 1.5;
   color: #aab3a8;
 }
 
 .onb-dots {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 6px;
+  margin-bottom: 18px;
 }
 
 .onb-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.18);
-  cursor: pointer;
   transition: all 0.25s ease;
 }
 
 .onb-dot.active {
-  width: 24px;
+  width: 20px;
   border-radius: 4px;
   background: #7bc74d;
 }
 
-.onb-next {
-  width: 100%;
+.onb-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 15px;
-  background: linear-gradient(135deg, #7bc74d 0%, #5a9e3a 100%);
+  gap: 10px;
+}
+
+.onb-back {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.06);
   border: none;
-  border-radius: 16px;
-  color: #fff;
-  font-size: 16px;
+  border-radius: 14px;
+  color: #cdd6cb;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(123, 199, 77, 0.3);
   -webkit-tap-highlight-color: transparent;
 }
 
-.onb-next:active {
+.onb-next {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 13px;
+  background: linear-gradient(135deg, #7bc74d 0%, #5a9e3a 100%);
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(123, 199, 77, 0.3);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.onb-next:active,
+.onb-back:active {
   transform: scale(0.98);
 }
 
