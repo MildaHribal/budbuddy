@@ -10,7 +10,7 @@
         v-if="rect"
         class="onb-spotlight"
         :style="spotlightStyle"
-        @click.stop="next"
+        @click.stop="onUserNext"
       />
       <!-- Full dim for steps without a target (welcome / finish) -->
       <div
@@ -67,7 +67,7 @@
           </button>
           <button
             class="onb-next"
-            @click="next"
+            @click="onUserNext"
           >
             <span>{{ isLast ? "Start growing 🌱" : "Next" }}</span>
             <Icon
@@ -84,13 +84,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useNativeStorage } from '~/composables/useNativeStorage'
 
 const ONBOARDED_KEY = 'budbuddy-onboarded'
+const AUTOPLAY_MS = 2200
 
 interface Step {
   target?: string // CSS selector of the element to highlight
+  route?: string // page to navigate to for this step
   icon: string
   color: string
   glow: string
@@ -98,20 +101,25 @@ interface Step {
   text: string
 }
 
+const router = useRouter()
 const storage = useNativeStorage()
 const visible = ref(false)
 const step = ref(0)
 const rect = ref<DOMRect | null>(null)
+let autoplay = true
+let timer: ReturnType<typeof setTimeout> | null = null
 
 const steps: Step[] = [
   {
+    route: '/',
     icon: 'tabler:plant-2',
     color: '#7bc74d',
     glow: 'rgba(123, 199, 77, 0.15)',
     title: 'Welcome to BudBuddy 🌿',
-    text: 'Quick tour! Let\'s walk through the app so you know where everything is. Tap Next.'
+    text: 'Quick tour — sit back, we\'ll show you around the app.'
   },
   {
+    route: '/',
     target: '[aria-label="Home"]',
     icon: 'tabler:home-2',
     color: '#7bc74d',
@@ -120,6 +128,7 @@ const steps: Step[] = [
     text: 'Your home screen — today\'s tasks and a quick overview of all your plants.'
   },
   {
+    route: '/my-trees',
     target: '[aria-label="Plants"]',
     icon: 'tabler:leaf',
     color: '#7bc74d',
@@ -128,6 +137,7 @@ const steps: Step[] = [
     text: 'Add your plants here and log watering, feeding, notes and growth stages for each one.'
   },
   {
+    route: '/ai-assistant',
     target: '[aria-label="AI Assistant"]',
     icon: 'tabler:brain',
     color: '#9fe76d',
@@ -136,6 +146,7 @@ const steps: Step[] = [
     text: 'Ask anything about growing and get a diagnosis from a photo of your plant. No setup needed!'
   },
   {
+    route: '/nutriens-calc',
     target: '[aria-label="Gallery"]',
     icon: 'tabler:photo',
     color: '#7bc74d',
@@ -144,6 +155,7 @@ const steps: Step[] = [
     text: 'Every photo from your grow journals, gathered in one place.'
   },
   {
+    route: '/stats',
     target: '[aria-label="Statistics"]',
     icon: 'tabler:chart-bar',
     color: '#7bc74d',
@@ -162,14 +174,36 @@ const placeAbove = computed(() => {
 
 const PAD = 8
 
-const measure = async () => {
-  await nextTick()
-  const sel = current.value.target
-  if (!sel) {
-    rect.value = null
-    return
+const clearTimer = () => {
+  if (timer) {
+    clearTimeout(timer)
+    timer = null
   }
-  const el = document.querySelector(sel)
+}
+
+// Navigate to the step's page (really clicking through the app), then locate
+// the element to spotlight and schedule the next step when auto-playing.
+const showStep = async () => {
+  clearTimer()
+  const s = current.value
+  if (s.route && router.currentRoute.value.path !== s.route) {
+    await router.push(s.route)
+  }
+  await nextTick()
+  // Let the page render/transition before measuring.
+  await new Promise(r => setTimeout(r, 220))
+
+  const el = s.target ? document.querySelector(s.target) : null
+  rect.value = el ? el.getBoundingClientRect() : null
+
+  if (autoplay && visible.value) {
+    timer = setTimeout(() => next(), AUTOPLAY_MS)
+  }
+}
+
+const measure = () => {
+  const sel = current.value.target
+  const el = sel ? document.querySelector(sel) : null
   rect.value = el ? el.getBoundingClientRect() : null
 }
 
@@ -209,31 +243,50 @@ onMounted(async () => {
   const seen = await storage.getItem(ONBOARDED_KEY)
   if (seen) return
   visible.value = true
-  await measure()
+  await showStep()
   window.addEventListener('resize', onResize)
 })
 
-onBeforeUnmount(() => window.removeEventListener('resize', onResize))
+onBeforeUnmount(() => {
+  clearTimer()
+  window.removeEventListener('resize', onResize)
+})
 
-watch(step, () => measure())
+watch(step, () => showStep())
 
+// Any manual control (Back/Next/Skip/tap) stops the automatic playback.
+const stopAutoplay = () => {
+  autoplay = false
+  clearTimer()
+}
+
+// Used by autoplay (keeps playing).
 const next = () => {
   if (isLast.value) finish()
   else step.value++
 }
 
+// Used by buttons / taps — takes over from autoplay.
+const onUserNext = () => {
+  stopAutoplay()
+  next()
+}
+
 const prev = () => {
+  stopAutoplay()
   if (step.value > 0) step.value--
 }
 
 const onBackdropClick = () => {
-  // Tapping the dimmed area advances the tour too.
-  next()
+  // Tapping the dimmed area skips ahead (and takes over from autoplay).
+  onUserNext()
 }
 
 const finish = async () => {
+  clearTimer()
   await storage.setItem(ONBOARDED_KEY, '1')
   visible.value = false
+  if (router.currentRoute.value.path !== '/') router.push('/')
 }
 </script>
 

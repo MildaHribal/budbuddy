@@ -19,6 +19,12 @@ const GEMINI_MODEL = 'gemini-2.0-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 const KEY_STORAGE = 'budbuddy-gemini-key'
 
+// Built-in fallback key so the assistant works out of the box with no setup.
+// NOTE: this ships in the public web bundle / APK, so it can be extracted and
+// Google may auto-revoke it. The Netlify proxy is the secure alternative; a
+// user-supplied key (⚙️) always takes priority over this one.
+const BUILTIN_API_KEY = 'AIzaSyBKtNPD_BZ4i5-GbH4-p8swFqWVtBwD-IY'
+
 const SYSTEM_PROMPT = `You are BudBuddy, a friendly and highly knowledgeable cannabis cultivation assistant inside a grow-tracking app.
 Help home growers with germination, seedling, vegetative and flowering care, nutrients and pH, lighting, watering, ventilation, training (LST/topping), pest and deficiency diagnosis, harvesting, drying and curing.
 Guidelines:
@@ -104,9 +110,12 @@ export const useAiAssistant = () => {
     return text
   }
 
-  // Calls Gemini directly using the user's own API key.
+  // The user's own key (⚙️) takes priority; otherwise the built-in key.
+  const effectiveKey = () => apiKey.value.trim() || BUILTIN_API_KEY
+
+  // Calls Gemini directly using the effective API key.
   const askWithKey = async (history: ChatTurn[]): Promise<string> => {
-    const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey.value)}`, {
+    const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(effectiveKey())}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -150,9 +159,18 @@ export const useAiAssistant = () => {
     return data.text
   }
 
-  // The user's own key takes priority; otherwise use the shared proxy.
-  const ask = (history: ChatTurn[]): Promise<string> =>
-    hasKey() ? askWithKey(history) : askViaProxy(history)
+  // Always try Gemini directly with the effective key; if that key is rejected,
+  // fall back to the server proxy (which may hold a valid key).
+  const ask = async (history: ChatTurn[]): Promise<string> => {
+    try {
+      return await askWithKey(history)
+    } catch (e) {
+      if (e instanceof Error && e.message === 'INVALID_API_KEY') {
+        return await askViaProxy(history)
+      }
+      throw e
+    }
+  }
 
   return { apiKey, keyLoaded, loadKey, saveKey, hasKey, ask }
 }
