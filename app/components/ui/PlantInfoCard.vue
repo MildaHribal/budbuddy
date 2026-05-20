@@ -2,52 +2,96 @@
   <div class="plant-info-card">
     <div class="card-header">
       <div class="plant-avatar">
-        <img v-if="imageUrl" :src="imageUrl" :alt="name" />
-        <Icon v-else icon="tabler:plant" height="32" style="color: #7bc74d" />
+        <img
+          v-if="imageUrl"
+          :src="imageUrl"
+          :alt="name"
+        >
+        <Icon
+          v-else
+          icon="tabler:plant"
+          height="32"
+          style="color: #7bc74d"
+        />
       </div>
 
       <div class="plant-details">
-        <h3 class="plant-name">{{ name }}</h3>
+        <h3 class="plant-name">
+          {{ name }}
+        </h3>
         <div class="plant-meta">
           <span class="meta-item">
-            <Icon icon="tabler:calendar" height="14" />
+            <Icon
+              icon="tabler:calendar"
+              height="14"
+            />
             Den {{ currentDay }}
           </span>
           <span class="meta-divider">•</span>
           <span class="meta-item">
-            <Icon :icon="stageIcon" height="14" />
+            <Icon
+              :icon="stageIcon"
+              height="14"
+            />
             {{ stage }}
           </span>
         </div>
       </div>
 
       <button class="options-btn">
-        <Icon icon="tabler:dots-vertical" height="20" />
+        <Icon
+          icon="tabler:dots-vertical"
+          height="20"
+        />
       </button>
     </div>
 
     <div class="card-stats">
       <div class="stat-item">
-        <Icon icon="tabler:heart-filled" height="18" :style="{ color: healthColor }" />
+        <Icon
+          icon="tabler:heart-filled"
+          height="18"
+          :style="{ color: healthColor }"
+        />
         <div class="stat-info">
-          <div class="stat-label">Zdraví</div>
-          <div class="stat-value">{{ health }}%</div>
+          <div class="stat-label">
+            Zdraví
+          </div>
+          <div class="stat-value">
+            {{ health }}%
+          </div>
         </div>
       </div>
 
       <div class="stat-item">
-        <Icon icon="tabler:ruler" height="18" style="color: #7bc74d" />
+        <Icon
+          icon="tabler:ruler"
+          height="18"
+          style="color: #7bc74d"
+        />
         <div class="stat-info">
-          <div class="stat-label">Výška</div>
-          <div class="stat-value">{{ height }} cm</div>
+          <div class="stat-label">
+            Výška
+          </div>
+          <div class="stat-value">
+            {{ height }} cm
+          </div>
         </div>
       </div>
 
       <div class="stat-item">
-        <Icon icon="tabler:droplet" height="18" style="color: #4a9eff" />
+        <Icon
+          icon="tabler:droplet"
+          height="18"
+          style="color: #4a9eff"
+        />
         <div class="stat-info">
-          <div class="stat-label">Vlhkost</div>
-          <div class="stat-value">{{ moisture }}%</div>
+          <div class="stat-label">
+            Vlhkost
+          </div>
+          <div class="stat-value">
+            {{ moisture }}%
+          </div>
         </div>
       </div>
     </div>
@@ -58,7 +102,10 @@
         <span class="progress-percentage">{{ stageProgress }}%</span>
       </div>
       <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: stageProgress + '%' }"></div>
+        <div
+          class="progress-fill"
+          :style="{ width: stageProgress + '%' }"
+        />
       </div>
       <div class="progress-footer">
         <span>{{ currentDay }} dní</span>
@@ -68,15 +115,24 @@
 
     <div class="quick-actions">
       <button class="action-btn water">
-        <Icon icon="tabler:droplet-filled" height="20" />
+        <Icon
+          icon="tabler:droplet-filled"
+          height="20"
+        />
         <span>Zalít</span>
       </button>
       <button class="action-btn feed">
-        <Icon icon="tabler:flask-2-filled" height="20" />
+        <Icon
+          icon="tabler:flask-2-filled"
+          height="20"
+        />
         <span>Přidat živiny</span>
       </button>
       <button class="action-btn note">
-        <Icon icon="tabler:notes" height="20" />
+        <Icon
+          icon="tabler:notes"
+          height="20"
+        />
         <span>Poznámka</span>
       </button>
     </div>
@@ -84,34 +140,34 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Icon } from "@iconify/vue";
+import { computed } from 'vue'
+import { Icon } from '@iconify/vue'
 
 const props = defineProps<{
-  name: string;
-  stage: string;
-  stageIcon: string;
-  currentDay: number;
-  totalDays: number;
-  health: number;
-  height: number;
-  moisture: number;
-  imageUrl?: string;
-}>();
+  name: string
+  stage: string
+  stageIcon: string
+  currentDay: number
+  totalDays: number
+  health: number
+  height: number
+  moisture: number
+  imageUrl?: string
+}>()
 
 const stageProgress = computed(() => {
-  return Math.min(Math.round((props.currentDay / props.totalDays) * 100), 100);
-});
+  return Math.min(Math.round((props.currentDay / props.totalDays) * 100), 100)
+})
 
 const remainingDays = computed(() => {
-  return Math.max(props.totalDays - props.currentDay, 0);
-});
+  return Math.max(props.totalDays - props.currentDay, 0)
+})
 
 const healthColor = computed(() => {
-  if (props.health >= 80) return '#7bc74d';
-  if (props.health >= 60) return '#ffaa00';
-  return '#ff4444';
-});
+  if (props.health >= 80) return '#7bc74d'
+  if (props.health >= 60) return '#ffaa00'
+  return '#ff4444'
+})
 </script>
 
 <style scoped>
@@ -324,4 +380,3 @@ const healthColor = computed(() => {
   color: #ff9d00;
 }
 </style>
-

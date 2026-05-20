@@ -3,37 +3,44 @@
     <div class="splash-content">
       <div class="logo-container">
         <div class="logo-circle">
-          <Icon icon="tabler:leaf" height="80" />
+          <Icon
+            icon="tabler:leaf"
+            height="80"
+          />
         </div>
-        <div class="logo-glow"></div>
+        <div class="logo-glow" />
       </div>
 
-      <h1 class="app-name">BudBuddy</h1>
-      <p class="app-tagline">Your grow companion</p>
+      <h1 class="app-name">
+        BudBuddy
+      </h1>
+      <p class="app-tagline">
+        Your grow companion
+      </p>
 
       <div class="loading-bar">
-        <div class="loading-bar-fill"></div>
+        <div class="loading-bar-fill" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
-import { onMounted } from "vue";
+import { Icon } from '@iconify/vue'
+import { onMounted } from 'vue'
 
 onMounted(() => {
-  // Po 2 sekundách skrýt splash screen
+  // Hide the splash screen after 2 seconds.
   setTimeout(() => {
-    const splash = document.querySelector(".splash-screen");
+    const splash = document.querySelector('.splash-screen')
     if (splash) {
-      splash.classList.add("fade-out");
+      splash.classList.add('fade-out')
       setTimeout(() => {
-        splash.remove();
-      }, 500);
+        splash.remove()
+      }, 500)
     }
-  }, 2000);
-});
+  }, 2000)
+})
 </script>
 
 <style scoped>

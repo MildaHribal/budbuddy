@@ -1,64 +1,76 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { usePlants } from '~/composables/usePlants';
-import { Icon } from "@iconify/vue";
-import AddTreeModal from '~/components/trees/journal/AddTreeModal.vue';
-import { useHead } from "#imports";
+import { ref, onMounted, onUnmounted } from 'vue'
+import { usePlants, type Plant } from '~/composables/usePlants'
+import { Icon } from '@iconify/vue'
+import AddTreeModal from '~/components/trees/journal/AddTreeModal.vue'
+import { useHead } from '#imports'
 
-useHead({ title: 'My Plants' });
+useHead({ title: 'My Plants' })
 
-const { plants, loadPlantsFromStorage } = usePlants();
-const isAddModalOpen = ref(false);
+const { plants, loadPlantsFromStorage } = usePlants()
+const isAddModalOpen = ref(false)
 
 function onPlantsUpdatedHandler() {
-  loadPlantsFromStorage();
+  loadPlantsFromStorage()
 }
 
 onMounted(() => {
-  loadPlantsFromStorage();
+  loadPlantsFromStorage()
   if (typeof window !== 'undefined') {
-    window.addEventListener('plants-updated', onPlantsUpdatedHandler);
+    window.addEventListener('plants-updated', onPlantsUpdatedHandler)
   }
-});
+})
 
 onUnmounted(() => {
   if (typeof window !== 'undefined') {
-    window.removeEventListener('plants-updated', onPlantsUpdatedHandler);
+    window.removeEventListener('plants-updated', onPlantsUpdatedHandler)
   }
-});
+})
 
 const showAddModal = () => {
-  isAddModalOpen.value = true;
-};
+  isAddModalOpen.value = true
+}
 
 const closeAddModal = () => {
-  isAddModalOpen.value = false;
-  loadPlantsFromStorage();
-};
+  isAddModalOpen.value = false
+  loadPlantsFromStorage()
+}
 
-function getDaysSince(plant: any): number {
-  const dateStr = plant.plantingDate || plant.createdAt;
-  if (!dateStr) return 0;
-  const diff = Date.now() - new Date(dateStr).getTime();
-  return Math.max(0, Math.floor(diff / 86400000));
+function getDaysSince(plant: Plant): number {
+  const dateStr = plant.plantingDate || plant.createdAt
+  if (!dateStr) return 0
+  const diff = Date.now() - new Date(dateStr).getTime()
+  return Math.max(0, Math.floor(diff / 86400000))
 }
 </script>
 
 <template>
   <div class="my-trees-page">
-    <Header title="My Plants" icon="tabler:leaf" />
+    <Header
+      title="My Plants"
+      icon="tabler:leaf"
+    />
 
     <!-- Empty state -->
-    <div v-if="plants.length === 0" class="empty-state">
+    <div
+      v-if="plants.length === 0"
+      class="empty-state"
+    >
       <div class="empty-icon">
-        <Icon icon="tabler:plant-off" :height="80" />
+        <Icon
+          icon="tabler:plant-off"
+          :height="80"
+        />
       </div>
       <h2>No plants yet</h2>
       <p>Click the + button to add your first plant</p>
     </div>
 
     <!-- Plants list -->
-    <div v-else class="plants-container">
+    <div
+      v-else
+      class="plants-container"
+    >
       <div class="plants-grid">
         <NuxtLink
           v-for="plant in plants"
@@ -71,9 +83,15 @@ function getDaysSince(plant: any): number {
               v-if="plant.photoPreview"
               :src="plant.photoPreview"
               :alt="plant.name"
-            />
-            <div v-else class="plant-placeholder">
-              <Icon icon="tabler:plant" :height="40" />
+            >
+            <div
+              v-else
+              class="plant-placeholder"
+            >
+              <Icon
+                icon="tabler:plant"
+                :height="40"
+              />
             </div>
           </div>
 
@@ -83,34 +101,61 @@ function getDaysSince(plant: any): number {
 
             <div class="plant-meta">
               <div class="meta-item">
-                <Icon icon="tabler:calendar" :height="14" />
+                <Icon
+                  icon="tabler:calendar"
+                  :height="14"
+                />
                 <span>Day {{ getDaysSince(plant) }}</span>
               </div>
               <div class="meta-item">
-                <Icon icon="tabler:heart" :height="14" />
+                <Icon
+                  icon="tabler:heart"
+                  :height="14"
+                />
                 <span>{{ (plant as any).health || 100 }}%</span>
               </div>
             </div>
           </div>
 
           <div class="plant-arrow">
-            <Icon icon="tabler:chevron-right" :height="20" />
+            <Icon
+              icon="tabler:chevron-right"
+              :height="20"
+            />
           </div>
         </NuxtLink>
       </div>
     </div>
 
     <!-- FAB Button -->
-    <button class="fab-button" @click="showAddModal" aria-label="Add plant">
-      <Icon icon="tabler:plus" :height="28" />
+    <button
+      class="fab-button"
+      aria-label="Add plant"
+      @click="showAddModal"
+    >
+      <Icon
+        icon="tabler:plus"
+        :height="28"
+      />
     </button>
 
     <!-- Add Plant Modal -->
     <Teleport to="body">
-      <div v-if="isAddModalOpen" class="modal-overlay" @click.self="closeAddModal">
+      <div
+        v-if="isAddModalOpen"
+        class="modal-overlay"
+        @click.self="closeAddModal"
+      >
         <div class="modal-container-wrapper">
-          <button @click="closeAddModal" class="modal-close-btn" aria-label="Close add plant modal">
-            <Icon icon="tabler:x" :height="24" />
+          <button
+            class="modal-close-btn"
+            aria-label="Close add plant modal"
+            @click="closeAddModal"
+          >
+            <Icon
+              icon="tabler:x"
+              :height="24"
+            />
           </button>
           <AddTreeModal @close-all="closeAddModal" />
         </div>
@@ -352,4 +397,3 @@ function getDaysSince(plant: any): number {
   background: rgba(255, 68, 68, 0.9);
 }
 </style>
-

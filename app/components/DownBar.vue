@@ -1,25 +1,39 @@
 <template>
   <div class="downbar">
     <!-- Frosted top border glow -->
-    <div class="top-glow"></div>
+    <div class="top-glow" />
 
     <nav class="nav-row">
       <!-- Home -->
-      <NuxtLink to="/" class="nav-item" aria-label="Home">
+      <NuxtLink
+        to="/"
+        class="nav-item"
+        aria-label="Home"
+      >
         <div class="nav-icon-wrap">
-          <Icon icon="tabler:home-2" height="22" />
+          <Icon
+            icon="tabler:home-2"
+            height="22"
+          />
         </div>
         <span class="nav-label">Home</span>
-        <div class="nav-dot"></div>
+        <div class="nav-dot" />
       </NuxtLink>
 
       <!-- My Plants -->
-      <NuxtLink to="/my-trees" class="nav-item" aria-label="Plants">
+      <NuxtLink
+        to="/my-trees"
+        class="nav-item"
+        aria-label="Plants"
+      >
         <div class="nav-icon-wrap">
-          <Icon icon="tabler:leaf" height="22" />
+          <Icon
+            icon="tabler:leaf"
+            height="22"
+          />
         </div>
         <span class="nav-label">Plants</span>
-        <div class="nav-dot"></div>
+        <div class="nav-dot" />
       </NuxtLink>
 
       <!-- AI – center elevated button -->
@@ -28,34 +42,51 @@
         class="nav-item ai-btn"
         aria-label="AI Assistant"
       >
-        <div class="ai-glow"></div>
-        <div class="ai-ring"></div>
-        <Icon icon="tabler:brain" height="26" />
+        <div class="ai-glow" />
+        <div class="ai-ring" />
+        <Icon
+          icon="tabler:brain"
+          height="26"
+        />
       </NuxtLink>
 
       <!-- Gallery -->
-      <NuxtLink to="/nutriens-calc" class="nav-item" aria-label="Gallery">
+      <NuxtLink
+        to="/nutriens-calc"
+        class="nav-item"
+        aria-label="Gallery"
+      >
         <div class="nav-icon-wrap">
-          <Icon icon="tabler:photo" height="22" />
+          <Icon
+            icon="tabler:photo"
+            height="22"
+          />
         </div>
         <span class="nav-label">Gallery</span>
-        <div class="nav-dot"></div>
+        <div class="nav-dot" />
       </NuxtLink>
 
       <!-- Stats -->
-      <NuxtLink to="/stats" class="nav-item" aria-label="Statistics">
+      <NuxtLink
+        to="/stats"
+        class="nav-item"
+        aria-label="Statistics"
+      >
         <div class="nav-icon-wrap">
-          <Icon icon="tabler:chart-bar" height="22" />
+          <Icon
+            icon="tabler:chart-bar"
+            height="22"
+          />
         </div>
         <span class="nav-label">Stats</span>
-        <div class="nav-dot"></div>
+        <div class="nav-dot" />
       </NuxtLink>
     </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
+import { Icon } from '@iconify/vue'
 </script>
 
 <style scoped>

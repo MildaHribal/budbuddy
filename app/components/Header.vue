@@ -1,35 +1,48 @@
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
+import { Icon } from '@iconify/vue'
 
 interface Props {
-  title: string;
-  icon?: string;
-  showBack?: boolean;
+  title: string
+  icon?: string
+  showBack?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   icon: 'tabler:leaf',
   showBack: false
-});
+})
 
 const goBack = () => {
-  window.history.back();
-};
+  window.history.back()
+}
 </script>
 
 <template>
   <div class="header-wrapper">
-    <div class="header-background"></div>
+    <div class="header-background" />
     <div class="header-content">
-      <button v-if="showBack" @click="goBack" class="back-button">
-        <Icon icon="tabler:arrow-left" height="24" />
+      <button
+        v-if="showBack"
+        class="back-button"
+        @click="goBack"
+      >
+        <Icon
+          icon="tabler:arrow-left"
+          height="24"
+        />
       </button>
 
       <div class="header-icon">
-        <Icon :icon="icon" height="26" style="color: #7bc74d" />
+        <Icon
+          :icon="icon"
+          height="26"
+          style="color: #7bc74d"
+        />
       </div>
 
-      <h1 class="header-title">{{ title }}</h1>
+      <h1 class="header-title">
+        {{ title }}
+      </h1>
     </div>
   </div>
 </template>

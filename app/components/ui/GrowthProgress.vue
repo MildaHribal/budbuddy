@@ -2,44 +2,57 @@
   <div class="growth-progress">
     <div class="progress-header">
       <div class="progress-title">
-        <Icon :icon="stageIcon" height="24" style="color: #7bc74d" />
+        <Icon
+          :icon="stageIcon"
+          height="24"
+          style="color: #7bc74d"
+        />
         <span>{{ stageName }}</span>
       </div>
-      <div class="progress-percentage">{{ percentage }}%</div>
+      <div class="progress-percentage">
+        {{ percentage }}%
+      </div>
     </div>
 
     <div class="progress-bar-container">
-      <div class="progress-bar-bg"></div>
-      <div class="progress-bar-fill" :style="{ width: percentage + '%' }">
-        <div class="progress-bar-glow"></div>
+      <div class="progress-bar-bg" />
+      <div
+        class="progress-bar-fill"
+        :style="{ width: percentage + '%' }"
+      >
+        <div class="progress-bar-glow" />
       </div>
     </div>
 
     <div class="progress-info">
-      <div class="progress-day">Den {{ currentDay }} z {{ totalDays }}</div>
-      <div class="progress-remaining">{{ remainingDays }} dní zbývá</div>
+      <div class="progress-day">
+        Den {{ currentDay }} z {{ totalDays }}
+      </div>
+      <div class="progress-remaining">
+        {{ remainingDays }} dní zbývá
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
-import { computed } from 'vue';
+import { Icon } from '@iconify/vue'
+import { computed } from 'vue'
 
 const props = defineProps<{
-  stageName: string;
-  stageIcon: string;
-  currentDay: number;
-  totalDays: number;
-}>();
+  stageName: string
+  stageIcon: string
+  currentDay: number
+  totalDays: number
+}>()
 
 const percentage = computed(() => {
-  return Math.min(Math.round((props.currentDay / props.totalDays) * 100), 100);
-});
+  return Math.min(Math.round((props.currentDay / props.totalDays) * 100), 100)
+})
 
 const remainingDays = computed(() => {
-  return Math.max(props.totalDays - props.currentDay, 0);
-});
+  return Math.max(props.totalDays - props.currentDay, 0)
+})
 </script>
 
 <style scoped>
@@ -132,4 +145,3 @@ const remainingDays = computed(() => {
   font-weight: 600;
 }
 </style>
-

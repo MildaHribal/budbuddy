@@ -1,23 +1,34 @@
 <template>
-  <div class="loading-overlay" v-if="show">
+  <div
+    v-if="show"
+    class="loading-overlay"
+  >
     <div class="loading-content">
       <div class="loading-spinner">
         <div class="spinner-leaf">
-          <Icon icon="tabler:leaf" height="48" />
+          <Icon
+            icon="tabler:leaf"
+            height="48"
+          />
         </div>
       </div>
-      <div class="loading-text" v-if="text">{{ text }}</div>
+      <div
+        v-if="text"
+        class="loading-text"
+      >
+        {{ text }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
+import { Icon } from '@iconify/vue'
 
 defineProps<{
-  show: boolean;
-  text?: string;
-}>();
+  show: boolean
+  text?: string
+}>()
 </script>
 
 <style scoped>
@@ -96,4 +107,3 @@ defineProps<{
   }
 }
 </style>
-

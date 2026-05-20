@@ -1,58 +1,90 @@
 <template>
   <Transition name="toast">
-    <div v-if="show" :class="['toast', type]">
+    <div
+      v-if="show"
+      :class="['toast', type]"
+    >
       <div class="toast-icon">
-        <Icon v-if="type === 'success'" icon="tabler:check-circle" height="24" />
-        <Icon v-else-if="type === 'error'" icon="tabler:x-circle" height="24" />
-        <Icon v-else-if="type === 'warning'" icon="tabler:alert-triangle" height="24" />
-        <Icon v-else icon="tabler:info-circle" height="24" />
+        <Icon
+          v-if="type === 'success'"
+          icon="tabler:check-circle"
+          height="24"
+        />
+        <Icon
+          v-else-if="type === 'error'"
+          icon="tabler:x-circle"
+          height="24"
+        />
+        <Icon
+          v-else-if="type === 'warning'"
+          icon="tabler:alert-triangle"
+          height="24"
+        />
+        <Icon
+          v-else
+          icon="tabler:info-circle"
+          height="24"
+        />
       </div>
       <div class="toast-content">
-        <div class="toast-title" v-if="title">{{ title }}</div>
-        <div class="toast-message">{{ message }}</div>
+        <div
+          v-if="title"
+          class="toast-title"
+        >
+          {{ title }}
+        </div>
+        <div class="toast-message">
+          {{ message }}
+        </div>
       </div>
-      <button @click="close" class="toast-close">
-        <Icon icon="tabler:x" height="18" />
+      <button
+        class="toast-close"
+        @click="close"
+      >
+        <Icon
+          icon="tabler:x"
+          height="18"
+        />
       </button>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { Icon } from "@iconify/vue";
+import { ref, onMounted } from 'vue'
+import { Icon } from '@iconify/vue'
 
 const props = withDefaults(defineProps<{
-  message: string;
-  title?: string;
-  type?: 'success' | 'error' | 'warning' | 'info';
-  duration?: number;
+  message: string
+  title?: string
+  type?: 'success' | 'error' | 'warning' | 'info'
+  duration?: number
 }>(), {
   type: 'info',
   duration: 3000
-});
+})
 
 const emit = defineEmits<{
-  close: [];
-}>();
+  close: []
+}>()
 
-const show = ref(false);
+const show = ref(false)
 
 onMounted(() => {
-  show.value = true;
+  show.value = true
   if (props.duration > 0) {
     setTimeout(() => {
-      close();
-    }, props.duration);
+      close()
+    }, props.duration)
   }
-});
+})
 
 const close = () => {
-  show.value = false;
+  show.value = false
   setTimeout(() => {
-    emit('close');
-  }, 300);
-};
+    emit('close')
+  }, 300)
+}
 </script>
 
 <style scoped>
@@ -163,4 +195,3 @@ const close = () => {
   transform: translateY(-20px) scale(0.95);
 }
 </style>
-

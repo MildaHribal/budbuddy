@@ -7,23 +7,16 @@ interface GeminiResponse {
   promptFeedback?: { blockReason?: string }
 }
 
-// BudBuddy uses Google's Gemini API for the AI assistant. Gemini has a
-// generous free tier (https://aistudio.google.com/app/apikey) and supports
-// image input, which is ideal for diagnosing plant photos.
-//
-// Because this is a static client-side app, every user supplies their own
-// free API key (stored locally on the device). When no key is set we fall
-// back to a small set of built-in offline answers so the feature still works.
-
-const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 const KEY_STORAGE = 'budbuddy-gemini-key'
 
-// Built-in fallback key so the assistant works out of the box with no setup.
-// NOTE: this ships in the public web bundle / APK, so it can be extracted and
-// Google may auto-revoke it. The Netlify proxy is the secure alternative; a
-// user-supplied key (⚙️) always takes priority over this one.
-const BUILTIN_API_KEY = 'AIzaSyBKtNPD_BZ4i5-GbH4-p8swFqWVtBwD-IY'
+// Optional built-in key. Leave EMPTY in production: a key hardcoded here ships
+// in the public bundle, which (a) lets Google's scanner flag and revoke it and
+// (b) makes Netlify's secret scanner fail the build. With it empty, requests go
+// straight to the server proxy, which holds the real key (GEMINI_API_KEY) safely
+// server-side. A user-supplied key (⚙️ in the app) always takes priority.
+const BUILTIN_API_KEY = ''
 
 const SYSTEM_PROMPT = `You are BudBuddy, a friendly and highly knowledgeable cannabis cultivation assistant inside a grow-tracking app.
 Help home growers with germination, seedling, vegetative and flowering care, nutrients and pH, lighting, watering, ventilation, training (LST/topping), pest and deficiency diagnosis, harvesting, drying and curing.
@@ -46,9 +39,6 @@ export const useAiAssistant = () => {
   const apiKey = ref<string>('')
   const keyLoaded = ref(false)
 
-  // The server-side proxy keeps a shared key hidden so users don't need to
-  // configure anything. Configurable via NUXT_PUBLIC_AI_PROXY_URL; defaults to
-  // the relative Netlify function path for web builds.
   const config = useRuntimeConfig()
   const proxyUrl = (config.public.aiProxyUrl as string) || '/api/chat'
 
@@ -110,12 +100,8 @@ export const useAiAssistant = () => {
     return text
   }
 
-  // The user's own key (⚙️) takes priority; otherwise the built-in key.
-  const effectiveKey = () => apiKey.value.trim() || BUILTIN_API_KEY
-
-  // Calls Gemini directly using the effective API key.
-  const askWithKey = async (history: ChatTurn[]): Promise<string> => {
-    const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(effectiveKey())}`, {
+  const askWithKey = async (history: ChatTurn[], key: string): Promise<string> => {
+    const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(key)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -126,16 +112,17 @@ export const useAiAssistant = () => {
     })
 
     if (!res.ok) {
+      // 400/403: bad or revoked key. 429: out of quota (the built-in key is
+      // rate-limited or has been flagged). Both are recoverable by falling
+      // back to the server proxy, so surface them as typed errors.
       if (res.status === 400 || res.status === 403) throw new Error('INVALID_API_KEY')
+      if (res.status === 429) throw new Error('QUOTA')
       const detail = await res.text().catch(() => '')
       throw new Error(`Gemini API error ${res.status}: ${detail.slice(0, 200)}`)
     }
     return extractText(await res.json() as GeminiResponse)
   }
 
-  // Calls the shared server proxy (key stays on the server). Throws NO_BACKEND
-  // when no proxy is reachable (e.g. on a plain static host) so the caller can
-  // fall back to the offline guide.
   const askViaProxy = async (history: ChatTurn[]): Promise<string> => {
     let res: Response
     try {
@@ -159,15 +146,25 @@ export const useAiAssistant = () => {
     return data.text
   }
 
-  // Always try Gemini directly with the effective key; if that key is rejected,
-  // fall back to the server proxy (which may hold a valid key).
+  const isRecoverable = (e: unknown) =>
+    e instanceof Error && (e.message === 'INVALID_API_KEY' || e.message === 'QUOTA' || e.message === 'NO_BACKEND')
+
+  // Resolution order:
+  //  1. If the user set their own key, use only that — surface its errors so
+  //     they can fix it in settings.
+  //  2. Otherwise try the built-in key, and on any recoverable failure (bad
+  //     key / out of quota) fall back to the shared server proxy.
   const ask = async (history: ChatTurn[]): Promise<string> => {
+    const userKey = apiKey.value.trim()
+    if (userKey) return askWithKey(history, userKey)
+
+    // No built-in key configured → go straight to the server proxy.
+    if (!BUILTIN_API_KEY) return askViaProxy(history)
+
     try {
-      return await askWithKey(history)
+      return await askWithKey(history, BUILTIN_API_KEY)
     } catch (e) {
-      if (e instanceof Error && e.message === 'INVALID_API_KEY') {
-        return await askViaProxy(history)
-      }
+      if (isRecoverable(e)) return askViaProxy(history)
       throw e
     }
   }

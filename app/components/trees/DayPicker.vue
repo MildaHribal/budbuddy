@@ -9,26 +9,24 @@
             class="flex-none w-12 text-center px-1"
           >
             <button
-              @click="selectDay(i)"
               :aria-pressed="selectedIndex === i"
               class="w-full flex flex-col items-center gap-1 p-2 rounded-lg"
+              @click="selectDay(i)"
             >
               <span class="text-xs text-gray-400">{{ d.weekday }}</span>
               <span
                 :class="[
-                   'w-9 h-9 flex items-center justify-center rounded-full text-sm font-medium',
-                   selectedIndex === i ? 'bg-[color:var(--accent)] text-white shadow' : 'bg-transparent text-white/80 border border-white/5'
-                 ]"
+                  'w-9 h-9 flex items-center justify-center rounded-full text-sm font-medium',
+                  selectedIndex === i ? 'bg-[color:var(--accent)] text-white shadow' : 'bg-transparent text-white/80 border border-white/5'
+                ]"
               >
-                 {{ d.date }}
-               </span>
+                {{ d.date }}
+              </span>
             </button>
           </div>
         </div>
       </div>
     </section>
-
-
   </div>
 </template>
 
@@ -49,7 +47,7 @@ function startOfWeek(date: Date) {
 
 function makeWeekDates(base = new Date()) {
   const monday = startOfWeek(base)
-  const arr = [] as { date: number; weekday: string; iso: string }[]
+  const arr = [] as { date: number, weekday: string, iso: string }[]
   for (let i = 0; i < 7; i++) {
     const dt = new Date(monday)
     dt.setDate(monday.getDate() + i)

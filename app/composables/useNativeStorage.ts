@@ -1,39 +1,38 @@
-import { Preferences } from '@capacitor/preferences';
+import { Preferences } from '@capacitor/preferences'
 
 export const useNativeStorage = () => {
-
   const setItem = async (key: string, value: string) => {
     await Preferences.set({
       key,
-      value,
-    });
-  };
+      value
+    })
+  }
 
   const getItem = async (key: string) => {
-    const { value } = await Preferences.get({ key });
-    return value;
-  };
+    const { value } = await Preferences.get({ key })
+    return value
+  }
 
   const removeItem = async (key: string) => {
-    await Preferences.remove({ key });
-  };
+    await Preferences.remove({ key })
+  }
 
   const setObject = async (key: string, value: object) => {
     await Preferences.set({
       key,
-      value: JSON.stringify(value),
-    });
-  };
+      value: JSON.stringify(value)
+    })
+  }
 
   const getObject = async <T>(key: string): Promise<T | null> => {
-    const { value } = await Preferences.get({ key });
-    if (!value) return null;
+    const { value } = await Preferences.get({ key })
+    if (!value) return null
     try {
-      return JSON.parse(value) as T;
+      return JSON.parse(value) as T
     } catch {
-      return null;
+      return null
     }
-  };
+  }
 
   return {
     setItem,
@@ -41,5 +40,5 @@ export const useNativeStorage = () => {
     removeItem,
     setObject,
     getObject
-  };
-};
+  }
+}

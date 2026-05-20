@@ -11,10 +11,7 @@ const selectedDate = computed(() => {
   return typeof props.date === 'string' ? props.date : props.date.value
 })
 
-// Store pro aktuálně vybraný den – díky `stores` v useDayActions
 const store = computed(() => useDayActions(selectedDate.value))
-
-// Pole použitých akcí (rozbalený ref)
 const actions = computed(() => store.value.actions.value)
 
 function toggleAction(id: string, value: boolean) {
@@ -32,7 +29,9 @@ function deleteAction(id: string) {
 
 <template>
   <div class="actions-wrapper">
-    <h5 class="title">Actions for today</h5>
+    <h5 class="title">
+      Actions for today
+    </h5>
 
     <div class="actions-list">
       <div
@@ -40,7 +39,6 @@ function deleteAction(id: string) {
         :key="action.id"
         class="action-row"
       >
-
         <IonCheckbox
           :checked="action.done"
           class="checkbox"
@@ -54,14 +52,17 @@ function deleteAction(id: string) {
           {{ action.label }}
         </span>
 
-        <button class="delete-btn ml-auto" @click="deleteAction(action.id)" aria-label="Delete action">
+        <button
+          class="delete-btn ml-auto"
+          aria-label="Delete action"
+          @click="deleteAction(action.id)"
+        >
           <IonIcon :icon="trashOutline" />
         </button>
       </div>
     </div>
   </div>
 </template>
-
 
 <style scoped>
 .actions-wrapper {

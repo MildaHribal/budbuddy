@@ -1,10 +1,10 @@
 <script setup>
 import { useHead } from '#imports'
-import { IonApp, IonContent, IonPage } from '@ionic/vue'
+import { IonApp, IonPage } from '@ionic/vue'
 
 useHead({
   titleTemplate: (titleChunk) => {
-    return titleChunk ? `${titleChunk} | BudBuddy` : 'BudBuddy - Smart Plant Care & Tracking';
+    return titleChunk ? `${titleChunk} | BudBuddy` : 'BudBuddy - Smart Plant Care & Tracking'
   },
   htmlAttrs: {
     lang: 'en'
@@ -22,17 +22,18 @@ useHead({
   ]
 })
 </script>
+
 <template>
   <UApp>
     <IonApp class="min-h-screen">
       <div class="desktop-gesture-bar" />
       <ion-page>
         <NuxtLayout>
-              <UMain>
-                <NuxtPage />
-              </UMain>
+          <UMain>
+            <NuxtPage />
+          </UMain>
         </NuxtLayout>
-    </ion-page>
+      </ion-page>
     </IonApp>
   </UApp>
 </template>
@@ -41,7 +42,6 @@ useHead({
 ion-content {
   --background: #121212;
 }
-
 
 ion-action-sheet.sheet {
   --background: #0b0f13;
