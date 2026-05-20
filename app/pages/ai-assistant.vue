@@ -53,18 +53,6 @@
             <span>Problem solving</span>
           </div>
         </div>
-
-        <button
-          v-if="ai.keyLoaded.value && !ai.hasKey()"
-          class="connect-hint"
-          @click="showSettings = true"
-        >
-          <Icon
-            icon="tabler:plug-connected"
-            :height="18"
-          />
-          <span>Connect a free AI key for smarter answers</span>
-        </button>
       </div>
 
       <div class="messages">
@@ -213,70 +201,71 @@
     </div>
 
     <!-- API key settings -->
-    <div
-      v-if="showSettings"
-      class="settings-overlay"
-      @click.self="showSettings = false"
-    >
-      <div class="settings-sheet">
-        <div class="settings-header">
-          <h3>AI Settings</h3>
-          <button
-            class="close-btn"
-            aria-label="Close"
-            @click="showSettings = false"
+    <Teleport to="body">
+      <div
+        v-if="showSettings"
+        class="settings-overlay"
+        @click.self="showSettings = false"
+      >
+        <div class="settings-sheet">
+          <div class="settings-header">
+            <h3>AI Settings</h3>
+            <button
+              class="close-btn"
+              aria-label="Close"
+              @click="showSettings = false"
+            >
+              <Icon
+                icon="tabler:x"
+                :height="20"
+              />
+            </button>
+          </div>
+
+          <p class="settings-desc">
+            BudBuddy uses Google Gemini and works out of the box — no setup needed.
+            Optionally paste your own free API key to use your personal quota.
+          </p>
+
+          <label
+            class="settings-label"
+            for="gemini-key"
+          >Gemini API key</label>
+          <input
+            id="gemini-key"
+            v-model="keyInput"
+            type="password"
+            class="settings-input"
+            placeholder="AIza..."
+            autocomplete="off"
+          >
+
+          <a
+            class="settings-getkey"
+            href="https://aistudio.google.com/app/apikey"
+            target="_blank"
+            rel="noopener"
           >
             <Icon
-              icon="tabler:x"
-              :height="20"
+              icon="tabler:external-link"
+              :height="16"
             />
+            <span>Get a free key at aistudio.google.com</span>
+          </a>
+
+          <button
+            class="settings-save"
+            @click="saveApiKey"
+          >
+            <Icon
+              icon="tabler:device-floppy"
+              :height="18"
+            />
+            <span>Save</span>
           </button>
         </div>
-
-        <p class="settings-desc">
-          BudBuddy uses Google Gemini for AI answers. Paste your free API key to unlock
-          smart, photo-aware advice. Without a key the assistant still answers from a
-          built-in offline guide.
-        </p>
-
-        <label
-          class="settings-label"
-          for="gemini-key"
-        >Gemini API key</label>
-        <input
-          id="gemini-key"
-          v-model="keyInput"
-          type="password"
-          class="settings-input"
-          placeholder="AIza..."
-          autocomplete="off"
-        >
-
-        <a
-          class="settings-getkey"
-          href="https://aistudio.google.com/app/apikey"
-          target="_blank"
-          rel="noopener"
-        >
-          <Icon
-            icon="tabler:external-link"
-            :height="16"
-          />
-          <span>Get a free key at aistudio.google.com</span>
-        </a>
-
-        <button
-          class="settings-save"
-          @click="saveApiKey"
-        >
-          <Icon
-            icon="tabler:device-floppy"
-            :height="18"
-          />
-          <span>Save</span>
-        </button>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -910,19 +899,23 @@ const removeImage = () => {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  z-index: 50;
+  padding: 20px;
+  /* Above the bottom nav (z-index 100) so the whole sheet is visible. */
+  z-index: 1000;
   animation: fadeIn 0.2s ease;
 }
 
 .settings-sheet {
   width: 100%;
-  max-width: 480px;
+  max-width: 420px;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   background: #141414;
   border: 1px solid rgba(123, 199, 77, 0.2);
-  border-radius: 20px 20px 0 0;
-  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 20px;
+  padding: 20px;
 }
 
 .settings-header {
