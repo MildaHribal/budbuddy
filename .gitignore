@@ -22,3 +22,7 @@ logs
 .env
 .env.*
 !.env.example
+
+# Android signing / builds
+*.jks
+android/app/build

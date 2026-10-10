@@ -1,45 +1,50 @@
-<template>
-  <div class="app-layout">
-    <div class="app-content">
-      <slot />
-    </div>
-
-    <DownBar />
-  </div>
-</template>
-
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import DownBar from '~/components/DownBar.vue'
+const route = useRoute()
+const scroller = ref<HTMLElement | null>(null)
+const hideNav = computed(() => route.meta.hideNav === true)
 
-onMounted(() => {
-  if (typeof document !== 'undefined') {
-    document.body.classList.remove('bg-white')
-    // Set meta theme-color for mobile browsers
-    const metaTheme = document.querySelector('meta[name="theme-color"]')
-    if (metaTheme) {
-      metaTheme.setAttribute('content', '#0a0a0a')
-    } else {
-      const meta = document.createElement('meta')
-      meta.name = 'theme-color'
-      meta.content = '#0a0a0a'
-      document.head.appendChild(meta)
-    }
-  }
+// Each page starts at the top – the scroll container is ours, not the window's.
+watch(() => route.path, () => {
+  scroller.value?.scrollTo({ top: 0 })
 })
 </script>
 
+<template>
+  <div class="layout">
+    <main
+      ref="scroller"
+      class="app-scroll"
+      :class="{ 'no-nav': hideNav }"
+    >
+      <slot />
+    </main>
+    <BottomNav v-if="!hideNav" />
+  </div>
+</template>
+
 <style scoped>
-.app-layout {
-  min-height: 100vh;
-  background: #0a0a0a;
-  position: relative;
-  overflow-x: hidden;
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.app-content {
-  width: 100%;
-  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+.app-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+}
+
+.app-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.app-scroll.no-nav {
+  padding-bottom: 0;
 }
 </style>
-

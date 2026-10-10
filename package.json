@@ -1,7 +1,7 @@
 {
-  "name": "untitled1",
+  "name": "budbuddy",
   "private": true,
-  "version": "1.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "build": "nuxt build",
@@ -10,33 +10,31 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck",
-    "generate": "nuxt generate"
+    "test": "vitest run",
+    "generate": "nuxt generate",
+    "android:sync": "nuxt generate && cap sync android",
+    "android:build": "nuxt generate && cap sync android && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",
     "@capacitor/app": "7.1.0",
     "@capacitor/core": "^7.4.4",
+    "@capacitor/filesystem": "^7.1.9",
     "@capacitor/preferences": "^7.0.2",
-    "@iconify-json/lucide": "^1.2.73",
-    "@iconify-json/simple-icons": "^1.2.58",
-    "@iconify/vue": "^5.0.0",
-    "@ionic/vue": "^8.7.10",
-    "@ionic/vue-router": "^8.7.10",
-    "@nuxt/image": "2.0.0",
+    "@capacitor/share": "^7.0.4",
+    "@iconify-json/tabler": "^1.2.23",
     "@nuxt/ui": "^4.1.0",
-    "@nuxtjs/ionic": "^1.0.2",
-    "@nuxtjs/svg": "^0.4.1",
     "@vueuse/nuxt": "^14.0.0",
-    "ionicons": "^8.0.13",
     "nuxt": "^4.2.1",
     "vue": "^3.5.24",
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
-    "@iconify-json/material-symbols": "^1.2.47",
+    "@capacitor/cli": "^7.4.4",
     "@nuxt/eslint": "^1.10.0",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
     "vue-tsc": "^3.1.3"
   }
 }

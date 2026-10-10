@@ -1,605 +1,637 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { Icon } from "@iconify/vue";
-import { usePlants } from "~/composables/usePlants";
-import { useDayActions } from "~/composables/useDayActions";
-import { useHead } from "#imports";
+import type { EntryType, JournalEntry, Plant } from '~/types/grow'
 
-useHead({
-  title: 'Dashboard'
-});
+useHead({ title: 'Dashboard' })
 
-const { plants, loadPlantsFromStorage } = usePlants();
+const grow = useGrow()
+const { state } = grow
+const { notify } = useNotify()
 
-// Today date info
-const today = new Date();
-const todayKey = (() => {
-  const offset = today.getTimezoneOffset();
-  const local = new Date(today.getTime() - offset * 60 * 1000);
-  return local.toISOString().split("T")[0];
-})();
+const today = useToday()
 
-const dayNames = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-const todayName = dayNames[today.getDay()];
-const todayDate = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  const part = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
+  return state.settings.growerName ? `${part}, ${state.settings.growerName}` : part
+})
 
-// Global day actions (tasks) for today
-const dayStore = useDayActions(todayKey);
-const globalTasks = computed(() => dayStore.actions.value);
-const completedTasks = computed(
-  () => globalTasks.value.filter((t) => t.done).length,
-);
-const totalTasks = computed(() => globalTasks.value.length);
-const taskProgress = computed(() =>
-  totalTasks.value > 0
-    ? Math.round((completedTasks.value / totalTasks.value) * 100)
-    : 0,
-);
+const growing = computed(() => state.plants.filter(p => isGrowing(p)))
+const postHarvest = computed(() => state.plants.filter(p => !p.archived && !isGrowing(p)))
+const activePlants = computed(() => [...growing.value, ...postHarvest.value])
 
-// New task input
-const newTaskText = ref("");
-const isAddingTask = ref(false);
-
-async function addTask() {
-  const label = newTaskText.value.trim();
-  if (!label) return;
-  await dayStore.add(label);
-  newTaskText.value = "";
-  isAddingTask.value = false;
-}
-
-async function toggleTask(id: string, done: boolean) {
-  await dayStore.toggle(id, done);
-}
-
-async function removeTask(id: string) {
-  await dayStore.remove(id);
-}
-
-// Per-plant stats computed from real data
-const activePlants = computed(() => plants.value);
-
-function getDaysSince(dateStr: string): number {
-  if (!dateStr) return 0;
-  const start = new Date(dateStr);
-  const diff = today.getTime() - start.getTime();
-  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-}
-
-function getStageDays(stage: string): number {
-  const map: Record<string, number> = {
-    Germination: 7,
-    Seedling: 21,
-    Vegetative: 56,
-    Flowering: 63,
-  };
-  return map[stage] ?? 30;
-}
-
-function getStageColor(stage: string): string {
-  const map: Record<string, string> = {
-    Germination: "#9fe76d",
-    Seedling: "#7bc74d",
-    Vegetative: "#4db8ff",
-    Flowering: "#ff7eb0",
-  };
-  return map[stage] ?? "#7bc74d";
-}
-
-function getStageIcon(stage: string): string {
-  const map: Record<string, string> = {
-    Germination: "tabler:seeding",
-    Seedling: "tabler:plant",
-    Vegetative: "tabler:tree",
-    Flowering: "tabler:flower",
-  };
-  return map[stage] ?? "tabler:plant";
-}
-
-function getHealthIcon(pct: number): string {
-  if (pct >= 80) return "tabler:heart-filled";
-  if (pct >= 50) return "tabler:heart-half";
-  return "tabler:heart-broken";
-}
-
-function getHealthColor(pct: number): string {
-  if (pct >= 80) return "#7bc74d";
-  if (pct >= 50) return "#ffaa00";
-  return "#ff4444";
-}
-
-// Overall stats
-const totalActivePlants = computed(() => plants.value.length);
 const avgHealth = computed(() => {
-  if (!plants.value.length) return 100;
-  const total = plants.value.reduce(
-    (acc: number, p: any) => acc + (p.health ?? 100),
-    0,
-  );
-  return Math.round(total / plants.value.length);
-});
-const totalDaysGrowing = computed(() => {
-  if (!plants.value.length) return 0;
-  return plants.value.reduce(
-    (acc: number, p: any) => acc + getDaysSince(p.plantingDate || p.createdAt),
-    0,
-  );
-});
+  const list = growing.value
+  if (!list.length) return null
+  return list.reduce((s, p) => s + p.health, 0) / list.length
+})
 
-// Grow tips carousel
-const tips = [
-  {
-    icon: "tabler:droplet",
-    text: "Water when the top 2–3 cm of soil is dry to the touch.",
-  },
-  {
-    icon: "tabler:temperature",
-    text: "Keep temps between 20–28 °C during the light cycle.",
-  },
-  {
-    icon: "tabler:wind",
-    text: "Good airflow prevents mold and strengthens stems.",
-  },
-  {
-    icon: "tabler:sun",
-    text: "Monitor VPD to optimize transpiration and nutrient uptake.",
-  },
-  {
-    icon: "tabler:test-pipe",
-    text: "Check and adjust pH before every watering session.",
-  },
-];
-const tipIndex = ref(Math.floor(Math.random() * tips.length));
-const currentTip = computed(() => tips[tipIndex.value]);
-function nextTip() {
-  tipIndex.value = (tipIndex.value + 1) % tips.length;
+const entriesThisWeek = computed(() => {
+  const from = addDays(today.value, -6)
+  return state.entries.filter(e => e.date >= from && e.date <= today.value).length
+})
+
+// ── Tasks ─────────────────────────────────────────────────────────
+const todaysTasks = computed(() => state.tasks
+  .filter(t => t.date === today.value || (t.date < today.value && !t.done))
+  .sort((a, b) => Number(a.done) - Number(b.done) || a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)))
+const doneCount = computed(() => todaysTasks.value.filter(t => t.done).length)
+const taskPct = computed(() => (todaysTasks.value.length ? Math.round((doneCount.value / todaysTasks.value.length) * 100) : 0))
+
+const adding = ref(false)
+const newTask = ref('')
+const newTaskPlant = ref<string | null>(null)
+const taskInput = ref<HTMLInputElement | null>(null)
+
+async function toggleAdding() {
+  adding.value = !adding.value
+  if (adding.value) {
+    await nextTick()
+    taskInput.value?.focus()
+  }
 }
 
-// Reload on plant changes
-function onPlantsUpdated() {
-  loadPlantsFromStorage();
+function addTask() {
+  const title = newTask.value.trim()
+  if (!title) return
+  grow.addTask(title, today.value, newTaskPlant.value)
+  newTask.value = ''
+  taskInput.value?.focus()
 }
-onMounted(() => {
-  loadPlantsFromStorage();
-  if (typeof window !== "undefined") {
-    window.addEventListener("plants-updated", onPlantsUpdated);
+
+function removeTask(id: string) {
+  const removed = grow.deleteTask(id)
+  if (removed) notify('Task deleted', { tone: 'info', action: { label: 'Undo', run: () => grow.restoreTask(removed) } })
+}
+
+const plantName = (id: string | null) => (id ? grow.getPlant(id)?.name : undefined)
+
+// ── Needs attention ───────────────────────────────────────────────
+interface Attention {
+  plant: Plant
+  kind: 'water' | 'stage'
+  title: string
+  detail: string
+  urgent: boolean
+}
+
+const attention = computed<Attention[]>(() => {
+  const list: Attention[] = []
+  for (const p of activePlants.value) {
+    const w = grow.wateringStatus(p, today.value)
+    if (w && w.dueIn <= 0) {
+      list.push({
+        plant: p,
+        kind: 'water',
+        title: `Water ${p.name}`,
+        detail: w.dueIn === 0 ? 'Due today' : `Overdue by ${-w.dueIn} day${w.dueIn === -1 ? '' : 's'}`,
+        urgent: w.dueIn < 0
+      })
+    }
+    const prog = stageProgress(p, today.value)
+    const next = nextStage(p.stage)
+    if (isGrowing(p) && prog.dayInStage > prog.stageDays * 1.25 && next) {
+      list.push({
+        plant: p,
+        kind: 'stage',
+        title: `${p.name}: ready for ${p.stage === 'flowering' ? 'harvest' : stageInfo(next).label.toLowerCase()}?`,
+        detail: `Day ${prog.dayInStage} of ~${prog.stageDays} in ${stageInfo(p.stage).label.toLowerCase()}`,
+        urgent: false
+      })
+    }
   }
-});
-onUnmounted(() => {
-  if (typeof window !== "undefined") {
-    window.removeEventListener("plants-updated", onPlantsUpdated);
-  }
-});
+  return list.sort((a, b) => Number(b.urgent) - Number(a.urgent))
+})
+
+const sheetOpen = ref(false)
+const sheetPlant = ref<string>('')
+const sheetType = ref<EntryType>('water')
+
+function quickLog(plant: Plant, type: EntryType) {
+  sheetPlant.value = plant.id
+  sheetType.value = type
+  sheetOpen.value = true
+}
+
+// ── Recent activity ───────────────────────────────────────────────
+const recent = computed<JournalEntry[]>(() => [...state.entries]
+  .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+  .slice(0, 4))
+
+// ── Tip ───────────────────────────────────────────────────────────
+const tips = computed(() => {
+  const stages = new Set(activePlants.value.map(p => p.stage))
+  const fromStages = STAGES.filter(s => stages.has(s.id)).flatMap(s => s.tips.map(t => ({ stage: s, text: t })))
+  return fromStages.length ? fromStages : STAGES.slice(0, 4).flatMap(s => s.tips.map(t => ({ stage: s, text: t })))
+})
+const tipIndex = ref(Math.floor(Math.random() * 100))
+const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 </script>
 
 <template>
-  <div class="home-page">
-    <!-- ── Hero / Date Banner ─────────────────────────────── -->
-    <div class="hero-banner">
-      <div class="hero-glow"></div>
-      <div class="hero-content">
-        <div class="hero-greeting">
-          <Icon icon="tabler:leaf" :height="22" class="hero-leaf" />
-          <span>Good growing!</span>
-        </div>
-        <div class="hero-date-block">
-          <div class="hero-day">{{ todayName }}</div>
-          <div class="hero-full-date">{{ todayDate }}</div>
-        </div>
-        <div class="hero-badges">
-          <div class="hero-badge green">
-            <Icon icon="tabler:plant-2" :height="14" />
-            <span
-              >{{ totalActivePlants }} active plant{{
-                totalActivePlants !== 1 ? "s" : ""
-              }}</span
-            >
-          </div>
-          <div
-            class="hero-badge"
-            :class="taskProgress === 100 ? 'gold' : 'neutral'"
-          >
-            <Icon icon="tabler:checks" :height="14" />
-            <span>{{ completedTasks }}/{{ totalTasks }} tasks</span>
-          </div>
-        </div>
+  <div>
+    <section class="hero">
+      <div class="hero-glow" />
+      <div class="hero-top">
+        <p class="hero-greeting">
+          <UIcon
+            name="i-tabler-leaf"
+            class="size-5 leaf"
+          />
+          {{ greeting }}
+        </p>
+        <NuxtLink
+          to="/settings"
+          class="icon-btn"
+          aria-label="Settings"
+        >
+          <UIcon
+            name="i-tabler-settings"
+            class="size-5"
+          />
+        </NuxtLink>
       </div>
-    </div>
+      <h1 class="hero-day">
+        {{ formatDate(today, { weekday: 'long' }) }}
+      </h1>
+      <p class="hero-date">
+        {{ formatDate(today, { day: 'numeric', month: 'long', year: 'numeric' }) }}
+      </p>
+      <div class="hero-badges">
+        <span class="hero-badge green">
+          <UIcon
+            name="i-tabler-plant-2"
+            class="size-4"
+          />
+          {{ growing.length }} growing
+        </span>
+        <span
+          class="hero-badge"
+          :class="todaysTasks.length && taskPct === 100 ? 'gold' : 'neutral'"
+        >
+          <UIcon
+            name="i-tabler-checks"
+            class="size-4"
+          />
+          {{ doneCount }}/{{ todaysTasks.length }} tasks
+        </span>
+        <span
+          v-if="attention.length"
+          class="hero-badge warn"
+        >
+          <UIcon
+            name="i-tabler-bell-ringing"
+            class="size-4"
+          />
+          {{ attention.length }} to check
+        </span>
+      </div>
+    </section>
 
-    <div class="page-body">
-      <!-- ── Quick Stats ──────────────────────────────────── -->
-      <section class="section">
-        <div class="stats-row">
-          <div class="stat-pill">
-            <div class="stat-pill-icon green">
-              <Icon icon="tabler:plant-2" :height="20" />
-            </div>
-            <div>
-              <div class="stat-pill-value">{{ totalActivePlants }}</div>
-              <div class="stat-pill-label">Plants</div>
-            </div>
-          </div>
-
-          <div class="stat-pill">
-            <div class="stat-pill-icon blue">
-              <Icon icon="tabler:calendar" :height="20" />
-            </div>
-            <div>
-              <div class="stat-pill-value">{{ totalDaysGrowing }}</div>
-              <div class="stat-pill-label">Total days</div>
-            </div>
-          </div>
-
-          <div class="stat-pill">
-            <div
-              class="stat-pill-icon"
-              :style="{ background: getHealthColor(avgHealth) + '22' }"
-            >
-              <Icon
-                icon="tabler:heart-filled"
-                :height="20"
-                :style="{ color: getHealthColor(avgHealth) }"
-              />
-            </div>
-            <div>
-              <div class="stat-pill-value">{{ avgHealth }}%</div>
-              <div class="stat-pill-label">Avg health</div>
-            </div>
-          </div>
-
-          <div class="stat-pill">
-            <div class="stat-pill-icon yellow">
-              <Icon icon="tabler:check" :height="20" />
-            </div>
-            <div>
-              <div class="stat-pill-value">{{ taskProgress }}%</div>
-              <div class="stat-pill-label">Done today</div>
-            </div>
-          </div>
+    <div class="page">
+      <NuxtLink
+        to="/stats"
+        class="stats-row"
+        aria-label="Open statistics"
+      >
+        <div class="stat">
+          <span
+            class="stat-icon"
+            style="--c: #7bc74d"
+          ><UIcon
+            name="i-tabler-plant-2"
+            class="size-5"
+          /></span>
+          <strong>{{ growing.length }}</strong>
+          <span>Growing</span>
         </div>
+        <div class="stat">
+          <span
+            class="stat-icon"
+            :style="{ '--c': avgHealth ? healthInfo(avgHealth).color : '#7bc74d' }"
+          >
+            <UIcon
+              :name="avgHealth ? healthInfo(avgHealth).icon : 'i-tabler-heart'"
+              class="size-5"
+            />
+          </span>
+          <strong>{{ avgHealth ? healthInfo(avgHealth).label : '–' }}</strong>
+          <span>Avg health</span>
+        </div>
+        <div class="stat">
+          <span
+            class="stat-icon"
+            style="--c: #4fc3f7"
+          ><UIcon
+            name="i-tabler-notebook"
+            class="size-5"
+          /></span>
+          <strong>{{ entriesThisWeek }}</strong>
+          <span>Logs · 7d</span>
+        </div>
+        <div class="stat">
+          <span
+            class="stat-icon"
+            style="--c: #fbbf24"
+          ><UIcon
+            name="i-tabler-chart-bar"
+            class="size-5"
+          /></span>
+          <strong>Stats</strong>
+          <span>Insights</span>
+        </div>
+      </NuxtLink>
+
+      <section
+        v-if="attention.length"
+        aria-labelledby="attention-title"
+      >
+        <div class="section-head">
+          <h2
+            id="attention-title"
+            class="section-title"
+          >
+            <UIcon
+              name="i-tabler-bell-ringing"
+              class="size-5"
+            /> Needs attention
+          </h2>
+        </div>
+        <ul class="attention-list">
+          <li
+            v-for="a in attention"
+            :key="a.plant.id + a.kind"
+            class="attention card"
+            :class="{ urgent: a.urgent }"
+          >
+            <NuxtLink
+              :to="`/plants/${a.plant.id}`"
+              class="attention-photo"
+              :aria-label="a.plant.name"
+            >
+              <PlantPhoto
+                :photo-id="a.plant.photoId"
+                :stage="a.plant.stage"
+              />
+            </NuxtLink>
+            <div class="attention-text">
+              <p class="attention-title">
+                {{ a.title }}
+              </p>
+              <p class="attention-detail">
+                {{ a.detail }}
+              </p>
+            </div>
+            <button
+              v-if="a.kind === 'water'"
+              type="button"
+              class="btn btn-soft log-btn"
+              @click="quickLog(a.plant, 'water')"
+            >
+              <UIcon
+                name="i-tabler-droplet-filled"
+                class="size-4"
+              /> Log
+            </button>
+            <NuxtLink
+              v-else
+              :to="`/plants/${a.plant.id}`"
+              class="btn btn-soft log-btn"
+            >
+              Open
+            </NuxtLink>
+          </li>
+        </ul>
       </section>
 
-      <!-- ── Today's Tasks ────────────────────────────────── -->
-      <section class="section">
-        <div class="section-header">
-          <div class="section-title">
-            <Icon icon="tabler:checklist" :height="22" />
-            <span>Today's Tasks</span>
-          </div>
-          <button class="add-task-btn" @click="isAddingTask = !isAddingTask" aria-label="Toggle add task">
-            <Icon
-              :icon="isAddingTask ? 'tabler:x' : 'tabler:plus'"
-              :height="18"
+      <section aria-labelledby="tasks-title">
+        <div class="section-head">
+          <h2
+            id="tasks-title"
+            class="section-title"
+          >
+            <UIcon
+              name="i-tabler-checklist"
+              class="size-5"
+            /> Today's tasks
+          </h2>
+          <button
+            type="button"
+            class="icon-btn accent"
+            :aria-label="adding ? 'Close' : 'Add task'"
+            :aria-expanded="adding"
+            @click="toggleAdding"
+          >
+            <UIcon
+              :name="adding ? 'i-tabler-x' : 'i-tabler-plus'"
+              class="size-5"
             />
           </button>
         </div>
 
-        <!-- Add task input -->
-        <div v-if="isAddingTask" class="add-task-row">
-          <input
-            v-model="newTaskText"
-            type="text"
-            placeholder="Add a task for today..."
-            class="task-input"
-            @keyup.enter="addTask"
-            autofocus
-          />
-          <button
-            class="task-save-btn"
-            @click="addTask"
-            :disabled="!newTaskText.trim()"
-            aria-label="Save task"
-          >
-            <Icon icon="tabler:check" :height="18" />
-          </button>
-        </div>
-
-        <!-- Task progress bar -->
-        <div v-if="totalTasks > 0" class="task-progress-bar">
-          <div
-            class="task-progress-fill"
-            :style="{ width: taskProgress + '%' }"
-          ></div>
-        </div>
-
-        <!-- Empty state -->
-        <div
-          v-if="globalTasks.length === 0 && !isAddingTask"
-          class="tasks-empty"
+        <form
+          v-if="adding"
+          class="task-add"
+          @submit.prevent="addTask"
         >
-          <Icon icon="tabler:clipboard-list" :height="36" />
-          <span>No tasks for today. Tap + to add one!</span>
+          <input
+            ref="taskInput"
+            v-model="newTask"
+            class="input"
+            placeholder="e.g. Raise the light 10 cm"
+            maxlength="120"
+            aria-label="Task"
+          >
+          <div class="task-add-row">
+            <select
+              v-model="newTaskPlant"
+              class="input"
+              aria-label="Plant (optional)"
+            >
+              <option :value="null">
+                No plant
+              </option>
+              <option
+                v-for="p in activePlants"
+                :key="p.id"
+                :value="p.id"
+              >
+                {{ p.name }}
+              </option>
+            </select>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              :disabled="!newTask.trim()"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+
+        <div
+          v-if="todaysTasks.length"
+          class="progress task-progress"
+        >
+          <div :style="{ width: `${taskPct}%`, background: 'var(--accent)' }" />
         </div>
 
-        <!-- Task list -->
-        <div v-else class="tasks-list">
-          <div
-            v-for="task in globalTasks"
-            :key="task.id"
-            class="task-row"
-            :class="{ done: task.done }"
+        <EmptyState
+          v-if="!todaysTasks.length && !adding"
+          icon="i-tabler-clipboard-list"
+          title="Nothing planned for today"
+          text="Tap + to add a task, e.g. refill the reservoir."
+        />
+
+        <ul
+          v-else
+          class="tasks"
+        >
+          <li
+            v-for="t in todaysTasks"
+            :key="t.id"
+            class="task"
+            :class="{ done: t.done }"
           >
             <button
+              type="button"
               class="task-check"
-              :class="{ checked: task.done }"
-              @click="toggleTask(task.id, !task.done)"
-              aria-label="Toggle task status"
+              role="checkbox"
+              :aria-checked="t.done"
+              :aria-label="t.title"
+              @click="grow.updateTask(t.id, { done: !t.done })"
             >
-              <Icon v-if="task.done" icon="tabler:check" :height="14" />
+              <UIcon
+                v-if="t.done"
+                name="i-tabler-check"
+                class="size-4"
+              />
             </button>
-            <span class="task-label">{{ task.label }}</span>
-            <button class="task-delete" @click="removeTask(task.id)" aria-label="Delete task">
-              <Icon icon="tabler:trash" :height="14" />
+            <div class="task-text">
+              <span class="task-title">{{ t.title }}</span>
+              <span
+                v-if="plantName(t.plantId) || t.date < today"
+                class="task-meta"
+              >
+                <template v-if="t.date < today">{{ formatRelativeDay(t.date) }}</template>
+                <template v-if="plantName(t.plantId) && t.date < today"> · </template>
+                <template v-if="plantName(t.plantId)">{{ plantName(t.plantId) }}</template>
+              </span>
+            </div>
+            <button
+              type="button"
+              class="task-delete"
+              aria-label="Delete task"
+              @click="removeTask(t.id)"
+            >
+              <UIcon
+                name="i-tabler-trash"
+                class="size-4"
+              />
             </button>
-          </div>
-        </div>
+          </li>
+        </ul>
       </section>
 
-      <!-- ── Active Plants ─────────────────────────────────── -->
-      <section class="section">
-        <div class="section-header">
-          <div class="section-title">
-            <Icon icon="tabler:leaf" :height="22" />
-            <span>Active Plants</span>
-          </div>
-          <NuxtLink to="/my-trees" class="section-link">
-            View all
-            <Icon icon="tabler:chevron-right" :height="16" />
-          </NuxtLink>
-        </div>
-
-        <!-- Empty state -->
-        <div v-if="activePlants.length === 0" class="plants-empty">
-          <Icon icon="tabler:plant-off" :height="48" />
-          <p>No plants yet</p>
-          <NuxtLink to="/my-trees" class="empty-cta">
-            <Icon icon="tabler:plus" :height="16" />
-            Add your first plant
-          </NuxtLink>
-        </div>
-
-        <!-- Plant cards -->
-        <div v-else class="plants-scroll">
+      <section aria-labelledby="plants-title">
+        <div class="section-head">
+          <h2
+            id="plants-title"
+            class="section-title"
+          >
+            <UIcon
+              name="i-tabler-leaf"
+              class="size-5"
+            /> Your plants
+          </h2>
           <NuxtLink
-            v-for="plant in activePlants"
-            :key="plant.id"
-            :to="`/my_trees/${plant.id}`"
+            to="/plants"
+            class="link"
+          >
+            View all <UIcon
+              name="i-tabler-chevron-right"
+              class="size-4"
+            />
+          </NuxtLink>
+        </div>
+
+        <EmptyState
+          v-if="!activePlants.length"
+          icon="i-tabler-plant-off"
+          title="No plants yet"
+          text="Add your first plant to start the journal."
+        >
+          <NuxtLink
+            to="/plants/new"
+            class="btn btn-soft"
+          >
+            <UIcon
+              name="i-tabler-plus"
+              class="size-4"
+            /> Add plant
+          </NuxtLink>
+        </EmptyState>
+
+        <div
+          v-else
+          class="plants-scroll"
+        >
+          <NuxtLink
+            v-for="p in activePlants"
+            :key="p.id"
+            :to="`/plants/${p.id}`"
             class="plant-card"
           >
-            <!-- Plant image / placeholder -->
-            <div class="plant-card-image">
-              <img
-                v-if="plant.photoPreview"
-                :src="plant.photoPreview"
-                :alt="plant.name"
+            <div class="plant-card-img">
+              <PlantPhoto
+                :photo-id="p.photoId"
+                :stage="p.stage"
+                :alt="p.name"
               />
-              <div v-else class="plant-card-placeholder">
-                <Icon
-                  :icon="getStageIcon((plant as any).stage || 'Seedling')"
-                  :height="32"
-                />
-              </div>
-
-              <!-- Stage chip -->
-              <div
-                class="stage-chip"
-                :style="{
-                  background:
-                    getStageColor((plant as any).stage || 'Seedling') + '22',
-                  color: getStageColor((plant as any).stage || 'Seedling'),
-                  borderColor:
-                    getStageColor((plant as any).stage || 'Seedling') + '55',
-                }"
-              >
-                <Icon
-                  :icon="getStageIcon((plant as any).stage || 'Seedling')"
-                  :height="11"
-                />
-                <span>{{ (plant as any).stage || "Seedling" }}</span>
-              </div>
+              <StageBadge
+                :stage="p.stage"
+                class="plant-card-badge"
+              />
             </div>
-
-            <!-- Card body -->
             <div class="plant-card-body">
-              <div class="plant-card-name">{{ plant.name || "Unnamed" }}</div>
-              <div class="plant-card-strain">
-                {{ plant.strain || "Unknown strain" }}
-              </div>
-
-              <!-- Day progress -->
-              <div class="plant-day-info">
-                <span class="plant-day-num"
-                  >Day
-                  {{
-                    getDaysSince((plant as any).plantingDate || plant.createdAt)
-                  }}</span
-                >
-                <span class="plant-day-total"
-                  >/ {{ getStageDays((plant as any).stage || "Seedling") }}d
-                  phase</span
-                >
-              </div>
-
-              <div class="plant-mini-progress">
-                <div
-                  class="plant-mini-fill"
-                  :style="{
-                    width:
-                      Math.min(
-                        100,
-                        (getDaysSince(
-                          (plant as any).plantingDate || plant.createdAt,
-                        ) /
-                          getStageDays((plant as any).stage || 'Seedling')) *
-                          100,
-                      ) + '%',
-                    background: getStageColor(
-                      (plant as any).stage || 'Seedling',
-                    ),
-                  }"
-                ></div>
-              </div>
-
-              <!-- Health -->
-              <div class="plant-health">
-                <Icon
-                  :icon="getHealthIcon((plant as any).health ?? 100)"
-                  :height="13"
-                  :style="{
-                    color: getHealthColor((plant as any).health ?? 100),
-                  }"
-                />
-                <span
-                  :style="{
-                    color: getHealthColor((plant as any).health ?? 100),
-                  }"
-                >
-                  {{ (plant as any).health ?? 100 }}%
-                </span>
+              <p class="plant-card-name">
+                {{ p.name }}
+              </p>
+              <p class="plant-card-strain">
+                {{ p.strain || 'Unknown strain' }}
+              </p>
+              <p class="plant-card-day">
+                <strong>Day {{ stageProgress(p).age }}</strong>
+                <span>· {{ stageProgress(p).dayInStage }}d in stage</span>
+              </p>
+              <div class="progress">
+                <div :style="{ width: `${stageProgress(p).percent}%`, background: stageInfo(p.stage).color }" />
               </div>
             </div>
+          </NuxtLink>
+          <NuxtLink
+            to="/plants/new"
+            class="plant-card add-card"
+            aria-label="Add plant"
+          >
+            <UIcon
+              name="i-tabler-plus"
+              class="size-8"
+            />
+            <span>Add plant</span>
           </NuxtLink>
         </div>
       </section>
 
-      <!-- ── Quick Actions ─────────────────────────────────── -->
-      <section class="section">
-        <div class="section-title" style="margin-bottom: 14px">
-          <Icon icon="tabler:bolt" :height="22" />
-          <span>Quick Actions</span>
+      <section
+        v-if="recent.length"
+        aria-labelledby="recent-title"
+      >
+        <div class="section-head">
+          <h2
+            id="recent-title"
+            class="section-title"
+          >
+            <UIcon
+              name="i-tabler-history"
+              class="size-5"
+            /> Recent activity
+          </h2>
         </div>
-
-        <div class="quick-actions-grid">
-          <NuxtLink to="/my-trees" class="qa-btn">
-            <div class="qa-icon" style="background: rgba(123, 199, 77, 0.15)">
-              <Icon icon="tabler:plant-2" :height="26" style="color: #7bc74d" />
-            </div>
-            <span>My Plants</span>
-          </NuxtLink>
-
-          <NuxtLink to="/ai-assistant" class="qa-btn">
-            <div class="qa-icon" style="background: rgba(79, 195, 247, 0.15)">
-              <Icon icon="tabler:brain" :height="26" style="color: #4fc3f7" />
-            </div>
-            <span>AI Help</span>
-          </NuxtLink>
-
-          <NuxtLink to="/nutriens-calc" class="qa-btn">
-            <div class="qa-icon" style="background: rgba(255, 170, 0, 0.15)">
-              <Icon
-                icon="solar:calculator-broken"
-                :height="26"
-                style="color: #ffaa00"
+        <div class="recent">
+          <NuxtLink
+            v-for="e in recent"
+            :key="e.id"
+            :to="`/plants/${e.plantId}`"
+            class="recent-item"
+          >
+            <span
+              class="recent-icon"
+              :style="{ '--c': entryInfo(e.type).color }"
+            >
+              <UIcon
+                :name="entryInfo(e.type).icon"
+                class="size-4"
               />
-            </div>
-            <span>Nutrients</span>
-          </NuxtLink>
-
-          <NuxtLink to="/stats" class="qa-btn">
-            <div class="qa-icon" style="background: rgba(167, 139, 250, 0.15)">
-              <Icon
-                icon="tabler:chart-bar"
-                :height="26"
-                style="color: #a78bfa"
-              />
-            </div>
-            <span>Stats</span>
+            </span>
+            <span class="recent-text">
+              <strong>{{ e.type === 'stage' && e.stage ? `Moved to ${stageInfo(e.stage).label}` : entryInfo(e.type).verb }}</strong>
+              <span>{{ plantName(e.plantId) }}<template v-if="entrySummary(e)"> · {{ entrySummary(e) }}</template></span>
+            </span>
+            <span class="recent-date">{{ formatRelativeDay(e.date) }}</span>
           </NuxtLink>
         </div>
       </section>
 
-      <!-- ── Grow Tip ──────────────────────────────────────── -->
-      <section class="section tip-section" @click="nextTip">
-        <div class="tip-header">
-          <div class="tip-title">
-            <Icon icon="tabler:bulb" :height="18" style="color: #ffaa00" />
-            <span>Grow Tip</span>
-          </div>
-          <span class="tip-tap">Tap for next</span>
-        </div>
-        <div class="tip-body">
-          <Icon v-if="currentTip" :icon="currentTip.icon" :height="28" class="tip-icon" />
-          <p v-if="currentTip" class="tip-text">{{ currentTip.text }}</p>
-        </div>
-      </section>
+      <button
+        type="button"
+        class="tip card"
+        @click="tipIndex++"
+      >
+        <span class="tip-head">
+          <span class="tip-title"><UIcon
+            name="i-tabler-bulb"
+            class="size-5"
+          /> Grow tip</span>
+          <span
+            class="tip-stage"
+            :style="{ color: tip.stage.color }"
+          >{{ tip.stage.label }}</span>
+        </span>
+        <span class="tip-text">{{ tip.text }}</span>
+        <span class="tip-next">Tap for another tip</span>
+      </button>
     </div>
-    <!-- /page-body -->
+
+    <EntrySheet
+      v-if="sheetPlant"
+      v-model:open="sheetOpen"
+      :plant-id="sheetPlant"
+      :type="sheetType"
+      :date="today"
+    />
   </div>
 </template>
 
 <style scoped>
-/* ── Base ───────────────────────────────────────────── */
-.home-page {
-  width: 100%;
-  min-height: 100vh;
-  background: #0a0a0a;
-  padding-bottom: calc(100px + env(safe-area-inset-bottom));
-}
-
-/* ── Hero Banner ───────────────────────────────────── */
-.hero-banner {
+.hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0d1a0a 0%, #101810 40%, #0a0a0a 100%);
-  border-bottom: 1px solid rgba(123, 199, 77, 0.15);
-  padding: max(env(safe-area-inset-top), 16px) 20px 24px;
+  padding: calc(14px + var(--safe-top)) 20px 22px;
+  background: linear-gradient(135deg, #0f1d0b 0%, #0e150d 45%, var(--bg) 100%);
+  border-bottom: 1px solid var(--accent-line);
 }
 
 .hero-glow {
   position: absolute;
-  top: -60px;
-  right: -40px;
-  width: 200px;
-  height: 200px;
+  top: -70px;
+  right: -50px;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(123, 199, 77, 0.18) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(circle, rgba(123, 199, 77, 0.2) 0%, transparent 70%);
   pointer-events: none;
 }
 
-.hero-content {
+.hero-top {
   position: relative;
-  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .hero-greeting {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0;
   font-size: 13px;
-  font-weight: 600;
-  color: #7bc74d;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
+  color: var(--accent);
 }
 
-.hero-leaf {
+.leaf {
   animation: sway 3s ease-in-out infinite;
 }
 
@@ -614,25 +646,26 @@ onUnmounted(() => {
 }
 
 .hero-day {
+  position: relative;
+  margin: 6px 0 2px;
   font-size: 34px;
   font-weight: 800;
-  color: #fff;
   letter-spacing: -0.02em;
-  line-height: 1;
-  margin-bottom: 4px;
+  line-height: 1.1;
 }
 
-.hero-full-date {
+.hero-date {
+  position: relative;
+  margin: 0 0 14px;
+  color: var(--text-2);
   font-size: 14px;
-  color: #888;
-  font-weight: 500;
-  margin-bottom: 16px;
 }
 
 .hero-badges {
+  position: relative;
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 .hero-badge {
@@ -640,342 +673,236 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  border: 1px solid;
 }
 
 .hero-badge.green {
-  background: rgba(123, 199, 77, 0.15);
-  color: #7bc74d;
-  border: 1px solid rgba(123, 199, 77, 0.3);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: rgba(123, 199, 77, 0.3);
 }
 
 .hero-badge.neutral {
-  background: rgba(255, 255, 255, 0.06);
-  color: #aaa;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--line-strong);
 }
 
 .hero-badge.gold {
-  background: rgba(255, 215, 0, 0.15);
-  color: #ffd700;
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: #ffd84d;
+  background: rgba(255, 216, 77, 0.12);
+  border-color: rgba(255, 216, 77, 0.3);
 }
 
-/* ── Page body ─────────────────────────────────────── */
-.page-body {
-  padding: 20px 16px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
+.hero-badge.warn {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
-/* ── Section layout ────────────────────────────────── */
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.section-link {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #7bc74d;
-  text-decoration: none;
-}
-
-/* ── Stats row ────────────────────────────────────── */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
 }
 
-.stat-pill {
+.stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 14px 8px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.9) 0%,
-    rgba(20, 20, 20, 0.9) 100%
-  );
-  border: 1px solid rgba(123, 199, 77, 0.12);
-  border-radius: 16px;
+  gap: 4px;
+  padding: 12px 4px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
   text-align: center;
+  min-width: 0;
 }
 
-.stat-pill-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 11px;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 15%, transparent);
 }
 
-.stat-pill-icon.green {
-  background: rgba(123, 199, 77, 0.15);
-  color: #7bc74d;
-}
-
-.stat-pill-icon.blue {
-  background: rgba(79, 195, 247, 0.15);
-  color: #4fc3f7;
-}
-
-.stat-pill-icon.yellow {
-  background: rgba(255, 170, 0, 0.15);
-  color: #ffaa00;
-}
-
-.stat-pill-value {
-  font-size: 18px;
+.stat strong {
+  font-size: 15px;
   font-weight: 800;
-  color: #fff;
-  line-height: 1;
-}
-
-.stat-pill-label {
-  font-size: 10px;
-  color: #777;
-  font-weight: 500;
-  margin-top: 2px;
-}
-
-/* ── Tasks ────────────────────────────────────────── */
-.add-task-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(123, 199, 77, 0.12);
-  border: 1px solid rgba(123, 199, 77, 0.25);
-  color: #7bc74d;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.add-task-btn:active {
-  transform: scale(0.9);
-}
-
-.add-task-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.task-input {
-  flex: 1;
-  padding: 12px 14px;
-  background: rgba(30, 30, 30, 0.9);
-  border: 1px solid rgba(123, 199, 77, 0.25);
-  border-radius: 12px;
-  color: #fff;
-  font-size: 14px;
-  outline: none;
-}
-
-.task-input::placeholder {
-  color: #555;
-}
-.task-input:focus {
-  border-color: rgba(123, 199, 77, 0.5);
-}
-
-.task-save-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #7bc74d, #5a9e3a);
-  border: none;
-  color: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-weight: 700;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.task-save-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.task-save-btn:active {
-  transform: scale(0.92);
-}
-
-.task-progress-bar {
-  height: 4px;
-  background: rgba(123, 199, 77, 0.12);
-  border-radius: 100px;
-  margin-bottom: 12px;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-.task-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #5a9e3a, #9fe76d);
-  border-radius: 100px;
-  transition: width 0.4s ease;
+.stat > span:last-child {
+  font-size: 11px;
+  color: var(--text-3);
 }
 
-.tasks-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 30px;
-  color: #555;
-  font-size: 13px;
-  text-align: center;
-  background: rgba(30, 30, 30, 0.5);
-  border: 1px dashed rgba(123, 199, 77, 0.15);
-  border-radius: 16px;
-}
-
-.tasks-list {
+.attention-list,
+.tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.task-row {
+.attention {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.9) 0%,
-    rgba(20, 20, 20, 0.9) 100%
-  );
-  border: 1px solid rgba(123, 199, 77, 0.12);
-  border-radius: 14px;
-  transition: all 0.2s;
+  padding: 10px;
 }
 
-.task-row.done {
-  opacity: 0.6;
-  border-color: rgba(123, 199, 77, 0.2);
+.attention.urgent {
+  border-color: rgba(251, 191, 36, 0.4);
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.07), var(--surface) 60%);
+}
+
+.attention-photo {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.attention-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.attention-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.attention-detail {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.attention.urgent .attention-detail {
+  color: #fbbf24;
+}
+
+.log-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.task-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.task-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+.task-add-row select {
+  flex: 1;
+}
+
+.task-progress {
+  margin-bottom: 12px;
+  height: 4px;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 .task-check {
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
-  border: 2px solid rgba(123, 199, 77, 0.4);
-  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
+  border-radius: 8px;
+  border: 2px solid rgba(123, 199, 77, 0.45);
+  background: transparent;
+  color: var(--on-accent);
 }
 
-.task-check.checked {
-  background: linear-gradient(135deg, #7bc74d, #5a9e3a);
-  border-color: #7bc74d;
+.task.done .task-check {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
-.task-label {
+.task-text {
   flex: 1;
-  font-size: 14px;
-  color: #e5e7eb;
-  font-weight: 500;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.task-row.done .task-label {
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.task.done .task-title {
+  color: var(--text-3);
   text-decoration: line-through;
-  color: #777;
+}
+
+.task-meta {
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .task-delete {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
   background: transparent;
-  border: none;
-  color: #555;
+  color: var(--text-3);
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
 .task-delete:active {
-  color: #ff4444;
-}
-
-/* ── Plant cards (horizontal scroll) ─────────────── */
-.plants-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 36px;
-  color: #555;
-  text-align: center;
-  background: rgba(30, 30, 30, 0.5);
-  border: 1px dashed rgba(123, 199, 77, 0.15);
-  border-radius: 16px;
-}
-
-.plants-empty p {
-  margin: 0;
-  font-size: 15px;
-}
-
-.empty-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 10px 18px;
-  background: rgba(123, 199, 77, 0.12);
-  border: 1px solid rgba(123, 199, 77, 0.3);
-  border-radius: 12px;
-  color: #7bc74d;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
+  color: var(--danger);
 }
 
 .plants-scroll {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   overflow-x: auto;
-  padding-bottom: 6px;
-  -webkit-overflow-scrolling: touch;
+  margin: 0 -16px;
+  padding: 0 16px 4px;
   scrollbar-width: none;
+  scroll-snap-type: x proximity;
 }
 
 .plants-scroll::-webkit-scrollbar {
@@ -983,230 +910,178 @@ onUnmounted(() => {
 }
 
 .plant-card {
-  flex-shrink: 0;
-  width: 160px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.95) 0%,
-    rgba(18, 18, 18, 0.95) 100%
-  );
-  border: 1px solid rgba(123, 199, 77, 0.15);
+  flex: 0 0 158px;
+  scroll-snap-align: start;
   border-radius: 20px;
   overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: inherit;
   text-decoration: none;
-  transition: all 0.25s ease;
-  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
 }
 
 .plant-card:active {
-  transform: scale(0.96);
-  border-color: rgba(123, 199, 77, 0.35);
+  transform: scale(0.97);
 }
 
-.plant-card-image {
+.plant-card-img {
   position: relative;
-  height: 120px;
-  background: rgba(0, 0, 0, 0.3);
-  overflow: hidden;
+  height: 118px;
 }
 
-.plant-card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.plant-card-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #7bc74d;
-  background: rgba(123, 199, 77, 0.06);
-}
-
-.stage-chip {
+.plant-card-badge {
   position: absolute;
   top: 8px;
   left: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 20px;
-  border: 1px solid;
-  font-size: 10px;
-  font-weight: 700;
-  backdrop-filter: blur(6px);
 }
 
 .plant-card-body {
-  padding: 12px;
+  padding: 10px 12px 12px;
 }
 
 .plant-card-name {
+  margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 2px;
 }
 
 .plant-card-strain {
-  font-size: 11px;
-  color: #888;
+  margin: 1px 0 8px;
+  font-size: 12px;
+  color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 10px;
 }
 
-.plant-day-info {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  margin-bottom: 6px;
-}
-
-.plant-day-num {
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.plant-day-total {
-  font-size: 10px;
-  color: #666;
-}
-
-.plant-mini-progress {
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 100px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.plant-mini-fill {
-  height: 100%;
-  border-radius: 100px;
-  transition: width 0.4s ease;
-  min-width: 4px;
-}
-
-.plant-health {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.plant-card-day {
+  margin: 0 0 6px;
   font-size: 12px;
-  font-weight: 600;
 }
 
-/* ── Quick Actions grid ────────────────────────────── */
-.quick-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+.plant-card-day span {
+  color: var(--text-3);
 }
 
-.qa-btn {
+.add-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 14px 6px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.9) 0%,
-    rgba(20, 20, 20, 0.9) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 16px;
+  justify-content: center;
+  gap: 6px;
+  border-style: dashed;
+  border-color: var(--accent-line);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 13px;
+  min-height: 220px;
+}
+
+.recent {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: inherit;
   text-decoration: none;
-  color: #ccc;
-  font-size: 11px;
-  font-weight: 600;
-  text-align: center;
-  transition: all 0.25s ease;
-  -webkit-tap-highlight-color: transparent;
 }
 
-.qa-btn:active {
-  transform: scale(0.94);
-  border-color: rgba(123, 199, 77, 0.3);
+.recent-item + .recent-item {
+  border-top: 1px solid var(--line);
 }
 
-.qa-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+.recent-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 10px;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 15%, transparent);
 }
 
-/* ── Grow Tip ──────────────────────────────────────── */
-.tip-section {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 170, 0, 0.06) 0%,
-    rgba(30, 30, 30, 0.9) 100%
-  );
-  border: 1px solid rgba(255, 170, 0, 0.2);
-  border-radius: 20px;
-  padding: 18px;
-  cursor: pointer;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
+.recent-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
 }
 
-.tip-section:active {
-  transform: scale(0.99);
+.recent-text span {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.tip-header {
+.recent-date {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.tip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  text-align: left;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.07) 0%, var(--surface) 70%);
+  border-color: rgba(251, 191, 36, 0.22);
+  color: inherit;
+}
+
+.tip-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
 }
 
 .tip-title {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  text-transform: uppercase;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.tip-tap {
-  font-size: 11px;
-  color: #666;
-  font-style: italic;
+.tip-title .iconify,
+.tip-title span {
+  color: #fbbf24;
 }
 
-.tip-body {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.tip-icon {
-  flex-shrink: 0;
-  color: #ffaa00;
-  margin-top: 2px;
+.tip-stage {
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .tip-text {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #ccc;
-  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #d6dad4;
+}
+
+.tip-next {
+  font-size: 12px;
+  color: var(--text-3);
 }
 </style>

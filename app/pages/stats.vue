@@ -1,574 +1,547 @@
+<script setup lang="ts">
+import type { EntryType } from '~/types/grow'
+
+useHead({ title: 'Statistics' })
+
+const { state } = useGrow()
+const today = todayISO()
+
+const photoCount = computed(() => state.entries.reduce((n, e) => n + e.photoIds.length, 0) + state.plants.filter(p => p.photoId).length)
+const waterLitres = computed(() => state.entries
+  .filter(e => e.type === 'water' || e.type === 'feed')
+  .reduce((s, e) => s + (e.amountMl ?? 0), 0) / 1000)
+
+// ── Activity chart ────────────────────────────────────────────────
+type Range = 'week' | 'weeks'
+const range = ref<Range>('week')
+
+const bars = computed(() => {
+  if (range.value === 'week') {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(today, i - 6)
+      const value = state.entries.filter(e => e.date === d).length
+      return { label: weekdayShort(d).slice(0, 2), value, hint: formatDate(d, { day: 'numeric', month: 'short' }), highlight: d === today }
+    })
+  }
+  const thisMonday = weekOf(today)[0]!
+  return Array.from({ length: 8 }, (_, i) => {
+    const start = addDays(thisMonday, (i - 7) * 7)
+    const end = addDays(start, 6)
+    const value = state.entries.filter(e => e.date >= start && e.date <= end).length
+    return { label: formatDate(start, { day: 'numeric', month: 'numeric' }), value, hint: `Week of ${formatDate(start, { day: 'numeric', month: 'short' })}`, highlight: i === 7 }
+  })
+})
+const rangeTotal = computed(() => bars.value.reduce((s, b) => s + b.value, 0))
+
+// ── By type ───────────────────────────────────────────────────────
+const byType = computed(() => {
+  const counts = new Map<EntryType, number>()
+  for (const e of state.entries) counts.set(e.type, (counts.get(e.type) ?? 0) + 1)
+  const max = Math.max(1, ...counts.values())
+  return ENTRY_TYPES
+    .filter(t => counts.get(t.type))
+    .map(t => ({ ...t, count: counts.get(t.type)!, pct: (counts.get(t.type)! / max) * 100 }))
+    .sort((a, b) => b.count - a.count)
+})
+
+// ── Streak ────────────────────────────────────────────────────────
+const streak = computed(() => {
+  const days = new Set(state.entries.map(e => e.date))
+  let d = days.has(today) ? today : addDays(today, -1)
+  let n = 0
+  while (days.has(d)) {
+    n++
+    d = addDays(d, -1)
+  }
+  return n
+})
+
+// ── Harvests ──────────────────────────────────────────────────────
+const harvests = computed(() => state.plants
+  .filter(p => p.harvest)
+  .map(p => ({
+    plant: p,
+    harvest: p.harvest!,
+    days: daysBetween(p.startDate, p.harvest!.date)
+  }))
+  .sort((a, b) => b.harvest.date.localeCompare(a.harvest.date)))
+
+const dryTotal = computed(() => harvests.value.reduce((s, h) => s + (h.harvest.dryWeight ?? 0), 0))
+const withDry = computed(() => harvests.value.filter(h => h.harvest.dryWeight))
+const avgDry = computed(() => (withDry.value.length ? dryTotal.value / withDry.value.length : 0))
+const avgDays = computed(() => (harvests.value.length ? harvests.value.reduce((s, h) => s + h.days, 0) / harvests.value.length : 0))
+const maxDry = computed(() => Math.max(1, ...withDry.value.map(h => h.harvest.dryWeight!)))
+
+// ── Strains ───────────────────────────────────────────────────────
+const strains = computed(() => {
+  const map = new Map<string, { name: string, plants: number, dry: number }>()
+  for (const p of state.plants) {
+    const key = (p.strain || 'Unknown').trim()
+    const s = map.get(key.toLowerCase()) ?? { name: key, plants: 0, dry: 0 }
+    s.plants++
+    s.dry += p.harvest?.dryWeight ?? 0
+    map.set(key.toLowerCase(), s)
+  }
+  return [...map.values()].sort((a, b) => b.dry - a.dry || b.plants - a.plants)
+})
+
+// ── Achievements ──────────────────────────────────────────────────
+const achievements = computed(() => {
+  const count = (t: EntryType) => state.entries.filter(e => e.type === t).length
+  return [
+    { icon: 'i-tabler-seeding', title: 'First seed', text: 'Add a plant', done: state.plants.length >= 1 },
+    { icon: 'i-tabler-flame', title: 'On fire', text: '7-day logging streak', done: streak.value >= 7 },
+    { icon: 'i-tabler-notebook', title: 'Diarist', text: '50 journal entries', done: state.entries.length >= 50 },
+    { icon: 'i-tabler-camera', title: 'Photographer', text: '10 photos', done: photoCount.value >= 10 },
+    { icon: 'i-tabler-scissors', title: 'Trainer', text: '5 training sessions', done: count('train') >= 5 },
+    { icon: 'i-tabler-plant-2', title: 'Gardener', text: '5 plants', done: state.plants.length >= 5 },
+    { icon: 'i-tabler-basket', title: 'First harvest', text: 'Harvest a plant', done: harvests.value.length >= 1 },
+    { icon: 'i-tabler-trophy', title: 'Heavy hitter', text: '100 g dry in total', done: dryTotal.value >= 100 }
+  ]
+})
+const unlocked = computed(() => achievements.value.filter(a => a.done).length)
+</script>
+
 <template>
-  <div class="stats-page">
-    <Header title="Statistics" icon="tabler:chart-bar" :show-back="true" />
-
-    <div class="content-wrapper">
-      <!-- Overall overview -->
-      <section class="section">
-        <h2 class="section-title">Overall Overview</h2>
-        <div class="stats-grid">
-          <div class="stat-box">
-            <Icon icon="tabler:plant-2" :height="32" class="stat-icon" />
-            <div class="stat-value">{{ totalPlants }}</div>
-            <div class="stat-label">Total plants</div>
-          </div>
-          <div class="stat-box">
-            <Icon icon="tabler:droplet-filled" :height="32" class="stat-icon blue" />
-            <div class="stat-value">{{ totalWaterings }}</div>
-            <div class="stat-label">Waterings</div>
-          </div>
-          <div class="stat-box">
-            <Icon icon="tabler:calendar-check" :height="32" class="stat-icon" />
-            <div class="stat-value">{{ totalDaysGrowing }}</div>
-            <div class="stat-label">Days growing</div>
-          </div>
-          <div class="stat-box">
-            <Icon icon="tabler:notebook" :height="32" class="stat-icon purple" />
-            <div class="stat-value">{{ totalEntries }}</div>
-            <div class="stat-label">Journal entries</div>
-          </div>
+  <div>
+    <AppHeader
+      title="Statistics"
+      subtitle="Your garden in numbers"
+      back
+    />
+    <div class="page">
+      <section class="tiles">
+        <div class="tile card">
+          <UIcon
+            name="i-tabler-plant-2"
+            class="size-6"
+            style="color: #7bc74d"
+          />
+          <strong>{{ state.plants.length }}</strong>
+          <span>Plants · {{ state.plants.filter(p => p.archived).length }} archived</span>
+        </div>
+        <div class="tile card">
+          <UIcon
+            name="i-tabler-notebook"
+            class="size-6"
+            style="color: #4fc3f7"
+          />
+          <strong>{{ state.entries.length }}</strong>
+          <span>Journal entries</span>
+        </div>
+        <div class="tile card">
+          <UIcon
+            name="i-tabler-droplet-filled"
+            class="size-6"
+            style="color: #4fc3f7"
+          />
+          <strong>{{ round(waterLitres, 1) }} L</strong>
+          <span>Water &amp; feed given</span>
+        </div>
+        <div class="tile card">
+          <UIcon
+            name="i-tabler-flame"
+            class="size-6"
+            style="color: #fb923c"
+          />
+          <strong>{{ streak }} day{{ streak === 1 ? '' : 's' }}</strong>
+          <span>Logging streak</span>
         </div>
       </section>
 
-      <!-- Activity chart -->
-      <section class="section">
-        <h2 class="section-title">Activity This Week</h2>
-        <div class="chart-container">
-          <div class="chart-bars">
-            <div
-              class="chart-bar"
-              v-for="(day, index) in weekActivity"
-              :key="index"
+      <section class="card block">
+        <div class="section-head">
+          <h2 class="section-title">
+            <UIcon
+              name="i-tabler-chart-bar"
+              class="size-5"
+            /> Activity
+          </h2>
+          <div class="segmented small">
+            <button
+              type="button"
+              :aria-pressed="range === 'week'"
+              @click="range = 'week'"
             >
-              <div
-                class="bar-fill"
-                :style="{ height: (maxWeekActivity > 0 ? (day.count / maxWeekActivity) * 100 : 0) + '%' }"
-              >
-                <div class="bar-value" v-if="day.count > 0">{{ day.count }}</div>
-              </div>
-              <div class="bar-label">{{ day.label }}</div>
-            </div>
+              7 days
+            </button>
+            <button
+              type="button"
+              :aria-pressed="range === 'weeks'"
+              @click="range = 'weeks'"
+            >
+              8 weeks
+            </button>
           </div>
         </div>
+        <p class="muted chart-sub">
+          {{ rangeTotal }} entr{{ rangeTotal === 1 ? 'y' : 'ies' }} logged
+        </p>
+        <BarChart
+          :bars="bars"
+          :label="`Journal entries per ${range === 'week' ? 'day, last 7 days' : 'week, last 8 weeks'}: ${rangeTotal} in total`"
+        />
       </section>
 
-      <!-- Plant breakdown -->
-      <section class="section" v-if="plantBreakdown.length > 0">
-        <h2 class="section-title">Plant Breakdown</h2>
-        <div class="strains-list">
-          <div
-            class="strain-item"
-            v-for="(p, index) in plantBreakdown"
-            :key="index"
+      <section
+        v-if="byType.length"
+        class="card block"
+      >
+        <h2 class="section-title block-title">
+          <UIcon
+            name="i-tabler-list-details"
+            class="size-5"
+          /> What you log
+        </h2>
+        <ul class="types">
+          <li
+            v-for="t in byType"
+            :key="t.type"
           >
-            <div class="strain-rank">{{ index + 1 }}</div>
-            <div class="strain-info">
-              <div class="strain-name">{{ p.name }}</div>
-              <div class="strain-stats">
-                <span>{{ p.strain || 'Unknown strain' }}</span>
-                <span class="dot">•</span>
-                <span>Day {{ p.days }}</span>
-              </div>
-            </div>
-            <div class="strain-rating" :style="{ color: getStageColor(p.stage) }">
-              <Icon :icon="getStageIcon(p.stage)" :height="16" />
-              <span>{{ p.stage }}</span>
-            </div>
-          </div>
-        </div>
+            <span class="type-name"><UIcon
+              :name="t.icon"
+              class="size-4"
+              :style="{ color: t.color }"
+            /> {{ t.label }}</span>
+            <span class="type-bar"><span :style="{ width: `${t.pct}%`, background: t.color }" /></span>
+            <span class="type-count">{{ t.count }}</span>
+          </li>
+        </ul>
       </section>
 
-      <!-- Achievements -->
-      <section class="section">
-        <h2 class="section-title">🏆 Achievements</h2>
-        <div class="achievements-grid">
-          <div :class="['achievement', totalPlants >= 1 ? 'unlocked' : 'locked']">
-            <Icon icon="tabler:plant" :height="40" />
-            <div class="achievement-name">First plant</div>
+      <section class="card block">
+        <h2 class="section-title block-title">
+          <UIcon
+            name="i-tabler-basket"
+            class="size-5"
+          /> Harvests
+        </h2>
+        <EmptyState
+          v-if="!harvests.length"
+          icon="i-tabler-basket-off"
+          title="No harvests yet"
+          text="When a flowering plant is ready, open it and tap Harvest."
+        />
+        <template v-else>
+          <div class="harvest-sum">
+            <div><strong>{{ round(dryTotal, 0) }} g</strong><span>Dry total</span></div>
+            <div><strong>{{ round(avgDry, 0) }} g</strong><span>Avg / plant</span></div>
+            <div><strong>{{ round(avgDays, 0) }} d</strong><span>Seed to chop</span></div>
           </div>
-          <div :class="['achievement', totalEntries >= 7 ? 'unlocked' : 'locked']">
-            <Icon icon="tabler:flame" :height="40" />
-            <div class="achievement-name">7+ entries</div>
-          </div>
-          <div :class="['achievement', totalPhotos >= 5 ? 'unlocked' : 'locked']">
-            <Icon icon="tabler:camera" :height="40" />
-            <div class="achievement-name">5+ photos</div>
-          </div>
-          <div :class="['achievement', totalPlants >= 5 ? 'unlocked' : 'locked']">
-            <Icon icon="tabler:crown" :height="40" />
-            <div class="achievement-name">5+ plants</div>
-          </div>
-        </div>
+          <ul class="harvest-list">
+            <li
+              v-for="h in harvests"
+              :key="h.plant.id"
+            >
+              <NuxtLink
+                :to="`/plants/${h.plant.id}`"
+                class="harvest-row"
+              >
+                <span class="harvest-name">
+                  <strong>{{ h.plant.name }}</strong>
+                  <span>{{ formatDate(h.harvest.date) }} · {{ h.days }} days</span>
+                </span>
+                <span class="harvest-bar"><span :style="{ width: `${((h.harvest.dryWeight ?? 0) / maxDry) * 100}%` }" /></span>
+                <span class="harvest-weight">{{ h.harvest.dryWeight != null ? `${h.harvest.dryWeight} g` : 'drying' }}</span>
+              </NuxtLink>
+            </li>
+          </ul>
+        </template>
       </section>
 
-      <!-- Journal activity breakdown -->
-      <section class="section" v-if="totalEntries > 0">
-        <h2 class="section-title">📊 Journal Activity</h2>
-        <div class="trends-list">
-          <div class="trend-item" :class="totalWaterings > 0 ? 'positive' : 'neutral'">
-            <Icon icon="tabler:droplet-filled" :height="24" />
-            <div class="trend-info">
-              <div class="trend-label">Waterings</div>
-              <div class="trend-value">{{ totalWaterings }} total</div>
-            </div>
-          </div>
-          <div class="trend-item" :class="totalFeedings > 0 ? 'positive' : 'neutral'">
-            <Icon icon="tabler:flask" :height="24" />
-            <div class="trend-info">
-              <div class="trend-label">Feedings</div>
-              <div class="trend-value">{{ totalFeedings }} total</div>
-            </div>
-          </div>
-          <div class="trend-item" :class="totalPhotos > 0 ? 'positive' : 'neutral'">
-            <Icon icon="tabler:camera" :height="24" />
-            <div class="trend-info">
-              <div class="trend-label">Photos</div>
-              <div class="trend-value">{{ totalPhotos }} total</div>
-            </div>
-          </div>
-        </div>
+      <section
+        v-if="strains.length"
+        class="card block"
+      >
+        <h2 class="section-title block-title">
+          <UIcon
+            name="i-tabler-dna"
+            class="size-5"
+          /> Strains
+        </h2>
+        <table class="strains">
+          <thead>
+            <tr><th>Strain</th><th>Plants</th><th>Dry yield</th></tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="s in strains"
+              :key="s.name"
+            >
+              <td>{{ s.name }}</td>
+              <td>{{ s.plants }}</td>
+              <td>{{ s.dry ? `${round(s.dry, 0)} g` : '–' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
-      <!-- Empty state if no data -->
-      <section v-if="totalPlants === 0 && !loading" class="empty-stats">
-        <Icon icon="tabler:chart-bar-off" :height="60" style="color: #444" />
-        <p>No data yet. Start by adding your first plant!</p>
-        <NuxtLink to="/my-trees" class="empty-cta">
-          <Icon icon="tabler:plus" :height="16" />
-          Add Plant
-        </NuxtLink>
+      <section>
+        <div class="section-head">
+          <h2 class="section-title">
+            <UIcon
+              name="i-tabler-award"
+              class="size-5"
+            /> Achievements
+          </h2>
+          <span class="muted">{{ unlocked }}/{{ achievements.length }}</span>
+        </div>
+        <div class="achievements">
+          <div
+            v-for="a in achievements"
+            :key="a.title"
+            class="achievement card"
+            :class="{ done: a.done }"
+          >
+            <UIcon
+              :name="a.done ? a.icon : 'i-tabler-lock'"
+              class="size-7"
+            />
+            <strong>{{ a.title }}</strong>
+            <span>{{ a.text }}</span>
+          </div>
+        </div>
       </section>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { Icon } from "@iconify/vue";
-import Header from "~/components/Header.vue";
-import { usePlants } from "~/composables/usePlants";
-import { usePlantJournal } from "~/composables/usePlantJournal";
-import { useHead } from "#imports";
-
-useHead({ title: 'Statistics' });
-
-const { plants, loadPlantsFromStorage } = usePlants();
-const loading = ref(true);
-
-// Journal entries for all plants
-const allJournalEntries = ref<any[]>([]);
-
-async function loadAllData() {
-  loading.value = true;
-  await loadPlantsFromStorage();
-
-  const entries: any[] = [];
-  for (const plant of plants.value) {
-    const journal = usePlantJournal(plant.id);
-    await journal.load();
-    entries.push(...journal.entries.value);
-  }
-  allJournalEntries.value = entries;
-  loading.value = false;
-}
-
-onMounted(() => loadAllData());
-
-// Computed stats
-const totalPlants = computed(() => plants.value.length);
-
-const totalWaterings = computed(
-  () => allJournalEntries.value.filter((e) => e.type === "water").length,
-);
-const totalFeedings = computed(
-  () => allJournalEntries.value.filter((e) => e.type === "nutrients").length,
-);
-const totalPhotos = computed(
-  () => allJournalEntries.value.filter((e) => e.type === "photo").length,
-);
-const totalEntries = computed(() => allJournalEntries.value.length);
-
-const totalDaysGrowing = computed(() => {
-  return plants.value.reduce((acc: number, p: any) => {
-    const dateStr = p.plantingDate || p.createdAt;
-    if (!dateStr) return acc;
-    const days = Math.max(
-      0,
-      Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000),
-    );
-    return acc + days;
-  }, 0);
-});
-
-// Week activity
-const weekActivity = computed(() => {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const now = new Date();
-  const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - dow);
-  monday.setHours(0, 0, 0, 0);
-
-  return days.map((label, i) => {
-    const dayDate = new Date(monday);
-    dayDate.setDate(monday.getDate() + i);
-    const iso = dayDate.toISOString().slice(0, 10);
-    const count = allJournalEntries.value.filter(
-      (e) => e.date === iso,
-    ).length;
-    return { label, count };
-  });
-});
-
-const maxWeekActivity = computed(() =>
-  Math.max(...weekActivity.value.map((d) => d.count), 1),
-);
-
-// Plant breakdown
-const plantBreakdown = computed(() => {
-  return plants.value.map((p: any) => {
-    const dateStr = p.plantingDate || p.createdAt;
-    const days = dateStr
-      ? Math.max(
-          0,
-          Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000),
-        )
-      : 0;
-    return {
-      name: p.name || "Unnamed",
-      strain: p.strain || "",
-      stage: p.stage || "Seedling",
-      days,
-    };
-  });
-});
-
-function getStageColor(stage: string): string {
-  const map: Record<string, string> = {
-    Germination: "#9fe76d",
-    Seedling: "#7bc74d",
-    Vegetative: "#4fc3f7",
-    Flowering: "#f472b6",
-  };
-  return map[stage] ?? "#7bc74d";
-}
-
-function getStageIcon(stage: string): string {
-  const map: Record<string, string> = {
-    Germination: "tabler:seeding",
-    Seedling: "tabler:plant",
-    Vegetative: "tabler:tree",
-    Flowering: "tabler:flower",
-  };
-  return map[stage] ?? "tabler:plant";
-}
-</script>
-
 <style scoped>
-.stats-page {
-  width: 100%;
-  background: #0a0a0a;
-  min-height: 100vh;
-  padding-bottom: calc(100px + env(safe-area-inset-bottom));
-}
-
-.content-wrapper {
-  padding: 20px 16px;
-}
-
-.section {
-  margin-bottom: 32px;
-}
-
-.section-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 16px;
-  letter-spacing: -0.01em;
-}
-
-.stats-grid {
+.tiles {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
-.stat-box {
-  padding: 20px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.9) 0%,
-    rgba(20, 20, 20, 0.9) 100%
-  );
-  border: 1px solid rgba(123, 199, 77, 0.15);
-  border-radius: 18px;
-  text-align: center;
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px;
 }
 
-.stat-icon {
-  color: #7bc74d;
+.tile strong {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.tile span {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.block {
+  padding: 16px;
+}
+
+.block-title {
   margin-bottom: 12px;
 }
 
-.stat-icon.blue {
-  color: #4fc3f7;
+.segmented.small {
+  padding: 3px;
 }
 
-.stat-icon.purple {
-  color: #a78bfa;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 6px;
-}
-
-.stat-label {
+.segmented.small button {
+  white-space: nowrap;
+  min-height: 30px;
+  padding: 0 10px;
   font-size: 12px;
-  color: #999;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.chart-container {
-  padding: 24px 20px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.9) 0%,
-    rgba(20, 20, 20, 0.9) 100%
-  );
-  border: 1px solid rgba(123, 199, 77, 0.15);
-  border-radius: 18px;
+.chart-sub {
+  margin: -4px 0 14px;
+  font-size: 13px;
 }
 
-.chart-bars {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  gap: 8px;
-  height: 160px;
-}
-
-.chart-bar {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  height: 100%;
-  justify-content: flex-end;
-}
-
-.bar-fill {
-  width: 100%;
-  background: linear-gradient(180deg, #9fe76d 0%, #7bc74d 50%, #5a9e3a 100%);
-  border-radius: 8px 8px 0 0;
-  position: relative;
-  transition: height 0.5s ease;
-  min-height: 4px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 6px;
-}
-
-.bar-value {
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-.bar-label {
-  font-size: 12px;
-  color: #999;
-  font-weight: 600;
-}
-
-.strains-list {
+.types {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.strain-item {
-  display: flex;
+.types li {
+  display: grid;
+  grid-template-columns: 96px 1fr 32px;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.9) 0%,
-    rgba(20, 20, 20, 0.9) 100%
-  );
-  border: 1px solid rgba(123, 199, 77, 0.15);
-  border-radius: 16px;
+  gap: 10px;
+  font-size: 13px;
 }
 
-.strain-rank {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #7bc74d 0%, #5a9e3a 100%);
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.strain-info {
-  flex: 1;
-}
-
-.strain-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.strain-stats {
-  font-size: 12px;
-  color: #999;
-  display: flex;
+.type-name {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-weight: 600;
 }
 
-.dot {
-  color: #666;
+.type-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
 }
 
-.strain-rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
+.type-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.type-count {
+  text-align: right;
   font-weight: 700;
 }
 
-.achievements-grid {
+.harvest-sum {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.harvest-sum div {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(250, 204, 21, 0.07);
+  border: 1px solid rgba(250, 204, 21, 0.2);
+}
+
+.harvest-sum strong {
+  font-size: 18px;
+}
+
+.harvest-sum span {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.harvest-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.harvest-row {
+  display: grid;
+  grid-template-columns: 1fr 70px auto;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.harvest-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.harvest-name strong {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.harvest-name span {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.harvest-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.harvest-bar span {
+  display: block;
+  height: 100%;
+  background: #facc15;
+  border-radius: 4px;
+}
+
+.harvest-weight {
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 52px;
+  text-align: right;
+}
+
+.strains {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.strains th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  padding: 0 0 8px;
+}
+
+.strains td {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.strains th:not(:first-child),
+.strains td:not(:first-child) {
+  text-align: right;
+}
+
+.achievements {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .achievement {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 24px 16px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.9) 0%,
-    rgba(20, 20, 20, 0.9) 100%
-  );
-  border: 1px solid rgba(123, 199, 77, 0.15);
-  border-radius: 16px;
+  gap: 4px;
+  padding: 16px 10px;
   text-align: center;
-  transition: all 0.3s ease;
+  color: var(--text-3);
 }
 
-.achievement.unlocked {
-  color: #7bc74d;
-  border-color: rgba(123, 199, 77, 0.3);
-}
-
-.achievement.locked {
-  color: #444;
-  opacity: 0.5;
-}
-
-.achievement-name {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.trends-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.trend-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 30, 0.9) 0%,
-    rgba(20, 20, 20, 0.9) 100%
-  );
-  border: 1px solid rgba(123, 199, 77, 0.15);
-  border-radius: 16px;
-}
-
-.trend-item.positive {
-  border-color: rgba(123, 199, 77, 0.3);
-  color: #7bc74d;
-}
-
-.trend-item.neutral {
-  border-color: rgba(255, 255, 255, 0.08);
-  color: #666;
-}
-
-.trend-info {
-  flex: 1;
-}
-
-.trend-label {
-  font-size: 13px;
-  color: #999;
-  margin-bottom: 4px;
-}
-
-.trend-value {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-/* Empty state */
-.empty-stats {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 60px 32px;
-  text-align: center;
-}
-
-.empty-stats p {
-  font-size: 15px;
-  color: #666;
-}
-
-.empty-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+.achievement strong {
   margin-top: 4px;
-  padding: 11px 20px;
-  background: rgba(123, 199, 77, 0.1);
-  border: 1px solid rgba(123, 199, 77, 0.3);
-  border-radius: 14px;
-  color: #7bc74d;
   font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
+  color: var(--text-2);
 }
 
-.empty-cta:active {
-  transform: scale(0.96);
+.achievement span {
+  font-size: 12px;
+}
+
+.achievement.done {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: linear-gradient(135deg, var(--accent-soft), var(--surface) 70%);
+}
+
+.achievement.done strong {
+  color: var(--text);
+}
+
+.achievement.done span {
+  color: var(--text-2);
 }
 </style>

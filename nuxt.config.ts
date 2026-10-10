@@ -1,46 +1,29 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-export default defineNuxtConfig({
-  modules: [
-    '@nuxt/eslint',
-    '@nuxt/ui',
-    '@nuxt/image',
-    '@vueuse/nuxt',
-    "@nuxt/icon",
-    "@nuxtjs/ionic",
-  ],
+import pkg from './package.json'
 
+export default defineNuxtConfig({
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@vueuse/nuxt'],
+
+  // Static SPA – runs as a website and inside the Capacitor Android shell.
   ssr: false,
 
-  devtools: {
-    enabled: false
+  devtools: { enabled: false },
+
+  app: {
+    head: {
+      viewport: 'width=device-width, initial-scale=1, viewport-fit=cover'
+    }
   },
 
-  css: [
-    "@ionic/vue/css/core.css",
-    "@ionic/vue/css/structure.css",
-    "@ionic/vue/css/typography.css",
+  css: ['~/assets/css/main.css'],
 
-    // You might also need these optional Ionic utilities
-    "@ionic/vue/css/padding.css",
-    "@ionic/vue/css/float-elements.css",
-    "@ionic/vue/css/text-alignment.css",
-    "@ionic/vue/css/text-transformation.css",
-    "@ionic/vue/css/flex-utils.css",
-    "@ionic/vue/css/display.css",
-
-    "~/assets/css/main.css",
-  ],
-
-  ionic: {
-    css: {
-      core: false,
-      basic: false,
-      utilities: false,
-    },
+  colorMode: {
+    preference: 'dark',
+    fallback: 'dark'
   },
 
-  routeRules: {
-    '/': { prerender: true }
+  runtimeConfig: {
+    public: { version: pkg.version }
   },
 
   compatibilityDate: '2025-01-15',
@@ -54,10 +37,13 @@ export default defineNuxtConfig({
     }
   },
 
-  sourcemap: true,
-  vite: {
-    build: {
-      sourcemap: true
+  icon: {
+    // Icons are bundled into the app so they work offline in the APK.
+    provider: 'none',
+    fallbackToApi: false,
+    clientBundle: {
+      scan: { globInclude: ['app/**/*.{vue,ts}'] },
+      sizeLimitKb: 512
     }
   }
 })
