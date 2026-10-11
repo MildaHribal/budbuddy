@@ -1,0 +1,436 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-11T03:56:44.311550+00:00",
+  "title": "Design System: BudBuddy",
+  "extensions": {
+    "colorMeta": {
+      "tent-black": {
+        "role": "neutral",
+        "displayName": "Tent Black",
+        "tonalRamp": [
+          "oklch(15% 0.005 250)",
+          "oklch(25% 0.005 250)",
+          "oklch(38% 0.005 250)",
+          "oklch(50% 0.005 250)",
+          "oklch(62% 0.005 250)",
+          "oklch(74% 0.005 250)",
+          "oklch(85% 0.005 250)",
+          "oklch(95% 0.005 250)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(15% 0.008 250)",
+          "oklch(25% 0.008 250)",
+          "oklch(38% 0.008 250)",
+          "oklch(50% 0.008 250)",
+          "oklch(62% 0.008 250)",
+          "oklch(74% 0.008 250)",
+          "oklch(85% 0.008 250)",
+          "oklch(95% 0.008 250)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "tonalRamp": [
+          "oklch(15% 0.01 250)",
+          "oklch(25% 0.01 250)",
+          "oklch(38% 0.01 250)",
+          "oklch(50% 0.01 250)",
+          "oklch(62% 0.01 250)",
+          "oklch(74% 0.01 250)",
+          "oklch(85% 0.01 250)",
+          "oklch(95% 0.01 250)"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Surface Raised",
+        "tonalRamp": [
+          "oklch(15% 0.012 250)",
+          "oklch(25% 0.012 250)",
+          "oklch(38% 0.012 250)",
+          "oklch(50% 0.012 250)",
+          "oklch(62% 0.012 250)",
+          "oklch(74% 0.012 250)",
+          "oklch(85% 0.012 250)",
+          "oklch(95% 0.012 250)"
+        ]
+      },
+      "well": {
+        "role": "neutral",
+        "displayName": "Well",
+        "tonalRamp": [
+          "oklch(15% 0.008 250)",
+          "oklch(25% 0.008 250)",
+          "oklch(38% 0.008 250)",
+          "oklch(50% 0.008 250)",
+          "oklch(62% 0.008 250)",
+          "oklch(74% 0.008 250)",
+          "oklch(85% 0.008 250)",
+          "oklch(95% 0.008 250)"
+        ]
+      },
+      "canopy-text": {
+        "role": "neutral",
+        "displayName": "Canopy Text",
+        "tonalRamp": [
+          "oklch(15% 0.03 135)",
+          "oklch(25% 0.03 135)",
+          "oklch(38% 0.03 135)",
+          "oklch(50% 0.03 135)",
+          "oklch(62% 0.03 135)",
+          "oklch(74% 0.03 135)",
+          "oklch(85% 0.03 135)",
+          "oklch(95% 0.03 135)"
+        ]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Text Secondary",
+        "tonalRamp": [
+          "oklch(15% 0.025 135)",
+          "oklch(25% 0.025 135)",
+          "oklch(38% 0.025 135)",
+          "oklch(50% 0.025 135)",
+          "oklch(62% 0.025 135)",
+          "oklch(74% 0.025 135)",
+          "oklch(85% 0.025 135)",
+          "oklch(95% 0.025 135)"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Text Muted",
+        "tonalRamp": [
+          "oklch(15% 0.025 135)",
+          "oklch(25% 0.025 135)",
+          "oklch(38% 0.025 135)",
+          "oklch(50% 0.025 135)",
+          "oklch(62% 0.025 135)",
+          "oklch(74% 0.025 135)",
+          "oklch(85% 0.025 135)",
+          "oklch(95% 0.025 135)"
+        ]
+      },
+      "leaf": {
+        "role": "primary",
+        "displayName": "Leaf",
+        "tonalRamp": [
+          "oklch(15% 0.16 135)",
+          "oklch(25% 0.16 135)",
+          "oklch(38% 0.16 135)",
+          "oklch(50% 0.16 135)",
+          "oklch(62% 0.16 135)",
+          "oklch(74% 0.16 135)",
+          "oklch(85% 0.16 135)",
+          "oklch(95% 0.16 135)"
+        ]
+      },
+      "leaf-deep": {
+        "role": "primary",
+        "displayName": "Leaf Deep",
+        "tonalRamp": [
+          "oklch(15% 0.15 140)",
+          "oklch(25% 0.15 140)",
+          "oklch(38% 0.15 140)",
+          "oklch(50% 0.15 140)",
+          "oklch(62% 0.15 140)",
+          "oklch(74% 0.15 140)",
+          "oklch(85% 0.15 140)",
+          "oklch(95% 0.15 140)"
+        ]
+      },
+      "on-leaf": {
+        "role": "primary",
+        "displayName": "On Leaf",
+        "tonalRamp": [
+          "oklch(15% 0.03 145)",
+          "oklch(25% 0.03 145)",
+          "oklch(38% 0.03 145)",
+          "oklch(50% 0.03 145)",
+          "oklch(62% 0.03 145)",
+          "oklch(74% 0.03 145)",
+          "oklch(85% 0.03 145)",
+          "oklch(95% 0.03 145)"
+        ]
+      },
+      "lamp": {
+        "role": "secondary",
+        "displayName": "Lamp",
+        "tonalRamp": [
+          "oklch(15% 0.11 75)",
+          "oklch(25% 0.11 75)",
+          "oklch(38% 0.11 75)",
+          "oklch(50% 0.11 75)",
+          "oklch(62% 0.11 75)",
+          "oklch(74% 0.11 75)",
+          "oklch(85% 0.11 75)",
+          "oklch(95% 0.11 75)"
+        ]
+      },
+      "spectrum-pink": {
+        "role": "tertiary",
+        "displayName": "Spectrum Pink",
+        "tonalRamp": [
+          "oklch(15% 0.2 355)",
+          "oklch(25% 0.2 355)",
+          "oklch(38% 0.2 355)",
+          "oklch(50% 0.2 355)",
+          "oklch(62% 0.2 355)",
+          "oklch(74% 0.2 355)",
+          "oklch(85% 0.2 355)",
+          "oklch(95% 0.2 355)"
+        ]
+      },
+      "dark-arc": {
+        "role": "neutral",
+        "displayName": "Dark Arc",
+        "tonalRamp": [
+          "oklch(15% 0.025 255)",
+          "oklch(25% 0.025 255)",
+          "oklch(38% 0.025 255)",
+          "oklch(50% 0.025 255)",
+          "oklch(62% 0.025 255)",
+          "oklch(74% 0.025 255)",
+          "oklch(85% 0.025 255)",
+          "oklch(95% 0.025 255)"
+        ]
+      },
+      "danger": {
+        "role": "error",
+        "displayName": "Danger",
+        "tonalRamp": [
+          "oklch(15% 0.19 15)",
+          "oklch(25% 0.19 15)",
+          "oklch(38% 0.19 15)",
+          "oklch(50% 0.19 15)",
+          "oklch(62% 0.19 15)",
+          "oklch(74% 0.19 15)",
+          "oklch(85% 0.19 15)",
+          "oklch(95% 0.19 15)"
+        ]
+      },
+      "info": {
+        "role": "info",
+        "displayName": "Info",
+        "tonalRamp": [
+          "oklch(15% 0.1 235)",
+          "oklch(25% 0.1 235)",
+          "oklch(38% 0.1 235)",
+          "oklch(50% 0.1 235)",
+          "oklch(62% 0.1 235)",
+          "oklch(74% 0.1 235)",
+          "oklch(85% 0.1 235)",
+          "oklch(95% 0.1 235)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page header h1."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section titles with leaf glyph."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Light large numbers: ring, countdown, stats (26-34px)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, links, chips."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Meta, hints, nav labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "panel",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 24px -8px rgba(0,0,0,0.6)",
+        "purpose": "Top-lit cards."
+      },
+      {
+        "name": "well",
+        "value": "inset 0 1px 2px rgba(0,0,0,0.5)",
+        "purpose": "Inputs and segmented tracks."
+      },
+      {
+        "name": "glow-leaf",
+        "value": "0 0 14px rgba(155,227,107,0.45)",
+        "purpose": "Active indicators."
+      },
+      {
+        "name": "primary-drop",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.45), 0 8px 22px -8px rgba(155,227,107,0.55)",
+        "purpose": "Primary button."
+      },
+      {
+        "name": "glow-lamp",
+        "value": "0 0 40px 10px rgba(255,210,138,0.4), 0 0 90px 24px rgba(255,210,138,0.13)",
+        "purpose": "Lamp bar only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All routine transitions."
+      },
+      {
+        "name": "ease-in",
+        "value": "cubic-bezier(0.7, 0, 0.84, 0)",
+        "purpose": "Exits."
+      },
+      {
+        "name": "dur-fast",
+        "value": "140ms",
+        "purpose": "Press feedback."
+      },
+      {
+        "name": "dur",
+        "value": "240ms",
+        "purpose": "Colour and state changes."
+      },
+      {
+        "name": "dur-slow",
+        "value": "420ms",
+        "purpose": "Entrances, list rise, progress."
+      },
+      {
+        "name": "lights-on-boot",
+        "value": "lamp-on 0.9s steps(1,end); light-fall 1.4s 0.55s ease-out; ring arc 1.4s 0.5s",
+        "purpose": "Signature boot sequence; reduced motion shows the lit state instantly."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-frame",
+        "value": "(pointer: fine) and (min-width: 640px) and (min-height: 640px)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default top-lit button.",
+      "html": "<button class=\"ds-btn\">Add plant</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:14px;font:600 15px Sora,system-ui,sans-serif;transition:transform 140ms cubic-bezier(0.16,1,0.3,1),box-shadow 240ms cubic-bezier(0.16,1,0.3,1);border:1px solid rgba(255,255,255,0.13);background:linear-gradient(180deg,#1f2328 0%,#1a1d22 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);color:#e9f3e4;} .ds-btn:active{transform:scale(0.97);} .ds-btn:focus-visible{outline:2px solid #9be36b;outline-offset:2px;}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Leaf-lit primary action, one per view.",
+      "html": "<button class=\"ds-btn-primary\">Log watering</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:14px;font:600 15px Sora,system-ui,sans-serif;transition:transform 140ms cubic-bezier(0.16,1,0.3,1),box-shadow 240ms cubic-bezier(0.16,1,0.3,1);border:1px solid transparent;background:linear-gradient(180deg,#b3ef87 0%,#9be36b 55%,#86d257 100%);color:#07120a;box-shadow:inset 0 1px 0 rgba(255,255,255,0.45),0 8px 22px -8px rgba(155,227,107,0.55);} .ds-btn-primary:active{transform:scale(0.97);box-shadow:inset 0 1px 0 rgba(255,255,255,0.35),0 2px 10px -4px rgba(155,227,107,0.6);} .ds-btn-primary:focus-visible{outline:2px solid #9be36b;outline-offset:2px;}"
+    },
+    {
+      "name": "Soft Lamp Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Tinted variant for light and time actions.",
+      "html": "<button class=\"ds-btn-lamp\">Set light cycle</button>",
+      "css": ".ds-btn-lamp{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:14px;font:600 15px Sora,system-ui,sans-serif;transition:transform 140ms cubic-bezier(0.16,1,0.3,1),box-shadow 240ms cubic-bezier(0.16,1,0.3,1);border:1px solid rgba(255,210,138,0.3);background:rgba(255,210,138,0.12);color:#ffd28a;} .ds-btn-lamp:active{transform:scale(0.97);} .ds-btn-lamp:focus-visible{outline:2px solid #9be36b;outline-offset:2px;}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Recessed well field with leaf focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Plant name\">",
+      "css": ".ds-input{width:100%;min-height:48px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,0.13);background:#0b0d10;box-shadow:inset 0 1px 2px rgba(0,0,0,0.5);color:#e9f3e4;caret-color:#9be36b;font:16px Sora,system-ui,sans-serif;outline:none;transition:border-color 240ms ease,box-shadow 240ms ease;} .ds-input::placeholder{color:#6b7669;} .ds-input:focus{border-color:#9be36b;box-shadow:inset 0 1px 2px rgba(0,0,0,0.5),0 0 0 3px rgba(155,227,107,0.14);}"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Filter pill; active takes the leaf tint.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\">All</button><button class=\"ds-chip\" aria-pressed=\"false\">Flowering</button></div>",
+      "css": ".ds-chips{display:flex;gap:8px;} .ds-chip{display:inline-flex;align-items:center;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.13);background:#14171b;color:#a9b5a6;font:600 13px Sora,system-ui,sans-serif;transition:background 240ms cubic-bezier(0.16,1,0.3,1),transform 140ms cubic-bezier(0.16,1,0.3,1);} .ds-chip:active{transform:scale(0.96);} .ds-chip[aria-pressed=\"true\"]{background:rgba(155,227,107,0.12);border-color:rgba(155,227,107,0.28);color:#9be36b;} .ds-chip:focus-visible{outline:2px solid #9be36b;outline-offset:2px;}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Top-lit panel with section title and progress tube.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-title\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 20V10\" /><path d=\"M12 13c-4 0-6-3-6-7 4 0 6 3 6 7z\" fill=\"currentColor\" fill-opacity=\"0.2\"/><path d=\"M12 11c0-4 2-6 6-6 0 4-2 6-6 6z\" fill=\"currentColor\" fill-opacity=\"0.2\"/></svg> Your garden</h3><p class=\"ds-meta\">Northern Lights · day 42</p><div class=\"ds-progress\"><div style=\"width:60%\"></div></div></div>",
+      "css": ".ds-card{padding:16px;background:linear-gradient(180deg,#1f2328 0%,#1a1d22 100%);border:1px solid rgba(255,255,255,0.07);border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),0 10px 24px -8px rgba(0,0,0,0.6);color:#e9f3e4;font-family:Sora,system-ui,sans-serif;} .ds-title{display:flex;align-items:center;gap:8px;margin:0;font-size:15px;font-weight:600;letter-spacing:-0.01em;} .ds-title svg{width:18px;height:18px;color:#9be36b;} .ds-meta{margin:6px 0 12px;font-size:12px;color:#8d9a8a;} .ds-progress{height:6px;border-radius:999px;background:#0b0d10;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.07);overflow:hidden;} .ds-progress>div{height:100%;border-radius:inherit;background:linear-gradient(90deg,#5fb04a,#9be36b);}"
+    },
+    {
+      "name": "Bottom Nav",
+      "kind": "nav",
+      "refersTo": "nav",
+      "description": "Five items, glowing leaf bar over the active one; centre AI uses lamp.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item active\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 20V10\" /><path d=\"M12 13c-4 0-6-3-6-7 4 0 6 3 6 7z\" fill=\"currentColor\" fill-opacity=\"0.2\"/><path d=\"M12 11c0-4 2-6 6-6 0 4-2 6-6 6z\" fill=\"currentColor\" fill-opacity=\"0.2\"/></svg><span>Home</span></a><a class=\"ds-nav-item\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 20V10\" /><path d=\"M12 13c-4 0-6-3-6-7 4 0 6 3 6 7z\" fill=\"currentColor\" fill-opacity=\"0.2\"/><path d=\"M12 11c0-4 2-6 6-6 0 4-2 6-6 6z\" fill=\"currentColor\" fill-opacity=\"0.2\"/></svg><span>Plants</span></a><a class=\"ds-nav-item center\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 20V10\" /><path d=\"M12 13c-4 0-6-3-6-7 4 0 6 3 6 7z\" fill=\"currentColor\" fill-opacity=\"0.2\"/><path d=\"M12 11c0-4 2-6 6-6 0 4-2 6-6 6z\" fill=\"currentColor\" fill-opacity=\"0.2\"/></svg><span>AI</span></a></nav>",
+      "css": ".ds-nav{display:flex;justify-content:space-around;padding:8px;background:linear-gradient(180deg,rgba(13,15,18,0.88),rgba(7,8,10,0.98));border-top:1px solid rgba(255,255,255,0.07);font-family:Sora,system-ui,sans-serif;} .ds-nav-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0 2px;color:#8d9a8a;transition:color 240ms ease;cursor:pointer;} .ds-nav-item span{font-size:11px;font-weight:500;letter-spacing:0.01em;} .ds-nav-item::before{content:'';position:absolute;top:-9px;left:50%;width:26px;height:2px;margin-left:-13px;border-radius:2px;background:#9be36b;box-shadow:0 0 12px 2px rgba(155,227,107,0.55);opacity:0;transform:scaleX(0.2);transition:opacity 240ms ease,transform 420ms cubic-bezier(0.16,1,0.3,1);} .ds-nav-item.active,.ds-nav-item:hover{color:#9be36b;} .ds-nav-item.active::before,.ds-nav-item:hover::before{opacity:1;transform:scaleX(1);} .ds-nav-item.active svg{filter:drop-shadow(0 0 6px rgba(155,227,107,0.55));} .ds-nav-item.center::before{background:#ffd28a;box-shadow:0 0 12px 2px rgba(255,210,138,0.55);} .ds-nav-item.center:hover{color:#ffd28a;}"
+    },
+    {
+      "name": "Attention Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Pill badge coloured by currentColor; pink only for overdue.",
+      "html": "<span class=\"ds-badge\">Overdue 2 d</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;color:#ff5fa2;border:1px solid color-mix(in srgb,currentColor 35%,transparent);background:color-mix(in srgb,currentColor 11%,transparent);font:600 11px/1.4 Sora,system-ui,sans-serif;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Lights On",
+    "overview": "The app is the inside of a grow tent at night with the lamp just switched on. The ground is near-black with a faint diagonal mylar sheen and a warm falloff from a lamp bar at the top edge. Panels are lit from above: a top-to-bottom gradient with a 1px inner highlight. Light is the only colour that means anything: leaf green for growth and action, lamp amber for light and time, full-spectrum pink only for something overdue.\n\nDensity is phone-first and one-handed: 48px controls, a 20px page gutter, sections 28px apart. Big numbers are set light (300) and large; headings are 600. Motion has one signature, the lights-on boot (the lamp flickers, light falls down the tent, the photoperiod ring draws in); everything else is short ease-out.",
+    "keyCharacteristics": [
+      "Near-black tent ground with mylar sheen and a lamp glow from the top edge.",
+      "Top-lit panels: gradient fill, hairline border, inset highlight.",
+      "Three signal colours: leaf, lamp, pink. Each has one job.",
+      "Sora throughout; light numerals, semibold headings.",
+      "Custom duotone line glyphs (1.6 stroke, 20% fill) for stages and entry types."
+    ],
+    "rules": [
+      {
+        "name": "The One Job Rule",
+        "body": "Leaf means growth or action, lamp means light or time, pink means overdue. Never swap them, and never use pink for decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Soft Tint Rule",
+        "body": "Signal colours appear as fills at 12% opacity with a 28-35% border (soft buttons, chips, badges); full-strength fills are reserved for the primary button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Light Numbers Rule",
+        "body": "Any number that is the point of a view is set at weight 300 and large; headings stay at 600. Don't make big numbers bold.",
+        "section": "typography"
+      },
+      {
+        "name": "The Top-Lit Rule",
+        "body": "Every raised surface is lit from above: lighter at the top edge, a white inset highlight, darkness below. Never light from the side or use offset shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do set every raised surface top-lit: panel gradient, 1px line border, inset white highlight.",
+      "Do keep leaf for growth and action, lamp for light and time, pink for overdue only.",
+      "Do use the well colour with an inset shadow for anything recessed.",
+      "Do use Grow Glyphs for stages and entry types; colour them with the stage or entry hue.",
+      "Do keep touch targets at 44px or more and inputs at 16px."
+    ],
+    "donts": [
+      "Don't use pink as an accent or decoration; it is reserved for overdue and attention.",
+      "Don't use flat grey cards with a green accent stripe; panels are lit, not tinted.",
+      "Don't set large numbers bold; they are weight 300.",
+      "Don't add coloured glows to anything that isn't a signal element (active state, primary action, lamp)."
+    ]
+  }
+}

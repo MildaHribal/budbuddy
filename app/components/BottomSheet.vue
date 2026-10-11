@@ -11,8 +11,15 @@ const props = withDefaults(defineProps<{
   iconColor: 'var(--accent)'
 })
 
+const slots = defineSlots<{
+  default?: () => unknown
+  footer?: () => unknown
+  icon?: () => unknown
+}>()
+
 const sheet = ref<HTMLElement | null>(null)
 const titleId = useId()
+const { t } = useI18n()
 
 useBackHandler(open, () => {
   open.value = false
@@ -20,12 +27,59 @@ useBackHandler(open, () => {
 
 watch(open, async (v) => {
   if (!v) return
+  drag.value = 0
   await nextTick()
-  // Move focus into the dialog. On touch screens focusing a field would pop the
-  // keyboard over the form, so only desktop users get the first field focused.
+  // On touch screens focusing a field would pop the keyboard, so only desktop focuses the first field.
   const coarse = window.matchMedia('(pointer: coarse)').matches
   const first = coarse ? null : sheet.value?.querySelector<HTMLElement>('input:not([type=hidden]), textarea, select')
   ;(first ?? sheet.value)?.focus({ preventScroll: true })
+})
+
+// Drag down on the grip (handle + header) to dismiss.
+const drag = ref(0)
+const dragging = ref(false)
+let startY = 0
+let lastY = 0
+let lastT = 0
+let velocity = 0
+let pointerId: number | null = null
+
+function onGripDown(e: PointerEvent) {
+  if (e.button !== 0 || (e.target as HTMLElement).closest('button, a, input')) return
+  pointerId = e.pointerId
+  startY = lastY = e.clientY
+  lastT = e.timeStamp
+  velocity = 0
+  dragging.value = true
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+}
+
+function onGripMove(e: PointerEvent) {
+  if (!dragging.value || e.pointerId !== pointerId) return
+  const dy = e.clientY - startY
+  // resist upward pulls, follow downward ones 1:1
+  drag.value = dy < 0 ? dy / 6 : dy
+  const dt = e.timeStamp - lastT
+  if (dt > 0) velocity = (e.clientY - lastY) / dt
+  lastY = e.clientY
+  lastT = e.timeStamp
+}
+
+function onGripUp(e: PointerEvent) {
+  if (!dragging.value || e.pointerId !== pointerId) return
+  dragging.value = false
+  pointerId = null
+  const height = sheet.value?.offsetHeight ?? 400
+  if (drag.value > Math.min(140, height * 0.3) || (velocity > 0.6 && drag.value > 24)) {
+    open.value = false
+  } else {
+    drag.value = 0
+  }
+}
+
+const dragProgress = computed(() => {
+  const h = sheet.value?.offsetHeight ?? 400
+  return Math.min(1, Math.max(0, drag.value) / h)
 })
 </script>
 
@@ -34,55 +88,77 @@ watch(open, async (v) => {
     to="#overlays"
     defer
   >
-    <Transition name="sheet">
+    <Transition
+      name="sheet"
+      :duration="{ enter: 440, leave: 260 }"
+    >
       <div
         v-if="open"
-        class="sheet-backdrop"
-        @click.self="open = false"
+        class="sheet-root"
+        :style="{ '--drag': `${drag}px`, '--drag-p': dragProgress }"
       >
+        <div
+          class="sheet-scrim"
+          aria-hidden="true"
+          @click="open = false"
+        />
         <div
           ref="sheet"
           class="sheet"
+          :class="{ dragging }"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="props.title ? titleId : undefined"
           tabindex="-1"
         >
-          <div class="sheet-handle" />
           <div
-            v-if="props.title"
-            class="sheet-head"
+            class="sheet-grip"
+            @pointerdown="onGripDown"
+            @pointermove="onGripMove"
+            @pointerup="onGripUp"
+            @pointercancel="onGripUp"
           >
-            <span
-              v-if="props.icon"
-              class="sheet-icon"
-              :style="{ color: props.iconColor }"
+            <div
+              class="sheet-handle"
+              aria-hidden="true"
+            />
+            <div
+              v-if="props.title"
+              class="sheet-head"
             >
-              <UIcon
-                :name="props.icon"
-                class="size-6"
-              />
-            </span>
-            <h2 :id="titleId">
-              {{ props.title }}
-            </h2>
-            <button
-              type="button"
-              class="icon-btn"
-              aria-label="Close"
-              @click="open = false"
-            >
-              <UIcon
-                name="i-tabler-x"
-                class="size-5"
-              />
-            </button>
+              <span
+                v-if="slots.icon || props.icon"
+                class="sheet-icon"
+                :style="{ color: props.iconColor }"
+              >
+                <slot name="icon">
+                  <GrowIcon
+                    v-if="props.icon"
+                    :name="props.icon"
+                  />
+                </slot>
+              </span>
+              <h2 :id="titleId">
+                {{ props.title }}
+              </h2>
+              <button
+                type="button"
+                class="icon-btn"
+                :aria-label="t('gallery.close')"
+                @click="open = false"
+              >
+                <UIcon
+                  name="i-tabler-x"
+                  class="size-5"
+                />
+              </button>
+            </div>
           </div>
           <div class="sheet-body">
             <slot />
           </div>
           <div
-            v-if="$slots.footer"
+            v-if="slots.footer"
             class="sheet-footer"
           >
             <slot name="footer" />
@@ -94,54 +170,84 @@ watch(open, async (v) => {
 </template>
 
 <style scoped>
-.sheet-backdrop {
+.sheet-root {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: flex-end;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+}
+
+.sheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+  opacity: calc(1 - var(--drag-p, 0) * 0.8);
+  transition: opacity var(--dur) var(--ease-out);
 }
 
 .sheet {
+  position: relative;
   width: 100%;
   max-height: 92%;
   display: flex;
   flex-direction: column;
-  background: #121412;
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #1c2025 0%, #15181c 120px, #121417 100%);
+  border: 1px solid var(--line-strong);
   border-bottom: 0;
   border-radius: 24px 24px 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 -18px 40px -12px rgba(0, 0, 0, 0.7);
   outline: none;
+  transform: translateY(max(var(--drag, 0px), -12px));
+  transition: transform var(--dur-slow) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.sheet.dragging,
+.sheet-root:has(.dragging) .sheet-scrim {
+  transition: none;
+}
+
+.sheet-grip {
+  flex-shrink: 0;
+  touch-action: none;
+  cursor: grab;
+}
+
+.sheet.dragging .sheet-grip {
+  cursor: grabbing;
 }
 
 .sheet-handle {
-  width: 40px;
+  width: 36px;
   height: 4px;
-  margin: 10px auto 4px;
+  margin: 10px auto 6px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.18);
-  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background var(--dur) ease, width var(--dur) var(--ease-out);
+}
+
+.sheet.dragging .sheet-handle {
+  background: rgba(255, 255, 255, 0.36);
 }
 
 .sheet-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 16px 10px 20px;
-  flex-shrink: 0;
+  gap: 12px;
+  padding: 4px 16px 12px 20px;
 }
 
 .sheet-icon {
   display: inline-flex;
+  font-size: 24px;
 }
 
 h2 {
   flex: 1;
+  min-width: 0;
   margin: 0;
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .sheet-body {
@@ -162,18 +268,24 @@ h2 {
   flex: 1;
 }
 
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: opacity 0.22s ease;
+.sheet-enter-active .sheet {
+  transition: transform 440ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.sheet-enter-active .sheet,
 .sheet-leave-active .sheet {
-  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 260ms cubic-bezier(0.3, 0, 0.8, 0.15);
 }
 
-.sheet-enter-from,
-.sheet-leave-to {
+.sheet-enter-active .sheet-scrim {
+  transition: opacity 320ms var(--ease-out);
+}
+
+.sheet-leave-active .sheet-scrim {
+  transition: opacity 240ms ease;
+}
+
+.sheet-enter-from .sheet-scrim,
+.sheet-leave-to .sheet-scrim {
   opacity: 0;
 }
 

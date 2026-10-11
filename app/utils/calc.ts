@@ -1,4 +1,5 @@
 // Grow calculators – pure functions so they can be unit-tested.
+import { l } from './locale'
 
 /** Saturation vapour pressure in kPa (Tetens). */
 export function svp(tempC: number): number {
@@ -22,11 +23,11 @@ export interface VpdZone {
 }
 
 export function vpdZone(kpa: number): VpdZone {
-  if (kpa < 0.4) return { label: 'Too low', color: '#60a5fa', advice: 'Danger of mould – lower humidity or raise temperature.' }
-  if (kpa < 0.8) return { label: 'Propagation', color: '#2dd4bf', advice: 'Ideal for clones and seedlings.' }
-  if (kpa < 1.2) return { label: 'Vegetative', color: '#7bc74d', advice: 'Ideal for vegetative growth and early flower.' }
-  if (kpa <= 1.6) return { label: 'Flowering', color: '#f472b6', advice: 'Ideal for mid and late flowering.' }
-  return { label: 'Too high', color: '#ef4444', advice: 'Plants are stressed – raise humidity or lower temperature.' }
+  if (kpa < 0.4) return { label: l({ en: 'Too low', cs: 'Příliš nízké' }), color: '#7cc8f2', advice: l({ en: 'Danger of mould – lower humidity or raise temperature.', cs: 'Hrozí plíseň – sniž vlhkost nebo zvyš teplotu.' }) }
+  if (kpa < 0.8) return { label: l({ en: 'Propagation', cs: 'Množení' }), color: '#6fe0c8', advice: l({ en: 'Ideal for clones and seedlings.', cs: 'Ideální pro řízky a sazenice.' }) }
+  if (kpa < 1.2) return { label: l({ en: 'Vegetative', cs: 'Vegetace' }), color: '#9be36b', advice: l({ en: 'Ideal for vegetative growth and early flower.', cs: 'Ideální pro vegetaci a začátek kvetení.' }) }
+  if (kpa <= 1.6) return { label: l({ en: 'Flowering', cs: 'Kvetení' }), color: '#c9a2ff', advice: l({ en: 'Ideal for mid and late flowering.', cs: 'Ideální pro střed a konec kvetení.' }) }
+  return { label: l({ en: 'Too high', cs: 'Příliš vysoké' }), color: '#ff5f6d', advice: l({ en: 'Plants are stressed – raise humidity or lower temperature.', cs: 'Rostliny jsou ve stresu – zvyš vlhkost nebo sniž teplotu.' }) }
 }
 
 /** Daily light integral (mol/m²/day) from PPFD (µmol/m²/s) and hours of light. */
@@ -40,11 +41,11 @@ export function ppfdForDli(targetDli: number, hours: number): number {
 }
 
 export function dliAdvice(value: number): string {
-  if (value < 12) return 'Low – fine for clones and seedlings.'
-  if (value < 25) return 'Good for seedlings and early veg.'
-  if (value < 40) return 'Great for vegetative growth.'
-  if (value <= 50) return 'Great for flowering (with good CO₂ and nutrition).'
-  return 'Very high – risk of light stress without extra CO₂.'
+  if (value < 12) return l({ en: 'Low – fine for clones and seedlings.', cs: 'Nízké – stačí pro řízky a sazenice.' })
+  if (value < 25) return l({ en: 'Good for seedlings and early veg.', cs: 'Dobré pro sazenice a začátek vegetace.' })
+  if (value < 40) return l({ en: 'Great for vegetative growth.', cs: 'Výborné pro vegetaci.' })
+  if (value <= 50) return l({ en: 'Great for flowering (with good CO₂ and nutrition).', cs: 'Výborné pro kvetení (s dostatkem CO₂ a živin).' })
+  return l({ en: 'Very high – risk of light stress without extra CO₂.', cs: 'Velmi vysoké – bez přidaného CO₂ hrozí světelný stres.' })
 }
 
 export interface NutrientLine {
@@ -53,14 +54,16 @@ export interface NutrientLine {
   dose: number
 }
 
+const unnamed = () => l({ en: 'Unnamed', cs: 'Bez názvu' })
+
 export function nutrientMix(lines: NutrientLine[], litres: number, strength = 100) {
   const factor = Math.max(0, strength) / 100
   return lines
-    .filter(l => l.name.trim() || l.dose > 0)
-    .map(l => ({
-      name: l.name.trim() || 'Unnamed',
-      dosePerLitre: +(l.dose * factor).toFixed(2),
-      total: +(l.dose * factor * Math.max(0, litres)).toFixed(1)
+    .filter(line => line.name.trim() || line.dose > 0)
+    .map(line => ({
+      name: line.name.trim() || unnamed(),
+      dosePerLitre: +(line.dose * factor).toFixed(2),
+      total: +(line.dose * factor * Math.max(0, litres)).toFixed(1)
     }))
 }
 

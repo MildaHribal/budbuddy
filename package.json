@@ -20,6 +20,8 @@
     "@capacitor/app": "7.1.0",
     "@capacitor/core": "^7.4.4",
     "@capacitor/filesystem": "^7.1.9",
+    "@capacitor/haptics": "^7.0.5",
+    "@capacitor/local-notifications": "^7.0.7",
     "@capacitor/preferences": "^7.0.2",
     "@capacitor/share": "^7.0.4",
     "@iconify-json/tabler": "^1.2.23",

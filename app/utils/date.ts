@@ -2,6 +2,8 @@
 // Never use toISOString() for these – it converts to UTC and shifts the day
 // for anyone east or west of Greenwich around midnight.
 
+import { intlLocale, l, plural } from './locale'
+
 const DAY_MS = 86_400_000
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -48,19 +50,20 @@ export function weekOf(iso: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(monday, i))
 }
 
-const LOCALE = 'en-GB'
-
 export function formatDate(iso: string, opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }): string {
   if (!isValidISODate(iso)) return ''
-  return parseISODate(iso).toLocaleDateString(LOCALE, opts)
+  return parseISODate(iso).toLocaleDateString(intlLocale(), opts)
 }
 
 export function formatRelativeDay(iso: string, today = todayISO()): string {
   const diff = daysBetween(today, iso)
-  if (diff === 0) return 'Today'
-  if (diff === -1) return 'Yesterday'
-  if (diff === 1) return 'Tomorrow'
-  if (diff < 0 && diff > -7) return `${-diff} days ago`
+  if (diff === 0) return l({ en: 'Today', cs: 'Dnes' })
+  if (diff === -1) return l({ en: 'Yesterday', cs: 'Včera' })
+  if (diff === 1) return l({ en: 'Tomorrow', cs: 'Zítra' })
+  if (diff < 0 && diff > -7) {
+    const n = -diff
+    return plural(l({ en: { one: '{n} day ago', other: '{n} days ago' }, cs: { one: 'před {n} dnem', other: 'před {n} dny' } }), n).replace('{n}', String(n))
+  }
   return formatDate(iso)
 }
 
@@ -71,5 +74,5 @@ export function formatTime(isoDateTime: string): string {
 }
 
 export function weekdayShort(iso: string): string {
-  return parseISODate(iso).toLocaleDateString(LOCALE, { weekday: 'short' })
+  return parseISODate(iso).toLocaleDateString(intlLocale(), { weekday: 'short' })
 }

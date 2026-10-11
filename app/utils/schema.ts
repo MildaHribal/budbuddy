@@ -1,5 +1,6 @@
 // Validation / normalisation of persisted data and migration from the
 // pre-2.0 storage format (separate keys per plant journal, base64 photos inline).
+import { detectLocale, isLocale } from './locale'
 import type {
   EntryType,
   GrowData,
@@ -52,7 +53,7 @@ export function emptyData(): GrowData {
     plants: [],
     entries: [],
     tasks: [],
-    settings: { growerName: '', initialized: false }
+    settings: { growerName: '', initialized: false, lightsOn: '06:00', lightHours: 18, language: detectLocale(), reminders: false, reminderTime: '18:00', onboarded: false, demo: false }
   }
 }
 
@@ -141,6 +142,8 @@ export function normalizeTask(raw: Record<string, unknown>): Task {
 const objects = (v: unknown): Record<string, unknown>[] =>
   Array.isArray(v) ? v.filter((x): x is Record<string, unknown> => !!x && typeof x === 'object') : []
 
+const isHHMM = (v: unknown): v is string => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
+
 /** Accepts anything that looks like saved/imported data and returns a valid GrowData. */
 export function normalizeData(raw: unknown): GrowData {
   const data = emptyData()
@@ -151,7 +154,19 @@ export function normalizeData(raw: unknown): GrowData {
   data.entries = objects(r.entries).map(normalizeEntry).filter(e => ids.has(e.plantId))
   data.tasks = objects(r.tasks).map(normalizeTask)
   const s = (r.settings ?? {}) as Record<string, unknown>
-  data.settings = { growerName: str(s.growerName), initialized: s.initialized !== false }
+  const lightHours = Number(s.lightHours)
+  data.settings = {
+    growerName: str(s.growerName),
+    initialized: s.initialized !== false,
+    lightsOn: isHHMM(s.lightsOn) ? s.lightsOn : '06:00',
+    lightHours: Number.isFinite(lightHours) && lightHours >= 0 && lightHours <= 24 ? Math.round(lightHours) : 18,
+    language: isLocale(s.language) ? s.language : detectLocale(),
+    reminders: s.reminders === true,
+    reminderTime: isHHMM(s.reminderTime) ? s.reminderTime : '18:00',
+    // existing gardens skip the first-run guide
+    onboarded: s.onboarded === true || (s.onboarded === undefined && data.plants.length > 0),
+    demo: s.demo === true
+  }
   return data
 }
 

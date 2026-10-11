@@ -12,7 +12,8 @@ export default defineNuxtConfig({
   app: {
     head: {
       viewport: 'width=device-width, initial-scale=1, viewport-fit=cover'
-    }
+    },
+    pageTransition: { name: 'page', mode: 'out-in' }
   },
 
   css: ['~/assets/css/main.css'],
@@ -23,7 +24,13 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    public: { version: pkg.version }
+    public: {
+      version: pkg.version,
+      // Absolute so the APK reaches it too; override with NUXT_PUBLIC_AI_PROXY_URL.
+      aiProxyUrl: 'https://budbuddy-demo.netlify.app/api/chat',
+      // Optional, must match BUDBUDDY_APP_TOKEN on the server (NUXT_PUBLIC_AI_APP_TOKEN at build time).
+      aiAppToken: ''
+    }
   },
 
   compatibilityDate: '2025-01-15',

@@ -1,193 +1,641 @@
+<script setup lang="ts">
+import type { DiagHit } from '~/ai/diagnose'
+import { renderMarkdown } from '~/ai/markdown'
+import { evidenceLabel, kbKindLabel } from '~/ai/prompt'
+import { GENERAL_THREAD, type AssistantMessage } from '~/composables/useAssistant'
+import type { Plant } from '~/types/grow'
+
+const route = useRoute()
+const config = useRuntimeConfig()
+const grow = useGrow()
+const assistant = useAssistant()
+const ai = useAiSettings()
+const { notify } = useNotify()
+const { t } = useI18n()
+useHead({ title: () => t('ai.page.title') })
+const { confirm } = useConfirm()
+
+const { busy, classifierState, kbState } = assistant
+
+// ── Plant / conversation ──────────────────────────────────────────
+const threadKey = ref<string>(GENERAL_THREAD)
+
+const plants = computed(() => {
+  const list = grow.state.plants.filter(p => !p.archived || p.id === threadKey.value)
+  // growing plants first, then the rest
+  return [...list].sort((a, b) => Number(isGrowing(b)) - Number(isGrowing(a)))
+})
+const plant = computed<Plant | undefined>(() => (threadKey.value === GENERAL_THREAD ? undefined : grow.getPlant(threadKey.value)))
+const messages = computed<AssistantMessage[]>(() => assistant.threads[threadKey.value] ?? [])
+
+/** The plant the grower most recently worked with. */
+function mostRecentPlant(): string | null {
+  const growing = grow.state.plants.filter(isGrowing)
+  let best: { id: string, at: string } | null = null
+  for (const p of growing) {
+    const at = [p.updatedAt, grow.lastEntryOf(p.id, ['water', 'feed', 'train', 'pest', 'measure', 'note', 'photo'])?.createdAt ?? ''].sort().pop() ?? ''
+    if (!best || at > best.at) best = { id: p.id, at }
+  }
+  return best?.id ?? null
+}
+
+function pickInitialThread() {
+  const fromQuery = typeof route.query.plant === 'string' ? route.query.plant : null
+  const last = assistant.lastThread.value
+  const valid = (key: string | null): key is string => !!key && (key === GENERAL_THREAD || !!grow.getPlant(key))
+  threadKey.value = [fromQuery, last, mostRecentPlant()].find(valid) ?? GENERAL_THREAD
+}
+
+function selectThread(key: string) {
+  if (busy.value) return
+  threadKey.value = key
+  assistant.selectThread(key)
+  if (messages.value.length) scrollToEnd(false)
+  else scroller()?.scrollTo({ top: 0 })
+}
+
+async function newConversation() {
+  if (!messages.value.length) return
+  const ok = await confirm({
+    title: t('ai.page.confirmTitle'),
+    message: plant.value ? t('ai.page.confirmPlant', { name: plant.value.name }) : t('ai.page.confirmGeneral'),
+    confirmLabel: t('ai.page.newChat'),
+    danger: true
+  })
+  if (ok) assistant.clearThread(threadKey.value)
+}
+
+const plantSummary = computed(() => {
+  const p = plant.value
+  if (!p) return null
+  const progress = stageProgress(p)
+  return t('ai.page.subtitlePlant', { name: p.name, stage: stageInfo(p.stage).label, day: progress.dayInStage, age: progress.age })
+})
+
+// ── Quick questions ───────────────────────────────────────────────
+const quickQuestions = computed(() => {
+  const p = plant.value
+  if (!p) {
+    return [
+      { icon: 'i-tabler-droplet', text: t('ai.quick.general.ph') },
+      { icon: 'i-tabler-leaf-off', text: t('ai.quick.general.nitrogen') },
+      { icon: 'i-tabler-bug', text: t('ai.quick.general.mites') },
+      { icon: 'i-tabler-bulb', text: t('ai.quick.general.led') }
+    ]
+  }
+  const list = [{ icon: 'i-tabler-checklist', text: t('ai.quick.plant.now') }]
+  if (p.stage === 'flowering') list.push({ icon: 'i-tabler-basket', text: t('ai.quick.plant.harvest') })
+  else if (p.stage === 'vegetative') list.push({ icon: 'i-tabler-scissors', text: t('ai.quick.plant.training') })
+  else if (p.stage === 'drying' || p.stage === 'curing') list.push({ icon: 'i-tabler-bottle', text: t('ai.quick.plant.drying') })
+  else list.push({ icon: 'i-tabler-seeding', text: t('ai.quick.plant.feeding') })
+  list.push(
+    { icon: 'i-tabler-droplet', text: t('ai.quick.plant.watering') },
+    { icon: 'i-tabler-leaf-off', text: t('ai.quick.plant.yellow') }
+  )
+  return list
+})
+
+// ── Composer ──────────────────────────────────────────────────────
+const input = ref('')
+const textarea = ref<HTMLTextAreaElement | null>(null)
+const photo = shallowRef<File | null>(null)
+const photoPreview = ref<string | null>(null)
+
+watch(photo, (file, _old, onCleanup) => {
+  photoPreview.value = file ? URL.createObjectURL(file) : null
+  const url = photoPreview.value
+  onCleanup(() => {
+    if (url) URL.revokeObjectURL(url)
+  })
+})
+
+const canSend = computed(() => !busy.value && (input.value.trim().length > 0 || !!photo.value))
+
+function autosize() {
+  const el = textarea.value
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = `${Math.min(el.scrollHeight, 140)}px`
+}
+
+async function attachPhoto() {
+  const file = await pickImage()
+  if (file) photo.value = file
+}
+
+async function send(text = input.value) {
+  if (busy.value) return
+  const question = text.trim()
+  if (!question && !photo.value) return
+  const file = photo.value
+  input.value = ''
+  photo.value = null
+  await nextTick()
+  autosize()
+  scrollToEnd()
+  await assistant.ask({ threadKey: threadKey.value, question, file })
+}
+
+function onKeydown(e: KeyboardEvent) {
+  // Enter sends on desktop; on touch keyboards Enter makes a new line.
+  if (e.key === 'Enter' && !e.shiftKey && !window.matchMedia('(pointer: coarse)').matches) {
+    e.preventDefault()
+    send()
+  }
+}
+
+// ── Scrolling ─────────────────────────────────────────────────────
+const bottom = ref<HTMLElement | null>(null)
+
+function scroller(): HTMLElement | null {
+  return bottom.value?.closest<HTMLElement>('.app-scroll') ?? null
+}
+
+function scrollToEnd(smooth = true) {
+  nextTick(() => {
+    const el = scroller()
+    el?.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
+  })
+}
+
+// Follow a streaming answer, unless the grower scrolled up to read.
+const streamed = computed(() => messages.value[messages.value.length - 1]?.text.length ?? 0)
+watch(streamed, () => {
+  const el = scroller()
+  if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 160) scrollToEnd(false)
+})
+watch(() => messages.value.length, () => scrollToEnd())
+
+// ── Message helpers ───────────────────────────────────────────────
+const rendered = (text: string) => renderMarkdown(text)
+
+/** Sources the answer cites come first; the rest are what was searched but not used. */
+function citedSet(m: AssistantMessage): Set<number> {
+  const set = new Set<number>()
+  for (const match of m.text.matchAll(/\[(\d+(?:\s*,\s*\d+)*)\]/g)) {
+    for (const n of (match[1] ?? '').split(/\s*,\s*/)) set.add(Number(n))
+  }
+  return set
+}
+
+const openSources = reactive(new Set<string>())
+const highlighted = ref<string | null>(null)
+
+function toggleSources(id: string) {
+  if (openSources.has(id)) openSources.delete(id)
+  else openSources.add(id)
+}
+
+function onAnswerClick(e: MouseEvent, m: AssistantMessage) {
+  const cite = (e.target as HTMLElement).closest<HTMLElement>('.cite')
+  if (!cite) return
+  const n = cite.dataset.cite
+  if (!n || !m.sources?.some(s => String(s.n) === n)) return
+  openSources.add(m.id)
+  highlighted.value = `${m.id}-${n}`
+  nextTick(() => document.getElementById(`src-${m.id}-${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
+  setTimeout(() => {
+    if (highlighted.value === `${m.id}-${n}`) highlighted.value = null
+  }, 1800)
+}
+
+async function copy(m: AssistantMessage) {
+  try {
+    await navigator.clipboard.writeText(m.text)
+    notify(t('ai.page.copied'))
+  } catch {
+    notify(t('ai.page.copyFailed'), { tone: 'error' })
+  }
+}
+
+const EVIDENCE_TONE: Record<DiagHit['evidence'], string> = {
+  'tested': 'var(--accent)',
+  'weak': 'var(--warning)',
+  'transfer-only': 'var(--text-3)'
+}
+
+const needsSettings = (m: AssistantMessage) => ['model', 'quota'].includes(m.errorCode ?? '')
+
+// ── Status notices ────────────────────────────────────────────────
+const offlineNotice = computed(() => {
+  const settled = (s: string) => s === 'ready' || s === 'missing'
+  if (!settled(classifierState.value) || !settled(kbState.value)) return null
+  const missing: string[] = []
+  if (classifierState.value === 'missing') missing.push(t('ai.notice.classifier'))
+  if (kbState.value === 'missing') missing.push(t('ai.notice.kb'))
+  if (!missing.length) return null
+  const what = missing.join(t('ai.notice.and'))
+  return t('ai.notice.missing', { n: missing.length, what: `${what.charAt(0).toUpperCase()}${what.slice(1)}`, provider: ai.provider.value.label })
+})
+
+onMounted(async () => {
+  assistant.initOffline(config.app.baseURL)
+  await assistant.ready()
+  pickInitialThread()
+  if (messages.value.length) scrollToEnd(false)
+})
+</script>
+
 <template>
-  <div class="ai-assistant-page">
+  <div class="assistant">
     <AppHeader
-      title="AI Assistant"
-      subtitle="Coming soon – demo answers only"
-      icon="i-tabler-brain"
-    />
-
-    <div
-      ref="chatContainer"
-      class="chat-container"
+      :title="t('ai.page.title')"
+      :subtitle="plantSummary ?? t('ai.page.subtitleGeneral')"
     >
-      <div
-        v-if="messages.length === 0"
-        class="welcome-message"
-      >
-        <div class="welcome-icon">
-          <UIcon
-            name="i-tabler-brain"
-            class="size-[64px]"
-            style="color: #7bc74d"
-          />
-        </div>
-        <h2>Hi, I'm your AI assistant! 🌱</h2>
-        <p>I'm here to help you with growing your plants.</p>
-        <div class="welcome-features">
-          <div class="feature">
-            <UIcon
-              name="i-tabler-messages"
-              class="size-[20px]"
-            />
-            <span>Growing tips and advice</span>
-          </div>
-          <div class="feature">
-            <UIcon
-              name="i-tabler-camera"
-              class="size-[20px]"
-            />
-            <span>Diagnosis from photos</span>
-          </div>
-          <div class="feature">
-            <UIcon
-              name="i-tabler-bulb"
-              class="size-[20px]"
-            />
-            <span>Problem solving</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="messages">
-        <div
-          v-for="(message, index) in messages"
-          :key="index"
-          :class="['message', message.type]"
-        >
-          <div
-            v-if="message.type === 'bot'"
-            class="message-avatar"
-          >
-            <UIcon
-              name="i-tabler-brain"
-              class="size-[20px]"
-            />
-          </div>
-
-          <div class="message-content">
-            <div
-              v-if="message.image"
-              class="message-image"
-            >
-              <img
-                :src="message.image"
-                alt="Uploaded image"
-              >
-            </div>
-            <div class="message-text">
-              {{ message.text }}
-            </div>
-            <div class="message-time">
-              {{ message.time }}
-            </div>
-          </div>
-
-          <div
-            v-if="message.type === 'user'"
-            class="message-avatar"
-          >
-            <UIcon
-              name="i-tabler-user"
-              class="size-[20px]"
-            />
-          </div>
-        </div>
-
-        <div
-          v-if="isTyping"
-          class="message bot typing-indicator"
-        >
-          <div class="message-avatar">
-            <UIcon
-              name="i-tabler-brain"
-              class="size-[20px]"
-            />
-          </div>
-          <div class="message-content">
-            <div class="typing-dots">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-if="messages.length === 0"
-      class="quick-questions"
-    >
-      <div class="quick-question-title">
-        Quick Questions:
-      </div>
-      <div class="quick-question-list">
+      <template #actions>
         <button
-          v-for="(question, index) in quickQuestions"
-          :key="index"
-          class="quick-question-btn"
-          @click="sendQuickQuestion(question)"
+          type="button"
+          class="icon-btn"
+          :aria-label="t('ai.page.newChat')"
+          :title="t('ai.page.newChat')"
+          :disabled="!messages.length || busy"
+          @click="newConversation"
         >
           <UIcon
-            :name="question.icon"
-            class="size-[18px]"
+            name="i-tabler-message-plus"
+            class="size-5"
           />
-          <span>{{ question.text }}</span>
         </button>
-      </div>
+        <NuxtLink
+          to="/settings#ai"
+          class="icon-btn"
+          :aria-label="t('ai.page.settings')"
+        >
+          <UIcon
+            name="i-tabler-settings"
+            class="size-5"
+          />
+        </NuxtLink>
+      </template>
+    </AppHeader>
+
+    <div
+      class="plant-bar chips"
+      role="tablist"
+      :aria-label="t('ai.page.conversations')"
+    >
+      <button
+        type="button"
+        class="chip"
+        role="tab"
+        :aria-selected="threadKey === GENERAL_THREAD"
+        :class="{ active: threadKey === GENERAL_THREAD }"
+        :disabled="busy"
+        @click="selectThread(GENERAL_THREAD)"
+      >
+        <UIcon
+          name="i-tabler-messages"
+          class="size-4"
+        />
+        {{ t('ai.page.general') }}
+      </button>
+      <button
+        v-for="p in plants"
+        :key="p.id"
+        type="button"
+        class="chip"
+        role="tab"
+        :aria-selected="threadKey === p.id"
+        :class="{ active: threadKey === p.id }"
+        :disabled="busy"
+        @click="selectThread(p.id)"
+      >
+        <GrowIcon
+          :name="stageInfo(p.stage).glyph"
+          class="chip-glyph"
+          :style="{ color: stageInfo(p.stage).color }"
+        />
+        {{ p.name }}
+      </button>
     </div>
 
-    <div class="input-container">
+    <div class="chat">
+      <p
+        v-if="offlineNotice"
+        class="offline-note"
+      >
+        <UIcon
+          name="i-tabler-cloud-off"
+          class="size-4 shrink-0"
+        />
+        {{ offlineNotice }}
+      </p>
       <div
-        v-if="uploadedImage"
-        class="uploaded-preview"
+        v-if="!messages.length"
+        class="welcome"
+      >
+        <GrowIcon
+          name="spark"
+          class="welcome-mark"
+          draw
+          glow
+        />
+        <h2>{{ plant ? t('ai.page.welcomePlant', { name: plant.name }) : t('ai.page.welcome') }}</h2>
+        <p>
+          <template v-if="plant">
+            {{ t('ai.page.introPlant') }}
+          </template>
+          <template v-else>
+            {{ t('ai.page.introGeneral') }}
+          </template>
+        </p>
+        <div class="quick rise">
+          <button
+            v-for="q in quickQuestions"
+            :key="q.text"
+            type="button"
+            class="quick-btn"
+            :disabled="busy"
+            @click="send(q.text)"
+          >
+            <UIcon
+              :name="q.icon"
+              class="size-[18px]"
+            />
+            <span>{{ q.text }}</span>
+            <UIcon
+              name="i-tabler-arrow-up-right"
+              class="size-4 quick-go"
+            />
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-else
+        class="messages"
+      >
+        <div
+          v-for="m in messages"
+          :key="m.id"
+          class="msg"
+          :class="m.role === 'user' ? 'msg-user' : 'msg-bot'"
+        >
+          <template v-if="m.role === 'user'">
+            <div class="bubble user-bubble">
+              <img
+                v-if="m.thumb"
+                :src="m.thumb"
+                :alt="t('ai.page.photoAlt')"
+                class="thumb"
+              >
+              <p
+                v-if="m.text"
+                class="user-text"
+              >
+                {{ m.text }}
+              </p>
+              <span class="meta">{{ formatTime(m.createdAt) }}</span>
+            </div>
+          </template>
+
+          <template v-else>
+            <span
+              class="avatar"
+              :class="{ thinking: m.pending }"
+              aria-hidden="true"
+            >
+              <GrowIcon
+                name="spark"
+                glow
+              />
+            </span>
+            <div class="bubble bot-bubble">
+              <div
+                v-if="m.diag?.length"
+                class="diag"
+              >
+                <div class="diag-head">
+                  <GrowIcon name="photo" />
+                  {{ t('ai.page.diagTitle') }}
+                </div>
+                <div
+                  v-for="d in m.diag"
+                  :key="d.cls"
+                  class="diag-row"
+                >
+                  <div class="diag-line">
+                    <span class="diag-label">{{ d.label }}</span>
+                    <span class="diag-p">{{ Math.round(d.p * 100) }} %</span>
+                  </div>
+                  <div class="progress">
+                    <div :style="{ width: `${Math.round(d.p * 100)}%`, background: EVIDENCE_TONE[d.evidence] }" />
+                  </div>
+                  <span
+                    class="badge"
+                    :style="{ color: EVIDENCE_TONE[d.evidence] }"
+                    :title="evidenceLabel(d.evidence)"
+                  >{{ t(`ai.evidenceShort.${d.evidence}`) }}</span>
+                </div>
+                <p
+                  v-if="m.unsupported?.length"
+                  class="diag-note"
+                >
+                  {{ t('ai.page.unsupported', { list: m.unsupported.join(', ') }) }}
+                </p>
+              </div>
+
+              <div
+                v-if="m.pending && !m.text"
+                class="pending"
+                role="status"
+              >
+                <span class="dots"><span /><span /><span /></span>
+                <span>{{ m.status }}</span>
+              </div>
+
+              <!-- renderMarkdown escapes all input and only emits its own tags -->
+              <!-- eslint-disable vue/no-v-html -->
+              <div
+                v-if="m.text"
+                class="md"
+                :class="{ streaming: m.pending }"
+                @click="onAnswerClick($event, m)"
+                v-html="rendered(m.text)"
+              />
+              <!-- eslint-enable vue/no-v-html -->
+
+              <div
+                v-if="m.error"
+                class="error"
+                role="alert"
+              >
+                <UIcon
+                  name="i-tabler-alert-triangle"
+                  class="size-5 shrink-0"
+                />
+                <div>
+                  <p>{{ m.error }}</p>
+                  <div class="error-actions">
+                    <button
+                      v-if="m === messages[messages.length - 1] && assistant.canRetry(threadKey)"
+                      type="button"
+                      class="btn btn-soft btn-sm"
+                      :disabled="busy"
+                      @click="assistant.retry(threadKey)"
+                    >
+                      <UIcon
+                        name="i-tabler-refresh"
+                        class="size-4"
+                      />
+                      {{ t('ai.page.retry') }}
+                    </button>
+                    <NuxtLink
+                      v-if="needsSettings(m)"
+                      to="/settings#ai"
+                      class="btn btn-soft btn-sm"
+                    >
+                      {{ t('ai.page.settingsLink') }}
+                    </NuxtLink>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="m.sources?.length && !m.pending"
+                class="sources"
+              >
+                <button
+                  type="button"
+                  class="sources-toggle"
+                  :aria-expanded="openSources.has(m.id)"
+                  @click="toggleSources(m.id)"
+                >
+                  <UIcon
+                    name="i-tabler-books"
+                    class="size-4"
+                  />
+                  {{ t('ai.page.sources', { n: citedSet(m).size || m.sources.length }) }}
+                  <UIcon
+                    name="i-tabler-chevron-down"
+                    class="size-4 chev"
+                    :class="{ open: openSources.has(m.id) }"
+                  />
+                </button>
+                <ol
+                  v-if="openSources.has(m.id)"
+                  class="sources-list"
+                >
+                  <li
+                    v-for="s in m.sources"
+                    :id="`src-${m.id}-${s.n}`"
+                    :key="s.n"
+                    :class="{ unused: citedSet(m).size && !citedSet(m).has(s.n), flash: highlighted === `${m.id}-${s.n}` }"
+                  >
+                    <span class="src-n">{{ s.n }}</span>
+                    <div class="src-body">
+                      <a
+                        v-if="s.url"
+                        :href="s.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="src-title"
+                      >{{ s.title }}</a>
+                      <strong
+                        v-else
+                        class="src-title"
+                      >{{ s.title }}</strong>
+                      <span class="src-kind">{{ kbKindLabel(s.kind) }}<template v-if="citedSet(m).size && !citedSet(m).has(s.n)">{{ t('ai.page.unused') }}</template></span>
+                      <span class="src-snippet">{{ s.snippet }}</span>
+                    </div>
+                  </li>
+                </ol>
+              </div>
+
+              <div
+                v-if="!m.pending && m.text"
+                class="bot-meta"
+              >
+                <span class="meta">{{ formatTime(m.createdAt) }}<template v-if="m.model"> · {{ m.model }}</template></span>
+                <button
+                  type="button"
+                  class="meta-btn"
+                  :aria-label="t('ai.page.copy')"
+                  @click="copy(m)"
+                >
+                  <UIcon
+                    name="i-tabler-copy"
+                    class="size-4"
+                  />
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div ref="bottom" />
+    </div>
+
+    <div class="composer">
+      <div
+        v-if="photoPreview"
+        class="preview"
       >
         <img
-          :src="uploadedImage"
-          alt="Preview"
+          :src="photoPreview"
+          :alt="t('ai.page.selectedPhoto')"
         >
         <button
-          class="remove-image"
-          aria-label="Remove image"
-          @click="removeImage"
+          type="button"
+          class="preview-remove"
+          :aria-label="t('ai.page.removePhoto')"
+          @click="photo = null"
         >
           <UIcon
             name="i-tabler-x"
-            class="size-[16px]"
+            class="size-4"
           />
         </button>
       </div>
-
-      <div class="input-wrapper">
+      <div class="composer-row">
         <button
-          class="image-btn"
-          :class="{ active: uploadedImage }"
-          aria-label="Upload photo"
-          @click="pickImage"
+          type="button"
+          class="composer-btn"
+          :class="{ active: photo }"
+          :aria-label="t('ai.page.attachPhoto')"
+          :disabled="busy"
+          @click="attachPhoto"
         >
           <UIcon
-            name="i-tabler-camera"
+            name="i-tabler-camera-plus"
             class="size-[22px]"
           />
         </button>
-
-        <input
-          v-model="inputMessage"
-          type="text"
-          placeholder="Ask anything..."
-          class="message-input"
-          @keyup.enter="sendMessage"
-        >
-
+        <textarea
+          ref="textarea"
+          v-model="input"
+          class="composer-input"
+          rows="1"
+          :placeholder="plant ? t('ai.page.placeholderPlant', { name: plant.name }) : t('ai.page.placeholder')"
+          :aria-label="t('ai.page.question')"
+          enterkeyhint="enter"
+          @input="autosize"
+          @keydown="onKeydown"
+        />
         <button
+          v-if="busy"
+          type="button"
+          class="send-btn stop"
+          :aria-label="t('ai.page.stop')"
+          @click="assistant.stop()"
+        >
+          <UIcon
+            name="i-tabler-player-stop-filled"
+            class="size-5"
+          />
+        </button>
+        <button
+          v-else
+          type="button"
           class="send-btn"
           :disabled="!canSend"
-          aria-label="Send message"
-          @click="sendMessage"
+          :aria-label="t('ai.page.send')"
+          @click="send()"
         >
           <UIcon
             name="i-tabler-send"
-            class="size-[22px]"
+            class="size-5"
           />
         </button>
       </div>
@@ -195,369 +643,303 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
-
-useHead({ title: 'AI Assistant' })
-
-interface Message {
-  type: 'user' | 'bot'
-  text: string
-  time: string
-  image?: string
-}
-
-interface QuickQuestion {
-  text: string
-  icon: string
-}
-
-const messages = ref<Message[]>([])
-const inputMessage = ref('')
-const uploadedImage = ref<string | null>(null)
-const isTyping = ref(false)
-const chatContainer = ref<HTMLElement | null>(null)
-
-const quickQuestions: QuickQuestion[] = [
-  { text: 'How to recognize nutrient deficiency?', icon: 'i-tabler-leaf-off' },
-  { text: 'When to transplant plant?', icon: 'i-tabler-plant' },
-  { text: 'Optimal pH value?', icon: 'i-tabler-droplet' },
-  { text: 'What are growth stages?', icon: 'i-tabler-timeline' }
-]
-
-const canSend = computed(() => {
-  return inputMessage.value.trim().length > 0 || uploadedImage.value !== null
-})
-
-const getCurrentTime = () => {
-  const now = new Date()
-  return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-}
-
-const scrollToBottom = async () => {
-  await nextTick()
-  if (chatContainer.value) {
-    chatContainer.value.scrollTop = chatContainer.value.scrollHeight
-  }
-}
-
-const sendMessage = async () => {
-  if (!canSend.value) return
-
-  const userMessage: Message = {
-    type: 'user',
-    text: inputMessage.value,
-    time: getCurrentTime(),
-    image: uploadedImage.value || undefined
-  }
-
-  messages.value.push(userMessage)
-  const userQuestion = inputMessage.value
-  inputMessage.value = ''
-  uploadedImage.value = null
-
-  await scrollToBottom()
-
-  // Simulace AI odpovědi
-  isTyping.value = true
-
-  setTimeout(() => {
-    isTyping.value = false
-
-    const botResponse = getBotResponse(userQuestion)
-    messages.value.push({
-      type: 'bot',
-      text: botResponse,
-      time: getCurrentTime()
-    })
-
-    scrollToBottom()
-  }, 1500)
-}
-
-const sendQuickQuestion = (question: QuickQuestion) => {
-  inputMessage.value = question.text
-  sendMessage()
-}
-
-const getBotResponse = (question: string): string => {
-  const lowerQuestion = question.toLowerCase()
-
-  if (
-    lowerQuestion.includes('živin')
-    || lowerQuestion.includes('deficiency')
-    || lowerQuestion.includes('nutrient')
-  ) {
-    return (
-      '🌿 Nutrient deficiencies show in different ways:\n\n'
-      + '• Yellow leaves (lower) = Nitrogen (N) deficiency\n'
-      + '• Brown leaf edges = Potassium (K) deficiency\n'
-      + '• Purple tint = Phosphorus (P) deficiency\n'
-      + '• Light green leaves = Magnesium (Mg) deficiency\n\n'
-      + 'I recommend taking a photo of your plant for a more accurate diagnosis! 📸'
-    )
-  }
-
-  if (
-    lowerQuestion.includes('přesad')
-    || lowerQuestion.includes('transplant')
-  ) {
-    return (
-      '🪴 Transplanting tips:\n\n'
-      + '• Seedling: after 2–3 weeks or when 3–4 true leaves appear\n'
-      + '• Vegetative: when roots fill the container\n'
-      + '• Best time: before watering (dry soil)\n'
-      + '• After transplant: less water for the first few days\n\n'
-      + 'Avoid transplanting during flowering! 🌸'
-    )
-  }
-
-  if (lowerQuestion.includes('ph')) {
-    return (
-      '💧 Optimal pH values:\n\n'
-      + '• Soil: 6.0 – 7.0\n'
-      + '• Hydroponics: 5.5 – 6.5\n'
-      + '• Coco: 5.5 – 6.5\n\n'
-      + 'Wrong pH prevents nutrient uptake even if nutrients are available! Check regularly. 📊'
-    )
-  }
-
-  if (
-    lowerQuestion.includes('fáze')
-    || lowerQuestion.includes('stage')
-    || lowerQuestion.includes('growth')
-  ) {
-    return (
-      '🌱 Growth stages:\n\n'
-      + '1. Germination (1–7 days)\n'
-      + '2. Seedling (2–3 weeks)\n'
-      + '3. Vegetative (3–16 weeks)\n'
-      + '4. Pre-flower (1–2 weeks)\n'
-      + '5. Flowering (6–12 weeks)\n'
-      + '6. Ripening (1–2 weeks)\n\n'
-      + 'Each stage has different needs! 🌿'
-    )
-  }
-
-  return (
-    '🌿 Great question! As your AI assistant I can help with:\n\n'
-    + '• Diagnosing problems from photos\n'
-    + '• Nutrition and pH advice\n'
-    + '• Lighting and ventilation tips\n'
-    + '• Identifying growth stages\n\n'
-    + 'Try sending me a photo of your plant or ask a more specific question! 📸'
-  )
-}
-
-const pickImage = () => {
-  // Simulace výběru obrázku - v produkci použij Capacitor Camera API
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-  input.onchange = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    const file = target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        uploadedImage.value = event.target?.result as string
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-  input.click()
-}
-
-const removeImage = () => {
-  uploadedImage.value = null
-}
-</script>
-
 <style scoped>
-.ai-assistant-page {
+.assistant {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: #0a0a0a;
 }
 
-.chat-container {
+.plant-bar {
+  padding: 12px 20px 4px;
+}
+
+.plant-bar .chip {
+  min-height: 44px;
+}
+
+.chip-glyph {
+  font-size: 16px;
+}
+
+.chip.active .chip-glyph {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, currentColor 50%, transparent));
+}
+
+.chip:disabled {
+  opacity: 0.5;
+}
+
+.chat {
   flex: 1;
-  overflow-y: auto;
-  padding: 0 16px 16px;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-.welcome-message {
-  text-align: center;
-  padding: 40px 20px;
-  animation: fadeIn 0.5s ease;
-}
-
-.welcome-icon {
-  margin-bottom: 20px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.welcome-message h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 12px;
-}
-
-.welcome-message p {
-  font-size: 15px;
-  color: #999;
-  margin-bottom: 30px;
-}
-
-.welcome-features {
+  padding: 8px 20px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-width: 280px;
-  margin: 0 auto;
+  gap: 18px;
 }
 
-.feature {
+/* Notices */
+.offline-note {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+
+/* Welcome */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 0 4px;
+}
+
+.welcome-mark {
+  font-size: 48px;
+  color: var(--lamp);
+  margin-bottom: 18px;
+}
+
+.welcome h2 {
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.welcome p {
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-2);
+  max-width: 320px;
+}
+
+.quick {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-btn {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
-  background: rgba(123, 199, 77, 0.1);
-  border: 1px solid rgba(123, 199, 77, 0.2);
-  border-radius: 12px;
-  color: #7bc74d;
+  min-height: 52px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: inset 0 1px 0 var(--highlight);
+  color: var(--text);
   font-size: 14px;
   font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur) var(--ease-out);
 }
 
+.quick-btn > span:not(.iconify) {
+  flex: 1;
+}
+
+.quick-btn .iconify {
+  color: var(--leaf);
+  flex-shrink: 0;
+}
+
+.quick-btn .quick-go {
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease-out), color var(--dur) ease;
+}
+
+.quick-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  border-color: var(--accent-line);
+}
+
+.quick-btn:active:not(:disabled) .quick-go {
+  color: var(--leaf);
+  transform: translate(2px, -2px);
+}
+
+.quick-btn:disabled {
+  opacity: 0.5;
+}
+
+/* Messages */
 .messages {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px 0;
+  gap: 18px;
 }
 
-.message {
+.msg {
   display: flex;
+  flex-direction: row;
   gap: 10px;
-  animation: slideIn 0.3s ease;
+  animation: msg-in var(--dur-slow) var(--ease-out) both;
 }
 
-@keyframes slideIn {
+.msg-user {
+  justify-content: flex-end;
+}
+
+@keyframes msg-in {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
-.message.user {
-  flex-direction: row-reverse;
-}
-
-.message-avatar {
+/* The lamp mark: breathes while the answer is being written */
+.avatar {
+  width: 28px;
+  height: 28px;
+  margin-top: 6px;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #7bc74d 0%, #5a9e3a 100%);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(123, 199, 77, 0.3);
+  font-size: 22px;
+  color: var(--lamp);
 }
 
-.message.user .message-avatar {
-  background: linear-gradient(135deg, #444 0%, #333 100%);
+.avatar.thinking .grow-icon {
+  animation: breathe 1.6s var(--ease-out) infinite alternate;
 }
 
-.message-content {
-  max-width: 75%;
-  padding: 12px 16px;
+@keyframes breathe {
+  from {
+    opacity: 0.55;
+    transform: scale(0.88) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.06) rotate(6deg);
+  }
+}
+
+.bubble {
+  min-width: 0;
   border-radius: 18px;
-  background: rgba(30, 30, 30, 0.9);
-  border: 1px solid rgba(123, 199, 77, 0.15);
+  padding: 12px 14px;
 }
 
-.message.user .message-content {
-  background: linear-gradient(135deg, #7bc74d 0%, #5a9e3a 100%);
-  border: none;
+.user-bubble {
+  max-width: 84%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: linear-gradient(180deg, rgba(155, 227, 107, 0.16) 0%, rgba(155, 227, 107, 0.09) 100%);
+  border: 1px solid var(--accent-line);
+  box-shadow: inset 0 1px 0 rgba(155, 227, 107, 0.18);
+  color: var(--text);
+  border-bottom-right-radius: 6px;
 }
 
-.message-image {
-  margin-bottom: 8px;
-  border-radius: 12px;
-  overflow: hidden;
+.user-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-.message-image img {
+.thumb {
   width: 100%;
+  max-width: 220px;
+  border-radius: 12px;
   display: block;
 }
 
-.message-text {
-  color: #fff;
-  font-size: 15px;
-  line-height: 1.5;
-  white-space: pre-line;
-  word-wrap: break-word;
+.user-bubble .meta {
+  align-self: flex-end;
 }
 
-.message-time {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 6px;
-}
-
-.message.user .message-time {
-  text-align: right;
-}
-
-.typing-indicator {
-  opacity: 0.7;
-}
-
-.typing-dots {
+.bot-bubble {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--panel-shadow);
+  border-top-left-radius: 6px;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.bot-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -4px 0 -10px;
+}
+
+.meta-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: -12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-3);
+  transition: color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
+}
+
+.meta-btn:active {
+  color: var(--leaf);
+  transform: scale(0.9);
+}
+
+/* Pending */
+.pending {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.dots {
+  display: inline-flex;
   gap: 4px;
-  padding: 8px 0;
 }
 
-.typing-dots span {
-  width: 8px;
-  height: 8px;
+.dots span {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #7bc74d;
-  animation: typing 1.4s infinite;
+  background: var(--lamp);
+  animation: blink 1.4s infinite;
 }
 
-.typing-dots span:nth-child(2) {
+.dots span:nth-child(2) {
   animation-delay: 0.2s;
 }
 
-.typing-dots span:nth-child(3) {
+.dots span:nth-child(3) {
   animation-delay: 0.4s;
 }
 
-@keyframes typing {
+@keyframes blink {
   0%,
   60%,
   100% {
@@ -570,172 +952,521 @@ const removeImage = () => {
   }
 }
 
-.quick-questions {
-  padding: 0 16px 16px;
-}
-
-.quick-question-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #999;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 12px;
-}
-
-.quick-question-list {
+/* Diagnosis */
+.diag {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #0b0d10;
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.diag-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.diag-head .grow-icon {
+  font-size: 16px;
+  color: var(--leaf);
+}
+
+.diag-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.diag-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.diag-label {
+  font-weight: 600;
+}
+
+.diag-p {
+  color: var(--text-2);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+
+.diag-row .progress {
+  grid-column: 1;
+}
+
+.diag-row .badge {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.diag-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+/* Error */
+.error {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--danger-soft);
+  border: 1px solid rgba(255, 95, 109, 0.3);
+  color: #ff9aa3;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.error p {
+  margin: 0;
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.quick-question-btn {
-  display: flex;
+.error-actions:not(:empty) {
+  margin-top: 10px;
+}
+
+.btn-sm {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* Sources */
+.sources {
+  border-top: 1px solid var(--line);
+  margin: 0 -16px;
+  padding: 2px 16px 0;
+}
+
+.sources-toggle {
+  display: inline-flex;
   align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--leaf);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chev {
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.chev.open {
+  transform: rotate(180deg);
+}
+
+.sources-list {
+  list-style: none;
+  margin: 4px 0 6px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: msg-in var(--dur) var(--ease-out) both;
+}
+
+.sources-list li {
+  display: flex;
   gap: 10px;
-  padding: 12px 16px;
-  background: rgba(30, 30, 30, 0.9);
-  border: 1px solid rgba(123, 199, 77, 0.2);
-  border-radius: 14px;
-  color: #7bc74d;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  -webkit-tap-highlight-color: transparent;
+  padding: 6px;
+  margin: -6px;
+  border-radius: 10px;
+  transition: background var(--dur-slow) ease;
 }
 
-.quick-question-btn:active {
-  transform: scale(0.98);
-  background: rgba(123, 199, 77, 0.15);
+.sources-list li.flash {
+  background: var(--lamp-soft);
 }
 
-.input-container {
+.sources-list li.unused {
+  opacity: 0.6;
+}
+
+.src-n {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--leaf);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.src-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.src-title {
+  color: var(--text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+a.src-title {
+  text-decoration: underline;
+  text-decoration-color: var(--accent-line);
+  text-underline-offset: 2px;
+}
+
+.src-kind {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.src-snippet {
+  color: var(--text-2);
+}
+
+/* Markdown answer */
+.md {
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.md :deep(p),
+.md :deep(ul),
+.md :deep(ol),
+.md :deep(blockquote),
+.md :deep(pre),
+.md :deep(.md-table) {
+  margin: 0 0 10px;
+}
+
+.md :deep(> :last-child) {
+  margin-bottom: 0;
+}
+
+.md :deep(h3),
+.md :deep(h4),
+.md :deep(h5) {
+  margin: 16px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.md :deep(> h3:first-child),
+.md :deep(> h4:first-child),
+.md :deep(> h5:first-child) {
+  margin-top: 0;
+}
+
+.md :deep(ul),
+.md :deep(ol) {
+  padding-left: 20px;
+}
+
+.md :deep(ul) {
+  list-style: disc;
+}
+
+.md :deep(ol) {
+  list-style: decimal;
+}
+
+.md :deep(li) {
+  margin: 3px 0;
+}
+
+.md :deep(li.nested) {
+  margin-left: 16px;
+  list-style: circle;
+}
+
+.md :deep(li::marker) {
+  color: var(--leaf);
+}
+
+.md :deep(strong) {
+  font-weight: 600;
+  color: #fff;
+}
+
+.md :deep(code) {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  font-size: 13px;
+}
+
+.md :deep(pre) {
+  padding: 10px;
+  border-radius: 10px;
+  background: #0b0d10;
+  border: 1px solid var(--line);
+  overflow-x: auto;
+}
+
+.md :deep(pre code) {
+  padding: 0;
+  background: none;
+}
+
+.md :deep(blockquote) {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--highlight);
+  color: var(--text-2);
+}
+
+.md :deep(hr) {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 12px 0;
+}
+
+.md :deep(a) {
+  color: var(--leaf);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.md :deep(.md-table) {
+  overflow-x: auto;
+}
+
+.md :deep(table) {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.md :deep(th),
+.md :deep(td) {
+  padding: 6px 8px;
+  border: 1px solid var(--line-strong);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md :deep(th) {
+  background: var(--surface-3);
+  font-weight: 600;
+}
+
+.md :deep(.cite) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin: 0 1px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--leaf);
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: 2px;
+  line-height: 1;
+}
+
+.md.streaming :deep(> :last-child)::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  margin-left: 3px;
+  vertical-align: -2px;
+  border-radius: 2px;
+  background: var(--lamp);
+  box-shadow: 0 0 8px rgba(255, 210, 138, 0.6);
+  animation: blink 1s infinite;
+}
+
+/* Composer */
+/* The scroll container's bottom padding (room for the nav) already counts as
+   the sticky edge, so -16px makes the composer sit right on top of the nav. */
+.composer {
   position: sticky;
-  bottom: calc(var(--nav-h) + var(--safe-bottom));
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) 16px;
-  background: linear-gradient(
-    180deg,
-    rgba(15, 15, 15, 0.95) 0%,
-    rgba(10, 10, 10, 0.95) 100%
-  );
-  border-top: 1px solid rgba(123, 199, 77, 0.15);
-  backdrop-filter: blur(20px);
+  bottom: -16px;
+  z-index: 10;
+  padding: 12px 20px 26px;
+  background: linear-gradient(180deg, rgba(11, 13, 16, 0.96) 0%, #07080a 100%);
+  border-top: 1px solid var(--line);
+  /* second shadow fills the gap down to the nav */
+  box-shadow: 0 -12px 24px -12px rgba(0, 0, 0, 0.7), 0 40px 0 0 #07080a;
 }
 
-.uploaded-preview {
+.preview {
   position: relative;
-  margin-bottom: 12px;
-  border-radius: 12px;
-  overflow: hidden;
-  max-width: 150px;
+  width: 84px;
+  margin-bottom: 10px;
+  animation: msg-in var(--dur) var(--ease-out) both;
 }
 
-.uploaded-preview img {
-  width: 100%;
+.preview img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
   display: block;
 }
 
-.remove-image {
+.preview-remove {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
-  border: none;
-  color: #fff;
+  top: -14px;
+  right: -14px;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  border: 0;
+  background: transparent;
+  color: var(--text);
 }
 
-.input-wrapper {
+.preview-remove::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  z-index: -1;
+}
+
+.preview-remove .iconify {
+  position: relative;
+}
+
+.composer-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(30, 30, 30, 0.9);
-  border: 1px solid rgba(123, 199, 77, 0.2);
+  align-items: flex-end;
+  gap: 6px;
+  padding: 4px;
   border-radius: 24px;
-  padding: 8px 8px 8px 12px;
+  border: 1px solid var(--line-strong);
+  background: #0b0d10;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: border-color var(--dur) ease, box-shadow var(--dur) ease;
 }
 
-.image-btn {
+.composer-row:focus-within {
+  border-color: var(--leaf);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(155, 227, 107, 0.14);
+}
+
+.composer-btn,
+.send-btn {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  color: #7bc74d;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  -webkit-tap-highlight-color: transparent;
+  border-radius: 50%;
+  border: 0;
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur) ease, box-shadow var(--dur) var(--ease-out), background var(--dur) ease;
 }
 
-.image-btn:active {
-  transform: scale(0.9);
-  background: rgba(123, 199, 77, 0.15);
-}
-
-.image-btn.active {
-  background: rgba(123, 199, 77, 0.2);
-}
-
-.message-input {
-  flex: 1;
+.composer-btn {
   background: transparent;
-  border: none;
-  outline: none;
-  color: #fff;
-  font-size: 15px;
-  padding: 10px 8px;
+  color: var(--text-2);
 }
 
-.message-input::placeholder {
-  color: #666;
+.composer-btn.active {
+  background: var(--accent-soft);
+  color: var(--leaf);
+}
+
+.composer-btn:disabled {
+  opacity: 0.4;
 }
 
 .send-btn {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #7bc74d 0%, #5a9e3a 100%);
-  border: none;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 12px rgba(123, 199, 77, 0.3);
-  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(180deg, #b3ef87 0%, var(--leaf) 55%, #86d257 100%);
+  color: var(--on-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 16px -2px rgba(155, 227, 107, 0.55);
 }
 
-.send-btn:active {
-  transform: scale(0.9);
+.send-btn.stop {
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 var(--highlight);
 }
 
 .send-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  background: var(--surface-3);
+  color: var(--text-3);
+  box-shadow: none;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+.composer-btn:active:not(:disabled),
+.send-btn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.composer-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 140px;
+  padding: 11px 4px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.composer-input:focus-visible {
+  outline: none;
+}
+
+.composer-input::placeholder {
+  color: #6b7669;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar.thinking .grow-icon {
+    animation: none;
   }
 }
 </style>

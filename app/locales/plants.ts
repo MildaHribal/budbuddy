@@ -1,0 +1,102 @@
+export default {
+  en: {
+    list: {
+      title: 'Plants',
+      subtitle: '{active} active · {archived} archived',
+      tabsLabel: 'Plant list',
+      active: 'Active',
+      archive: 'Archive',
+      searchPlaceholder: 'Search plants',
+      sortBy: 'Sort by',
+      sortRecent: 'Recent',
+      sortName: 'Name',
+      sortOldest: 'Oldest',
+      all: 'All',
+      noMatchTitle: 'No matching plants',
+      noMatchText: 'Try a different search or filter.',
+      archiveEmptyTitle: 'Archive is empty',
+      archiveEmptyText: 'Finished grows land here after you archive them.',
+      emptyTitle: 'No plants yet',
+      emptyText: 'Add your first plant to start its journal.',
+      addPlant: 'Add plant',
+      autoflower: 'Autoflower',
+      unknownStrain: 'Unknown strain',
+      stageDay: 'day {day}/{total}',
+      stageProgress: '{stage} progress',
+      waterOverdue: 'Water overdue {n}d',
+      waterToday: 'Water today',
+      waterIn: 'Water in {n}d',
+      days: { one: 'day', other: 'days' },
+      archivedLabel: 'Archived plants',
+      dryOnShelf: 'g dry on the shelf',
+      gDry: 'g dry',
+      gWet: 'g wet',
+      ageShort: '{n} d'
+    },
+    new: {
+      title: 'New plant',
+      subtitle: 'Start a new journal',
+      submit: 'Add plant',
+      added: '{name} added'
+    },
+    edit: {
+      title: 'Edit plant',
+      headTitle: 'Edit {name}',
+      submit: 'Save changes',
+      saved: 'Changes saved',
+      notFoundTitle: 'Plant not found',
+      notFoundText: 'It may have been deleted.',
+      backToPlants: 'Back to plants'
+    }
+  },
+  cs: {
+    list: {
+      title: 'Rostliny',
+      subtitle: '{active} aktivní · {archived} v archivu',
+      tabsLabel: 'Seznam rostlin',
+      active: 'Aktivní',
+      archive: 'Archiv',
+      searchPlaceholder: 'Hledat rostliny',
+      sortBy: 'Řadit podle',
+      sortRecent: 'Nedávné',
+      sortName: 'Název',
+      sortOldest: 'Nejstarší',
+      all: 'Vše',
+      noMatchTitle: 'Žádné odpovídající rostliny',
+      noMatchText: 'Zkus jiné hledání nebo filtr.',
+      archiveEmptyTitle: 'Archiv je prázdný',
+      archiveEmptyText: 'Dokončené pěstování se sem dostane, až ho archivuješ.',
+      emptyTitle: 'Zatím žádné rostliny',
+      emptyText: 'Přidej svou první rostlinu a začni její deník.',
+      addPlant: 'Přidat rostlinu',
+      autoflower: 'Samonakvétací',
+      unknownStrain: 'Neznámá odrůda',
+      stageDay: 'den {day}/{total}',
+      stageProgress: 'Průběh fáze {stage}',
+      waterOverdue: 'Zálivka po termínu {n} d',
+      waterToday: 'Zalít dnes',
+      waterIn: 'Zalít za {n} d',
+      days: { one: 'den', few: 'dny', other: 'dní' },
+      archivedLabel: 'Archivované rostliny',
+      dryOnShelf: 'g suchého na poličce',
+      gDry: 'g suché',
+      gWet: 'g mokré',
+      ageShort: '{n} d'
+    },
+    new: {
+      title: 'Nová rostlina',
+      subtitle: 'Založ nový deník',
+      submit: 'Přidat rostlinu',
+      added: '{name} přidána'
+    },
+    edit: {
+      title: 'Upravit rostlinu',
+      headTitle: 'Upravit {name}',
+      submit: 'Uložit změny',
+      saved: 'Změny uloženy',
+      notFoundTitle: 'Rostlina nenalezena',
+      notFoundText: 'Možná byla smazána.',
+      backToPlants: 'Zpět na rostliny'
+    }
+  }
+}

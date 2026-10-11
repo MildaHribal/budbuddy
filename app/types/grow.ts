@@ -114,6 +114,17 @@ export interface Settings {
   growerName: string
   /** true once demo data was offered, so it never re-seeds after the user deletes everything */
   initialized: boolean
+  /** tent light schedule: lights-on time (HH:MM) and hours of light per day */
+  lightsOn: string
+  lightHours: number
+  language: 'en' | 'cs'
+  reminders: boolean
+  /** HH:MM */
+  reminderTime: string
+  /** first-run guide finished */
+  onboarded: boolean
+  /** data is the bundled demo garden */
+  demo: boolean
 }
 
 export interface GrowData {

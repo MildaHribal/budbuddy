@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_light_name">BudBuddy · Light</string>
+    <string name="widget_light_desc">Photoperiod ring with a live countdown to the next lights switch.</string>
+    <string name="widget_plants_name">BudBuddy · Plants</string>
+    <string name="widget_plants_desc">Your active plants with stage, day and watering status.</string>
+    <string name="widget_gallery_name">BudBuddy · Gallery</string>
+    <string name="widget_gallery_desc">Your latest plant photo.</string>
+    <string name="widget_ai_name">BudBuddy · AI</string>
+    <string name="widget_ai_desc">Ask the grow assistant straight from the home screen.</string>
+    <string name="widget_preview_light_lead">Lights off in</string>
+    <string name="widget_preview_light_lit">Lit 06:00 – 00:00</string>
+    <string name="widget_preview_light_dark">Dark 00:00 – 06:00</string>
+    <string name="widget_preview_plants_title">My plants</string>
+    <string name="widget_preview_plant_name">Northern Lights</string>
+    <string name="widget_preview_plant_sub">Flowering · day 38</string>
+    <string name="widget_preview_plant_water">Water today</string>
+    <string name="widget_preview_gallery_empty">Your latest photo</string>
+    <string name="widget_preview_ai_hint">Ask AI about your plants…</string>
+</resources>

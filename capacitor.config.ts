@@ -4,10 +4,16 @@ const config: CapacitorConfig = {
   appId: 'eu.budbuddy.app',
   appName: 'BudBuddy',
   webDir: 'dist',
-  backgroundColor: '#0a0a0a',
+  backgroundColor: '#07080a',
   android: {
     // Android 15 draws apps edge-to-edge; keep the WebView clear of the system bars.
     adjustMarginsForEdgeToEdge: 'force'
+  },
+  plugins: {
+    LocalNotifications: {
+      smallIcon: 'ic_stat_budbuddy',
+      iconColor: '#9BE36B'
+    }
   }
 }
 

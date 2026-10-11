@@ -8,11 +8,11 @@ const info = computed(() => stageInfo(props.stage))
 <template>
   <span
     class="badge stage-badge"
-    :style="{ color: info.color, background: `color-mix(in srgb, ${info.color} 16%, rgba(10,10,10,.75))` }"
+    :style="{ color: info.color }"
   >
-    <UIcon
-      :name="info.icon"
-      class="size-3.5"
+    <GrowIcon
+      :name="info.glyph"
+      class="text-[14px]"
     />
     {{ info.label }}
   </span>
@@ -20,7 +20,7 @@ const info = computed(() => stageInfo(props.stage))
 
 <style scoped>
 .stage-badge {
-  border-color: color-mix(in srgb, currentColor 45%, transparent);
+  background: color-mix(in srgb, currentColor 14%, rgba(7, 8, 10, 0.72));
   backdrop-filter: blur(6px);
 }
 </style>

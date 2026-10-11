@@ -2,7 +2,8 @@
 import type { LightboxItem } from '~/components/PhotoLightbox.vue'
 
 definePageMeta({ alias: ['/nutriens-calc'] })
-useHead({ title: 'Gallery' })
+const { t } = useI18n()
+useHead({ title: () => t('gallery.title') })
 
 const grow = useGrow()
 const { state } = grow
@@ -17,11 +18,6 @@ interface GalleryItem extends LightboxItem {
 
 const items = computed<GalleryItem[]>(() => {
   const list: GalleryItem[] = []
-  for (const p of state.plants) {
-    if (p.photoId) {
-      list.push({ photoId: p.photoId, plantId: p.id, date: p.startDate, entryId: null, title: p.name, subtitle: 'Profile photo', to: `/plants/${p.id}` })
-    }
-  }
   for (const e of state.entries) {
     const p = grow.getPlant(e.plantId)
     if (!p) continue
@@ -32,9 +28,16 @@ const items = computed<GalleryItem[]>(() => {
         date: e.date,
         entryId: e.id,
         title: p.name,
-        subtitle: `${formatDate(e.date)} · day ${Math.max(0, daysBetween(p.startDate, e.date))}${e.note ? ` · ${e.note}` : ''}`,
+        subtitle: `${formatDate(e.date)} · ${t('gallery.day', { n: Math.max(0, daysBetween(p.startDate, e.date)) })}${e.note ? ` · ${e.note}` : ''}`,
         to: `/plants/${p.id}`
       })
+    }
+  }
+  // a cover photo that is also in the journal is shown once
+  const seen = new Set(list.map(i => i.photoId))
+  for (const p of state.plants) {
+    if (p.photoId && !seen.has(p.photoId)) {
+      list.push({ photoId: p.photoId, plantId: p.id, date: p.startDate, entryId: null, title: p.name, subtitle: t('gallery.profilePhoto'), to: `/plants/${p.id}` })
     }
   }
   return list.sort((a, b) => b.date.localeCompare(a.date))
@@ -59,13 +62,30 @@ const groups = computed(() => {
   return out
 })
 
+const showNames = computed(() => !plantFilter.value && plantsWithPhotos.value.length > 1)
+
+const loaded = reactive(new Set<string>())
+
+const header = ref<{ $el: HTMLElement } | null>(null)
+const headH = ref(80)
+let ro: ResizeObserver | null = null
+onMounted(() => {
+  const el = header.value?.$el
+  if (!el) return
+  ro = new ResizeObserver(() => (headH.value = el.offsetHeight))
+  ro.observe(el)
+})
+onBeforeUnmount(() => ro?.disconnect())
+
 const lightboxIndex = ref<number | null>(null)
-function open(item: GalleryItem) {
+const origin = ref<DOMRect | null>(null)
+function open(item: GalleryItem, e: MouseEvent) {
+  origin.value = (e.currentTarget as HTMLElement).getBoundingClientRect()
   lightboxIndex.value = shown.value.indexOf(item)
 }
 
 async function deletePhoto(item: LightboxItem) {
-  const ok = await confirm({ title: 'Delete this photo?', confirmLabel: 'Delete', danger: true })
+  const ok = await confirm({ title: t('gallery.deleteConfirm'), confirmLabel: t('gallery.delete'), danger: true })
   if (!ok) return
   for (const p of state.plants) if (p.photoId === item.photoId) grow.updatePlant(p.id, { photoId: null })
   for (const e of state.entries.filter(x => x.photoIds.includes(item.photoId))) {
@@ -74,21 +94,21 @@ async function deletePhoto(item: LightboxItem) {
     else grow.updateEntry(e.id, { photoIds: rest })
   }
   grow.cleanupPhotos()
-  notify('Photo deleted', { tone: 'info' })
+  notify(t('gallery.deleted'), { tone: 'info' })
 }
 </script>
 
 <template>
-  <div>
+  <div :style="{ '--head-h': `${headH}px` }">
     <AppHeader
-      title="Gallery"
-      :subtitle="`${items.length} photo${items.length === 1 ? '' : 's'}`"
-      icon="i-tabler-photo"
+      ref="header"
+      :title="t('gallery.title')"
+      :subtitle="t('gallery.count', { n: items.length })"
     />
     <div class="page">
       <div
         v-if="plantsWithPhotos.length > 1"
-        class="chips"
+        class="chips filter"
       >
         <button
           type="button"
@@ -96,7 +116,7 @@ async function deletePhoto(item: LightboxItem) {
           :aria-pressed="plantFilter === null"
           @click="plantFilter = null"
         >
-          All plants
+          {{ t('gallery.allPlants') }}
         </button>
         <button
           v-for="p in plantsWithPhotos"
@@ -112,64 +132,98 @@ async function deletePhoto(item: LightboxItem) {
 
       <EmptyState
         v-if="!items.length"
-        icon="i-tabler-photo-off"
-        title="No photos yet"
-        text="Add photos from a plant's journal – they all show up here, sorted by date."
+        icon="gallery"
+        :title="t('gallery.emptyTitle')"
+        :text="t('gallery.emptyText')"
       >
         <NuxtLink
           to="/plants"
           class="btn btn-soft"
         >
-          <UIcon
-            name="i-tabler-leaf"
-            class="size-4"
-          /> Go to plants
+          <GrowIcon name="plants" /> {{ t('gallery.goToPlants') }}
         </NuxtLink>
       </EmptyState>
 
-      <section
-        v-for="g in groups"
-        :key="g.month"
+      <div
+        v-else
+        class="months"
       >
-        <h2 class="month">
-          {{ g.month }} <span>{{ g.items.length }}</span>
-        </h2>
-        <div class="grid">
-          <button
-            v-for="i in g.items"
-            :key="i.photoId"
-            type="button"
-            class="cell"
-            :aria-label="`${i.title}, ${i.subtitle}`"
-            @click="open(i)"
-          >
-            <PlantPhoto
-              :photo-id="i.photoId"
-              stage="vegetative"
-            />
-            <span class="cell-label">{{ i.title }}</span>
-          </button>
-        </div>
-      </section>
+        <section
+          v-for="g in groups"
+          :key="g.month"
+          class="month"
+        >
+          <h2 class="month-head">
+            {{ g.month }}
+            <span class="num">{{ g.items.length }}</span>
+          </h2>
+          <div class="grid">
+            <button
+              v-for="i in g.items"
+              :key="i.photoId"
+              type="button"
+              class="cell"
+              :class="{ loaded: loaded.has(i.photoId) }"
+              :aria-label="`${i.title}, ${i.subtitle}`"
+              @click="open(i, $event)"
+              @load.capture="loaded.add(i.photoId)"
+              @error.capture="loaded.add(i.photoId)"
+            >
+              <PlantPhoto
+                :photo-id="i.photoId"
+                stage="vegetative"
+              />
+              <span
+                v-if="showNames"
+                class="cell-label"
+              >{{ i.title }}</span>
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
     <PhotoLightbox
       v-model:index="lightboxIndex"
       :items="shown"
+      :origin="origin"
       @delete="deletePhoto"
     />
   </div>
 </template>
 
 <style scoped>
-.month {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 0 10px;
-  font-size: 15px;
-  font-weight: 700;
+.filter {
+  margin: 0 -20px;
+  padding: 0 20px 2px;
 }
 
-.month span {
+.filter .chip {
+  min-height: 44px;
+}
+
+.months {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 0 -20px;
+}
+
+.month-head {
+  position: sticky;
+  top: calc(var(--head-h) - 8px);
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: 10px 20px 10px;
+  background: linear-gradient(180deg, var(--bg) 70%, rgba(7, 8, 10, 0.88));
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.month-head span {
   color: var(--text-3);
   font-weight: 500;
   font-size: 13px;
@@ -178,17 +232,36 @@ async function deletePhoto(item: LightboxItem) {
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  border-radius: var(--radius);
-  overflow: hidden;
+  gap: 2px;
 }
 
 .cell {
   position: relative;
+  display: block;
   aspect-ratio: 1;
   padding: 0;
   border: 0;
-  background: var(--surface-2);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.cell :deep(img.plant-photo) {
+  opacity: 0;
+  transform: scale(1.06);
+  transition: opacity var(--dur-slow) var(--ease-out), transform 600ms var(--ease-out);
+}
+
+.cell.loaded :deep(img.plant-photo) {
+  opacity: 1;
+  transform: none;
+}
+
+.cell:active :deep(img.plant-photo) {
+  opacity: 0.8;
+}
+
+.cell:focus-visible {
+  outline-offset: -2px;
 }
 
 .cell-label {
@@ -196,8 +269,9 @@ async function deletePhoto(item: LightboxItem) {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 14px 6px 5px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  padding: 16px 6px 5px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.78));
+  color: #fff;
   font-size: 11px;
   font-weight: 600;
   text-align: left;

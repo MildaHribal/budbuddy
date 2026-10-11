@@ -1,5 +1,6 @@
 import { onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import { todayISO } from '~/utils/date'
+import { haptic } from '~/utils/haptics'
 import { photoStore } from '~/utils/photoStore'
 
 // ── Toasts ─────────────────────────────────────────────────────────
@@ -18,6 +19,7 @@ let noticeSeq = 0
 export function useNotify() {
   function notify(message: string, opts: Partial<Omit<Notice, 'id' | 'message'>> & { duration?: number } = {}) {
     const id = ++noticeSeq
+    haptic(opts.tone === 'error' ? 'warning' : 'success')
     notices.value.push({ id, message, tone: opts.tone ?? 'success', icon: opts.icon, action: opts.action })
     setTimeout(() => dismiss(id), opts.duration ?? (opts.action ? 5000 : 2600))
   }

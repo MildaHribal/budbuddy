@@ -2,14 +2,15 @@
 import type { PlantInput } from '~/composables/useGrow'
 
 definePageMeta({ hideNav: true })
-useHead({ title: 'New plant' })
+const { t } = useI18n()
+useHead({ title: () => t('plants.new.title') })
 
 const grow = useGrow()
 const { notify } = useNotify()
 
 function create(data: PlantInput) {
   const plant = grow.addPlant(data)
-  notify(`${plant.name} added`, { icon: 'i-tabler-plant' })
+  notify(t('plants.new.added', { name: plant.name }), { icon: 'i-tabler-plant' })
   navigateTo(`/plants/${plant.id}`, { replace: true })
 }
 </script>
@@ -17,13 +18,13 @@ function create(data: PlantInput) {
 <template>
   <div>
     <AppHeader
-      title="New plant"
-      subtitle="Start a new journal"
+      :title="t('plants.new.title')"
+      :subtitle="t('plants.new.subtitle')"
       back
     />
     <div class="page">
       <PlantForm
-        submit-label="Add plant"
+        :submit-label="t('plants.new.submit')"
         @submit="create"
       />
     </div>

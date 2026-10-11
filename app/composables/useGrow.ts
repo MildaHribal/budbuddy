@@ -3,6 +3,7 @@ import { reactive, readonly, ref, watch } from 'vue'
 import type { GrowData, Harvest, JournalEntry, Plant, StageId, Task } from '~/types/grow'
 import { addDays, daysBetween, todayISO } from '~/utils/date'
 import { buildDemoData } from '~/utils/demo'
+import { seedDemoPhotos } from '~/utils/demoPhotos'
 import { blankEntry } from '~/utils/entries'
 import { createId } from '~/utils/id'
 import { blobToDataUrl, compressImage, dataUrlToBlob } from '~/utils/image'
@@ -121,8 +122,14 @@ async function load() {
     return
   }
 
-  replaceState(buildDemoData())
+  replaceState(await demoWithPhotos())
   await writeNow()
+}
+
+async function demoWithPhotos() {
+  const demo = buildDemoData()
+  await seedDemoPhotos(demo)
+  return demo
 }
 
 export function initGrow() {
@@ -373,7 +380,7 @@ async function eraseAll() {
 
 async function loadDemo() {
   await photoStore.clear()
-  replaceState(buildDemoData())
+  replaceState(await demoWithPhotos())
   await writeNow()
 }
 

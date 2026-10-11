@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_panel">#FF07080A</color>
+    <color name="widget_border">#12FFFFFF</color>
+    <color name="widget_text">#FFE9F3E4</color>
+    <color name="widget_muted">#FF8D9A8A</color>
+    <color name="widget_leaf">#FF9BE36B</color>
+    <color name="widget_lamp">#FFFFD28A</color>
+    <color name="widget_dark_arc">#FF3A4350</color>
+    <dimen name="widget_radius">24dp</dimen>
+</resources>

@@ -1,0 +1,382 @@
+export default {
+  en: {
+    title: 'Plant',
+    tabs: { journal: 'Journal', history: 'History', info: 'Info', photos: 'Photos' },
+    rail: { germination: 'Germ', seedling: 'Seedling', vegetative: 'Veg', flowering: 'Flower', drying: 'Dry', curing: 'Cure' },
+    railState: { done: 'done', current: 'current stage', future: 'upcoming' },
+    aria: {
+      ask: 'Ask the AI assistant about this plant',
+      edit: 'Edit plant',
+      more: 'More actions',
+      journey: 'Stage journey',
+      log: 'Log an activity',
+      sections: 'Plant sections',
+      stage: 'Stage'
+    },
+    archived: 'Archived',
+    unknownStrain: 'Unknown strain',
+    day: 'day {n}',
+    dayCap: 'Day {n}',
+    dayOf: { pre: 'Day ', post: ' of {stage}' },
+    eta: {
+      ahead: { one: 'Harvest in about {min}–{n} day ({range})', other: 'Harvest in about {min}–{n} days ({range})' },
+      window: { one: 'Harvest window open · up to {n} more day ({range})', other: 'Harvest window open · up to {n} more days ({range})' },
+      past: 'Past the usual window ({range}), check trichomes',
+      notePhoto: 'Estimate: 8–10 weeks of bloom. Trichomes decide.',
+      noteAuto: 'Estimate: 9–11 weeks from seed. Trichomes decide.',
+      aria: 'Flowering progress toward harvest, {p}%'
+    },
+    flip: {
+      ask: 'Switch the light to 12/12?',
+      action: '12/12',
+      done: 'Light set to 12/12, on at {on}'
+    },
+    share: {
+      title: 'Share card',
+      rendering: 'Drawing the card…',
+      previewAlt: 'Share card for {name}',
+      share: 'Share',
+      download: 'Download PNG',
+      downloaded: 'Card downloaded',
+      failed: 'Could not create the card',
+      age: { one: 'Age {n} day', other: 'Age {n} days' },
+      height: '{v} cm tall',
+      stageDay: 'Day {n} of {stage}',
+      dry: '{v} g dry'
+    },
+    pastTypical: 'Past the typical {range}',
+    typically: 'Typically {range} · {p}%',
+    next: {
+      archive: 'Finish & archive',
+      harvest: 'Harvest',
+      dry: 'Dry weight & cure',
+      stage: 'Move to {stage}'
+    },
+    water: {
+      overdue: { one: 'Watering overdue by {n} day', other: 'Watering overdue by {n} days' },
+      today: 'Watering due today',
+      tomorrow: 'Next watering tomorrow',
+      inDays: { one: 'Next watering in {n} day', other: 'Next watering in {n} days' },
+      last: 'last {when}'
+    },
+    journal: {
+      futureTitle: 'This day is in the future',
+      futureText: 'Pick today or an earlier day to log something.',
+      emptyTitle: 'Nothing logged this day',
+      emptyText: 'Use the buttons above to log watering, feeding, notes or photos.'
+    },
+    history: {
+      all: 'All',
+      emptyTitle: 'No entries yet',
+      emptyText: 'Everything you log shows up here as a timeline.'
+    },
+    info: {
+      strain: 'Strain',
+      type: 'Type',
+      started: 'Started',
+      pot: 'Pot',
+      medium: 'Medium',
+      location: 'Location',
+      light: 'Light',
+      autoflower: 'Autoflower',
+      photoperiod: 'Photoperiod',
+      mediums: { soil: 'Soil', coco: 'Coco', hydro: 'Hydro', other: 'Other' },
+      locations: { indoor: 'Indoor', outdoor: 'Outdoor', greenhouse: 'Greenhouse' },
+      timeline: 'Stage timeline',
+      soFar: '{days} so far',
+      height: 'Height',
+      heightLabel: 'Height over time, latest {v} cm',
+      lastFeed: 'Last feed · {when}',
+      noDetails: 'No details',
+      about: 'About {stage}',
+      notes: 'Notes'
+    },
+    harvest: {
+      title: 'Harvest',
+      dryTitle: 'Dry weight',
+      editTitle: 'Edit harvest',
+      harvested: 'Harvested',
+      ratio: 'Dry ratio',
+      wet: 'Wet',
+      dry: 'Dry',
+      introHarvest: 'Weigh the plant right after chopping. You can add the dry weight once it has dried.',
+      introDry: 'Small stems snap instead of bend? Weigh the dried buds before jarring.',
+      wetWeight: 'Wet weight (g)',
+      dryWeight: 'Dry weight (g)',
+      date: 'Harvest date',
+      notes: 'Notes',
+      notesPlaceholder: 'Trichome colour, smell, bud density…'
+    },
+    photos: {
+      addToJournal: 'Add to journal',
+      profilePhoto: 'Profile photo',
+      profile: 'Profile',
+      emptyTitle: 'No photos yet',
+      emptyText: 'A photo every week makes a great time-lapse of the grow.'
+    },
+    stageSheet: {
+      title: 'Change stage',
+      current: ' (current)',
+      light: '{range} · light {light}',
+      hintBefore: 'Ready to chop? Use ',
+      hintStrong: 'Harvest',
+      hintAfter: ' on a flowering plant to record weights.',
+      since: 'Since',
+      save: 'Save stage'
+    },
+    menu: {
+      changeStage: 'Change stage',
+      editHarvest: 'Edit harvest',
+      changePhoto: 'Change profile photo',
+      share: 'Share card',
+      duplicate: 'Duplicate plant',
+      restore: 'Restore from archive',
+      archive: 'Move to archive',
+      delete: 'Delete plant'
+    },
+    copySuffix: '(copy)',
+    journalEntries: { one: '{n} journal entry', other: '{n} journal entries' },
+    confirm: {
+      photoTitle: 'Delete this photo?',
+      photoMessage: 'It will be removed from the journal.',
+      archiveTitle: 'Archive {name}?',
+      archiveMessage: 'The grow is finished. You can still open it from the Archive tab.',
+      archiveLabel: 'Archive',
+      deleteTitle: 'Delete {name}?',
+      deleteMessage: 'This permanently removes the plant, {entries} and its photos.'
+    },
+    toast: {
+      entryDeleted: '{verb} entry deleted',
+      photoDeleted: 'Photo deleted',
+      profileUpdated: 'Profile photo updated',
+      badImage: 'Could not read that image',
+      badDate: 'Pick a valid date',
+      dateBeforeStage: 'The date must be after the current stage started',
+      stageChanged: '{name} is now in {stage}',
+      negativeWeight: 'Weights must be positive',
+      dryOverWet: 'Dry weight cannot be more than wet weight',
+      harvestRange: 'Pick a harvest date between {from} and today',
+      harvestLogged: 'Harvest logged – happy drying!',
+      dryCuring: 'Dry weight saved, now curing',
+      harvestUpdated: 'Harvest updated',
+      archived: 'Moved to archive',
+      restored: 'Restored to active plants',
+      deleted: 'Plant deleted',
+      duplicated: 'Plant duplicated'
+    },
+    notFound: {
+      title: 'Plant not found',
+      emptyTitle: 'This plant does not exist',
+      emptyText: 'It may have been deleted.',
+      back: 'Back to plants'
+    },
+    week: {
+      prev: 'Previous week',
+      next: 'Next week',
+      pick: 'Pick a day',
+      today: 'today',
+      hasEntries: 'has entries'
+    },
+    entry: {
+      movedTo: 'Moved to {stage}',
+      volume: 'Volume',
+      height: 'Height',
+      temp: 'Temperature',
+      humidity: 'Humidity',
+      rh: '% RH',
+      edit: 'Edit entry',
+      delete: 'Delete entry',
+      openPhoto: 'Open photo'
+    }
+  },
+  cs: {
+    title: 'Rostlina',
+    tabs: { journal: 'Deník', history: 'Historie', info: 'Info', photos: 'Fotky' },
+    rail: { germination: 'Klíčení', seedling: 'Sazenice', vegetative: 'Růst', flowering: 'Květ', drying: 'Sušení', curing: 'Zrání' },
+    railState: { done: 'hotovo', current: 'aktuální fáze', future: 'teprve přijde' },
+    aria: {
+      ask: 'Zeptat se AI asistenta na tuhle rostlinu',
+      edit: 'Upravit rostlinu',
+      more: 'Další akce',
+      journey: 'Průběh fází',
+      log: 'Zapsat činnost',
+      sections: 'Sekce rostliny',
+      stage: 'Fáze'
+    },
+    archived: 'V archivu',
+    unknownStrain: 'Neznámá odrůda',
+    day: 'den {n}',
+    dayCap: 'Den {n}',
+    dayOf: { pre: '', post: '. den {stage}' },
+    eta: {
+      ahead: { one: 'Sklizeň zhruba za {min}–{n} den ({range})', few: 'Sklizeň zhruba za {min}–{n} dny ({range})', other: 'Sklizeň zhruba za {min}–{n} dní ({range})' },
+      window: { one: 'Okno sklizně je otevřené · ještě až {n} den ({range})', few: 'Okno sklizně je otevřené · ještě až {n} dny ({range})', other: 'Okno sklizně je otevřené · ještě až {n} dní ({range})' },
+      past: 'Za obvyklým oknem ({range}), zkontroluj trichomy',
+      notePhoto: 'Odhad: 8–10 týdnů kvetení. Rozhodnou trichomy.',
+      noteAuto: 'Odhad: 9–11 týdnů od semínka. Rozhodnou trichomy.',
+      aria: 'Průběh kvetení do sklizně, {p} %'
+    },
+    flip: {
+      ask: 'Přepnout světlo na 12/12?',
+      action: '12/12',
+      done: 'Světlo nastaveno na 12/12, rozsvítí se v {on}'
+    },
+    share: {
+      title: 'Sdílet kartu',
+      rendering: 'Kreslím kartu…',
+      previewAlt: 'Karta rostliny {name}',
+      share: 'Sdílet',
+      download: 'Stáhnout PNG',
+      downloaded: 'Karta stažena',
+      failed: 'Kartu se nepodařilo vytvořit',
+      age: { one: 'Věk {n} den', few: 'Věk {n} dny', other: 'Věk {n} dní' },
+      height: 'Výška {v} cm',
+      stageDay: '{n}. den {stage}',
+      dry: '{v} g suché'
+    },
+    pastTypical: 'Déle než obvykle ({range})',
+    typically: 'Obvykle {range} · {p} %',
+    next: {
+      archive: 'Ukončit a archivovat',
+      harvest: 'Sklidit',
+      dry: 'Suchá váha a zrání',
+      stage: 'Do fáze {stage}'
+    },
+    water: {
+      overdue: { one: 'Zálivka je {n} den po termínu', few: 'Zálivka je {n} dny po termínu', other: 'Zálivka je {n} dní po termínu' },
+      today: 'Dnes je čas zalít',
+      tomorrow: 'Další zálivka zítra',
+      inDays: { one: 'Další zálivka za {n} den', few: 'Další zálivka za {n} dny', other: 'Další zálivka za {n} dní' },
+      last: 'naposledy {when}'
+    },
+    journal: {
+      futureTitle: 'Tenhle den teprve přijde',
+      futureText: 'Vyber dnešek nebo dřívější den a zapiš, co je potřeba.',
+      emptyTitle: 'Tento den nic nezapsáno',
+      emptyText: 'Tlačítky nahoře zapíšeš zálivku, hnojení, poznámku nebo fotku.'
+    },
+    history: {
+      all: 'Vše',
+      emptyTitle: 'Zatím žádné záznamy',
+      emptyText: 'Všechno, co zapíšeš, se tu objeví na časové ose.'
+    },
+    info: {
+      strain: 'Odrůda',
+      type: 'Typ',
+      started: 'Zasazeno',
+      pot: 'Květináč',
+      medium: 'Substrát',
+      location: 'Umístění',
+      light: 'Světlo',
+      autoflower: 'Samonakvétací',
+      photoperiod: 'Fotoperiodická',
+      mediums: { soil: 'Hlína', coco: 'Kokos', hydro: 'Hydroponie', other: 'Jiný' },
+      locations: { indoor: 'Interiér', outdoor: 'Venku', greenhouse: 'Skleník' },
+      timeline: 'Průběh fází',
+      soFar: 'zatím {days}',
+      height: 'Výška',
+      heightLabel: 'Výška v čase, naposledy {v} cm',
+      lastFeed: 'Poslední hnojení · {when}',
+      noDetails: 'Bez podrobností',
+      about: 'O fázi {stage}',
+      notes: 'Poznámky'
+    },
+    harvest: {
+      title: 'Sklizeň',
+      dryTitle: 'Suchá váha',
+      editTitle: 'Upravit sklizeň',
+      harvested: 'Sklizeno',
+      ratio: 'Poměr po usušení',
+      wet: 'Mokrá',
+      dry: 'Suchá',
+      introHarvest: 'Zvaž rostlinu hned po sklizni. Suchou váhu doplníš, až uschne.',
+      introDry: 'Tenké stonky už praskají, místo aby se ohýbaly? Zvaž usušené palice, než je dáš do sklenic.',
+      wetWeight: 'Mokrá váha (g)',
+      dryWeight: 'Suchá váha (g)',
+      date: 'Datum sklizně',
+      notes: 'Poznámky',
+      notesPlaceholder: 'Barva trichomů, vůně, hustota palic…'
+    },
+    photos: {
+      addToJournal: 'Do deníku',
+      profilePhoto: 'Profilová fotka',
+      profile: 'Profil',
+      emptyTitle: 'Zatím žádné fotky',
+      emptyText: 'Fotka každý týden – a máš z pěstování parádní timelapse.'
+    },
+    stageSheet: {
+      title: 'Změnit fázi',
+      current: ' (aktuální)',
+      light: '{range} · světlo {light}',
+      hintBefore: 'Je čas sklízet? U kvetoucí rostliny použij ',
+      hintStrong: 'Sklizeň',
+      hintAfter: ' a zapiš váhy.',
+      since: 'Od',
+      save: 'Uložit fázi'
+    },
+    menu: {
+      changeStage: 'Změnit fázi',
+      editHarvest: 'Upravit sklizeň',
+      changePhoto: 'Změnit profilovou fotku',
+      share: 'Sdílet kartu',
+      duplicate: 'Duplikovat rostlinu',
+      restore: 'Obnovit z archivu',
+      archive: 'Přesunout do archivu',
+      delete: 'Smazat rostlinu'
+    },
+    copySuffix: '(kopie)',
+    journalEntries: { one: '{n} záznam v deníku', few: '{n} záznamy v deníku', other: '{n} záznamů v deníku' },
+    confirm: {
+      photoTitle: 'Smazat tuhle fotku?',
+      photoMessage: 'Zmizí z deníku.',
+      archiveTitle: 'Archivovat {name}?',
+      archiveMessage: 'Pěstování je u konce. Pořád ji najdeš na kartě Archiv.',
+      archiveLabel: 'Archivovat',
+      deleteTitle: 'Smazat {name}?',
+      deleteMessage: 'Natrvalo smažeš rostlinu, {entries} a její fotky.'
+    },
+    toast: {
+      entryDeleted: 'Záznam smazán: {verb}',
+      photoDeleted: 'Fotka smazána',
+      profileUpdated: 'Profilová fotka změněna',
+      badImage: 'Obrázek se nepodařilo načíst',
+      badDate: 'Vyber platné datum',
+      dateBeforeStage: 'Datum musí být až po začátku aktuální fáze',
+      stageChanged: '{name} je teď ve fázi {stage}',
+      negativeWeight: 'Váha nemůže být záporná',
+      dryOverWet: 'Suchá váha nemůže být vyšší než mokrá',
+      harvestRange: 'Vyber datum sklizně mezi {from} a dneškem',
+      harvestLogged: 'Sklizeň zapsána – ať se dobře suší!',
+      dryCuring: 'Suchá váha uložena, teď zraje',
+      harvestUpdated: 'Sklizeň upravena',
+      archived: 'Přesunuto do archivu',
+      restored: 'Vráceno mezi aktivní rostliny',
+      deleted: 'Rostlina smazána',
+      duplicated: 'Rostlina zduplikována'
+    },
+    notFound: {
+      title: 'Rostlina nenalezena',
+      emptyTitle: 'Tahle rostlina neexistuje',
+      emptyText: 'Možná byla smazána.',
+      back: 'Zpět na rostliny'
+    },
+    week: {
+      prev: 'Předchozí týden',
+      next: 'Další týden',
+      pick: 'Vyber den',
+      today: 'dnes',
+      hasEntries: 'má záznamy'
+    },
+    entry: {
+      movedTo: 'Nová fáze: {stage}',
+      volume: 'Objem',
+      height: 'Výška',
+      temp: 'Teplota',
+      humidity: 'Vlhkost',
+      rh: '% RV',
+      edit: 'Upravit záznam',
+      delete: 'Smazat záznam',
+      openPhoto: 'Otevřít fotku'
+    }
+  }
+}

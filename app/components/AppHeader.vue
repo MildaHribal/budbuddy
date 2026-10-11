@@ -11,6 +11,7 @@ withDefaults(defineProps<{
 })
 
 const { $goBack } = useNuxtApp()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -19,23 +20,11 @@ const { $goBack } = useNuxtApp()
       v-if="back"
       type="button"
       class="icon-btn"
-      aria-label="Back"
+      :aria-label="t('common.back')"
       @click="$goBack()"
     >
-      <UIcon
-        name="i-tabler-arrow-left"
-        class="size-5"
-      />
+      <UIcon name="i-tabler-chevron-left" />
     </button>
-    <span
-      v-else-if="icon"
-      class="header-icon"
-    >
-      <UIcon
-        :name="icon"
-        class="size-6"
-      />
-    </span>
     <div class="header-text">
       <h1>{{ title }}</h1>
       <p v-if="subtitle">
@@ -57,23 +46,10 @@ const { $goBack } = useNuxtApp()
   align-items: center;
   gap: 12px;
   min-height: 64px;
-  padding: calc(10px + var(--safe-top)) 16px 10px;
-  background: rgba(10, 10, 10, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--line);
-}
-
-.header-icon {
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  flex-shrink: 0;
+  padding: calc(14px + var(--safe-top)) 20px 12px;
+  background: linear-gradient(180deg, rgba(7, 8, 10, 0.94) 0%, rgba(7, 8, 10, 0.82) 70%, rgba(7, 8, 10, 0) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .header-text {
@@ -83,18 +59,18 @@ const { $goBack } = useNuxtApp()
 
 h1 {
   margin: 0;
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 p {
-  margin: 1px 0 0;
+  margin: 2px 0 0;
   font-size: 13px;
-  color: var(--text-2);
+  color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -17,6 +17,11 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    androidResources {
+        // On-device AI files in public/ai/ (100+ MB) are stored uncompressed so the
+        // WebView can stream them straight from the APK instead of inflating them.
+        noCompress 'onnx', 'ort', 'bin', 'wasm', 'npy', 'gguf', 'safetensors'
+    }
     signingConfigs {
         release {
             if (System.getenv('KEYSTORE_PATH')) {

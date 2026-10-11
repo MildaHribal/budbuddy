@@ -1,10 +1,13 @@
+import type { GlyphName } from './glyphs'
 import type { HealthLevel, Plant, StageId } from '../types/grow'
 import { daysSince, todayISO } from './date'
+import { locale } from './locale'
 
 export interface StageInfo {
   id: StageId
   label: string
   icon: string
+  glyph: GlyphName
   color: string
   /** typical length in days, used for the progress bar */
   days: number
@@ -19,7 +22,8 @@ export const STAGES: StageInfo[] = [
     id: 'germination',
     label: 'Germination',
     icon: 'i-tabler-seeding',
-    color: '#b5e48c',
+    glyph: 'germination',
+    color: '#e9d68f',
     days: 7,
     range: '3–10 days',
     light: '18/6 or 24/0, low intensity',
@@ -30,7 +34,8 @@ export const STAGES: StageInfo[] = [
     id: 'seedling',
     label: 'Seedling',
     icon: 'i-tabler-plant',
-    color: '#7bc74d',
+    glyph: 'seedling',
+    color: '#c8f08f',
     days: 21,
     range: '2–3 weeks',
     light: '18/6, gentle light',
@@ -41,7 +46,8 @@ export const STAGES: StageInfo[] = [
     id: 'vegetative',
     label: 'Vegetative',
     icon: 'i-tabler-trees',
-    color: '#4fc3f7',
+    glyph: 'vegetative',
+    color: '#9be36b',
     days: 42,
     range: '3–16 weeks',
     light: '18/6',
@@ -52,7 +58,8 @@ export const STAGES: StageInfo[] = [
     id: 'flowering',
     label: 'Flowering',
     icon: 'i-tabler-flower',
-    color: '#f472b6',
+    glyph: 'flowering',
+    color: '#c9a2ff',
     days: 63,
     range: '7–11 weeks',
     light: '12/12 (photoperiod)',
@@ -63,7 +70,8 @@ export const STAGES: StageInfo[] = [
     id: 'drying',
     label: 'Drying',
     icon: 'i-tabler-wind',
-    color: '#fbbf24',
+    glyph: 'drying',
+    color: '#d9a76a',
     days: 10,
     range: '7–14 days',
     light: 'Dark',
@@ -74,7 +82,8 @@ export const STAGES: StageInfo[] = [
     id: 'curing',
     label: 'Curing',
     icon: 'i-tabler-bottle',
-    color: '#c084fc',
+    glyph: 'curing',
+    color: '#f0b95e',
     days: 28,
     range: '2–8 weeks',
     light: 'Dark',
@@ -83,10 +92,66 @@ export const STAGES: StageInfo[] = [
   }
 ]
 
+type StageText = Pick<StageInfo, 'label' | 'range' | 'light' | 'description' | 'tips'>
+
+const STAGES_CS: Record<StageId, StageText> = {
+  germination: {
+    label: 'Klíčení',
+    range: '3–10 dní',
+    light: '18/6 nebo 24/0, slabé světlo',
+    description: 'Semínko praskne, vystrčí kořínek a první kulaté lístky.',
+    tips: ['Vlhkost drž na 70–90 %', 'Teplota 22–25 °C', 'Substrát nesmí vyschnout']
+  },
+  seedling: {
+    label: 'Sazenice',
+    range: '2–3 týdny',
+    light: '18/6, jemné světlo',
+    description: 'Objevují se první pravé zubaté listy a zakořeňuje se.',
+    tips: ['Zalévej po troškách kolem stonku', 'Hnojit jen velmi slabě, nebo vůbec', 'Vzdušná vlhkost kolem 65–70 %']
+  },
+  vegetative: {
+    label: 'Vegetace',
+    range: '3–16 týdnů',
+    light: '18/6',
+    description: 'Rychle přibývají stonky i listy. Nejlepší čas na tvarování.',
+    tips: ['Hnojivo bohaté na dusík', 'Teď je čas na topping, LST nebo SCROG', 'Přesaď dřív, než kořeny obkrouží květináč']
+  },
+  flowering: {
+    label: 'Kvetení',
+    range: '7–11 týdnů',
+    light: '12/12 (fotoperioda)',
+    description: 'Tvoří se a nabírají palice. Hlídej vlhkost a trichomy.',
+    tips: ['Přejdi na květové hnojivo (P a K)', 'Vlhkost 40–50 %, ať nechytí plíseň', 'Od 6. týdne kontroluj trichomy']
+  },
+  drying: {
+    label: 'Sušení',
+    range: '7–14 dní',
+    light: 'Tma',
+    description: 'Sklizené větve visí v temné místnosti, dokud tenké stonky nepraskají.',
+    tips: ['18–20 °C a 55–60 % vlhkosti', 'Mírné proudění vzduchu, ne přímo na palice', 'Zvaž před sušením i po něm']
+  },
+  curing: {
+    label: 'Zrání',
+    range: '2–8 týdnů',
+    light: 'Tma',
+    description: 'Palice odpočívají v uzavřených sklenicích a získávají chuť i jemnost.',
+    tips: ['Sklenice plň zhruba ze 3/4', 'První týden denně větrej', 'Uvnitř sklenice cil na 58–62 % vlhkosti']
+  }
+}
+
 const BY_ID = Object.fromEntries(STAGES.map(s => [s.id, s])) as Record<StageId, StageInfo>
 
+function localize(s: StageInfo): StageInfo {
+  return locale.value === 'cs' ? { ...s, ...STAGES_CS[s.id] } : s
+}
+
+/** Localized stage list; STAGES stays the English base. */
+export function stages(): StageInfo[] {
+  return STAGES.map(localize)
+}
+
 export function stageInfo(stage: StageId | string | null | undefined): StageInfo {
-  return BY_ID[stage as StageId] ?? BY_ID.seedling
+  return localize(BY_ID[stage as StageId] ?? BY_ID.seedling)
 }
 
 export function isStageId(v: unknown): v is StageId {
@@ -138,14 +203,24 @@ export function stageProgress(plant: Pick<Plant, 'stageHistory' | 'startDate' | 
   }
 }
 
-export const HEALTH_LEVELS: { value: HealthLevel, label: string, icon: string, color: string }[] = [
-  { value: 5, label: 'Thriving', icon: 'i-tabler-mood-happy', color: '#7bc74d' },
-  { value: 4, label: 'Good', icon: 'i-tabler-mood-smile', color: '#a3d977' },
-  { value: 3, label: 'Fair', icon: 'i-tabler-mood-neutral', color: '#fbbf24' },
-  { value: 2, label: 'Struggling', icon: 'i-tabler-mood-sad', color: '#fb923c' },
-  { value: 1, label: 'Critical', icon: 'i-tabler-mood-cry', color: '#ef4444' }
+export interface HealthInfo { value: HealthLevel, label: string, icon: string, color: string }
+
+export const HEALTH_LEVELS: HealthInfo[] = [
+  { value: 5, label: 'Thriving', icon: 'i-tabler-mood-happy', color: '#9be36b' },
+  { value: 4, label: 'Good', icon: 'i-tabler-mood-smile', color: '#c8f08f' },
+  { value: 3, label: 'Fair', icon: 'i-tabler-mood-neutral', color: '#ffd28a' },
+  { value: 2, label: 'Struggling', icon: 'i-tabler-mood-sad', color: '#ff9a62' },
+  { value: 1, label: 'Critical', icon: 'i-tabler-mood-cry', color: '#ff5f6d' }
 ]
 
-export function healthInfo(level: number) {
-  return HEALTH_LEVELS.find(h => h.value === Math.round(level)) ?? HEALTH_LEVELS[1]!
+const HEALTH_CS: Record<HealthLevel, string> = { 5: 'Výborné', 4: 'Dobré', 3: 'Ujde', 2: 'Trápí se', 1: 'Kritické' }
+
+const localizeHealth = (h: HealthInfo): HealthInfo => (locale.value === 'cs' ? { ...h, label: HEALTH_CS[h.value] } : h)
+
+export function healthLevels(): HealthInfo[] {
+  return HEALTH_LEVELS.map(localizeHealth)
+}
+
+export function healthInfo(level: number): HealthInfo {
+  return localizeHealth(HEALTH_LEVELS.find(h => h.value === Math.round(level)) ?? HEALTH_LEVELS[1]!)
 }

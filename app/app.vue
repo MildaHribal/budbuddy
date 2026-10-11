@@ -1,12 +1,16 @@
 <script setup lang="ts">
-const { ready, loadError } = useGrow()
+const { ready, loadError, state } = useGrow()
+const { t } = useI18n()
+
+// Lights-on boot: the lamp flickers on, then light falls down the tent.
+const lit = ref(false)
+onMounted(() => requestAnimationFrame(() => (lit.value = true)))
 
 useHead({
   titleTemplate: chunk => (chunk ? `${chunk} · BudBuddy` : 'BudBuddy – grow journal'),
-  htmlAttrs: { lang: 'en' },
   meta: [
     { name: 'description', content: 'BudBuddy is an offline grow journal: track plants, watering, feeding, training, photos and harvests, with VPD, DLI and nutrient calculators.' },
-    { name: 'theme-color', content: '#0a0a0a' },
+    { name: 'theme-color', content: '#07080a' },
     { property: 'og:title', content: 'BudBuddy – grow journal' },
     { property: 'og:description', content: 'Track every plant from seed to jar.' },
     { property: 'og:type', content: 'website' }
@@ -17,21 +21,32 @@ useHead({
 
 <template>
   <div class="device-stage">
-    <div class="device">
+    <div
+      class="device tent"
+      :class="{ lit }"
+    >
+      <div
+        class="lamp-bar"
+        aria-hidden="true"
+      />
+      <div
+        class="lamp-light"
+        aria-hidden="true"
+      />
+      <OnboardingGuide v-if="ready && !state.settings.onboarded" />
       <div id="overlays" />
       <Transition name="splash">
         <div
           v-if="!ready"
           class="splash"
           role="status"
-          aria-label="Loading"
+          :aria-label="t('common.loading')"
         >
-          <img
-            src="/icon.webp"
-            alt=""
-            width="88"
-            height="88"
-          >
+          <GrowIcon
+            name="vegetative"
+            draw
+            class="splash-leaf"
+          />
           <span>BudBuddy</span>
         </div>
       </Transition>
@@ -40,8 +55,8 @@ useHead({
         class="load-error"
         role="alert"
       >
-        <strong>Your data could not be loaded.</strong>
-        Nothing was changed or overwritten – please restart the app. ({{ loadError }})
+        <strong>{{ t('common.loadError') }}</strong>
+        {{ t('common.loadErrorHint') }} ({{ loadError }})
       </div>
       <NuxtLayout v-if="ready">
         <NuxtPage />
@@ -64,9 +79,65 @@ useHead({
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  isolation: isolate;
   /* makes position:fixed descendants relative to the device frame */
   transform: translateZ(0);
+}
+
+.lamp-bar {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 60;
+  width: 150px;
+  height: 3px;
+  margin-left: -75px;
+  border-radius: 0 0 8px 8px;
+  background: var(--lamp);
+  box-shadow: var(--glow-lamp);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.lamp-light {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 70%;
+  z-index: -1;
+  background: radial-gradient(90% 55% at 50% 0%, rgba(255, 210, 138, 0.1) 0%, rgba(155, 227, 107, 0.04) 45%, transparent 75%);
+  pointer-events: none;
+  opacity: 0;
+  transform: scaleY(0.4);
+  transform-origin: top;
+}
+
+.lit .lamp-bar {
+  animation: lamp-on 0.9s steps(1, end) forwards, lamp-glow 1.2s 0.9s var(--ease-out) forwards;
+}
+
+.lit .lamp-light {
+  animation: light-fall 1.4s 0.55s var(--ease-out) forwards;
+}
+
+@keyframes lamp-on {
+  0% { opacity: 0; }
+  12% { opacity: 0.7; }
+  20% { opacity: 0.1; }
+  34% { opacity: 0.9; }
+  42% { opacity: 0.3; }
+  60%, 100% { opacity: 1; }
+}
+
+@keyframes lamp-glow {
+  from { opacity: 1; filter: brightness(1.4); }
+  to { opacity: 1; filter: brightness(1); }
+}
+
+@keyframes light-fall {
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
 }
 
 #overlays {
@@ -88,32 +159,42 @@ useHead({
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  background: radial-gradient(circle at 50% 40%, #12210e 0%, var(--bg) 70%);
+  gap: 16px;
+  background: var(--bg);
   font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.splash-leaf {
+  font-size: 72px;
+  color: var(--leaf);
 }
 
 .load-error {
   padding: calc(10px + var(--safe-top)) 16px 10px;
   background: var(--danger-soft);
-  border-bottom: 1px solid rgba(240, 82, 82, 0.4);
-  color: #ffb4b4;
+  border-bottom: 1px solid rgba(255, 95, 109, 0.4);
+  color: #ffb4bb;
   font-size: 13px;
   line-height: 1.4;
 }
 
-.splash img {
-  border-radius: 24px;
-}
-
 .splash-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.5s var(--ease-out);
 }
 
 .splash-leave-to {
   opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lit .lamp-bar,
+  .lit .lamp-light {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* On desktop the app is shown inside a phone frame (used for the portfolio embed). */
@@ -122,18 +203,20 @@ useHead({
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, #0d2614 0%, var(--bg) 70%);
+    background:
+      radial-gradient(60% 50% at 50% 0%, rgba(255, 210, 138, 0.08), transparent 70%),
+      #040506;
   }
 
   .device {
     width: 390px;
     height: min(844px, calc(100vh - 40px));
     border-radius: 48px;
-    border: 10px solid #1b1d1b;
+    border: 10px solid #15171a;
     box-shadow:
-      0 0 0 2px #2c2f2c,
-      0 30px 60px -15px rgba(0, 0, 0, 0.8),
-      0 0 40px rgba(123, 199, 77, 0.08);
+      0 0 0 1px #2a2e33,
+      0 40px 80px -20px rgba(0, 0, 0, 0.9),
+      0 -20px 80px -30px rgba(255, 210, 138, 0.18);
     --safe-top: 18px;
     --safe-bottom: 10px;
   }

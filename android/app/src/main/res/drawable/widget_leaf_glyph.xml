@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@color/widget_leaf">
+    <group android:pivotX="12" android:pivotY="17" android:rotation="0">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M12 17c-1.35-3.6-1.35-8.2 0-13.2 1.35 5 1.35 9.6 0 13.2z" />
+    </group>
+    <group android:pivotX="12" android:pivotY="17" android:rotation="-38">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M12 17c-1.15-3-1.15-6.8 0-10.6 1.15 3.8 1.15 7.6 0 10.6z" />
+    </group>
+    <group android:pivotX="12" android:pivotY="17" android:rotation="38">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M12 17c-1.15-3-1.15-6.8 0-10.6 1.15 3.8 1.15 7.6 0 10.6z" />
+    </group>
+    <group android:pivotX="12" android:pivotY="17" android:rotation="-78">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M12 17c-.85-2.1-.85-4.6 0-7.2.85 2.6.85 5.1 0 7.2z" />
+    </group>
+    <group android:pivotX="12" android:pivotY="17" android:rotation="78">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M12 17c-.85-2.1-.85-4.6 0-7.2.85 2.6.85 5.1 0 7.2z" />
+    </group>
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.6" android:strokeLineCap="round" android:pathData="M12 17v4.2" />
+</vector>

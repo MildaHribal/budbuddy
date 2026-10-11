@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_light_name">BudBuddy · Světlo</string>
+    <string name="widget_light_desc">Kruh fotoperiody s odpočtem do dalšího rozsvícení nebo zhasnutí.</string>
+    <string name="widget_plants_name">BudBuddy · Rostliny</string>
+    <string name="widget_plants_desc">Aktivní rostliny s fází, dnem a stavem zálivky.</string>
+    <string name="widget_gallery_name">BudBuddy · Galerie</string>
+    <string name="widget_gallery_desc">Tvoje poslední fotka rostliny.</string>
+    <string name="widget_ai_name">BudBuddy · AI</string>
+    <string name="widget_ai_desc">Zeptej se pěstitelského asistenta přímo z plochy.</string>
+    <string name="widget_preview_light_lead">Zhasne za</string>
+    <string name="widget_preview_light_lit">Svítí 06:00 – 00:00</string>
+    <string name="widget_preview_light_dark">Tma 00:00 – 06:00</string>
+    <string name="widget_preview_plants_title">Moje rostliny</string>
+    <string name="widget_preview_plant_sub">Kvetení · den 38</string>
+    <string name="widget_preview_plant_water">Zalít dnes</string>
+    <string name="widget_preview_gallery_empty">Tvoje poslední fotka</string>
+    <string name="widget_preview_ai_hint">Zeptej se AI na své rostliny…</string>
+</resources>

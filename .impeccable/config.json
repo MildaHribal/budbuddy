@@ -1,0 +1,19 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [
+      ".impeccable/mocks/**"
+    ],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/pages/ai-assistant.vue"
+        ],
+        "createdAt": "2026-10-11T02:24:06.145Z",
+        "reason": "assistant decided: the flagged rule styles blockquotes inside rendered Markdown answers (standard typographic quote rule), not a card accent"
+      }
+    ]
+  }
+}

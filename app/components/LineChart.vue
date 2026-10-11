@@ -12,12 +12,16 @@ const props = withDefaults(defineProps<{
   label: string
 }>(), {
   unit: '',
-  color: 'var(--accent)'
+  color: 'var(--leaf)'
 })
+
+const uid = useId()
+const fadeId = `fade-${uid}`
+const glowId = `glow-${uid}`
 
 const W = 320
 const H = 150
-const PAD = { top: 14, right: 12, bottom: 22, left: 34 }
+const PAD = { top: 16, right: 12, bottom: 24, left: 30 }
 
 const active = ref<number | null>(null)
 
@@ -43,6 +47,7 @@ const area = computed(() => {
 })
 
 const gridLines = computed(() => [0, 0.5, 1].map(f => Math.round(scale.value.niceMax * f)))
+const lastIndex = computed(() => props.points.length - 1)
 
 function pick(e: PointerEvent) {
   const svg = e.currentTarget as SVGSVGElement
@@ -64,12 +69,16 @@ const tip = computed(() => {
   if (active.value === null) return null
   const p = props.points[active.value]
   if (!p) return null
-  return { ...p, left: (scale.value.x(active.value) / W) * 100, top: (scale.value.y(p.value) / H) * 100 }
+  const left = (scale.value.x(active.value) / W) * 100
+  return { ...p, left: Math.min(84, Math.max(16, left)), top: (scale.value.y(p.value) / H) * 100 }
 })
 </script>
 
 <template>
-  <figure class="chart">
+  <figure
+    class="chart"
+    :style="{ '--series': color }"
+  >
     <svg
       :viewBox="`0 0 ${W} ${H}`"
       role="img"
@@ -78,6 +87,34 @@ const tip = computed(() => {
       @pointerdown="pick"
       @pointerleave="active = null"
     >
+      <defs>
+        <linearGradient
+          :id="fadeId"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+        >
+          <stop
+            offset="0"
+            class="fade-top"
+          />
+          <stop
+            offset="1"
+            class="fade-bottom"
+          />
+        </linearGradient>
+        <filter
+          :id="glowId"
+          filterUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          :width="W"
+          :height="H"
+        >
+          <feGaussianBlur stdDeviation="3.5" />
+        </filter>
+      </defs>
       <g class="grid">
         <template
           v-for="g in gridLines"
@@ -90,8 +127,8 @@ const tip = computed(() => {
             :y2="scale.y(g)"
           />
           <text
-            :x="PAD.left - 6"
-            :y="scale.y(g) + 3"
+            :x="PAD.left - 8"
+            :y="scale.y(g) + 3.5"
             text-anchor="end"
           >{{ g }}</text>
         </template>
@@ -100,12 +137,18 @@ const tip = computed(() => {
         v-if="area"
         :d="area"
         class="area"
-        :style="{ fill: color }"
+        :fill="`url(#${fadeId})`"
+      />
+      <path
+        :d="path"
+        class="line-glow"
+        :filter="`url(#${glowId})`"
+        pathLength="1"
       />
       <path
         :d="path"
         class="line"
-        :style="{ stroke: color }"
+        pathLength="1"
       />
       <line
         v-if="tip"
@@ -120,9 +163,9 @@ const tip = computed(() => {
         :key="i"
         :cx="scale.x(i)"
         :cy="scale.y(p.value)"
-        :r="active === i ? 5 : 3.5"
+        :r="active === i ? 5 : i === lastIndex ? 4 : 2.5"
         class="dot"
-        :style="{ fill: color }"
+        :class="{ on: active === i || i === lastIndex }"
       />
       <text
         :x="PAD.left"
@@ -135,14 +178,14 @@ const tip = computed(() => {
         :y="H - 6"
         class="axis"
         text-anchor="end"
-      >{{ points[points.length - 1]?.label }}</text>
+      >{{ points[lastIndex]?.label }}</text>
     </svg>
     <div
       v-if="tip"
       class="tip"
       :style="{ left: `${tip.left}%`, top: `${tip.top}%` }"
     >
-      <strong>{{ tip.value }}{{ unit }}</strong>
+      <strong class="num">{{ tip.value }}{{ unit }}</strong>
       <span>{{ tip.label }}</span>
     </div>
   </figure>
@@ -158,39 +201,71 @@ svg {
   width: 100%;
   height: auto;
   display: block;
+  overflow: visible;
   touch-action: pan-y;
 }
 
 .grid line {
-  stroke: rgba(255, 255, 255, 0.07);
+  stroke: rgba(255, 255, 255, 0.05);
   stroke-width: 1;
 }
 
 .grid text,
 .axis {
   fill: var(--text-3);
-  font-size: 10px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fade-top {
+  stop-color: var(--series);
+  stop-opacity: 0.22;
+}
+
+.fade-bottom {
+  stop-color: var(--series);
+  stop-opacity: 0;
 }
 
 .area {
-  opacity: 0.12;
+  animation: chart-fade 0.6s var(--ease-out) 0.25s backwards;
+}
+
+.line,
+.line-glow {
+  fill: none;
+  stroke: var(--series);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: chart-draw 0.9s var(--ease-out) backwards;
 }
 
 .line {
-  fill: none;
   stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
+}
+
+.line-glow {
+  stroke-width: 4;
+  opacity: 0.55;
 }
 
 .dot {
-  stroke: var(--surface);
+  fill: #0b0d10;
+  stroke: var(--series);
+  stroke-width: 1.5;
+  transition: r var(--dur-fast) var(--ease-out);
+}
+
+.dot.on {
+  fill: var(--series);
+  stroke: #0b0d10;
   stroke-width: 2;
 }
 
 .cross {
-  stroke: rgba(255, 255, 255, 0.25);
-  stroke-dasharray: 3 3;
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-dasharray: 2 3;
 }
 
 .tip {
@@ -199,17 +274,34 @@ svg {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 5px 9px;
-  border-radius: 8px;
-  background: #222622;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--panel);
   border: 1px solid var(--line-strong);
-  font-size: 12px;
+  box-shadow: var(--panel-shadow);
+  font-size: 13px;
   white-space: nowrap;
   pointer-events: none;
+}
+
+.tip strong {
+  font-weight: 600;
 }
 
 .tip span {
   color: var(--text-2);
   font-size: 11px;
+}
+
+@keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes chart-fade {
+  from {
+    opacity: 0;
+  }
 }
 </style>

@@ -1,16 +1,36 @@
 <script setup lang="ts">
-defineProps<{
+import { isGlyphName } from '~/utils/glyphs'
+
+const props = defineProps<{
+  /** a GrowIcon glyph name, or a legacy i-tabler-* name mapped to the nearest glyph */
   icon: string
   title: string
   text?: string
 }>()
+
+const LEGACY: Record<string, string> = {
+  'i-tabler-plant-off': 'seedling',
+  'i-tabler-photo-off': 'photo',
+  'i-tabler-clipboard-list': 'note',
+  'i-tabler-notebook-off': 'note',
+  'i-tabler-basket-off': 'harvest',
+  'i-tabler-mood-empty': 'measure',
+  'i-tabler-search-off': 'plants',
+  'i-tabler-archive': 'curing'
+}
+
+const glyph = computed(() => (isGlyphName(props.icon) ? props.icon : LEGACY[props.icon] ?? 'vegetative'))
 </script>
 
 <template>
   <div class="empty">
-    <UIcon
-      :name="icon"
-      class="size-11 empty-icon"
+    <GrowIcon
+      :name="glyph"
+      draw
+      glow
+      :stroke-width="1.1"
+      class="empty-glyph"
+      aria-hidden="true"
     />
     <p class="empty-title">
       {{ title }}
@@ -30,26 +50,30 @@ defineProps<{
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 32px 20px;
+  gap: 6px;
+  padding: 28px 20px 30px;
   text-align: center;
-  border: 1px dashed var(--accent-line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.015);
+  background: radial-gradient(70% 60% at 50% 0%, rgba(155, 227, 107, 0.07), transparent 75%);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
-.empty-icon {
-  color: var(--text-3);
+.empty-glyph {
+  margin-bottom: 8px;
+  font-size: 64px;
+  color: var(--leaf);
 }
 
 .empty-title {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .empty-text {
-  margin: 0 0 6px;
+  max-width: 30ch;
+  margin: 0 0 8px;
   font-size: 13px;
   color: var(--text-2);
   line-height: 1.5;

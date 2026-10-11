@@ -7,16 +7,17 @@ const route = useRoute()
 const grow = useGrow()
 const { notify } = useNotify()
 const { $goBack } = useNuxtApp()
+const { t } = useI18n()
 
 const plant = computed(() => grow.getPlant(String(route.params.id)))
-useHead({ title: () => (plant.value ? `Edit ${plant.value.name}` : 'Edit plant') })
+useHead({ title: () => (plant.value ? t('plants.edit.headTitle', { name: plant.value.name }) : t('plants.edit.title')) })
 
 function save(data: PlantInput) {
   if (!plant.value) return
   // The stage is changed from the detail page so it lands in the journal.
   const { stage: _stage, ...rest } = data
   grow.updatePlant(plant.value.id, rest)
-  notify('Changes saved')
+  notify(t('plants.edit.saved'))
   $goBack()
 }
 </script>
@@ -24,7 +25,7 @@ function save(data: PlantInput) {
 <template>
   <div>
     <AppHeader
-      title="Edit plant"
+      :title="t('plants.edit.title')"
       :subtitle="plant?.name"
       back
     />
@@ -32,20 +33,20 @@ function save(data: PlantInput) {
       <PlantForm
         v-if="plant"
         :plant="plant"
-        submit-label="Save changes"
+        :submit-label="t('plants.edit.submit')"
         @submit="save"
       />
       <EmptyState
         v-else
         icon="i-tabler-plant-off"
-        title="Plant not found"
-        text="It may have been deleted."
+        :title="t('plants.edit.notFoundTitle')"
+        :text="t('plants.edit.notFoundText')"
       >
         <NuxtLink
           to="/plants"
           class="btn btn-soft"
         >
-          Back to plants
+          {{ t('plants.edit.backToPlants') }}
         </NuxtLink>
       </EmptyState>
     </div>

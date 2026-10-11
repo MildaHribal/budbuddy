@@ -1,0 +1,40 @@
+export default {
+  en: {
+    title: 'Gallery',
+    count: { one: '{n} photo', other: '{n} photos' },
+    profilePhoto: 'Profile photo',
+    day: 'day {n}',
+    allPlants: 'All plants',
+    emptyTitle: 'No photos yet',
+    emptyText: 'Add photos from a plant\'s journal – they all show up here, sorted by date.',
+    goToPlants: 'Go to plants',
+    deleteConfirm: 'Delete this photo?',
+    delete: 'Delete',
+    deleted: 'Photo deleted',
+    viewer: 'Photo viewer',
+    deletePhoto: 'Delete photo',
+    close: 'Close',
+    photo: 'Photo',
+    prev: 'Previous photo',
+    next: 'Next photo'
+  },
+  cs: {
+    title: 'Galerie',
+    count: { one: '{n} fotka', few: '{n} fotky', other: '{n} fotek' },
+    profilePhoto: 'Profilová fotka',
+    day: '{n}. den',
+    allPlants: 'Všechny rostliny',
+    emptyTitle: 'Zatím žádné fotky',
+    emptyText: 'Přidávej fotky v deníku rostliny – všechny se objeví tady, seřazené podle data.',
+    goToPlants: 'Na rostliny',
+    deleteConfirm: 'Smazat tuhle fotku?',
+    delete: 'Smazat',
+    deleted: 'Fotka smazána',
+    viewer: 'Prohlížeč fotek',
+    deletePhoto: 'Smazat fotku',
+    close: 'Zavřít',
+    photo: 'Fotka',
+    prev: 'Předchozí fotka',
+    next: 'Další fotka'
+  }
+}

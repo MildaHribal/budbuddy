@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EntryType, JournalEntry, TrainingMethod } from '~/types/grow'
+import type { EntryType, JournalEntry, StageId, TrainingMethod } from '~/types/grow'
 
 const open = defineModel<boolean>('open', { default: false })
 const props = defineProps<{
@@ -17,6 +17,7 @@ const emit = defineEmits<{ saved: [entry: JournalEntry] }>()
 
 const grow = useGrow()
 const { notify } = useNotify()
+const { t } = useI18n()
 
 interface Form {
   date: string
@@ -36,18 +37,41 @@ interface Form {
 const form = reactive<Form>(emptyForm())
 const submitted = ref(false)
 const busy = ref(false)
+const done = ref(false)
+const picked = ref<EntryType>(props.type)
+let closeTimer: ReturnType<typeof setTimeout> | undefined
 
-const kind = computed<EntryType>(() => props.entry?.type ?? props.type)
+const kind = computed<EntryType>(() => props.entry?.type ?? picked.value)
 const info = computed(() => entryInfo(kind.value))
 const isEdit = computed(() => !!props.entry)
+const loggable = computed(() => entryTypes().filter(x => x.loggable))
+const plant = computed(() => grow.getPlant(props.plantId))
 
 function emptyForm(): Form {
   return { date: todayISO(), note: '', amountMl: null, ph: null, ec: null, nutrients: '', method: null, product: '', heightCm: null, tempC: null, humidity: null, photoIds: [] }
 }
 
+const blank = (v: unknown) => v === null || v === ''
+
+// Pre-fill with the values used last time – most growers repeat the same mix.
+function applyLast(type: EntryType) {
+  const last = grow.lastEntryOf(props.plantId, [type])
+  if (!last) return
+  if (type === 'water' || type === 'feed') {
+    if (blank(form.amountMl)) form.amountMl = last.amountMl
+    if (blank(form.ph)) form.ph = last.ph
+    if (blank(form.ec)) form.ec = last.ec
+    if (!form.nutrients) form.nutrients = last.nutrients
+  }
+  if (type === 'pest' && !form.product) form.product = last.product
+}
+
 watch(open, (v) => {
+  clearTimeout(closeTimer)
   if (!v) return
   submitted.value = false
+  done.value = false
+  picked.value = props.type
   Object.assign(form, emptyForm())
   if (props.entry) {
     const e = props.entry
@@ -59,17 +83,18 @@ watch(open, (v) => {
     return
   }
   form.date = props.date
-  // Pre-fill with the values used last time – most growers repeat the same mix.
-  const last = grow.lastEntryOf(props.plantId, [props.type])
-  if (last && (props.type === 'water' || props.type === 'feed')) {
-    form.amountMl = last.amountMl
-    form.ph = last.ph
-    form.ec = last.ec
-    form.nutrients = last.nutrients
-  }
-  if (last && props.type === 'pest') form.product = last.product
+  applyLast(props.type)
   if (props.prefill) Object.assign(form, props.prefill)
 })
+
+onBeforeUnmount(() => clearTimeout(closeTimer))
+
+function pick(t: EntryType) {
+  if (t === picked.value) return
+  picked.value = t
+  submitted.value = false
+  applyLast(t)
+}
 
 const has = (...types: EntryType[]) => types.includes(kind.value)
 
@@ -80,18 +105,46 @@ const errors = computed(() => {
   const ph = toNum(form.ph)
   const rh = toNum(form.humidity)
   const amount = toNum(form.amountMl)
-  if (!isValidISODate(form.date)) e.date = 'Pick a date'
-  else if (form.date > todayISO()) e.date = 'The date cannot be in the future'
-  if (ph !== null && (ph < 0 || ph > 14)) e.ph = 'pH is between 0 and 14'
-  if (rh !== null && (rh < 0 || rh > 100)) e.humidity = 'Humidity is 0–100 %'
-  if (amount !== null && amount < 0) e.amountMl = 'Must be positive'
-  if (kind.value === 'note' && !form.note.trim()) e.note = 'Write something'
-  if (kind.value === 'photo' && !form.photoIds.length) e.photos = 'Add at least one photo'
+  if (!isValidISODate(form.date)) e.date = t('entry.errors.date')
+  else if (form.date > todayISO()) e.date = t('entry.errors.future')
+  if (ph !== null && (ph < 0 || ph > 14)) e.ph = t('entry.errors.ph')
+  if (rh !== null && (rh < 0 || rh > 100)) e.humidity = t('entry.errors.humidity')
+  if (amount !== null && amount < 0) e.amountMl = t('entry.errors.amount')
+  if (kind.value === 'note' && !form.note.trim()) e.note = t('entry.errors.note')
+  if (kind.value === 'photo' && !form.photoIds.length) e.photos = t('entry.errors.photos')
   if (kind.value === 'measure' && [form.heightCm, form.tempC, form.humidity, form.ph, form.ec].every(v => toNum(v) === null)) {
-    e.measure = 'Fill in at least one value'
+    e.measure = t('entry.errors.measure')
   }
   return e
 })
+
+interface Range { min: number, max: number, label: string }
+
+const phRange = computed<Range>(() => {
+  const m = plant.value?.medium
+  if (m === 'soil') return { min: 6.0, max: 7.0, label: t('entry.range.soil') }
+  if (m === 'coco' || m === 'hydro') return { min: 5.5, max: 6.5, label: t(`entry.range.${m}`) }
+  return { min: 5.8, max: 6.8, label: t('entry.range.typical') }
+})
+
+const EC_BY_STAGE: Partial<Record<StageId, [number, number]>> = {
+  germination: [0.2, 0.6],
+  seedling: [0.4, 0.8],
+  vegetative: [0.8, 1.6],
+  flowering: [1.2, 2.2]
+}
+
+const ecRange = computed<Range | null>(() => {
+  const s = plant.value?.stage
+  const r = s ? EC_BY_STAGE[s] : undefined
+  return r && s ? { min: r[0], max: r[1], label: stageInfo(s).label.toLowerCase() } : null
+})
+
+function rangeState(v: number | '' | null, r: Range | null): 'empty' | 'in' | 'out' {
+  const n = toNum(v)
+  if (n === null || !r) return 'empty'
+  return n >= r.min && n <= r.max ? 'in' : 'out'
+}
 
 async function addPhoto() {
   const file = await pickImage()
@@ -101,7 +154,7 @@ async function addPhoto() {
     form.photoIds.push(await grow.savePhoto(file))
   } catch (err) {
     console.error(err)
-    notify('Could not read that image', { tone: 'error' })
+    notify(t('entry.imageError'), { tone: 'error' })
   } finally {
     busy.value = false
   }
@@ -112,6 +165,7 @@ function removePhoto(id: string) {
 }
 
 function save() {
+  if (done.value) return
   submitted.value = true
   if (Object.keys(errors.value).length) return
   const data = {
@@ -135,46 +189,91 @@ function save() {
   } else {
     saved = grow.addEntry({ ...data, plantId: props.plantId, type: kind.value })
   }
-  notify(isEdit.value ? 'Entry updated' : `${info.value.verb} logged`, { icon: info.value.icon })
+  notify(isEdit.value ? t('entry.updated') : t(`entry.types.${kind.value}.logged`), { icon: info.value.icon })
   emit('saved', saved)
-  open.value = false
+  // let the glyph fill before the sheet drops away
+  done.value = true
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  closeTimer = setTimeout(() => {
+    open.value = false
+  }, reduce ? 0 : 460)
 }
 </script>
 
 <template>
   <BottomSheet
     v-model:open="open"
-    :title="`${isEdit ? 'Edit' : 'Log'} ${info.label.toLowerCase()}`"
-    :icon="info.icon"
+    :title="t(`entry.types.${kind}.${isEdit ? 'edit' : 'log'}`)"
     :icon-color="info.color"
   >
+    <template #icon>
+      <GrowIcon
+        :name="info.glyph"
+        draw
+        glow
+        :stroke-width="1.4"
+        class="entry-glyph"
+        :class="{ filled: done }"
+      />
+    </template>
+
     <form
       class="form-stack"
       novalidate
       @submit.prevent="save"
     >
+      <div
+        v-if="!isEdit"
+        class="types chips"
+        role="group"
+        :aria-label="t('entry.entryType')"
+      >
+        <button
+          v-for="x in loggable"
+          :key="x.type"
+          type="button"
+          class="chip type-chip"
+          :style="{ '--c': x.color }"
+          :aria-pressed="kind === x.type"
+          @click="pick(x.type)"
+        >
+          <GrowIcon
+            :name="x.glyph"
+            class="type-glyph"
+          />
+          {{ x.label }}
+        </button>
+      </div>
+
       <template v-if="has('water', 'feed')">
         <div class="field">
           <label
             class="field-label"
             for="e-amount"
-          >Amount (ml)</label>
-          <input
-            id="e-amount"
-            v-model.number="form.amountMl"
-            class="input"
-            type="number"
-            inputmode="decimal"
-            min="0"
-            step="any"
-            placeholder="e.g. 1000"
-          >
+          >{{ t('entry.amount') }}</label>
+          <div class="unit-input">
+            <input
+              id="e-amount"
+              v-model.number="form.amountMl"
+              class="input num"
+              :class="{ invalid: submitted && errors.amountMl }"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="any"
+              placeholder="1000"
+            >
+            <span
+              class="unit"
+              aria-hidden="true"
+            >ml</span>
+          </div>
           <div class="quick">
             <button
               v-for="v in [250, 500, 1000, 2000]"
               :key="v"
               type="button"
-              class="chip"
+              class="chip num"
               :aria-pressed="form.amountMl === v"
               @click="form.amountMl = v"
             >
@@ -195,14 +294,14 @@ function save() {
         <label
           class="field-label"
           for="e-nutrients"
-        >Nutrients</label>
+        >{{ t('entry.nutrients') }}</label>
         <input
           id="e-nutrients"
           v-model="form.nutrients"
           class="input"
-          placeholder="e.g. Grow 2 ml/L, CalMag 1 ml/L"
+          :placeholder="t('entry.nutrientsPlaceholder')"
         >
-        <span class="field-hint">Tip: the Tools tab can calculate the mix for you.</span>
+        <span class="field-hint">{{ t('entry.nutrientsHint') }}</span>
       </div>
 
       <div
@@ -213,47 +312,65 @@ function save() {
           <label
             class="field-label"
             for="e-height"
-          >Height (cm)</label>
-          <input
-            id="e-height"
-            v-model.number="form.heightCm"
-            class="input"
-            type="number"
-            inputmode="decimal"
-            min="0"
-            step="any"
-          >
+          >{{ t('entry.height') }}</label>
+          <div class="unit-input">
+            <input
+              id="e-height"
+              v-model.number="form.heightCm"
+              class="input num"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="any"
+            >
+            <span
+              class="unit"
+              aria-hidden="true"
+            >cm</span>
+          </div>
         </div>
         <div class="field">
           <label
             class="field-label"
             for="e-temp"
-          >Temp (°C)</label>
-          <input
-            id="e-temp"
-            v-model.number="form.tempC"
-            class="input"
-            type="number"
-            inputmode="decimal"
-            step="any"
-          >
+          >{{ t('entry.temperature') }}</label>
+          <div class="unit-input">
+            <input
+              id="e-temp"
+              v-model.number="form.tempC"
+              class="input num"
+              type="number"
+              inputmode="decimal"
+              step="any"
+            >
+            <span
+              class="unit"
+              aria-hidden="true"
+            >°C</span>
+          </div>
         </div>
         <div class="field">
           <label
             class="field-label"
             for="e-rh"
-          >Humidity (%)</label>
-          <input
-            id="e-rh"
-            v-model.number="form.humidity"
-            class="input"
-            :class="{ invalid: submitted && errors.humidity }"
-            type="number"
-            inputmode="decimal"
-            min="0"
-            max="100"
-            step="any"
-          >
+          >{{ t('entry.humidity') }}</label>
+          <div class="unit-input">
+            <input
+              id="e-rh"
+              v-model.number="form.humidity"
+              class="input num"
+              :class="{ invalid: submitted && errors.humidity }"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              max="100"
+              step="any"
+            >
+            <span
+              class="unit"
+              aria-hidden="true"
+            >{{ t('entry.rhUnit') }}</span>
+          </div>
           <span
             v-if="submitted && errors.humidity"
             class="field-error"
@@ -273,7 +390,7 @@ function save() {
           <input
             id="e-ph"
             v-model.number="form.ph"
-            class="input"
+            class="input num"
             :class="{ invalid: submitted && errors.ph }"
             type="number"
             inputmode="decimal"
@@ -281,7 +398,15 @@ function save() {
             max="14"
             step="0.1"
             placeholder="6.2"
+            aria-describedby="e-ph-range"
           >
+          <span
+            id="e-ph-range"
+            class="range num"
+            :data-state="rangeState(form.ph, phRange)"
+          >
+            <i aria-hidden="true" />{{ phRange.min.toFixed(1) }}–{{ phRange.max.toFixed(1) }} {{ phRange.label }}
+          </span>
           <span
             v-if="submitted && errors.ph"
             class="field-error"
@@ -291,17 +416,32 @@ function save() {
           <label
             class="field-label"
             for="e-ec"
-          >EC (mS/cm)</label>
-          <input
-            id="e-ec"
-            v-model.number="form.ec"
-            class="input"
-            type="number"
-            inputmode="decimal"
-            min="0"
-            step="0.1"
-            placeholder="1.4"
+          >EC</label>
+          <div class="unit-input">
+            <input
+              id="e-ec"
+              v-model.number="form.ec"
+              class="input num"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="0.1"
+              placeholder="1.4"
+              :aria-describedby="ecRange ? 'e-ec-range' : undefined"
+            >
+            <span
+              class="unit"
+              aria-hidden="true"
+            >mS/cm</span>
+          </div>
+          <span
+            v-if="ecRange"
+            id="e-ec-range"
+            class="range num"
+            :data-state="rangeState(form.ec, ecRange)"
           >
+            <i aria-hidden="true" />{{ ecRange.min.toFixed(1) }}–{{ ecRange.max.toFixed(1) }} {{ ecRange.label }}
+          </span>
         </div>
       </div>
       <span
@@ -313,10 +453,10 @@ function save() {
         v-if="has('train')"
         class="field"
       >
-        <span class="field-label">Method</span>
+        <span class="field-label">{{ t('entry.method') }}</span>
         <div class="method-grid">
           <button
-            v-for="m in TRAINING_METHODS"
+            v-for="m in trainingMethods()"
             :key="m.value"
             type="button"
             class="chip"
@@ -335,12 +475,12 @@ function save() {
         <label
           class="field-label"
           for="e-product"
-        >Product / treatment</label>
+        >{{ t('entry.product') }}</label>
         <input
           id="e-product"
           v-model="form.product"
           class="input"
-          placeholder="e.g. Neem oil, sticky traps"
+          :placeholder="t('entry.productPlaceholder')"
         >
       </div>
 
@@ -348,14 +488,14 @@ function save() {
         <label
           class="field-label"
           for="e-note"
-        >{{ kind === 'photo' ? 'Caption' : 'Note' }}</label>
+        >{{ kind === 'photo' ? t('entry.caption') : t('entry.note') }}</label>
         <textarea
           id="e-note"
           v-model="form.note"
           class="input"
           :class="{ invalid: submitted && errors.note }"
           :rows="kind === 'note' ? 5 : 3"
-          :placeholder="kind === 'note' ? 'What did you notice today?' : 'Optional'"
+          :placeholder="kind === 'note' ? t('entry.notePlaceholder') : t('entry.optional')"
         />
         <span
           v-if="submitted && errors.note"
@@ -364,7 +504,7 @@ function save() {
       </div>
 
       <div class="field">
-        <span class="field-label">Photos</span>
+        <span class="field-label">{{ t('entry.photos') }}</span>
         <div class="photos">
           <div
             v-for="id in form.photoIds"
@@ -378,7 +518,7 @@ function save() {
             <button
               type="button"
               class="photo-remove"
-              aria-label="Remove photo"
+              :aria-label="t('entry.removePhoto')"
               @click="removePhoto(id)"
             >
               <UIcon
@@ -398,7 +538,7 @@ function save() {
               class="size-6"
               :class="{ 'animate-spin': busy }"
             />
-            <span>{{ busy ? 'Saving…' : 'Add' }}</span>
+            <span>{{ busy ? t('entry.savingPhoto') : t('entry.addPhoto') }}</span>
           </button>
         </div>
         <span
@@ -411,11 +551,11 @@ function save() {
         <label
           class="field-label"
           for="e-date"
-        >Date</label>
+        >{{ t('entry.date') }}</label>
         <input
           id="e-date"
           v-model="form.date"
-          class="input"
+          class="input num"
           :class="{ invalid: submitted && errors.date }"
           type="date"
           :max="todayISO()"
@@ -431,7 +571,7 @@ function save() {
         class="sr-only"
         tabindex="-1"
       >
-        Save
+        {{ t('entry.save') }}
       </button>
     </form>
 
@@ -439,33 +579,171 @@ function save() {
       <button
         type="button"
         class="btn"
+        :disabled="done"
         @click="open = false"
       >
-        Cancel
+        {{ t('entry.cancel') }}
       </button>
       <button
         type="button"
-        class="btn btn-primary"
+        class="btn btn-primary save"
+        :class="{ done }"
         :disabled="busy"
+        :aria-disabled="done"
         @click="save"
       >
         <UIcon
           name="i-tabler-check"
-          class="size-5"
+          class="size-5 save-check"
         />
-        {{ isEdit ? 'Save' : 'Log it' }}
+        {{ done ? (isEdit ? t('entry.saved') : t('entry.logged')) : (isEdit ? t('entry.save') : t('entry.logIt')) }}
       </button>
     </template>
   </BottomSheet>
 </template>
 
 <style scoped>
+.entry-glyph {
+  font-size: 40px;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.entry-glyph :deep(.tint path) {
+  transition: fill-opacity var(--dur-slow) var(--ease-out);
+}
+
+.entry-glyph.filled {
+  animation: glyph-pop 460ms var(--ease-out);
+}
+
+.entry-glyph.filled :deep(.tint path) {
+  fill-opacity: 0.85;
+}
+
+@keyframes glyph-pop {
+  40% {
+    transform: scale(1.14);
+  }
+}
+
+.types {
+  margin: 0 -20px;
+  padding: 0 20px 2px;
+  scroll-padding-inline: 20px;
+}
+
+.type-chip {
+  min-height: 44px;
+  padding: 0 14px 0 11px;
+}
+
+.type-glyph {
+  font-size: 18px;
+  color: var(--c);
+  opacity: 0.75;
+  transition: opacity var(--dur) ease;
+}
+
+.type-chip[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  border-color: color-mix(in srgb, var(--c) 40%, transparent);
+  color: var(--text);
+}
+
+.type-chip[aria-pressed="true"] .type-glyph {
+  opacity: 1;
+}
+
+.unit-input {
+  position: relative;
+}
+
+.unit-input .input {
+  padding-right: 64px;
+}
+
+.unit {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.num::-webkit-outer-spin-button,
+.num::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+input.num[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.range i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dark-arc);
+  transition: background var(--dur) ease, box-shadow var(--dur) ease;
+}
+
+.range[data-state="in"] {
+  color: var(--text-2);
+}
+
+.range[data-state="in"] i {
+  background: var(--leaf);
+  box-shadow: 0 0 6px rgba(155, 227, 107, 0.6);
+}
+
+.range[data-state="out"] {
+  color: var(--lamp);
+}
+
+.range[data-state="out"] i {
+  background: var(--lamp);
+}
+
 .quick,
 .method-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 4px;
+}
+
+.quick .chip,
+.method-grid .chip {
+  min-height: 44px;
+}
+
+.save-check {
+  display: none;
+}
+
+.save.done .save-check {
+  display: inline-block;
+  animation: check-in 300ms var(--ease-out);
+}
+
+@keyframes check-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
 }
 
 .photos {
@@ -481,6 +759,7 @@ function save() {
   border-radius: 12px;
   overflow: hidden;
   background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .photo.add {
@@ -490,6 +769,7 @@ function save() {
   justify-content: center;
   gap: 4px;
   border: 1px dashed var(--accent-line);
+  background: transparent;
   color: var(--accent);
   font-size: 12px;
   font-weight: 600;
@@ -497,16 +777,23 @@ function save() {
 
 .photo-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 26px;
-  height: 26px;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 5px;
   border: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: none;
   color: #fff;
+}
+
+.photo-remove > * {
+  box-sizing: content-box;
+  padding: 4px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.72);
 }
 </style>
