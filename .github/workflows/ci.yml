@@ -103,5 +103,7 @@ jobs:
             android/app/build/outputs/bundle/release/*.aab
           tag_name: build-v${{ steps.package_version.outputs.VERSION }}-${{ github.run_number }}
           body: |
-            Automated Android build for version **${{ steps.package_version.outputs.VERSION }}**
+            📱 **BudBuddy ${{ steps.package_version.outputs.VERSION }}** — automated Android build.
+
+            Install `app-debug.apk` below on your Android device (`app-release.apk` is signed only when the keystore secrets are set).
             Commit: ${{ github.sha }}
