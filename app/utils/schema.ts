@@ -4,6 +4,7 @@ import { detectLocale, isLocale } from './locale'
 import type {
   EntryType,
   GrowData,
+  GuideProgress,
   Harvest,
   HealthLevel,
   JournalEntry,
@@ -53,8 +54,36 @@ export function emptyData(): GrowData {
     plants: [],
     entries: [],
     tasks: [],
-    settings: { growerName: '', initialized: false, lightsOn: '06:00', lightHours: 18, language: detectLocale(), reminders: false, reminderTime: '18:00', onboarded: false, demo: false }
+    settings: { growerName: '', initialized: false, lightsOn: '06:00', lightHours: 18, language: detectLocale(), reminders: false, reminderTime: '18:00', onboarded: false, demo: false },
+    guide: emptyGuide()
   }
+}
+
+export function emptyGuide(): GuideProgress {
+  return { done: [], quiz: {}, checks: {}, environment: null, medium: null }
+}
+
+const GUIDE_MEDIA = ['soil', 'coco', 'hydro'] as const
+
+export function normalizeGuide(raw: unknown): GuideProgress {
+  const g = emptyGuide()
+  if (!raw || typeof raw !== 'object') return g
+  const r = raw as Record<string, unknown>
+  if (Array.isArray(r.done)) g.done = [...new Set(r.done.filter((d): d is string => typeof d === 'string'))]
+  if (r.quiz && typeof r.quiz === 'object') {
+    for (const [k, v] of Object.entries(r.quiz)) {
+      const n = num(v)
+      if (n !== null && n >= 0) g.quiz[k] = Math.round(n)
+    }
+  }
+  if (r.checks && typeof r.checks === 'object') {
+    for (const [k, v] of Object.entries(r.checks)) {
+      if (Array.isArray(v)) g.checks[k] = [...new Set(v.filter((i): i is number => Number.isInteger(i) && i >= 0))]
+    }
+  }
+  g.environment = LOCATIONS.includes(r.environment as Location) ? (r.environment as Location) : null
+  g.medium = (GUIDE_MEDIA as readonly unknown[]).includes(r.medium) ? (r.medium as GuideProgress['medium']) : null
+  return g
 }
 
 function normalizeStage(v: unknown): StageId {
@@ -167,6 +196,7 @@ export function normalizeData(raw: unknown): GrowData {
     onboarded: s.onboarded === true || (s.onboarded === undefined && data.plants.length > 0),
     demo: s.demo === true
   }
+  data.guide = normalizeGuide(r.guide)
   return data
 }
 

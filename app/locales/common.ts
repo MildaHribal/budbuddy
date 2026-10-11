@@ -20,7 +20,7 @@ export default {
     plants: { one: '{n} plant', other: '{n} plants' },
     photos: { one: '{n} photo', other: '{n} photos' },
     entries: { one: '{n} entry', other: '{n} entries' },
-    nav: { home: 'Home', plants: 'Plants', ai: 'AI', gallery: 'Gallery', tools: 'Tools', main: 'Main' },
+    nav: { home: 'Home', plants: 'Plants', ai: 'AI', gallery: 'Gallery', guide: 'Guide', tools: 'Tools', main: 'Main' },
     loading: 'Loading',
     loadError: 'Your data could not be loaded.',
     loadErrorHint: 'Nothing was changed or overwritten – please restart the app.'
@@ -46,7 +46,7 @@ export default {
     plants: { one: '{n} rostlina', few: '{n} rostliny', other: '{n} rostlin' },
     photos: { one: '{n} fotka', few: '{n} fotky', other: '{n} fotek' },
     entries: { one: '{n} záznam', few: '{n} záznamy', other: '{n} záznamů' },
-    nav: { home: 'Domů', plants: 'Rostliny', ai: 'AI', gallery: 'Galerie', tools: 'Nástroje', main: 'Hlavní' },
+    nav: { home: 'Domů', plants: 'Rostliny', ai: 'AI', gallery: 'Galerie', guide: 'Průvodce', tools: 'Nástroje', main: 'Hlavní' },
     loading: 'Načítání',
     loadError: 'Data se nepodařilo načíst.',
     loadErrorHint: 'Nic se nezměnilo ani nepřepsalo – restartuj prosím aplikaci.'

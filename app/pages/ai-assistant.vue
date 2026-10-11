@@ -118,8 +118,14 @@ function autosize() {
   el.style.height = `${Math.min(el.scrollHeight, 140)}px`
 }
 
-async function attachPhoto() {
-  const file = await pickImage()
+const attachMenu = ref(false)
+useBackHandler(attachMenu, () => {
+  attachMenu.value = false
+})
+
+async function attachPhoto(source: 'camera' | 'gallery') {
+  attachMenu.value = false
+  const file = await pickImage(source === 'camera' ? 'environment' : undefined)
   if (file) photo.value = file
 }
 
@@ -151,6 +157,11 @@ function scroller(): HTMLElement | null {
   return bottom.value?.closest<HTMLElement>('.app-scroll') ?? null
 }
 
+// wait for the keyboard to slide in before scrolling
+function onComposerFocus() {
+  setTimeout(() => scrollToEnd(false), 350)
+}
+
 function scrollToEnd(smooth = true) {
   nextTick(() => {
     const el = scroller()
@@ -179,6 +190,10 @@ function citedSet(m: AssistantMessage): Set<number> {
 }
 
 const openSources = reactive(new Set<string>())
+const allSources = reactive(new Set<string>())
+const citedSources = (m: AssistantMessage) => (m.sources ?? []).filter(s => citedSet(m).has(s.n))
+const shownSources = (m: AssistantMessage) => (allSources.has(m.id) || !citedSources(m).length ? m.sources ?? [] : citedSources(m))
+const isLast = (m: AssistantMessage) => m === messages.value[messages.value.length - 1]
 const highlighted = ref<string | null>(null)
 
 function toggleSources(id: string) {
@@ -213,8 +228,6 @@ const EVIDENCE_TONE: Record<DiagHit['evidence'], string> = {
   'weak': 'var(--warning)',
   'transfer-only': 'var(--text-3)'
 }
-
-const needsSettings = (m: AssistantMessage) => ['model', 'quota'].includes(m.errorCode ?? '')
 
 // ── Status notices ────────────────────────────────────────────────
 const offlineNotice = computed(() => {
@@ -416,7 +429,7 @@ onMounted(async () => {
                 >
                   <div class="diag-line">
                     <span class="diag-label">{{ d.label }}</span>
-                    <span class="diag-p">{{ Math.round(d.p * 100) }} %</span>
+                    <span class="diag-p">{{ d.p < 0.005 ? '<1' : Math.round(d.p * 100) }} %</span>
                   </div>
                   <div class="progress">
                     <div :style="{ width: `${Math.round(d.p * 100)}%`, background: EVIDENCE_TONE[d.evidence] }" />
@@ -480,13 +493,6 @@ onMounted(async () => {
                       />
                       {{ t('ai.page.retry') }}
                     </button>
-                    <NuxtLink
-                      v-if="needsSettings(m)"
-                      to="/settings#ai"
-                      class="btn btn-soft btn-sm"
-                    >
-                      {{ t('ai.page.settingsLink') }}
-                    </NuxtLink>
                   </div>
                 </div>
               </div>
@@ -505,7 +511,7 @@ onMounted(async () => {
                     name="i-tabler-books"
                     class="size-4"
                   />
-                  {{ t('ai.page.sources', { n: citedSet(m).size || m.sources.length }) }}
+                  {{ citedSources(m).length ? t('ai.page.sources', { n: citedSources(m).length }) : t('ai.page.allSources', { n: m.sources.length }) }}
                   <UIcon
                     name="i-tabler-chevron-down"
                     class="size-4 chev"
@@ -517,7 +523,7 @@ onMounted(async () => {
                   class="sources-list"
                 >
                   <li
-                    v-for="s in m.sources"
+                    v-for="s in shownSources(m)"
                     :id="`src-${m.id}-${s.n}`"
                     :key="s.n"
                     :class="{ unused: citedSet(m).size && !citedSet(m).has(s.n), flash: highlighted === `${m.id}-${s.n}` }"
@@ -539,7 +545,48 @@ onMounted(async () => {
                       <span class="src-snippet">{{ s.snippet }}</span>
                     </div>
                   </li>
+                  <li
+                    v-if="citedSources(m).length && citedSources(m).length < m.sources.length"
+                    class="sources-more"
+                  >
+                    <button
+                      type="button"
+                      class="link"
+                      @click="allSources.has(m.id) ? allSources.delete(m.id) : allSources.add(m.id)"
+                    >
+                      {{ allSources.has(m.id) ? t('ai.page.citedSources') : t('ai.page.allSources', { n: m.sources.length }) }}
+                    </button>
+                  </li>
                 </ol>
+              </div>
+
+              <div
+                v-if="isLast(m) && !m.pending && (m.replies?.length || m.askPhoto)"
+                class="reply-chips"
+              >
+                <button
+                  v-if="m.askPhoto"
+                  type="button"
+                  class="chip active"
+                  :disabled="busy"
+                  @click="attachMenu = true"
+                >
+                  <UIcon
+                    name="i-tabler-camera-plus"
+                    class="size-4"
+                  />
+                  {{ t('ai.page.attachPhoto') }}
+                </button>
+                <button
+                  v-for="r in m.replies"
+                  :key="r"
+                  type="button"
+                  class="chip"
+                  :disabled="busy"
+                  @click="send(r)"
+                >
+                  {{ r }}
+                </button>
               </div>
 
               <div
@@ -569,6 +616,39 @@ onMounted(async () => {
 
     <div class="composer">
       <div
+        v-if="attachMenu"
+        class="attach-scrim"
+        @click="attachMenu = false"
+      />
+      <div
+        v-if="attachMenu"
+        class="attach-menu"
+        role="menu"
+      >
+        <button
+          type="button"
+          role="menuitem"
+          @click="attachPhoto('camera')"
+        >
+          <UIcon
+            name="i-tabler-camera"
+            class="size-5"
+          />
+          {{ t('ai.page.takePhoto') }}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          @click="attachPhoto('gallery')"
+        >
+          <UIcon
+            name="i-tabler-photo"
+            class="size-5"
+          />
+          {{ t('ai.page.fromGallery') }}
+        </button>
+      </div>
+      <div
         v-if="photoPreview"
         class="preview"
       >
@@ -594,11 +674,12 @@ onMounted(async () => {
           class="composer-btn"
           :class="{ active: photo }"
           :aria-label="t('ai.page.attachPhoto')"
+          :aria-expanded="attachMenu"
           :disabled="busy"
-          @click="attachPhoto"
+          @click="attachMenu = !attachMenu"
         >
           <UIcon
-            name="i-tabler-camera-plus"
+            name="i-tabler-plus"
             class="size-[22px]"
           />
         </button>
@@ -612,6 +693,7 @@ onMounted(async () => {
           enterkeyhint="enter"
           @input="autosize"
           @keydown="onKeydown"
+          @focus="onComposerFocus"
         />
         <button
           v-if="busy"
@@ -997,6 +1079,7 @@ onMounted(async () => {
 }
 
 .diag-p {
+  white-space: nowrap;
   color: var(--text-2);
   font-weight: 300;
   font-variant-numeric: tabular-nums;
@@ -1100,6 +1183,21 @@ onMounted(async () => {
 
 .sources-list li.flash {
   background: var(--lamp-soft);
+}
+
+.sources-list li.sources-more {
+  padding-left: 38px;
+}
+
+.reply-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reply-chips .chip {
+  white-space: normal;
+  text-align: left;
 }
 
 .sources-list li.unused {
@@ -1371,7 +1469,63 @@ a.src-title {
   position: relative;
 }
 
+/* Keyboard open: the nav slides away and the WebView doesn't resize, so pin the composer above the keyboard. */
+html.kb-open .composer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--kb, 0px);
+  padding-bottom: 10px;
+  box-shadow: 0 -12px 24px -12px rgba(0, 0, 0, 0.7);
+}
+
+html.kb-open .messages {
+  padding-bottom: 110px;
+}
+
+.attach-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.attach-menu {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: 20px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  animation: msg-in var(--dur) var(--ease-out) both;
+}
+
+.attach-menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  text-align: left;
+}
+
+.attach-menu button:active {
+  background: var(--accent-soft);
+}
+
 .composer-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-end;
   gap: 6px;

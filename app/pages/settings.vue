@@ -63,13 +63,12 @@ async function toggleReminders() {
 const ai = useAiSettings()
 const testing = ref(false)
 const testResult = ref<{ ok: boolean, text: string } | null>(null)
-const modelHint = computed(() => ai.provider.value.models.find(m => m.id === ai.model.value)?.hint)
 
 async function testAi() {
   testing.value = true
   testResult.value = null
   try {
-    const version = await ai.provider.value.test(ai.model.value)
+    const version = await ai.provider.value.test()
     testResult.value = { ok: true, text: t('ai.settings.testOk', { version }) }
   } catch (e) {
     testResult.value = { ok: false, text: (e as Error).message || t('ai.settings.testFailed') }
@@ -411,29 +410,6 @@ async function erase() {
           </h2>
         </div>
         <div class="card pad form-stack">
-          <div class="field">
-            <label
-              class="field-label"
-              for="ai-model"
-            >{{ t('ai.settings.model') }}</label>
-            <select
-              id="ai-model"
-              v-model="ai.model.value"
-              class="input"
-            >
-              <option
-                v-for="m in ai.provider.value.models"
-                :key="m.id"
-                :value="m.id"
-              >
-                {{ m.label }}
-              </option>
-            </select>
-            <span
-              v-if="modelHint"
-              class="field-hint"
-            >{{ modelHint }}</span>
-          </div>
           <button
             type="button"
             class="btn btn-soft"

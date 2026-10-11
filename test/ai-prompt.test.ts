@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { DiagResult } from '../app/ai/diagnose'
 import type { KbHit } from '../app/ai/kb'
-import { buildKbQuery, buildTurnText, citedNumbers, describeLight, formatPassages, prepareHistory, summarizePlant, systemInstruction } from '../app/ai/prompt'
+import { buildKbQuery, buildTurnText, citedNumbers, describeLight, formatPassages, isSmallTalk, prepareHistory, selectPassages, summarizePlant, systemInstruction } from '../app/ai/prompt'
 import type { JournalEntry, Plant } from '../app/types/grow'
 import { blankEntry } from '../app/utils/entries'
 import { locale } from '../app/utils/locale'
@@ -114,9 +114,13 @@ describe('describeLight', () => {
 
 describe('systemInstruction', () => {
   it('asks for the selected language and translated facts', () => {
-    expect(systemInstruction('cs')).toContain('Vždy česky')
+    expect(systemInstruction('cs')).toContain('odpovídej vždy česky')
     expect(systemInstruction('cs')).toContain('převeď do češtiny')
-    expect(systemInstruction('en')).toContain('Always in English')
+    expect(systemInstruction('en')).toContain('always answer in English')
+    for (const lang of ['cs', 'en'] as const) {
+      expect(systemInstruction(lang)).toContain('<<reply:')
+      expect(systemInstruction(lang)).toContain('<<photo>>')
+    }
     expect(systemInstruction('en')).toContain('translate the facts')
     locale.value = 'en'
     expect(systemInstruction()).toBe(systemInstruction('en'))
@@ -174,6 +178,10 @@ describe('turn assembly', () => {
     expect(formatPassages(hits)).toContain('[2] Forum (forum/corpus – less reliable, en)')
   })
 
+  it('omits the passages section when search was skipped', () => {
+    expect(buildTurnText({ question: 'ahoj', passages: null })).not.toContain('## Úryvky')
+  })
+
   it('explains missing knowledge base and classifier', () => {
     const text = buildTurnText({ question: '', photoWithoutClassifier: true, kbAvailable: false })
     expect(text).toContain('Klasifikátor na zařízení není k dispozici')
@@ -200,6 +208,24 @@ describe('prepareHistory', () => {
     ])
     const long = Array.from({ length: 30 }, (_, i) => ({ role: i % 2 ? 'assistant' as const : 'user' as const, text: `t${i}` }))
     expect(prepareHistory(long, 3)).toHaveLength(6)
+  })
+})
+
+describe('isSmallTalk', () => {
+  it('recognises greetings and thanks only', () => {
+    for (const q of ['Ahoj!', 'čau', 'jak se máš?', 'Díky moc', 'Dobrý den', 'Hi there', 'hello', 'thanks!']) {
+      expect(isSmallTalk(q), q).toBe(true)
+    }
+    for (const q of ['ahoj, proč žloutnou listy?', 'kolik je 2+2', 'jaké pH v hlíně', '']) expect(isSmallTalk(q), q).toBe(false)
+  })
+})
+
+describe('selectPassages', () => {
+  const hit = (id: string, kind: KbHit['kind']): KbHit => ({ id, kind, title: id, text: id, lang: 'cs', score: 1 })
+  it('prefers curated passages, caps forum text and keeps search order', () => {
+    const hits = [hit('c1', 'corpus'), hit('k1', 'knowledge'), hit('c2', 'corpus'), hit('c3', 'corpus'), hit('f1', 'feeding_chart'), hit('c4', 'corpus'), hit('c5', 'corpus')]
+    expect(selectPassages(hits, 5, 2).map(h => h.id)).toEqual(['c1', 'k1', 'c2', 'f1'])
+    expect(selectPassages(hits, 3, 3).map(h => h.id)).toEqual(['c1', 'k1', 'f1'])
   })
 })
 

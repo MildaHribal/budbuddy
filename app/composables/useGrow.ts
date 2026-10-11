@@ -45,6 +45,7 @@ function replaceState(data: GrowData) {
   state.entries = data.entries
   state.tasks = data.tasks
   state.settings = data.settings
+  state.guide = data.guide
 }
 
 async function readLegacy(): Promise<LegacyInput | null> {
@@ -380,7 +381,9 @@ async function eraseAll() {
 
 async function loadDemo() {
   await photoStore.clear()
-  replaceState(await demoWithPhotos())
+  const demo = await demoWithPhotos()
+  demo.guide = JSON.parse(JSON.stringify(state.guide))
+  replaceState(demo)
   await writeNow()
 }
 
@@ -415,6 +418,7 @@ export function useGrow() {
     importBackup,
     eraseAll,
     loadDemo,
-    updateSettings: (patch: Partial<GrowData['settings']>) => Object.assign(state.settings, patch)
+    updateSettings: (patch: Partial<GrowData['settings']>) => Object.assign(state.settings, patch),
+    updateGuide: (patch: Partial<GrowData['guide']>) => Object.assign(state.guide, patch)
   }
 }

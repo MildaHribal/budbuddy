@@ -3,7 +3,7 @@ import handler, { validateChatRequest } from '../netlify/functions/chat.mts'
 
 const URL = 'https://example.netlify.app/api/chat'
 const valid = {
-  model: 'gemini-flash-latest',
+  model: 'gemini-3.8-flash',
   systemInstruction: { parts: [{ text: 'sys' }] },
   contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/jpeg', data: 'AAAA' } }, { text: 'Ahoj' }] }],
   generationConfig: { maxOutputTokens: 999_999, temperature: 0.5 }
@@ -19,12 +19,14 @@ describe('validateChatRequest', () => {
     const r = validateChatRequest({ ...valid, tools: [{ googleSearch: {} }] })
     expect('error' in r).toBe(false)
     if ('error' in r) return
-    expect(r.body.generationConfig).toEqual({ maxOutputTokens: 4096, temperature: 0.5, thinkingConfig: { thinkingBudget: 1024 } })
+    expect(r.body.generationConfig).toEqual({ maxOutputTokens: 2048, temperature: 0.5, thinkingConfig: { thinkingBudget: 0 } })
     expect(r.body).not.toHaveProperty('tools')
   })
 
   it('rejects unknown models and malformed contents', () => {
-    expect(validateChatRequest({ ...valid, model: 'gemini-3.1-pro-preview' })).toEqual({ error: 'Model is not allowed.' })
+    expect(validateChatRequest({ ...valid, model: 'gemini-flash-latest' })).toEqual({ error: 'Model is not allowed.' })
+    const thinking = validateChatRequest({ ...valid, generationConfig: { thinkingConfig: { thinkingBudget: 2048 } } })
+    expect('error' in thinking ? null : thinking.body.generationConfig).toEqual({ maxOutputTokens: 1536, thinkingConfig: { thinkingBudget: 0 } })
     expect(validateChatRequest({ ...valid, contents: [] })).toHaveProperty('error')
     expect(validateChatRequest({ ...valid, contents: [{ role: 'system', parts: [{ text: 'x' }] }] })).toHaveProperty('error')
     expect(validateChatRequest({ ...valid, contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'text/html', data: 'AAAA' } }] }] })).toHaveProperty('error')
@@ -78,16 +80,36 @@ describe('chat function', () => {
     expect(res.headers.get('content-type')).toContain('text/event-stream')
     expect(await res.text()).toContain('"Ahoj"')
     const [url, init] = fetchMock.mock.calls[0]!
-    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent?alt=sse')
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent?alt=sse')
     expect(init.headers['x-goog-api-key']).toBe('test-key')
     expect(url).not.toContain('test-key')
   })
 
-  it('maps upstream quota errors', async () => {
+  it('reports upstream quota errors as a final stream event', async () => {
+    const lastEvent = async (res: Response) => JSON.parse((await res.text()).trim().split('\n').pop()!.replace(/^data: /, '')).budbuddy.error
     fetchMock.mockResolvedValue(Response.json({ error: { status: 'RESOURCE_EXHAUSTED', details: [{ retryDelay: '12.5s' }] } }, { status: 429 }))
     const res = await post(valid)
-    expect(res.status).toBe(429)
-    expect((await res.json()).error).toEqual({ reason: 'quota', message: 'Gemini quota exceeded.', retryAfterSec: 13 })
+    expect(res.status).toBe(200)
+    expect(await lastEvent(res)).toEqual({ reason: 'quota', message: 'Gemini quota exceeded.', retryAfterSec: 13 })
+
+    fetchMock.mockResolvedValue(Response.json({ error: { status: 'RESOURCE_EXHAUSTED', details: [
+      { violations: [{ quotaId: 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', quotaValue: '20' }] },
+      { retryDelay: '41s' }
+    ] } }, { status: 429 }))
+    expect(await lastEvent(await post(valid))).toEqual({ reason: 'quota', message: 'Gemini quota exceeded.', retryAfterSec: 41, daily: true, limit: 20 })
+  })
+
+  it('sends headers and a first byte before Gemini answers', async () => {
+    let release: (r: Response) => void = () => {}
+    fetchMock.mockReturnValue(new Promise<Response>((r) => {
+      release = r
+    }))
+    const res = await post(valid)
+    expect(res.status).toBe(200)
+    const reader = res.body!.getReader()
+    expect(new TextDecoder().decode((await reader.read()).value)).toBe(': ok\n\n')
+    release(sse({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }))
+    expect(new TextDecoder().decode((await reader.read()).value)).toContain('"ok"')
   })
 
   it('ends a broken stream with a final event', async () => {

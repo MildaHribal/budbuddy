@@ -6,7 +6,8 @@ import type { DiagHit, DiagResult } from '~/ai/diagnose'
 import type { KbHit } from '~/ai/kb'
 import { LlmError, type LlmErrorCode } from '~/ai/llm'
 import { translate } from '~/composables/useI18n'
-import { buildKbQuery, buildTurnText, prepareHistory, summarizePlant, systemInstruction, type HistoryTurn } from '~/ai/prompt'
+import { parseAnswer } from '~/ai/markers'
+import { buildKbQuery, buildTurnText, isSmallTalk, prepareHistory, selectPassages, summarizePlant, systemInstruction, type HistoryTurn } from '~/ai/prompt'
 import { createId } from '~/utils/id'
 import { locale } from '~/utils/locale'
 import { blobToDataUrl, compressImage } from '~/utils/image'
@@ -34,6 +35,10 @@ export interface AssistantMessage {
   diagModel?: string
   unsupported?: string[]
   sources?: AssistantSource[]
+  /** suggested quick replies from a <<reply: …>> marker */
+  replies?: string[]
+  /** the model asked for a photo (<<photo>>) */
+  askPhoto?: boolean
   error?: string
   errorCode?: LlmErrorCode
   model?: string
@@ -89,7 +94,7 @@ function initOffline(baseURL: string) {
     classifierState.value = 'loading'
     import('~/ai/diagnose')
       .then(async (mod) => {
-        const ok = await mod.initClassifier(`${base}ai/classifier/`)
+        const ok = await mod.initClassifier(`${base}ai/classifier/`, `${base}ai/ort/`)
         diagnoseMod.value = ok ? mod : null
         classifierState.value = ok ? 'ready' : 'missing'
       })
@@ -102,6 +107,7 @@ function initOffline(baseURL: string) {
     kbState.value = 'loading'
     import('~/ai/kb')
       .then(async (mod) => {
+        mod.configureKb({ wasmPaths: `${base}ai/ort/` })
         const ok = await mod.initKb(`${base}ai/kb/`)
         kbMod.value = ok ? mod : null
         kbState.value = ok ? 'ready' : 'missing'
@@ -150,7 +156,6 @@ async function ask({ threadKey, question, file = null }: AskInput) {
   const grow = useGrow()
   const ai = aiSettings
   if (!ai) return
-  await ai.ready()
   const list = thread(threadKey)
   const history = historyOf(list)
   lastThread.value = threadKey
@@ -198,23 +203,24 @@ async function ask({ threadKey, question, file = null }: AskInput) {
       ? summarizePlant({ plant, entries: grow.state.entries, tasks: grow.state.tasks, light: grow.state.settings })
       : null
 
-    let passages: KbHit[] = []
+    // null = no search for small talk; [] = searched (or no knowledge pack) and nothing found
+    let passages: KbHit[] | null = !file && isSmallTalk(question) ? null : []
     const kb = kbMod.value
-    if (kb) {
+    if (kb && passages) {
       reply.status = translate('ai.status.kb')
       try {
-        passages = await kb.searchKb(buildKbQuery(question, diagnosis), 12)
+        passages = selectPassages(await kb.searchKb(buildKbQuery(question, diagnosis), 12))
       } catch (e) {
+        passages = []
         console.warn('[BudBuddy] knowledge search failed', e)
       }
     }
-    reply.sources = toSources(passages)
+    reply.sources = toSources(passages ?? [])
     if (signal.aborted) throw new LlmError('aborted', translate('ai.errors.aborted'))
 
     const provider = ai.provider.value
     reply.status = translate('ai.status.asking', { provider: provider.label })
     const answer = await provider.generate({
-      model: ai.model.value,
       system: systemInstruction(),
       history: prepareHistory(history),
       userText: buildTurnText({
@@ -228,12 +234,16 @@ async function ask({ threadKey, question, file = null }: AskInput) {
       image,
       signal,
       onText: (text) => {
-        reply.text = text
+        reply.text = parseAnswer(text).text
         reply.status = undefined
       }
     })
-    reply.text = answer.text
-    reply.model = answer.modelVersion ?? ai.model.value
+    const parsed = parseAnswer(answer.text)
+    if (!parsed.text && !parsed.replies.length) throw new LlmError('empty', translate('ai.errors.empty'))
+    reply.text = parsed.text
+    reply.replies = parsed.replies.length ? parsed.replies : undefined
+    reply.askPhoto = parsed.photo || undefined
+    reply.model = answer.modelVersion ?? provider.model
     lastAttempt.delete(threadKey)
   } catch (e) {
     const err = e instanceof LlmError ? e : new LlmError('unknown', translate('ai.errors.generic'))

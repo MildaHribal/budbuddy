@@ -127,10 +127,22 @@ export interface Settings {
   demo: boolean
 }
 
+export interface GuideProgress {
+  /** finished lesson ids */
+  done: string[]
+  /** quiz key (lesson id) → best number of correct answers */
+  quiz: Record<string, number>
+  /** checklist id → ticked item indexes */
+  checks: Record<string, number[]>
+  environment: Location | null
+  medium: Exclude<Medium, 'other'> | null
+}
+
 export interface GrowData {
   version: 2
   plants: Plant[]
   entries: JournalEntry[]
   tasks: Task[]
   settings: Settings
+  guide: GuideProgress
 }

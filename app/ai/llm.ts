@@ -13,7 +13,6 @@ export interface LlmImage {
 }
 
 export interface LlmRequest {
-  model: string
   system: string
   history: ChatTurn[]
   /** includes plant context, diagnosis and numbered passages */
@@ -38,19 +37,13 @@ export class LlmError extends Error {
   }
 }
 
-export interface LlmModel {
-  id: string
-  label: string
-  hint?: string
-}
-
 export interface LlmProvider {
   id: string
   label: string
-  models: LlmModel[]
-  defaultModel: string
+  model: string
   generate(req: LlmRequest): Promise<LlmAnswer>
-  test(model: string): Promise<string>
+  /** resolves with the model version that answered */
+  test(): Promise<string>
 }
 
 export function networkError(e: unknown): LlmError {

@@ -1,5 +1,6 @@
 // Gemini via the Netlify proxy (netlify/functions/chat.mts); the key stays on the server.
-import { AI_MODELS, DEFAULT_AI_MODEL } from '../../../shared/aiModels'
+import { AI_MODEL } from '../../../shared/aiModels'
+import { formatTime } from '../../utils/date'
 import { translate, type Params } from '../../composables/useI18n'
 import { LlmError, networkError, type ChatTurn, type LlmAnswer, type LlmImage, type LlmProvider, type LlmRequest } from '../llm'
 
@@ -46,7 +47,23 @@ const msg = (key: string, params?: Params) => translate(`ai.errors.${key}`, para
 const safetyError = () => new LlmError('safety', msg('safety'))
 
 interface ProxyErrorBody {
-  error?: { reason?: string, message?: string, retryAfterSec?: number }
+  error?: { reason?: string, message?: string, retryAfterSec?: number, daily?: boolean, limit?: number }
+}
+
+/** Free-tier daily quotas reset at midnight Pacific time; returns e.g. "zítra kolem 9:00". */
+export function quotaResetLabel(now = new Date()): string {
+  let msLeft: number
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour12: false, hour: 'numeric', minute: 'numeric', second: 'numeric' }).formatToParts(now)
+    const get = (type: string) => Number(parts.find(p => p.type === type)?.value ?? 0)
+    msLeft = (24 * 3600 - ((get('hour') % 24) * 3600 + get('minute') * 60 + get('second'))) * 1000
+  } catch {
+    msLeft = (24 * 3600 * 1000) - ((now.getTime() - 8 * 3600 * 1000) % (24 * 3600 * 1000))
+  }
+  const reset = new Date(now.getTime() + msLeft)
+  reset.setSeconds(0, 0)
+  const sameDay = reset.toDateString() === now.toDateString()
+  return msg(sameDay ? 'resetToday' : 'resetTomorrow', { time: formatTime(reset.toISOString()).replace(/^0(\d)/, '$1') })
 }
 
 export function proxyError(status: number, body: ProxyErrorBody | null, model: string): LlmError {
@@ -61,6 +78,10 @@ export function proxyError(status: number, body: ProxyErrorBody | null, model: s
     case 'forbidden_origin':
       return new LlmError('not-configured', msg('forbiddenOrigin'))
     case 'quota': {
+      if (err.daily) {
+        const limit = err.limit ? msg('quotaLimit', { n: err.limit }) : ''
+        return new LlmError('quota', msg('quotaDaily', { limit, when: quotaResetLabel() }))
+      }
       const wait = err.retryAfterSec ? msg('quotaWait', { sec: err.retryAfterSec }) : ''
       return new LlmError('quota', msg('quota', { wait }), err.retryAfterSec)
     }
@@ -84,7 +105,8 @@ interface StreamChunk {
   promptFeedback?: { blockReason?: string }
   modelVersion?: string
   error?: { message?: string }
-  budbuddy?: { error?: string }
+  /** string = stream cut off; object = Gemini error reported after the headers were sent */
+  budbuddy?: { error?: string | NonNullable<ProxyErrorBody['error']> }
 }
 
 interface RunningAnswer extends LlmAnswer {
@@ -95,8 +117,10 @@ interface RunningAnswer extends LlmAnswer {
 const BLOCK_REASONS = new Set(['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII', 'IMAGE_SAFETY'])
 
 export function applyChunk(answer: RunningAnswer, chunk: StreamChunk): void {
-  if (chunk.budbuddy?.error) {
-    answer.cutOff = chunk.budbuddy.error
+  const late = chunk.budbuddy?.error
+  if (typeof late === 'object') throw proxyError(502, { error: late }, AI_MODEL)
+  if (late) {
+    answer.cutOff = late
     return
   }
   if (chunk.error) throw new LlmError('overloaded', msg('unfinished'))
@@ -116,7 +140,7 @@ export function finishAnswer(answer: RunningAnswer): LlmAnswer {
     if (answer.cutOff) throw new LlmError('overloaded', msg('broken'))
     if (reason && BLOCK_REASONS.has(reason)) throw safetyError()
     if (reason === 'RECITATION') throw new LlmError('safety', msg('recitation'))
-    throw new LlmError('empty', msg('empty'))
+    throw new LlmError('empty', reason && reason !== 'STOP' ? msg('emptyReason', { reason }) : msg('empty'))
   }
   let text = answer.text
   const note = answer.cutOff === 'timeout'
@@ -140,7 +164,7 @@ export function createProxyProvider(endpoint: ProxyEndpoint): LlmProvider {
           ...(endpoint.token ? { 'X-BudBuddy-Token': endpoint.token } : {})
         },
         body: JSON.stringify({
-          model: req.model,
+          model: AI_MODEL,
           systemInstruction: { parts: [{ text: req.system }] },
           contents: toGeminiContents(req.history, req.userText, req.image)
         }),
@@ -153,7 +177,7 @@ export function createProxyProvider(endpoint: ProxyEndpoint): LlmProvider {
         } catch {
           // e.g. Netlify's own rate-limit response
         }
-        throw proxyError(res.status, body, req.model)
+        throw proxyError(res.status, body, AI_MODEL)
       }
 
       const handle = (data: string) => {
@@ -194,14 +218,11 @@ export function createProxyProvider(endpoint: ProxyEndpoint): LlmProvider {
     get label() {
       return translate('ai.provider')
     },
-    get models() {
-      return AI_MODELS.map(m => ({ id: m.id, label: translate(`ai.models.${m.key}.label`), hint: translate(`ai.models.${m.key}.hint`) }))
-    },
-    defaultModel: DEFAULT_AI_MODEL,
+    model: AI_MODEL,
     generate,
-    async test(model) {
-      const res = await generate({ model, system: translate('ai.test.system'), history: [], userText: translate('ai.test.prompt') })
-      return res.modelVersion ?? model
+    async test() {
+      const res = await generate({ system: translate('ai.test.system'), history: [], userText: translate('ai.test.prompt') })
+      return res.modelVersion ?? AI_MODEL
     }
   }
 }

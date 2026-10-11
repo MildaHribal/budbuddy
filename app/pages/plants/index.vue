@@ -73,7 +73,17 @@ function rowStyle(plant: Plant, index: number) {
     <AppHeader
       :title="t('plants.list.title')"
       :subtitle="t('plants.list.subtitle', { active: counts.active, archived: counts.archive })"
-    />
+    >
+      <template #actions>
+        <NuxtLink
+          to="/gallery"
+          class="icon-btn"
+          :aria-label="t('common.nav.gallery')"
+        >
+          <GrowIcon name="gallery" />
+        </NuxtLink>
+      </template>
+    </AppHeader>
 
     <div class="page">
       <div class="controls">

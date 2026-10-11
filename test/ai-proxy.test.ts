@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { locale } from '../app/utils/locale'
-import { applyChunk, finishAnswer, parseSse, proxyError, toGeminiContents } from '../app/ai/providers/proxy'
+import { applyChunk, finishAnswer, parseSse, proxyError, quotaResetLabel, toGeminiContents } from '../app/ai/providers/proxy'
 
 describe('proxy provider', () => {
   beforeEach(() => {
@@ -47,6 +47,23 @@ describe('proxy provider', () => {
     expect(proxyError(429, null, 'm').code).toBe('rate-limit')
     expect(proxyError(404, null, 'm').message).toContain('/api/chat')
     expect(proxyError(502, { error: { reason: 'model' } }, 'gemini-x').message).toContain('gemini-x')
+  })
+
+  it('explains the daily free quota with the local reset time', () => {
+    const daily = proxyError(429, { error: { reason: 'quota', daily: true, limit: 20 } }, 'm')
+    expect(daily.code).toBe('quota')
+    expect(daily.message).toMatch(/^Denní limit bezplatné AI \(20 dotazů\) je vyčerpaný, obnoví se (dnes|zítra) kolem \d{1,2}:00\.$/)
+    // 07:00 UTC is 00:00 PDT -> the reset is 24 h later; 06:00 UTC is 23:00 PDT -> one hour later
+    const tz = (d: Date) => `${String(d.getHours())}:00`
+    expect(quotaResetLabel(new Date(Date.UTC(2026, 9, 11, 6, 0)))).toContain(tz(new Date(Date.UTC(2026, 9, 11, 7, 0))))
+  })
+
+  it('turns a late in-stream quota error into the daily-limit message', () => {
+    expect(() => applyChunk({ text: '' }, { budbuddy: { error: { reason: 'quota', message: '', daily: true, limit: 20 } } })).toThrow(/Denní limit bezplatné AI \(20 dotazů\)/)
+  })
+
+  it('shows why an answer came back empty', () => {
+    expect(() => finishAnswer({ text: '', finishReason: 'MALFORMED_FUNCTION_CALL' } as never)).toThrow(/MALFORMED_FUNCTION_CALL/)
   })
 
   it('explains server errors in English', () => {

@@ -1,0 +1,205 @@
+/* Shared building blocks for guide widgets (rendered inside GuideInteractive's card). */
+.gw {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.gw-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.gw-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.gw-big {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.gw-unit {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-3);
+}
+
+.gw-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.gw-text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.gw-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.gw-range-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.gw-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.gw-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.gw-hint {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+
+.gw-range {
+  --fill: var(--leaf);
+  --pct: 50%;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.gw-range.lamp {
+  --fill: var(--lamp);
+}
+
+.gw-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fill) 55%, transparent) var(--pct), #0b0d10 var(--pct));
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.gw-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #0b0d10;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.gw-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fill) 55%, transparent);
+}
+
+.gw-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;
+  border-radius: 50%;
+  background: var(--fill);
+  border: 4px solid #0b0d10;
+  box-shadow: 0 0 0 1px var(--fill), 0 0 14px color-mix(in srgb, var(--fill) 55%, transparent);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.gw-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--fill);
+  border: 4px solid #0b0d10;
+  box-shadow: 0 0 0 1px var(--fill), 0 0 14px color-mix(in srgb, var(--fill) 55%, transparent);
+}
+
+.gw-range:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.gw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gw .chip {
+  min-height: 44px;
+}
+
+.gw .segmented button {
+  min-height: 44px;
+  font-size: 13px;
+  padding: 0 6px;
+}
+
+.gw-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gw-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.gw-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--leaf);
+  box-shadow: 0 0 8px rgba(155, 227, 107, 0.6);
+}
+
+.gw-fade-enter-active {
+  transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+}
+
+.gw-fade-leave-active {
+  transition: opacity var(--dur-fast) ease;
+}
+
+.gw-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.gw-fade-leave-to {
+  opacity: 0;
+}

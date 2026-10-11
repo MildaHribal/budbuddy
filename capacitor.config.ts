@@ -10,6 +10,10 @@ const config: CapacitorConfig = {
     adjustMarginsForEdgeToEdge: 'force'
   },
   plugins: {
+    // we lift the UI ourselves via --kb (see plugins/keyboard.client.ts)
+    Keyboard: {
+      resize: 'none'
+    },
     LocalNotifications: {
       smallIcon: 'ic_stat_budbuddy',
       iconColor: '#9BE36B'

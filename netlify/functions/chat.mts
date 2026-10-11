@@ -1,15 +1,11 @@
 // AI proxy: validates the app's Gemini request and streams the answer back.
 // The key comes only from the GEMINI_API_KEY env var.
-import { isAllowedModel } from '../../shared/aiModels'
+import { AI_GENERATION, isAllowedModel } from '../../shared/aiModels'
 
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models'
 const MAX_BODY_BYTES = 6_000_000
 // Netlify stops a function (streaming included) after 60 s; end cleanly before that.
 const DEADLINE_MS = 55_000
-const MAX_OUTPUT_TOKENS = 4096
-const DEFAULT_OUTPUT_TOKENS = 2048
-const MAX_THINKING_TOKENS = 2048
-const DEFAULT_THINKING_TOKENS = 1024
 const MAX_CONTENTS = 24
 const MAX_PARTS = 8
 const MAX_IMAGES = 3
@@ -37,8 +33,8 @@ function cors(origin: string | null): Record<string, string> {
   }
 }
 
-const fail = (status: number, reason: ErrorReason, message: string, headers: Record<string, string>, retryAfterSec?: number) =>
-  Response.json({ error: { reason, message, ...(retryAfterSec ? { retryAfterSec } : {}) } }, { status, headers })
+const fail = (status: number, reason: ErrorReason, message: string, headers: Record<string, string>, extra: Record<string, unknown> = {}) =>
+  Response.json({ error: { reason, message, ...extra } }, { status, headers })
 
 const clamp = (v: unknown, min: number, max: number, fallback: number) =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : fallback
@@ -83,7 +79,7 @@ export function validateChatRequest(raw: unknown): { model: string, body: Gemini
     contents.push({ role: c.role, parts })
   }
 
-  const body: GeminiBody = { contents, generationConfig: { maxOutputTokens: DEFAULT_OUTPUT_TOKENS, thinkingConfig: { thinkingBudget: DEFAULT_THINKING_TOKENS } } }
+  const body: GeminiBody = { contents, generationConfig: { maxOutputTokens: AI_GENERATION.defaultOutputTokens, thinkingConfig: { thinkingBudget: AI_GENERATION.thinkingBudget } } }
   const sys = (r.systemInstruction as { parts?: { text?: unknown }[] } | undefined)?.parts
   if (sys !== undefined) {
     if (!Array.isArray(sys) || sys.length > 4 || sys.some(p => typeof p?.text !== 'string' || p.text.length > MAX_TEXT)) {
@@ -93,30 +89,46 @@ export function validateChatRequest(raw: unknown): { model: string, body: Gemini
   }
 
   const gen = (r.generationConfig ?? {}) as Record<string, unknown>
-  body.generationConfig.maxOutputTokens = clamp(gen.maxOutputTokens, 64, MAX_OUTPUT_TOKENS, DEFAULT_OUTPUT_TOKENS)
-  const thinking = (gen.thinkingConfig ?? {}) as Record<string, unknown>
-  body.generationConfig.thinkingConfig.thinkingBudget = clamp(thinking.thinkingBudget, 0, MAX_THINKING_TOKENS, DEFAULT_THINKING_TOKENS)
+  body.generationConfig.maxOutputTokens = clamp(gen.maxOutputTokens, 64, AI_GENERATION.maxOutputTokens, AI_GENERATION.defaultOutputTokens)
   if (typeof gen.temperature === 'number' && gen.temperature >= 0 && gen.temperature <= 2) body.generationConfig.temperature = gen.temperature
 
   return { model: r.model, body }
 }
 
 interface UpstreamError {
-  error?: { message?: string, status?: string, details?: { reason?: string, retryDelay?: string }[] }
+  error?: {
+    message?: string
+    status?: string
+    details?: { reason?: string, retryDelay?: string, violations?: { quotaId?: string, quotaValue?: string }[] }[]
+  }
 }
 
-function upstreamFailure(status: number, data: UpstreamError | null, headers: Record<string, string>): Response {
+export interface ProxyError {
+  reason: ErrorReason
+  message: string
+  retryAfterSec?: number
+  daily?: boolean
+  limit?: number
+}
+
+export function upstreamError(status: number, data: UpstreamError | null): ProxyError {
   const details = data?.error?.details ?? []
   if (status === 429) {
     const delay = Number.parseFloat(details.find(d => d.retryDelay)?.retryDelay ?? '')
-    return fail(429, 'quota', 'Gemini quota exceeded.', headers, Number.isFinite(delay) ? Math.ceil(delay) : undefined)
+    const daily = details.flatMap(d => d.violations ?? []).find(v => /PerDay/i.test(v.quotaId ?? ''))
+    const limit = Number(daily?.quotaValue)
+    return {
+      reason: 'quota',
+      message: 'Gemini quota exceeded.',
+      ...(Number.isFinite(delay) ? { retryAfterSec: Math.ceil(delay) } : {}),
+      ...(daily ? { daily: true } : {}),
+      ...(Number.isFinite(limit) && limit > 0 ? { limit } : {})
+    }
   }
-  if (status === 401 || status === 403 || details.some(d => d.reason === 'API_KEY_INVALID')) {
-    return fail(502, 'server_key', 'The server API key was rejected.', headers)
-  }
-  if (status === 404) return fail(502, 'model', 'Model not available.', headers)
-  if (status === 400) return fail(400, 'bad_request', data?.error?.message ?? 'Bad request.', headers)
-  return fail(502, 'upstream', `Gemini error ${status}.`, headers)
+  if (status === 401 || status === 403 || details.some(d => d.reason === 'API_KEY_INVALID')) return { reason: 'server_key', message: 'The server API key was rejected.' }
+  if (status === 404) return { reason: 'model', message: 'Model not available.' }
+  if (status === 400) return { reason: 'bad_request', message: data?.error?.message ?? 'Bad request.' }
+  return { reason: 'upstream', message: `Gemini error ${status}.` }
 }
 
 export default async (req: Request): Promise<Response> => {
@@ -147,60 +159,48 @@ export default async (req: Request): Promise<Response> => {
   const checked = validateChatRequest(raw)
   if ('error' in checked) return fail(400, 'bad_request', checked.error, headers)
 
+  // Headers and a first byte go out at once, before Gemini answers, so the CDN never sees an idle
+  // connection; everything after that (Gemini errors, cut-offs) arrives as a final budbuddy event.
+  // The deadline timer is unref'd (AbortSignal.timeout), so no pending handle keeps the function alive.
   const abort = new AbortController()
-  let timedOut = false
-  const timer = setTimeout(() => {
-    timedOut = true
-    abort.abort()
-  }, DEADLINE_MS - (Date.now() - started))
-
-  let upstream: Response
-  try {
-    upstream = await fetch(`${GEMINI}/${checked.model}:streamGenerateContent?alt=sse`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify(checked.body),
-      signal: abort.signal
-    })
-  } catch {
-    clearTimeout(timer)
-    return timedOut ? fail(504, 'timeout', 'Gemini did not answer in time.', headers) : fail(502, 'upstream', 'Could not reach Gemini.', headers)
-  }
-
-  if (!upstream.ok || !upstream.body) {
-    clearTimeout(timer)
-    let data: UpstreamError | null = null
-    try {
-      data = await upstream.json()
-    } catch {
-      // not JSON
-    }
-    console.error(`[chat] upstream ${upstream.status} for ${checked.model}`)
-    return upstreamFailure(upstream.status, data, headers)
-  }
-
-  // Pass SSE through; on a break or the deadline, end with a final budbuddy event.
-  const reader = upstream.body.getReader()
+  const deadline = AbortSignal.timeout(Math.max(1000, DEADLINE_MS - (Date.now() - started)))
+  const signal = AbortSignal.any([abort.signal, deadline])
   const encoder = new TextEncoder()
+  const event = (error: ProxyError | ErrorReason) => encoder.encode(`\n\ndata: ${JSON.stringify({ budbuddy: { error } })}\n\n`)
+  const model = checked.model
+
   const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
+    async start(controller) {
+      controller.enqueue(encoder.encode(': ok\n\n'))
       try {
-        const { done, value } = await reader.read()
-        if (done) {
-          clearTimeout(timer)
-          controller.close()
+        const upstream = await fetch(`${GEMINI}/${model}:streamGenerateContent?alt=sse`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+          body: JSON.stringify(checked.body),
+          signal
+        })
+        console.log(`[chat] upstream ${upstream.status} after ${Date.now() - started} ms`)
+        if (!upstream.ok || !upstream.body) {
+          const data = await upstream.json().catch(() => null) as UpstreamError | null
+          controller.enqueue(event(upstreamError(upstream.status, data)))
         } else {
-          controller.enqueue(value)
+          const reader = upstream.body.getReader()
+          for (;;) {
+            const { done, value } = await reader.read()
+            if (done) break
+            controller.enqueue(value)
+          }
+          console.log(`[chat] done after ${Date.now() - started} ms`)
         }
       } catch {
-        clearTimeout(timer)
-        const reason: ErrorReason = timedOut ? 'timeout' : 'upstream'
-        controller.enqueue(encoder.encode(`\n\ndata: ${JSON.stringify({ budbuddy: { error: reason } })}\n\n`))
-        controller.close()
+        if (!abort.signal.aborted) {
+          console.error(`[chat] ${deadline.aborted ? 'deadline' : 'upstream failure'} after ${Date.now() - started} ms`)
+          controller.enqueue(event(deadline.aborted ? 'timeout' : 'upstream'))
+        }
       }
+      if (!abort.signal.aborted) controller.close()
     },
     cancel() {
-      clearTimeout(timer)
       abort.abort()
     }
   })

@@ -1,17 +1,11 @@
-// Shared by the app (model picker) and the Netlify proxy (allowlist).
-export interface AiModel {
-  id: string
-  /** label/hint key in app/locales/ai.ts (models.<key>) */
-  key: string
+// The one model the app uses; the Netlify proxy accepts nothing else.
+export const AI_MODEL = 'gemini-3.8-flash'
+
+// Enforced by the proxy. No thinking: ~2.5 s instead of ~9 s (low) for a short answer.
+export const AI_GENERATION = {
+  thinkingBudget: 0,
+  defaultOutputTokens: 1536,
+  maxOutputTokens: 2048
 }
 
-export const AI_MODELS: AiModel[] = [
-  { id: 'gemini-flash-latest', key: 'flash' },
-  { id: 'gemini-3.8-flash', key: 'flash38' },
-  { id: 'gemini-flash-lite-latest', key: 'lite' },
-  { id: 'gemini-2.5-flash', key: 'flash25' }
-]
-
-export const DEFAULT_AI_MODEL = 'gemini-flash-latest'
-
-export const isAllowedModel = (id: unknown): id is string => AI_MODELS.some(m => m.id === id)
+export const isAllowedModel = (id: unknown): id is string => id === AI_MODEL

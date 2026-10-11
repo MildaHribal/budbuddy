@@ -553,6 +553,21 @@ input[type="time"].input::-webkit-calendar-picker-indicator {
   }
 }
 
+/* On-screen keyboard: nav hides, content gets room above the keyboard */
+.bottom-nav {
+  transition: transform var(--dur) var(--ease-out), opacity var(--dur) ease;
+}
+
+.kb-open .bottom-nav {
+  transform: translateY(110%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kb-open .app-scroll {
+  padding-bottom: calc(var(--kb, 0px) + 16px);
+}
+
 /* Route transitions */
 .page-enter-active {
   transition: opacity var(--dur) var(--ease-out), transform var(--dur-slow) var(--ease-out);

@@ -135,19 +135,21 @@ export function usePhotoUrl(id: Ref<string | null | undefined>) {
 }
 
 /** Opens the system file picker and resolves with the chosen image (or null). */
-export function pickImage(): Promise<File | null> {
-  return pickFile('image/*')
+/** `capture` opens the camera directly; without it the system offers the gallery. */
+export function pickImage(capture?: 'environment' | 'user'): Promise<File | null> {
+  return pickFile('image/*', capture)
 }
 
 /**
  * Opens the system file picker. The input is attached to the document because
  * some Android WebViews drop the change event of detached inputs.
  */
-export function pickFile(accept: string): Promise<File | null> {
+export function pickFile(accept: string, capture?: 'environment' | 'user'): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = accept
+    if (capture) input.setAttribute('capture', capture)
     input.style.display = 'none'
     document.body.appendChild(input)
     const done = (file: File | null) => {

@@ -3,7 +3,6 @@ export default {
   en: {
     settings: {
       title: 'AI assistant',
-      model: 'Model',
       test: 'Test',
       testOk: 'The server works – model {version} answered.',
       testFailed: 'The test failed.',
@@ -25,15 +24,18 @@ export default {
       diagTitle: 'On-device diagnosis',
       unsupported: 'The classifier cannot recognise: {list}',
       retry: 'Try again',
-      settingsLink: 'Settings',
       sources: 'Sources ({n})',
       unused: ' · not used',
+      allSources: 'Show all ({n})',
+      citedSources: 'Show cited only',
       copy: 'Copy answer',
       copied: 'Answer copied',
       copyFailed: 'Copying failed',
       selectedPhoto: 'Selected photo',
       removePhoto: 'Remove photo',
       attachPhoto: 'Attach photo',
+      takePhoto: 'Take photo',
+      fromGallery: 'From gallery',
       placeholder: 'Ask anything about growing…',
       placeholderPlant: 'Ask about {name}…',
       question: 'Question',
@@ -44,12 +46,6 @@ export default {
       confirmGeneral: 'The current general chat will be deleted.'
     },
     provider: 'Gemini (BudBuddy server)',
-    models: {
-      flash: { label: 'Gemini Flash (latest)', hint: 'Recommended – always the current Flash' },
-      flash38: { label: 'Gemini 3.8 Flash', hint: 'Pinned version' },
-      lite: { label: 'Gemini Flash-Lite (latest)', hint: 'Faster, higher daily limit, a bit weaker' },
-      flash25: { label: 'Gemini 2.5 Flash', hint: 'Older, fallback' }
-    },
     test: {
       system: 'Answer with one word.',
       prompt: 'Write: works'
@@ -62,9 +58,13 @@ export default {
       serverKey: 'The AI server has an invalid Gemini key. It has to be fixed in the Netlify settings.',
       unauthorized: 'The AI server rejected this app version (app token mismatch). Update the app.',
       forbiddenOrigin: 'The AI server does not accept requests from this address.',
-      quota: 'Gemini limit reached.{wait} The free Gemini tier has per-minute and daily limits; the daily one resets at midnight Pacific time. Try again later, or switch to Flash-Lite (higher limits) in Settings → AI assistant.',
+      quota: 'Too many AI questions in a short time.{wait} Wait a moment and try again.',
+      quotaDaily: 'The daily limit of the free AI{limit} is used up. It resets {when}.',
+      quotaLimit: ' ({n} questions)',
+      resetToday: 'today around {time}',
+      resetTomorrow: 'tomorrow around {time}',
       quotaWait: ' Next try in {sec} s at the earliest.',
-      model: 'Model “{model}” is not available right now. Pick another one in Settings → AI assistant.',
+      model: 'Model “{model}” is not available right now. Try again later.',
       tooLarge: 'The request is too large for the server. Try a smaller photo or start a new conversation.',
       timeout: 'Gemini did not answer in time (the server has a 60 s limit). Try again or ask a shorter question.',
       badRequest: 'The server rejected the request: {message}',
@@ -78,6 +78,7 @@ export default {
       unfinished: 'Gemini did not finish the answer. Try again.',
       broken: 'The connection to Gemini dropped. Try again.',
       empty: 'Gemini returned an empty answer. Please try again.',
+      emptyReason: 'Gemini returned no text (reason: {reason}). Please try again.',
       photo: 'The photo could not be loaded. Try another one (JPEG or PNG).',
       generic: 'Something went wrong. Please try again.'
     },
@@ -199,7 +200,6 @@ export default {
   cs: {
     settings: {
       title: 'AI asistent',
-      model: 'Model',
       test: 'Otestovat',
       testOk: 'Server funguje – odpověděl model {version}.',
       testFailed: 'Test se nepovedl.',
@@ -221,15 +221,18 @@ export default {
       diagTitle: 'Diagnóza na zařízení',
       unsupported: 'Klasifikátor nepozná: {list}',
       retry: 'Zkusit znovu',
-      settingsLink: 'Nastavení',
       sources: 'Zdroje ({n})',
       unused: ' · nepoužito',
+      allSources: 'Zobrazit všechny ({n})',
+      citedSources: 'Jen citované',
       copy: 'Kopírovat odpověď',
       copied: 'Odpověď zkopírována',
       copyFailed: 'Kopírování se nepodařilo',
       selectedPhoto: 'Vybraná fotka',
       removePhoto: 'Odebrat fotku',
       attachPhoto: 'Přiložit fotku',
+      takePhoto: 'Vyfotit',
+      fromGallery: 'Z galerie',
       placeholder: 'Zeptej se na cokoliv o pěstování…',
       placeholderPlant: 'Zeptej se na {name}…',
       question: 'Otázka',
@@ -240,12 +243,6 @@ export default {
       confirmGeneral: 'Dosavadní obecný chat se smaže.'
     },
     provider: 'Gemini (server BudBuddy)',
-    models: {
-      flash: { label: 'Gemini Flash (nejnovější)', hint: 'Doporučeno – vždy aktuální Flash' },
-      flash38: { label: 'Gemini 3.8 Flash', hint: 'Pevná verze' },
-      lite: { label: 'Gemini Flash-Lite (nejnovější)', hint: 'Rychlejší, vyšší denní limit, o něco slabší' },
-      flash25: { label: 'Gemini 2.5 Flash', hint: 'Starší, záloha' }
-    },
     test: {
       system: 'Odpověz jedním slovem.',
       prompt: 'Napiš: funguje'
@@ -258,9 +255,13 @@ export default {
       serverKey: 'AI server má neplatný klíč Gemini. Je potřeba ho opravit v nastavení Netlify.',
       unauthorized: 'AI server odmítl tuto verzi aplikace (nesedí token aplikace). Aktualizuj aplikaci.',
       forbiddenOrigin: 'AI server nepřijímá dotazy z této adresy.',
-      quota: 'Vyčerpaný limit Gemini.{wait} Bezplatný tarif Gemini má limit dotazů za minutu a za den; denní limit se obnovuje o půlnoci pacifického času (u nás kolem 9:00). Zkus to později, nebo v Nastavení → AI asistent přepni na Flash-Lite, který má vyšší limity.',
+      quota: 'Příliš mnoho dotazů na AI v krátké době.{wait} Chvíli počkej a zkus to znovu.',
+      quotaDaily: 'Denní limit bezplatné AI{limit} je vyčerpaný, obnoví se {when}.',
+      quotaLimit: ' ({n} dotazů)',
+      resetToday: 'dnes kolem {time}',
+      resetTomorrow: 'zítra kolem {time}',
       quotaWait: ' Další pokus nejdřív za {sec} s.',
-      model: 'Model „{model}“ teď není dostupný. V Nastavení → AI asistent vyber jiný.',
+      model: 'Model „{model}“ teď není dostupný. Zkus to později.',
       tooLarge: 'Dotaz je pro server moc velký. Zkus menší fotku nebo začni novou konverzaci.',
       timeout: 'Gemini neodpověděl včas (server má limit 60 s). Zkus to znovu nebo polož kratší otázku.',
       badRequest: 'Server dotaz odmítl: {message}',
@@ -274,6 +275,7 @@ export default {
       unfinished: 'Gemini odpověď nedokončil. Zkus to znovu.',
       broken: 'Spojení s Gemini se přerušilo. Zkus to znovu.',
       empty: 'Gemini vrátil prázdnou odpověď. Zkus to prosím znovu.',
+      emptyReason: 'Gemini nevrátil žádný text (důvod: {reason}). Zkus to prosím znovu.',
       photo: 'Fotku se nepodařilo načíst. Zkus jinou (JPEG nebo PNG).',
       generic: 'Něco se pokazilo. Zkus to prosím znovu.'
     },
@@ -313,8 +315,8 @@ export default {
       kb: 'znalostní balíček',
       and: ' a ',
       missing: {
-        one: '{what} není nainstalovaný – odpovídá jen {provider} s kontextem rostliny.',
-        other: '{what} nejsou nainstalované – odpovídá jen {provider} s kontextem rostliny.'
+        one: '{what} zatím v aplikaci chybí – odpovídá jen {provider} s kontextem rostliny.',
+        other: '{what} zatím v aplikaci chybí – odpovídá jen {provider} s kontextem rostliny.'
       }
     },
     evidence: {
