@@ -159,46 +159,56 @@ export default async (req: Request): Promise<Response> => {
   const checked = validateChatRequest(raw)
   if ('error' in checked) return fail(400, 'bad_request', checked.error, headers)
 
-  // Headers and a first byte go out at once, before Gemini answers, so the CDN never sees an idle
-  // connection; everything after that (Gemini errors, cut-offs) arrives as a final budbuddy event.
-  // The deadline timer is unref'd (AbortSignal.timeout), so no pending handle keeps the function alive.
+  // Gemini is called before the response starts (thinking is off, so headers arrive in ~1 s);
+  // the body is then pulled chunk by chunk. Starting the fetch after returning stalled on Netlify.
   const abort = new AbortController()
   const deadline = AbortSignal.timeout(Math.max(1000, DEADLINE_MS - (Date.now() - started)))
   const signal = AbortSignal.any([abort.signal, deadline])
   const encoder = new TextEncoder()
   const event = (error: ProxyError | ErrorReason) => encoder.encode(`\n\ndata: ${JSON.stringify({ budbuddy: { error } })}\n\n`)
-  const model = checked.model
+
+  let first: Uint8Array | null = null
+  let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
+  try {
+    const upstream = await fetch(`${GEMINI}/${checked.model}:streamGenerateContent?alt=sse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify(checked.body),
+      signal
+    })
+    console.log(`[chat] upstream ${upstream.status} after ${Date.now() - started} ms`)
+    if (!upstream.ok || !upstream.body) {
+      const data = await upstream.json().catch(() => null) as UpstreamError | null
+      first = event(upstreamError(upstream.status, data))
+    } else {
+      reader = upstream.body.getReader()
+    }
+  } catch {
+    console.error(`[chat] ${deadline.aborted ? 'deadline' : 'upstream failure'} after ${Date.now() - started} ms`)
+    first = event(deadline.aborted ? 'timeout' : 'upstream')
+  }
 
   const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      controller.enqueue(encoder.encode(': ok\n\n'))
+    async pull(controller) {
+      if (!reader) {
+        controller.enqueue(first ?? event('upstream'))
+        controller.close()
+        return
+      }
       try {
-        const upstream = await fetch(`${GEMINI}/${model}:streamGenerateContent?alt=sse`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-          body: JSON.stringify(checked.body),
-          signal
-        })
-        console.log(`[chat] upstream ${upstream.status} after ${Date.now() - started} ms`)
-        if (!upstream.ok || !upstream.body) {
-          const data = await upstream.json().catch(() => null) as UpstreamError | null
-          controller.enqueue(event(upstreamError(upstream.status, data)))
-        } else {
-          const reader = upstream.body.getReader()
-          for (;;) {
-            const { done, value } = await reader.read()
-            if (done) break
-            controller.enqueue(value)
-          }
+        const { done, value } = await reader.read()
+        if (done) {
           console.log(`[chat] done after ${Date.now() - started} ms`)
+          controller.close()
+        } else {
+          controller.enqueue(value)
         }
       } catch {
-        if (!abort.signal.aborted) {
-          console.error(`[chat] ${deadline.aborted ? 'deadline' : 'upstream failure'} after ${Date.now() - started} ms`)
-          controller.enqueue(event(deadline.aborted ? 'timeout' : 'upstream'))
-        }
+        if (abort.signal.aborted) return
+        console.error(`[chat] ${deadline.aborted ? 'deadline' : 'stream failure'} after ${Date.now() - started} ms`)
+        controller.enqueue(event(deadline.aborted ? 'timeout' : 'upstream'))
+        controller.close()
       }
-      if (!abort.signal.aborted) controller.close()
     },
     cancel() {
       abort.abort()

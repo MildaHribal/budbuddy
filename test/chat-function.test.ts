@@ -99,17 +99,12 @@ describe('chat function', () => {
     expect(await lastEvent(await post(valid))).toEqual({ reason: 'quota', message: 'Gemini quota exceeded.', retryAfterSec: 41, daily: true, limit: 20 })
   })
 
-  it('sends headers and a first byte before Gemini answers', async () => {
-    let release: (r: Response) => void = () => {}
-    fetchMock.mockReturnValue(new Promise<Response>((r) => {
-      release = r
-    }))
+  it('streams Gemini chunks through after the upstream responds', async () => {
+    fetchMock.mockResolvedValue(sse({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }))
     const res = await post(valid)
     expect(res.status).toBe(200)
-    const reader = res.body!.getReader()
-    expect(new TextDecoder().decode((await reader.read()).value)).toBe(': ok\n\n')
-    release(sse({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }))
-    expect(new TextDecoder().decode((await reader.read()).value)).toContain('"ok"')
+    expect(res.headers.get('content-type')).toContain('text/event-stream')
+    expect(await res.text()).toContain('"ok"')
   })
 
   it('ends a broken stream with a final event', async () => {
