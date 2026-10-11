@@ -24,6 +24,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'media-overview-pot-mix.webp',
+          caption: { en: 'Potting soil with white perlite: the easiest medium to start with.', cs: 'Zahradní substrát s bílým perlitem: nejjednodušší začátek.' },
+          credit: 'r0bz · CC BY 2.0 (Flickr), resized'
+        },
+        {
           type: 'compare',
           columns: [
             {
@@ -86,6 +92,12 @@ export default {
             en: 'Soil works like a buffer: it holds water, nutrients and life, and smooths out small mistakes in pH or feeding. That is why it is the classic beginner medium.\n\nLook for a **light, well-draining mix**. Garden soil from the yard is too heavy and full of pests. Many growers add 20–30 % **perlite** for air and drainage.',
             cs: 'Hlína funguje jako polštář: drží vodu, živiny i život a vyhladí drobné chyby v pH nebo hnojení. Proto je to klasický substrát pro začátečníky.\n\nHledej **lehkou, dobře propustnou směs**. Hlína ze zahrady je moc těžká a plná škůdců. Hodně pěstitelů přidává 20–30 % **perlitu** kvůli vzduchu a odtoku.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'media-soil-seedling.webp',
+          caption: { en: 'A seedling in a light soil mix. The perlite keeps it airy and drains well.', cs: 'Sazenice v lehké hlíně. Perlit ji drží vzdušnou a dobře odvádí vodu.' },
+          credit: 'Grower · Public domain (Wikimedia Commons)'
         },
         {
           type: 'compare',
@@ -163,6 +175,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'media-coco-brick.webp',
+          caption: { en: 'Coco often comes as a pressed brick. Soak it and it swells to several times its size.', cs: 'Kokos se často prodává jako lisovaná cihla. Po namočení nabobtná na několikanásobek.' },
+          credit: 'MatiasMiika · CC BY 3.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'steps',
           items: [
             {
@@ -212,6 +230,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'media-hydro-buckets.webp',
+          caption: { en: 'Two plants in hydro buckets in a tent. The roots sit in the solution under the lid.', cs: 'Dvě rostliny v hydro kbelících ve stanu. Kořeny jsou pod víkem v roztoku.' },
+          credit: 'Plantlady223 · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'table',
           head: [
             { en: 'System', cs: 'Systém' },
@@ -258,6 +282,12 @@ export default {
           ]
         },
         {
+          type: 'figure',
+          photo: 'media-hydro-roots.webp',
+          caption: { en: 'Healthy hydro roots: white, fine and firm.', cs: 'Zdravé hydro kořeny: bílé, jemné a pevné.' },
+          credit: 'Banana patrol · CC BY-SA 3.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'callout',
           tone: 'warning',
           title: { en: 'Healthy roots are white', cs: 'Zdravé kořeny jsou bílé' },
@@ -279,6 +309,12 @@ export default {
             en: 'Roots need both water and air. Whatever pot you choose, it must let excess water out the bottom. A pot without drainage holes is a swamp in waiting.',
             cs: 'Kořeny potřebují vodu i vzduch. Ať zvolíš jakýkoli květináč, musí spodem pouštět přebytečnou vodu. Květináč bez děr je budoucí bažina.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'media-pots-plastic.webp',
+          caption: { en: 'Young plants in plastic pots standing in saucers, so the runoff has somewhere to go.', cs: 'Mladé rostliny v plastových květináčích na podmiskách, aby měl výtok kam odtéct.' },
+          credit: 'My 420 Tours · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'compare',
@@ -342,6 +378,12 @@ export default {
             en: 'More plants die from too much love than from thirst. Watering is not about a schedule, it is about **reading the pot**. Lift it right after watering and remember the weight. Water again when it feels clearly lighter.',
             cs: 'Víc rostlin zahyne z přehnané péče než žízní. Zálivka není o rozvrhu, ale o **čtení květináče**. Po zálivce ho zvedni a zapamatuj si váhu. Znovu zalij, až bude znatelně lehčí.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'media-watering-seedlings.webp',
+          caption: { en: 'Fresh sprouts need just a little water around the stem, not a soaked pot.', cs: 'Čerstvým klíčkům stačí trocha vody kolem stonku, ne promáčený květináč.' },
+          credit: 'rawpixel · CC0 1.0 (rawpixel)'
         },
         {
           type: 'interactive',

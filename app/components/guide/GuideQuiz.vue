@@ -2,12 +2,14 @@
 import type { QuizQuestion } from '~/guide'
 
 const props = defineProps<{ questions: QuizQuestion[], quizKey: string }>()
+const emit = defineEmits<{ finished: [score: number, total: number] }>()
 const { tr, quizBest, saveQuiz } = useGuide()
 const { t } = useI18n()
 
 const index = ref(0)
 const picked = ref<number | null>(null)
 const score = ref(0)
+const answers = ref<boolean[]>([])
 const finished = ref(false)
 
 const total = computed(() => props.questions.length)
@@ -24,13 +26,16 @@ const verdict = computed(() => {
 function pick(i: number) {
   if (picked.value !== null || !question.value) return
   picked.value = i
-  if (i === question.value.correct) score.value++
+  const right = i === question.value.correct
+  answers.value[index.value] = right
+  if (right) score.value++
 }
 
 function next() {
   if (isLast.value) {
     finished.value = true
     saveQuiz(props.quizKey, score.value)
+    emit('finished', score.value, total.value)
     return
   }
   index.value++
@@ -41,6 +46,7 @@ function retry() {
   index.value = 0
   picked.value = null
   score.value = 0
+  answers.value = []
   finished.value = false
 }
 
@@ -83,11 +89,15 @@ const optionState = (i: number) => {
         <i
           v-for="(_, i) in questions"
           :key="i"
-          :class="{ on: i <= index }"
+          :class="answers[i] === true ? 'right' : answers[i] === false ? 'wrong' : i === index ? 'current' : undefined"
         />
       </div>
       <p class="q-count num">
-        {{ t('guide.quiz.question', { n: index + 1, total }) }}
+        <span>{{ t('guide.quiz.question', { n: index + 1, total }) }}</span>
+        <span
+          v-if="index > 0 || picked !== null"
+          class="so-far"
+        >{{ t('guide.quiz.scoreSoFar', { score }) }}</span>
       </p>
       <p class="q">
         {{ tr(question.q) }}
@@ -103,6 +113,10 @@ const optionState = (i: number) => {
           :aria-pressed="picked === i"
           @click="pick(i)"
         >
+          <span
+            class="opt-key num"
+            aria-hidden="true"
+          >{{ 'ABCDEF'[i] }}</span>
           <span class="opt-text">{{ tr(opt) }}</span>
           <UIcon
             v-if="optionState(i) === 'right'"
@@ -145,7 +159,10 @@ const optionState = (i: number) => {
       class="result"
       aria-live="polite"
     >
-      <p class="score num">
+      <p
+        class="score num"
+        :class="{ low: score / total < 0.6 }"
+      >
         {{ score }}<span>/{{ total }}</span>
       </p>
       <p class="result-label">
@@ -223,14 +240,29 @@ h3 {
   transition: background var(--dur) ease;
 }
 
-.dots i.on {
+.dots i.current {
+  background: color-mix(in srgb, var(--leaf) 45%, var(--surface-3));
+}
+
+.dots i.right {
   background: var(--leaf);
 }
 
+.dots i.wrong {
+  background: color-mix(in srgb, var(--danger) 70%, var(--surface-3));
+}
+
 .q-count {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   margin: 0;
   font-size: 12px;
   color: var(--text-3);
+}
+
+.so-far {
+  color: var(--text-2);
 }
 
 .q {
@@ -288,9 +320,63 @@ h3 {
   opacity: 0.55;
 }
 
+.opt-key {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  transition: color var(--dur) ease, box-shadow var(--dur) ease;
+}
+
+.option.right .opt-key {
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+  color: var(--leaf);
+}
+
+.option.wrong .opt-key {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 50%, transparent);
+  color: #ffb3ba;
+}
+
+.opt-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .opt-mark {
   flex: none;
   font-size: 18px;
+}
+
+.option.right .opt-mark {
+  animation: mark-pop var(--dur-slow) var(--ease-out) both;
+}
+
+.option.wrong {
+  animation: nudge 320ms var(--ease-out);
+}
+
+@keyframes mark-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes nudge {
+  25% {
+    transform: translateX(-4px);
+  }
+
+  60% {
+    transform: translateX(3px);
+  }
 }
 
 .feedback {
@@ -339,6 +425,10 @@ h3 {
   color: var(--leaf);
 }
 
+.score.low {
+  color: var(--text);
+}
+
 .score span {
   font-size: 24px;
   color: var(--text-3);
@@ -361,7 +451,9 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .quiz-body,
   .feedback,
-  .result {
+  .result,
+  .option.right .opt-mark,
+  .option.wrong {
     animation: none;
   }
 }

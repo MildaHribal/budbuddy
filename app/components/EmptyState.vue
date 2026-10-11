@@ -1,31 +1,17 @@
 <script setup lang="ts">
-import { isGlyphName } from '~/utils/glyphs'
+import type { GlyphName } from '~/utils/glyphs'
 
-const props = defineProps<{
-  /** a GrowIcon glyph name, or a legacy i-tabler-* name mapped to the nearest glyph */
-  icon: string
+defineProps<{
+  icon: GlyphName
   title: string
   text?: string
 }>()
-
-const LEGACY: Record<string, string> = {
-  'i-tabler-plant-off': 'seedling',
-  'i-tabler-photo-off': 'photo',
-  'i-tabler-clipboard-list': 'note',
-  'i-tabler-notebook-off': 'note',
-  'i-tabler-basket-off': 'harvest',
-  'i-tabler-mood-empty': 'measure',
-  'i-tabler-search-off': 'plants',
-  'i-tabler-archive': 'curing'
-}
-
-const glyph = computed(() => (isGlyphName(props.icon) ? props.icon : LEGACY[props.icon] ?? 'vegetative'))
 </script>
 
 <template>
   <div class="empty">
     <GrowIcon
-      :name="glyph"
+      :name="icon"
       draw
       glow
       :stroke-width="1.1"

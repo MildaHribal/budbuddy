@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { StageId } from '~/types/grow'
+import { tipGroupOf } from '~/utils/tips'
 
-interface MiniTip { id: string, author_id: string, body: string, helpful_count: number }
+interface MiniTip { id: string, author_id: string, body: string, helpful_count: number, unhelpful_count: number }
 
 const { t } = useI18n()
 const { state } = useGrow()
@@ -17,33 +18,38 @@ const stage = computed<StageId | null>(() => {
   return best
 })
 const info = computed(() => (stage.value ? stageInfo(stage.value) : null))
+const group = computed(() => tipGroupOf(stage.value))
+const groupLabel = computed(() => (group.value ? t(`tips.groups.${group.value.id}`) : ''))
 
 const tips = ref<MiniTip[]>([])
 const shown = computed(() => tips.value.filter(x => !isBlocked(x.author_id)).slice(0, 3))
 
 async function load() {
   tips.value = []
-  if (!stage.value || (typeof navigator !== 'undefined' && !navigator.onLine)) return
+  const g = group.value
+  if (!g || (typeof navigator !== 'undefined' && !navigator.onLine)) return
   try {
     const { data, error } = await useSupabase()
       .from('tips')
-      .select('id, author_id, body, helpful_count')
-      .eq('stage', stage.value)
+      .select('id, author_id, body, helpful_count, unhelpful_count')
+      .in('stage', g.stages)
+      .gt('helpful_count', 0)
       .order('score', { ascending: false })
-      .limit(5)
+      .limit(6)
     if (!error) tips.value = (data ?? []) as MiniTip[]
   } catch {
     tips.value = []
   }
 }
 
-watch(stage, load)
+watch(() => group.value?.id, load)
+const pct = (x: MiniTip) => helpfulShare(x.helpful_count, x.unhelpful_count)?.pct ?? 0
 onMounted(load)
 </script>
 
 <template>
   <section
-    v-if="info && shown.length"
+    v-if="info && group && shown.length"
     class="top-tips"
     aria-labelledby="top-tips-title"
   >
@@ -52,11 +58,14 @@ onMounted(load)
         id="top-tips-title"
         class="section-title"
       >
-        <GrowIcon name="lamp" />
-        {{ t('tips.topTitle', { stage: info.label.toLowerCase() }) }}
+        <GrowIcon
+          :name="info.glyph"
+          :style="{ color: info.color }"
+        />
+        {{ t('tips.topTitle', { stage: groupLabel.toLocaleLowerCase(intlLocale()) }) }}
       </h2>
       <NuxtLink
-        :to="{ path: '/community/tips', query: { stage: info.id } }"
+        :to="{ path: '/community/tips', query: { stage: group.id } }"
         class="link"
       >
         {{ t('tips.topMore') }}
@@ -69,12 +78,15 @@ onMounted(load)
         :key="tip.id"
       >
         <NuxtLink
-          :to="{ path: '/community/tips', query: { stage: info.id } }"
+          :to="{ path: '/community/tips', query: { stage: group.id } }"
           class="item"
         >
           <span class="body">{{ tip.body }}</span>
-          <span class="votes num">
-            <UIcon name="i-tabler-thumb-up" />{{ tip.helpful_count }}
+          <span
+            class="votes num"
+            :aria-label="t('tips.helpfulTo', { pct: pct(tip), n: tip.helpful_count + tip.unhelpful_count })"
+          >
+            <UIcon name="i-tabler-thumb-up" />{{ t('tips.pct', { n: pct(tip) }) }}
           </span>
         </NuxtLink>
       </li>
@@ -83,10 +95,6 @@ onMounted(load)
 </template>
 
 <style scoped>
-.section-title .grow-icon {
-  color: var(--lamp);
-}
-
 .list {
   margin: 0;
   padding: 0;

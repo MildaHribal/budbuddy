@@ -4,6 +4,8 @@ import { Directory, Filesystem } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
 import type { EntryType, JournalEntry, StageId } from '~/types/grow'
 import type { LightboxItem } from '~/components/PhotoLightbox.vue'
+import { isMissingSchema } from '~/utils/dbErrors'
+import { completedWeek, dueWeek, updateStreak, type UpdateRow } from '~/utils/weeklyUpdate'
 
 definePageMeta({ alias: ['/my_trees/:id'] })
 
@@ -45,7 +47,6 @@ const tabIndex = computed(() => Math.max(0, tabs.value.findIndex(x => x.id === t
 const stageIndex = computed(() => Math.max(0, STAGES.findIndex(s => s.id === plant.value?.stage)))
 const journey = computed(() => stages().map((s, i) => ({
   ...s,
-  short: t(`plant.rail.${s.id}`),
   state: i < stageIndex.value ? 'done' as const : i === stageIndex.value ? 'current' as const : 'future' as const
 })))
 // The fill reaches the current node and creeps toward the next one as the stage matures.
@@ -300,6 +301,7 @@ function saveHarvest() {
     notify(t('plant.toast.harvestRange', { from: formatDate(minDate) }), { tone: 'error' })
     return
   }
+  const dryBefore = p.harvest?.dryWeight ?? null
   if (harvestMode.value === 'harvest') {
     grow.harvestPlant(p.id, { date: harvestForm.date, wetWeight: wet, dryWeight: dry, notes: harvestForm.notes.trim() })
     notify(t('plant.toast.harvestLogged'), { icon: 'i-tabler-basket' })
@@ -313,6 +315,7 @@ function saveHarvest() {
     }
   }
   harvestSheet.value = false
+  if (dry !== null && dry !== dryBefore) setTimeout(offerRecap, 900)
 }
 
 async function nextStep() {
@@ -359,14 +362,16 @@ async function removePlant() {
 
 // ── Public sharing ────────────────────────────────────────────────
 const sharing = usePlantSharing()
-const { requireAuth } = useAuth()
-const isShared = computed(() => !!plant.value?.sharing)
+const { requireAuth, accepted } = useAuth()
+const unlinked = computed(() => sharing.isUnlinked(plantId.value))
+const isShared = computed(() => !!plant.value?.sharing && !unlinked.value)
 const publicBusy = computed(() => sharing.isBusy(plantId.value))
 
 async function togglePublic() {
   const p = plant.value
   moreSheet.value = false
   if (!p || publicBusy.value || !requireAuth()) return
+  if (unlinked.value) return relinkPublic()
   const going = !p.sharing
   const ok = await confirm(going
     ? { title: t('auth.share.publicTitle'), message: t('auth.share.publicMessage'), confirmLabel: t('auth.share.makePublic') }
@@ -380,6 +385,73 @@ async function togglePublic() {
     console.error(e)
     notify(t('auth.share.failed'), { tone: 'error' })
   }
+}
+
+// shared from another account on this phone: publish under this one, or just stop showing it as public here
+async function relinkPublic() {
+  const p = plant.value
+  if (!p) return
+  const ok = await confirm({ title: t('auth.share.otherTitle'), message: t('auth.share.otherMessage'), confirmLabel: t('auth.share.unlinkedPublish') })
+  if (!ok) return
+  try {
+    await sharing.share(p.id)
+    notify(t('auth.share.nowPublic'), { icon: 'i-tabler-world' })
+  } catch (e) {
+    console.error(e)
+    notify(t('auth.share.failed'), { tone: 'error' })
+  }
+}
+
+// ── Community help ────────────────────────────────────────────────
+const recentPest = computed(() => entries.value.some(e => e.type === 'pest' && daysBetween(e.date, today.value) <= 14))
+const needsHelp = computed(() => !!plant.value && !plant.value.archived && (plant.value.health <= 3 || recentPest.value))
+
+function askCommunity() {
+  moreSheet.value = false
+  navigateTo({ path: '/community', query: { compose: 'problem', plant: plantId.value } })
+}
+
+// ── Weekly diary update ───────────────────────────────────────────
+const updates = ref<UpdateRow[]>([])
+const updatesReady = ref(false)
+const weeklySheet = ref(false)
+const publicId = computed(() => (isShared.value ? plant.value?.sharing?.publicId ?? null : null))
+
+async function loadUpdates() {
+  const id = publicId.value
+  updatesReady.value = false
+  if (!id || !accepted.value) return (updates.value = [])
+  const { data, error } = await useSupabase().from('plant_updates').select('week_no, created_at').eq('plant_id', id)
+  if (id !== publicId.value) return
+  if (error) {
+    if (!isMissingSchema(error)) console.warn('[BudBuddy] updates load failed', error)
+    return
+  }
+  updates.value = (data ?? []) as UpdateRow[]
+  updatesReady.value = true
+}
+watch([publicId, accepted], loadUpdates, { immediate: true })
+
+const weekDue = computed(() => {
+  const p = plant.value
+  if (!p || p.archived || !updatesReady.value) return null
+  return dueWeek(p, updates.value, today.value)
+})
+const growStreak = computed(() => (plant.value && updatesReady.value ? updateStreak(updates.value, completedWeek(plant.value, today.value)) : null))
+
+function onUpdatePosted(row: UpdateRow) {
+  updates.value = [...updates.value.filter(u => u.week_no !== row.week_no), row]
+}
+
+// ── Harvest recap ─────────────────────────────────────────────────
+const recapSheet = ref(false)
+
+function offerRecap() {
+  notify(t('plant.recap.offer'), {
+    icon: 'harvest',
+    duration: 8000,
+    action: { label: t('plant.recap.offerAction'), run: () => (recapSheet.value = true) }
+  })
 }
 
 // ── Share card ────────────────────────────────────────────────────
@@ -585,18 +657,28 @@ function duplicate() {
             <button
               type="button"
               class="badge public-chip"
-              :class="{ on: isShared }"
+              :class="{ on: isShared, other: unlinked }"
               :aria-pressed="isShared"
               :disabled="publicBusy"
-              :aria-label="isShared ? t('auth.share.chipPublicAria') : t('auth.share.chipPrivateAria')"
+              :aria-label="unlinked ? t('auth.share.chipOtherAria') : isShared ? t('auth.share.chipPublicAria') : t('auth.share.chipPrivateAria')"
               @click="togglePublic"
             >
               <UIcon
-                :name="publicBusy ? 'i-tabler-loader-2' : isShared ? 'i-tabler-world' : 'i-tabler-lock'"
+                :name="publicBusy ? 'i-tabler-loader-2' : unlinked ? 'i-tabler-user-question' : isShared ? 'i-tabler-world' : 'i-tabler-lock'"
                 class="size-3.5"
                 :class="{ 'animate-spin': publicBusy }"
-              /> {{ isShared ? t('auth.share.public') : t('auth.share.private') }}
+              /> {{ unlinked ? t('auth.share.otherAccount') : isShared ? t('auth.share.public') : t('auth.share.private') }}
             </button>
+            <span
+              v-if="growStreak?.consistent"
+              class="badge streak"
+              :title="t('plant.weekly.streakTitle')"
+            >
+              <UIcon
+                name="i-tabler-calendar-check"
+                class="size-3.5"
+              /> {{ t('plant.weekly.streak', { a: growStreak.updated, b: growStreak.weeks }) }}
+            </span>
             <span
               v-if="plant.archived"
               class="badge archived"
@@ -735,6 +817,53 @@ function duplicate() {
             > · {{ t('plant.water.last', { when: formatRelativeDay(watering.lastDate).toLowerCase() }) }}</span>
           </span>
         </p>
+
+        <div
+          v-if="needsHelp"
+          class="help-row"
+        >
+          <p>
+            <GrowIcon
+              name="pest"
+              class="text-[17px]"
+            />
+            <span>{{ t('plant.ask.prompt') }}</span>
+          </p>
+          <button
+            type="button"
+            class="btn btn-soft help-btn"
+            @click="askCommunity"
+          >
+            <GrowIcon name="community" /> {{ t('plant.ask.button') }}
+          </button>
+        </div>
+      </section>
+
+      <section
+        v-if="weekDue && publicId"
+        class="weekly card"
+        :aria-label="t('plant.weekly.cardAria', { n: weekDue })"
+      >
+        <div class="weekly-text">
+          <h2 class="weekly-title">
+            {{ t('plant.weekly.cardTitle', { n: weekDue }) }}
+          </h2>
+          <p class="weekly-sub">
+            <template v-if="growStreak">
+              {{ t('plant.weekly.progress', { a: growStreak.updated, b: growStreak.weeks }) }}
+            </template>
+            <template v-else>
+              {{ t('plant.weekly.cardText') }}
+            </template>
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary weekly-btn"
+          @click="weeklySheet = true"
+        >
+          <GrowIcon name="photo" /> {{ t('plant.weekly.cardAction') }}
+        </button>
       </section>
 
       <div
@@ -813,7 +942,7 @@ function duplicate() {
         </div>
         <EmptyState
           v-if="!dayEntries.length"
-          icon="i-tabler-mood-empty"
+          icon="measure"
           :title="selectedDate > todayISO() ? t('plant.journal.futureTitle') : t('plant.journal.emptyTitle')"
           :text="selectedDate > todayISO() ? t('plant.journal.futureText') : t('plant.journal.emptyText')"
         />
@@ -867,7 +996,7 @@ function duplicate() {
       </div>
       <EmptyState
         v-if="!historyGroups.length"
-        icon="i-tabler-notebook-off"
+        icon="note"
         :title="t('plant.history.emptyTitle')"
         :text="t('plant.history.emptyText')"
       />
@@ -1079,7 +1208,7 @@ function duplicate() {
       </div>
       <EmptyState
         v-if="!photos.length"
-        icon="i-tabler-photo-off"
+        icon="photo"
         :title="t('plant.photos.emptyTitle')"
         :text="t('plant.photos.emptyText')"
       />
@@ -1351,6 +1480,27 @@ function duplicate() {
         <button
           type="button"
           class="menu-item"
+          @click="askCommunity"
+        >
+          <GrowIcon
+            name="community"
+            class="text-[20px]"
+          /> {{ t('plant.ask.menu') }}
+        </button>
+        <button
+          v-if="plant.harvest?.dryWeight != null"
+          type="button"
+          class="menu-item"
+          @click="moreSheet = false; recapSheet = true"
+        >
+          <GrowIcon
+            name="harvest"
+            class="text-[20px]"
+          /> {{ t('plant.recap.menu') }}
+        </button>
+        <button
+          type="button"
+          class="menu-item"
           @click="openShareCard"
         >
           <UIcon
@@ -1432,6 +1582,20 @@ function duplicate() {
         </button>
       </template>
     </BottomSheet>
+
+    <CommunityWeeklyUpdateSheet
+      v-if="publicId"
+      v-model:open="weeklySheet"
+      :plant="plant"
+      :public-id="publicId"
+      :week="weekDue ?? Math.max(1, completedWeek(plant, today))"
+      @posted="onUpdatePosted"
+    />
+    <CommunityHarvestRecapSheet
+      v-if="plant.harvest"
+      v-model:open="recapSheet"
+      :plant="plant"
+    />
   </div>
 
   <div v-else>
@@ -1441,7 +1605,7 @@ function duplicate() {
     />
     <div class="page">
       <EmptyState
-        icon="i-tabler-plant-off"
+        icon="seedling"
         :title="t('plant.notFound.emptyTitle')"
         :text="t('plant.notFound.emptyText')"
       >
@@ -1613,6 +1777,15 @@ function duplicate() {
   color: var(--leaf);
 }
 
+.public-chip.other {
+  color: var(--lamp);
+}
+
+.badge.streak {
+  color: var(--leaf);
+  background: rgba(7, 8, 10, 0.72);
+}
+
 .public-chip:active:not(:disabled) {
   transform: scale(0.95);
 }
@@ -1766,10 +1939,14 @@ h1 {
 }
 
 .rail-label {
-  font-size: 11px;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 10.5px;
   font-weight: 500;
+  letter-spacing: -0.01em;
   color: var(--text-3);
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .rail-stop.done .rail-label {
@@ -1922,6 +2099,91 @@ h1 {
 .water-last {
   color: var(--text-3);
   font-weight: 400;
+}
+
+.help-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.help-row p {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.help-row p .grow-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--lamp);
+}
+
+.help-btn {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* ── Weekly update ─────────────────────────────────────────────── */
+.weekly {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 14px 14px 18px;
+  overflow: hidden;
+  animation: weekly-in var(--dur-slow) var(--ease-out) both;
+}
+
+/* lamp wash from the top edge: the week just ticked over */
+.weekly::before {
+  content: "";
+  position: absolute;
+  inset: 0 18% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--lamp), transparent);
+  opacity: 0.8;
+}
+
+.weekly-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.weekly-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.weekly-sub {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.weekly-btn {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 16px;
+}
+
+@keyframes weekly-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weekly { animation: none; }
 }
 
 /* ── Quick log ──────────────────────────────────────────────────── */

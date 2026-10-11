@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { intlLocale } from '~/utils/locale'
+import { formatNumber } from '~/utils/locale'
 
 type Medium = 'soil' | 'coco' | 'hydro'
 const props = withDefaults(defineProps<{ medium?: Medium }>(), { medium: 'soil' })
@@ -98,7 +98,6 @@ function up() {
   dragging.value = false
 }
 
-const fmt = (n: number) => n.toLocaleString(intlLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 const axis = [4, 5, 6, 7, 8]
 </script>
 
@@ -136,9 +135,9 @@ const axis = [4, 5, 6, 7, 8]
 
     <div class="head-row">
       <p class="gw-big num">
-        <span class="gw-unit">pH</span>{{ fmt(ph) }}
+        <span class="gw-unit">pH</span>{{ formatNumber(ph, 1, true) }}
       </p>
-      <span class="opt num">{{ t('guideWidgets.ph.target', { a: fmt(optimum[0]), b: fmt(optimum[1]) }) }}</span>
+      <span class="opt num">{{ t('guideWidgets.ph.target', { a: formatNumber(optimum[0], 1, true), b: formatNumber(optimum[1], 1, true) }) }}</span>
     </div>
 
     <svg

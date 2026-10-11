@@ -61,7 +61,10 @@ async function submit() {
   busy.value = true
   let uploaded: string | null = null
   try {
-    const image_url = file.value ? (uploaded = await uploadChallengeImage(file.value)) : imageUrl.value
+    // plant covers get deleted on re-sync, so entries keep their own copy
+    const image_url = file.value
+      ? (uploaded = await uploadChallengeImage(file.value))
+      : (uploaded = await copyToChallenges(imageUrl.value)) ?? imageUrl.value
     const { data, error } = await useSupabase().from('challenge_entries').insert({
       challenge_id: props.challenge.id,
       user_id: user.value.id,
@@ -76,9 +79,11 @@ async function submit() {
   } catch (e) {
     if (uploaded) removeChallengeImage(uploaded)
     const err = e as { code?: string, message?: string }
+    const blocked = contentBlockedKey(err)
+    if (blocked) return notify(t(`challenge.blocked.${blocked}`), { tone: 'error' })
     const msg = err.code === '23505'
       ? 'already'
-      : err.message?.includes('not open')
+      : err.message?.includes('not open') || err.message?.includes('closed')
         ? 'closed'
         : err.code === '42501' ? 'banned' : 'error'
     notify(t(`challenge.sheet.${msg}`), { tone: 'error' })
@@ -215,8 +220,7 @@ async function submit() {
 .filled .drop-label {
   align-self: end;
   margin-bottom: 10px;
-  background: rgba(7, 8, 10, 0.7);
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
   color: var(--text);
 }
 

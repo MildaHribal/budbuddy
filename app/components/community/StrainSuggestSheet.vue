@@ -47,7 +47,8 @@ async function submit() {
   })
   busy.value = false
   if (error) {
-    notify(error.code === '23505' ? t('strains.exists') : error.code === 'P0001' ? t('strains.rateLimited') : t('strains.failed'), { tone: 'error' })
+    const blocked = contentBlockedKey(error)
+    notify(blocked ? t(`strains.blocked.${blocked}`) : error.code === '23505' ? t('strains.exists') : error.code === 'P0001' ? t('strains.rateLimited') : t('strains.failed'), { tone: 'error' })
     return
   }
   open.value = false
@@ -99,7 +100,10 @@ async function submit() {
             :aria-pressed="draft.dominance === d"
             @click="draft.dominance = draft.dominance === d ? null : d"
           >
-            {{ t(`strains.dominance.${d}`) }}
+            <UIcon
+              :name="dominanceIcon(d)"
+              class="dom-icon"
+            />{{ t(`strains.dominance.${d}`) }}
           </button>
         </div>
         <div class="segmented">
@@ -175,6 +179,12 @@ async function submit() {
 </template>
 
 <style scoped>
+.dom-icon {
+  margin-right: 4px;
+  font-size: 15px;
+  opacity: 0.8;
+}
+
 .intro {
   margin: 0;
   font-size: 14px;

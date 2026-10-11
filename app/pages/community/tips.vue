@@ -1,24 +1,59 @@
 <script setup lang="ts">
 import type { TipRow } from '~/components/community/TipCard.vue'
+import { TIP_GROUPS, TIP_SYMPTOMS, parseTipGroup, symptomFilter, tipGroupOf, type TipGroupId } from '~/utils/tips'
 
 const { t } = useI18n()
 useHead({ title: () => t('tips.title') })
 
 const route = useRoute()
+const router = useRouter()
 const { user, requireAuth } = useAuth()
 const { isBlocked, load: loadBlocks } = useBlocks()
 const { notify } = useNotify()
 const { confirm } = useConfirm()
+const { state: grow } = useGrow()
 
 const PAGE = 20
+const HUB = 3
 const MEDIA = ['soil', 'coco', 'hydro'] as const
 const ENVS = ['indoor', 'outdoor', 'greenhouse'] as const
+const SYMPTOMS = Object.keys(TIP_SYMPTOMS)
 const SELECT = 'id, author_id, body, stage, medium, environment, helpful_count, unhelpful_count, score, created_at, author:profiles!tips_author_id_fkey(username, display_name, avatar_url, reputation)'
 
-const stageFilter = ref<string | null>(isStageId(route.query.stage) ? route.query.stage : null)
+const groupFilter = ref<TipGroupId | 'general' | null>(route.query.stage === 'general' ? 'general' : parseTipGroup(route.query.stage))
+const symptomFilterKey = ref<string | null>(typeof route.query.symptom === 'string' && route.query.symptom in TIP_SYMPTOMS ? route.query.symptom : null)
 const mediumFilter = ref<string | null>(null)
 const envFilter = ref<string | null>(null)
-const filtered = computed(() => !!(stageFilter.value || mediumFilter.value || envFilter.value))
+const extraCount = computed(() => [symptomFilterKey.value, mediumFilter.value, envFilter.value].filter(Boolean).length)
+const filtered = computed(() => !!groupFilter.value || extraCount.value > 0)
+/** Hub = top tips per stage; any filter switches to the ranked, paginated list. */
+const hubMode = computed(() => !filtered.value)
+
+watch([groupFilter, symptomFilterKey], ([g, sy]) => {
+  router.replace({ query: { ...route.query, stage: g ?? undefined, symptom: sy ?? undefined } })
+})
+
+// stage group of the user's growing plants, shown first in the hub
+const myGroup = computed<TipGroupId | null>(() => {
+  const counts = new Map<TipGroupId, number>()
+  for (const p of grow.plants) {
+    if (p.archived) continue
+    const g = tipGroupOf(p.stage)
+    if (g) counts.set(g.id, (counts.get(g.id) ?? 0) + 1)
+  }
+  let best: TipGroupId | null = null
+  let n = 0
+  for (const [g, c] of counts) if (c > n) [best, n] = [g, c]
+  return best
+})
+
+const groupChips = computed(() => TIP_GROUPS.map(g => ({ ...g, info: stageInfo(g.stage), label: t(`tips.groups.${g.id}`) })))
+// hub puts the stage of the user's plants first
+const groups = computed(() => {
+  const list = groupChips.value
+  const mine = myGroup.value
+  return mine ? [...list.filter(g => g.id === mine), ...list.filter(g => g.id !== mine)] : list
+})
 
 const tips = ref<TipRow[]>([])
 const votes = reactive(new Map<string, 1 | -1>())
@@ -26,28 +61,43 @@ const loading = ref(false)
 const done = ref(false)
 const error = ref<'offline' | 'error' | null>(null)
 let seq = 0
+let localShift = 0
 
 const shown = computed(() => tips.value.filter(x => !isBlocked(x.author_id)))
+
+const hubSections = computed(() => {
+  const out = groups.value.map(g => ({ ...g, tips: shown.value.filter(x => (g.stages as string[]).includes(x.stage ?? '')).slice(0, HUB) }))
+  const general = shown.value.filter(x => !tipGroupOf(x.stage)).slice(0, HUB)
+  return { stages: out.filter(g => g.tips.length), general }
+})
+const hubEmpty = computed(() => !hubSections.value.stages.length && !hubSections.value.general.length)
 
 async function loadPage(reset = false) {
   if (loading.value && !reset) return
   if (reset) {
     tips.value = []
     done.value = false
+    localShift = 0
   }
   if (done.value) return
   const my = ++seq
   loading.value = true
   error.value = null
   let q = useSupabase().from('tips').select(SELECT)
-  if (stageFilter.value) q = q.eq('stage', stageFilter.value)
+  const g = groupFilter.value
+  if (g === 'general') q = q.is('stage', null)
+  else if (g) q = q.in('stage', TIP_GROUPS.find(x => x.id === g)!.stages)
+  const sy = symptomFilterKey.value && symptomFilter(symptomFilterKey.value)
+  if (sy) q = q.or(sy)
   if (mediumFilter.value) q = q.eq('medium', mediumFilter.value)
   if (envFilter.value) q = q.eq('environment', envFilter.value)
-  const from = tips.value.length
+  // hub: one ranked batch, grouped client-side
+  const size = hubMode.value ? 80 : PAGE
+  const from = Math.max(0, tips.value.length - localShift)
   const { data, error: err } = await q
     .order('score', { ascending: false })
     .order('created_at', { ascending: false })
-    .range(from, from + PAGE - 1)
+    .range(from, from + size - 1)
   if (my !== seq) return
   loading.value = false
   if (err) {
@@ -55,9 +105,12 @@ async function loadPage(reset = false) {
     return
   }
   const rows = (data ?? []) as unknown as TipRow[]
-  tips.value = [...tips.value, ...rows]
-  if (rows.length < PAGE) done.value = true
+  const seen = new Set(tips.value.map(x => x.id))
+  tips.value = [...tips.value, ...rows.filter(r => !seen.has(r.id))]
+  if (hubMode.value || rows.length < size) done.value = true
   loadVotes(rows.map(r => r.id))
+  await nextTick()
+  recheckSentinel()
 }
 
 async function loadVotes(ids: string[]) {
@@ -67,7 +120,7 @@ async function loadVotes(ids: string[]) {
   for (const v of data ?? []) votes.set(v.tip_id as string, v.value as 1 | -1)
 }
 
-watch([stageFilter, mediumFilter, envFilter], () => loadPage(true))
+watch([groupFilter, symptomFilterKey, mediumFilter, envFilter], () => loadPage(true))
 watch(() => user.value?.id, () => {
   votes.clear()
   loadBlocks()
@@ -75,19 +128,40 @@ watch(() => user.value?.id, () => {
 })
 
 function clearFilters() {
-  stageFilter.value = null
+  groupFilter.value = null
+  symptomFilterKey.value = null
   mediumFilter.value = null
   envFilter.value = null
 }
 
+function openGroup(id: TipGroupId | 'general') {
+  groupFilter.value = id
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const filterOpen = ref(false)
+
+const activeExtras = computed(() => [
+  symptomFilterKey.value && { key: 'symptom', label: t(`tips.symptoms.${symptomFilterKey.value}`), clear: () => (symptomFilterKey.value = null) },
+  mediumFilter.value && { key: 'medium', label: t(`tips.mediums.${mediumFilter.value}`), clear: () => (mediumFilter.value = null) },
+  envFilter.value && { key: 'env', label: t(`tips.envs.${envFilter.value}`), clear: () => (envFilter.value = null) }
+].filter(Boolean) as { key: string, label: string, clear: () => void }[])
+
 // infinite scroll
 const sentinel = ref<HTMLElement | null>(null)
 let io: IntersectionObserver | null = null
+const canLoadMore = () => !loading.value && !done.value && !error.value && tips.value.length > 0
+function recheckSentinel() {
+  const el = sentinel.value
+  if (!el || !canLoadMore()) return
+  if (el.getBoundingClientRect().top < window.innerHeight + 400) loadPage()
+}
 onMounted(() => {
   loadBlocks()
   loadPage(true)
+  if (groupFilter.value) nextTick(() => document.querySelector('.filter-row .chip[aria-pressed="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' }))
   io = new IntersectionObserver((e) => {
-    if (e[0]?.isIntersecting && !loading.value && !done.value && !error.value && tips.value.length) loadPage()
+    if (e[0]?.isIntersecting && canLoadMore()) loadPage()
   }, { rootMargin: '400px' })
   if (sentinel.value) io.observe(sentinel.value)
 })
@@ -137,7 +211,8 @@ function openCompose(tip?: TipRow) {
   if (!requireAuth()) return
   editing.value = tip ?? null
   draft.body = tip?.body ?? ''
-  draft.stage = tip ? tip.stage : stageFilter.value
+  const g = TIP_GROUPS.find(x => x.id === groupFilter.value)
+  draft.stage = tip ? tip.stage : g?.stage ?? null
   draft.medium = tip ? tip.medium : mediumFilter.value
   draft.environment = tip ? tip.environment : envFilter.value
   composeOpen.value = true
@@ -153,7 +228,8 @@ async function submit() {
     : await sb.from('tips').insert({ ...fields, author_id: user.value.id }).select(SELECT).single()
   saving.value = false
   if (res.error) {
-    notify(res.error.code === 'P0001' ? t('tips.rateLimited') : t('tips.failed'), { tone: 'error' })
+    const blocked = contentBlockedKey(res.error)
+    notify(blocked ? t(`tips.blocked.${blocked}`) : res.error.code === 'P0001' ? t('tips.rateLimited') : t('tips.failed'), { tone: 'error' })
     return
   }
   const row = res.data as unknown as TipRow
@@ -163,6 +239,7 @@ async function submit() {
     notify(t('tips.updated'))
   } else {
     tips.value = [row, ...tips.value]
+    localShift++
     notify(t('tips.posted'))
   }
   composeOpen.value = false
@@ -174,6 +251,7 @@ async function remove(tip: TipRow) {
   const { error: err } = await useSupabase().from('tips').delete().eq('id', tip.id)
   if (err) return notify(t('tips.failed'), { tone: 'error' })
   tips.value = tips.value.filter(x => x.id !== tip.id)
+  localShift--
   notify(t('tips.deleted'), { tone: 'info' })
 }
 
@@ -200,7 +278,10 @@ const stageList = computed(() => stages())
     </AppHeader>
 
     <div class="page">
-      <div class="filters">
+      <div
+        v-if="filtered || !hubEmpty || loading"
+        class="filters"
+      >
         <div
           class="chips filter-row"
           role="group"
@@ -209,50 +290,68 @@ const stageList = computed(() => stages())
           <button
             type="button"
             class="chip"
-            :aria-pressed="stageFilter === null"
-            @click="stageFilter = null"
+            :aria-pressed="groupFilter === null"
+            @click="groupFilter = null"
           >
-            {{ t('tips.allStages') }}
+            {{ t('tips.hub') }}
           </button>
           <button
-            v-for="s in stageList"
-            :key="s.id"
+            v-for="g in groupChips"
+            :key="g.id"
             type="button"
             class="chip"
-            :aria-pressed="stageFilter === s.id"
-            @click="stageFilter = stageFilter === s.id ? null : s.id"
+            :aria-pressed="groupFilter === g.id"
+            @click="groupFilter = groupFilter === g.id ? null : g.id"
           >
             <GrowIcon
-              :name="s.glyph"
-              :style="{ color: s.color }"
-            />{{ s.label }}
+              :name="g.info.glyph"
+              :style="{ color: g.info.color }"
+            />{{ g.label }}
+          </button>
+          <button
+            type="button"
+            class="chip"
+            :aria-pressed="groupFilter === 'general'"
+            @click="groupFilter = groupFilter === 'general' ? null : 'general'"
+          >
+            {{ t('tips.general') }}
           </button>
         </div>
         <div class="chips filter-row">
           <button
-            v-for="m in MEDIA"
-            :key="m"
             type="button"
-            class="chip"
-            :aria-pressed="mediumFilter === m"
-            @click="mediumFilter = mediumFilter === m ? null : m"
+            class="chip filter-chip"
+            :aria-pressed="extraCount > 0"
+            aria-haspopup="dialog"
+            @click="filterOpen = true"
           >
-            {{ t(`tips.mediums.${m}`) }}
+            <UIcon name="i-tabler-adjustments-horizontal" />{{ t('tips.filter') }}
+            <span
+              v-if="extraCount"
+              class="count num"
+            >{{ extraCount }}</span>
           </button>
-          <span
-            class="divider"
-            aria-hidden="true"
-          />
           <button
-            v-for="e in ENVS"
-            :key="e"
+            v-for="a in activeExtras"
+            :key="a.key"
             type="button"
-            class="chip"
-            :aria-pressed="envFilter === e"
-            @click="envFilter = envFilter === e ? null : e"
+            class="chip active-chip"
+            :aria-label="t('tips.removeFilter', { name: a.label })"
+            @click="a.clear()"
           >
-            {{ t(`tips.envs.${e}`) }}
+            {{ a.label }}<UIcon name="i-tabler-x" />
           </button>
+          <template v-if="!activeExtras.length">
+            <button
+              v-for="sy in SYMPTOMS.slice(0, 4)"
+              :key="sy"
+              type="button"
+              class="chip quiet"
+              @click="symptomFilterKey = sy"
+            >
+              {{ t(`tips.symptoms.${sy}`) }}
+            </button>
+          </template>
         </div>
       </div>
 
@@ -261,7 +360,7 @@ const stageList = computed(() => stages())
         class="state"
       >
         <EmptyState
-          :icon="error === 'offline' ? 'i-tabler-mood-empty' : 'pest'"
+          :icon="error === 'offline' ? 'measure' : 'pest'"
           :title="t('tips.errorTitle')"
           :text="error === 'offline' ? t('tips.offline') : t('tips.failed')"
         >
@@ -275,8 +374,23 @@ const stageList = computed(() => stages())
         </EmptyState>
       </div>
 
+      <template v-else-if="loading && !tips.length">
+        <div
+          v-for="i in 3"
+          :key="`sk${i}`"
+          class="card skeleton"
+          aria-hidden="true"
+        >
+          <span class="sk sk-head" />
+          <span class="sk sk-line" />
+          <span class="sk sk-line short" />
+          <span class="sk sk-foot" />
+        </div>
+        <span class="sr-only">{{ t('tips.loadingMore') }}</span>
+      </template>
+
       <EmptyState
-        v-else-if="done && !shown.length"
+        v-else-if="done && (hubMode ? hubEmpty : !shown.length)"
         icon="lamp"
         :title="t('tips.emptyTitle')"
         :text="filtered ? t('tips.emptyFiltered') : t('tips.emptyText')"
@@ -297,6 +411,88 @@ const stageList = computed(() => stages())
           <UIcon name="i-tabler-bulb" /> {{ t('tips.add') }}
         </button>
       </EmptyState>
+
+      <div
+        v-else-if="hubMode"
+        class="hub rise"
+      >
+        <section
+          v-for="g in hubSections.stages"
+          :key="g.id"
+          :aria-labelledby="`hub-${g.id}`"
+        >
+          <div class="section-head">
+            <h2
+              :id="`hub-${g.id}`"
+              class="section-title"
+            >
+              <GrowIcon
+                :name="g.info.glyph"
+                :style="{ color: g.info.color }"
+              />{{ g.label }}
+            </h2>
+            <span
+              v-if="g.id === myGroup"
+              class="section-meta here"
+            >{{ t('tips.yourStage') }}</span>
+          </div>
+          <div class="list">
+            <CommunityTipCard
+              v-for="tip in g.tips"
+              :key="tip.id"
+              :tip="tip"
+              :vote="votes.get(tip.id)"
+              :mine="tip.author_id === user?.id"
+              @vote="v => vote(tip, v)"
+              @edit="openCompose(tip)"
+              @delete="remove(tip)"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn-ghost more"
+            @click="openGroup(g.id)"
+          >
+            {{ t('tips.moreIn', { stage: g.label.toLocaleLowerCase(intlLocale()) }) }}<UIcon name="i-tabler-chevron-right" />
+          </button>
+        </section>
+
+        <section
+          v-if="hubSections.general.length"
+          aria-labelledby="hub-general"
+        >
+          <div class="section-head">
+            <h2
+              id="hub-general"
+              class="section-title"
+            >
+              <GrowIcon
+                name="lamp"
+                class="lamp"
+              />{{ t('tips.general') }}
+            </h2>
+          </div>
+          <div class="list">
+            <CommunityTipCard
+              v-for="tip in hubSections.general"
+              :key="tip.id"
+              :tip="tip"
+              :vote="votes.get(tip.id)"
+              :mine="tip.author_id === user?.id"
+              @vote="v => vote(tip, v)"
+              @edit="openCompose(tip)"
+              @delete="remove(tip)"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn-ghost more"
+            @click="openGroup('general')"
+          >
+            {{ t('tips.moreGeneral') }}<UIcon name="i-tabler-chevron-right" />
+          </button>
+        </section>
+      </div>
 
       <div
         v-else
@@ -321,7 +517,7 @@ const stageList = computed(() => stages())
 
         <template v-if="loading">
           <div
-            v-for="i in tips.length ? 2 : 4"
+            v-for="i in 2"
             :key="`sk${i}`"
             class="card skeleton"
             aria-hidden="true"
@@ -355,6 +551,88 @@ const stageList = computed(() => stages())
         aria-hidden="true"
       />
     </div>
+
+    <BottomSheet
+      v-model:open="filterOpen"
+      :title="t('tips.filter')"
+    >
+      <div class="form-stack">
+        <div class="field">
+          <span class="field-label">{{ t('tips.symptomLabel') }}</span>
+          <div class="chips wrap">
+            <button
+              v-for="sy in SYMPTOMS"
+              :key="sy"
+              type="button"
+              class="chip"
+              :aria-pressed="symptomFilterKey === sy"
+              @click="symptomFilterKey = symptomFilterKey === sy ? null : sy"
+            >
+              {{ t(`tips.symptoms.${sy}`) }}
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">{{ t('tips.mediumLabel') }}</span>
+          <div class="segmented">
+            <button
+              type="button"
+              :aria-pressed="mediumFilter === null"
+              @click="mediumFilter = null"
+            >
+              {{ t('tips.any') }}
+            </button>
+            <button
+              v-for="m in MEDIA"
+              :key="m"
+              type="button"
+              :aria-pressed="mediumFilter === m"
+              @click="mediumFilter = m"
+            >
+              {{ t(`tips.mediums.${m}`) }}
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">{{ t('tips.envLabel') }}</span>
+          <div class="segmented">
+            <button
+              type="button"
+              :aria-pressed="envFilter === null"
+              @click="envFilter = null"
+            >
+              {{ t('tips.any') }}
+            </button>
+            <button
+              v-for="e in ENVS"
+              :key="e"
+              type="button"
+              :aria-pressed="envFilter === e"
+              @click="envFilter = e"
+            >
+              {{ t(`tips.envs.${e}`) }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          :disabled="!extraCount"
+          @click="symptomFilterKey = null; mediumFilter = null; envFilter = null"
+        >
+          {{ t('tips.clearFilters') }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          @click="filterOpen = false"
+        >
+          {{ t('tips.showResults') }}
+        </button>
+      </template>
+    </BottomSheet>
 
     <BottomSheet
       v-model:open="composeOpen"
@@ -482,7 +760,63 @@ const stageList = computed(() => stages())
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0 -20px -12px;
+  margin: 0 -20px -8px;
+}
+
+.filter-chip .iconify {
+  font-size: 17px;
+}
+
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--leaf);
+  color: #0b0d10;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.active-chip {
+  color: var(--text);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+.active-chip .iconify {
+  margin-left: 2px;
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.chip.quiet {
+  color: var(--text-3);
+}
+
+.hub {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.here {
+  color: var(--leaf);
+  font-weight: 600;
+}
+
+.more {
+  width: 100%;
+  margin-top: 6px;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-2);
+}
+
+.lamp {
+  color: var(--lamp);
 }
 
 .filter-row {
@@ -495,13 +829,6 @@ const stageList = computed(() => stages())
 
 .filter-row .grow-icon {
   font-size: 16px;
-}
-
-.divider {
-  flex-shrink: 0;
-  width: 1px;
-  margin: 8px 4px;
-  background: var(--line-strong);
 }
 
 .list {
@@ -532,9 +859,8 @@ const stageList = computed(() => stages())
   display: block;
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
+  background: rgba(255, 255, 255, 0.07);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
 .sk-head {
@@ -553,9 +879,9 @@ const stageList = computed(() => stages())
   border-radius: 18px;
 }
 
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
   }
 }
 

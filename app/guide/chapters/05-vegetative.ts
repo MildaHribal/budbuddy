@@ -24,6 +24,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'vegetative-veg-room.webp',
+          caption: {
+            en: 'Young plants in veg under lights: each one gets enough room and light to grow bushy, not tall.',
+            cs: 'Mladé rostliny ve vegetaci pod světly: každá má dost místa a světla, aby rostla do šířky, ne do výšky.'
+          },
+          credit: 'Beeblebrox · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'interactive',
           widget: 'photoperiod',
           caption: {
@@ -84,6 +93,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'vegetative-young-plant-coco.webp',
+          caption: {
+            en: 'A young plant in coco: deep green, upright leaves are what good watering and feeding look like.',
+            cs: 'Mladá rostlina v kokosu: sytě zelené, vzpřímené listy – tak vypadá dobrá zálivka a hnojení.'
+          },
+          credit: 'Plantlady223 · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'interactive',
           widget: 'watering',
           caption: {
@@ -141,6 +159,15 @@ export default {
             en: 'Photoperiods are usually moved up once or twice: seedling cup → 2–4 l → final pot (11–25 l is common indoors). Transplant when the **roots reach the edges** and the rootball holds together, but before they circle the pot. Usually that is 4–6 nodes or when the plant drinks its cup dry within a day.',
             cs: 'Fotoperiodky se obvykle přesazují jednou nebo dvakrát: kelímek → 2–4 l → finální květináč (indoor běžně 11–25 l). Přesazuj, když **kořeny dosáhnou okrajů** a bal drží pohromadě, ale dřív, než začnou kroužit dokola. Typicky při 4–6 patrech nebo když rostlina vypije kelímek za den.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'vegetative-root-ball.webp',
+          caption: {
+            en: 'A root ball that filled its container – roots wrapped around the whole medium. Time for a bigger pot.',
+            cs: 'Kořenový bal, který vyplnil celou nádobu – kořeny obalily celý substrát. Čas na větší květináč.'
+          },
+          credit: 'Beeblebrox · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'steps',
@@ -215,6 +242,15 @@ export default {
           ]
         },
         {
+          type: 'figure',
+          photo: 'vegetative-untrained-plant.webp',
+          caption: {
+            en: 'An untrained plant after a long veg: the classic Christmas-tree shape. Remember it will still double in height in flower.',
+            cs: 'Netvarovaná rostlina po dlouhé vegetaci: typický tvar vánočního stromku. Počítej s tím, že v květu ještě vyroste až dvakrát.'
+          },
+          credit: 'Plantlady223 · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'text',
           md: {
             en: 'The main rule for photoperiods indoors: **flip when the plant is about half the height you want at the end.** In flower it will stretch to roughly 1.5–2× (sativa-dominant strains even more). Leave room for the lamp distance above the canopy.',
@@ -259,6 +295,24 @@ export default {
             en: 'Pre-flowers at the nodes: female – a teardrop calyx with white hairs (pistils). Male – a small round ball on a short stalk, no hairs.',
             cs: 'Předkvěty v uzlech: samice – kapkovitý kalich s bílými chloupky (pestíky). Samec – malá kulička na krátké stopce, bez chloupků.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'vegetative-female-preflowers.webp',
+          caption: {
+            en: 'Female: thin white pistils poking out of the nodes along the stem.',
+            cs: 'Samice: tenké bílé pestíky vykukující z uzlů podél stonku.'
+          },
+          credit: 'Swankysweden · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
+          type: 'figure',
+          photo: 'vegetative-male-flowers.webp',
+          caption: {
+            en: 'Male: clusters of round pollen sacs, here already opening. Get males out before this stage.',
+            cs: 'Samec: hroznovité kulaté pylové váčky, tady už se otevírají. Samce odstraň dřív, než se dostanou sem.'
+          },
+          credit: 'Plantman · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'steps',

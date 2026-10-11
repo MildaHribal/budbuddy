@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { canVote, challengePhase, rankEntries, type Challenge, type ChallengeEntry } from '~/utils/challenge'
+import { canVote, challengeDescription, challengePhase, challengeTitle, isVoteIneligible, rankEntries, type Challenge, type ChallengeEntry } from '~/utils/challenge'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -23,25 +23,37 @@ const myVote = ref<string | null>(null)
 const voteBusy = ref(false)
 const enterOpen = ref(false)
 const now = ref(Date.now())
+const firstTimer = ref(true)
+let gen = 0
 
-useHead({ title: () => challenge.value?.title ?? t('challenge.title') })
+const title = computed(() => (challenge.value ? challengeTitle(challenge.value) : t('challenge.title')))
+const description = computed(() => (challenge.value ? challengeDescription(challenge.value) : ''))
+useHead({ title: () => title.value })
 
 const phase = computed(() => (challenge.value ? challengePhase(challenge.value, now.value) : null))
 const votingOpen = computed(() => !!challenge.value && canVote(challenge.value, now.value))
 const visible = computed(() => entries.value.filter(e => !isBlocked(e.user_id) && e.user_id !== user.value?.id))
+/** The public view returns null counts until voting ends. */
+const resultsHidden = computed(() => phase.value !== 'finished' && entries.value.some(e => e.votes_count == null))
+const editable = computed(() => phase.value === 'entries')
 const monthLabel = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { month: 'long', year: 'numeric' }).format(new Date(iso))
 const name = (e: ChallengeEntry) => e.author?.display_name || e.author?.username || '—'
 
 async function loadEntries() {
   if (!challenge.value || entriesBusy.value || entriesDone.value) return
   entriesBusy.value = true
+  const my = gen
+  const id = challenge.value.id
+  const finished = phase.value === 'finished'
+  const from = entries.value.length
   try {
-    let q = sb.from('challenge_entries').select(ENTRY_SELECT).eq('challenge_id', challenge.value.id)
-    q = phase.value === 'finished'
-      ? q.order('votes_count', { ascending: false }).order('created_at')
-      : q.order('created_at', { ascending: false })
-    const { data, error } = await q.range(entries.value.length, entries.value.length + PAGE - 1)
+    const { data, error } = await queryEntries((q) => {
+      const base = q.eq('challenge_id', id)
+      return (finished ? base.order('votes_count', { ascending: false }).order('created_at') : base.order('created_at', { ascending: false }))
+        .range(from, from + PAGE - 1)
+    })
     if (error) throw error
+    if (my !== gen) return
     const list = (data ?? []) as unknown as ChallengeEntry[]
     if (list.length < PAGE) entriesDone.value = true
     const seen = new Set(entries.value.map(e => e.id))
@@ -54,25 +66,32 @@ async function loadEntries() {
 async function loadMine() {
   myEntry.value = null
   myVote.value = null
+  firstTimer.value = true
   const uid = user.value?.id
   if (!uid || !challenge.value) return
-  const [entry, vote] = await Promise.all([
-    sb.from('challenge_entries').select(ENTRY_SELECT).eq('challenge_id', challenge.value.id).eq('user_id', uid).maybeSingle(),
-    sb.from('challenge_votes').select('entry_id').eq('challenge_id', challenge.value.id).eq('user_id', uid).maybeSingle()
+  const my = gen
+  const id = challenge.value.id
+  const [entry, vote, before] = await Promise.all([
+    queryEntries(q => q.eq('challenge_id', id).eq('user_id', uid).maybeSingle()),
+    sb.from('challenge_votes').select('entry_id').eq('challenge_id', id).eq('user_id', uid).maybeSingle(),
+    sb.from('challenge_entries').select('id', { count: 'exact', head: true }).eq('user_id', uid)
   ])
+  if (my !== gen) return
   myEntry.value = (entry.data as unknown as ChallengeEntry | null) ?? null
   myVote.value = (vote.data?.entry_id as string | undefined) ?? null
+  firstTimer.value = !before.count
 }
 
 async function loadWinners() {
   winners.value = []
   if (!challenge.value || phase.value !== 'finished') return
-  const { data } = await sb.from('challenge_entries').select(ENTRY_SELECT).eq('challenge_id', challenge.value.id)
-    .order('votes_count', { ascending: false }).order('created_at').limit(6)
+  const id = challenge.value.id
+  const { data } = await queryEntries(q => q.eq('challenge_id', id).order('votes_count', { ascending: false }).order('created_at').limit(6))
   winners.value = rankEntries((data ?? []) as unknown as ChallengeEntry[]).filter(e => !isBlocked(e.user_id)).slice(0, 3)
 }
 
 async function load() {
+  const my = ++gen
   loading.value = true
   failed.value = false
   entries.value = []
@@ -82,12 +101,13 @@ async function load() {
     await loadBlocks()
     const { data, error } = await sb.from('challenges').select('*').eq('slug', slug.value).maybeSingle()
     if (error) throw error
+    if (my !== gen) return
     challenge.value = data as Challenge | null
     if (challenge.value) await Promise.all([loadEntries(), loadMine(), loadWinners()])
   } catch {
-    failed.value = true
+    if (my === gen) failed.value = true
   } finally {
-    loading.value = false
+    if (my === gen) loading.value = false
   }
 }
 
@@ -104,7 +124,7 @@ function bump(id: string | null, delta: number) {
   if (!id) return
   for (const list of [entries.value, winners.value]) {
     const e = list.find(x => x.id === id)
-    if (e) e.votes_count = Math.max(0, e.votes_count + delta)
+    if (e && e.votes_count != null) e.votes_count = Math.max(0, e.votes_count + delta)
   }
 }
 
@@ -128,8 +148,16 @@ async function vote(e: ChallengeEntry) {
   myVote.value = prev
   if (!removing) bump(e.id, -1)
   bump(prev, 1)
-  notify(error.message.includes('closed') ? t('challenge.votingClosed') : t('challenge.voteError'), { tone: 'error' })
+  if (isVoteIneligible(error.message)) {
+    ineligible.value = true
+    notify(t('challenge.notEligible'), { tone: 'info' })
+  } else {
+    notify(error.message.includes('closed') ? t('challenge.votingClosed') : t('challenge.voteError'), { tone: 'error' })
+  }
 }
+
+const ineligible = ref(false)
+watch(() => user.value?.id, () => (ineligible.value = false))
 
 function startEntry() {
   if (!requireAuth()) return
@@ -146,7 +174,7 @@ async function withdraw() {
   const ok = await confirm({ title: t('challenge.withdrawConfirm'), message: t('challenge.withdrawText'), confirmLabel: t('challenge.withdraw'), danger: true })
   if (!ok) return
   const { error } = await sb.from('challenge_entries').delete().eq('id', e.id)
-  if (error) return notify(t('challenge.sheet.error'), { tone: 'error' })
+  if (error) return notify(error.message.includes('closed') ? t('challenge.entriesClosed') : t('challenge.sheet.error'), { tone: 'error' })
   removeChallengeImage(e.image_url)
   myEntry.value = null
   entries.value = entries.value.filter(x => x.id !== e.id)
@@ -167,7 +195,10 @@ async function saveCaption() {
   const caption = editCaption.value.trim() || null
   const { error } = await sb.from('challenge_entries').update({ caption }).eq('id', e.id)
   editBusy.value = false
-  if (error) return notify(t('challenge.sheet.error'), { tone: 'error' })
+  if (error) {
+    const blocked = contentBlockedKey(error)
+    return notify(blocked ? t(`challenge.blocked.${blocked}`) : error.message.includes('closed') || error.message.includes('frozen') ? t('challenge.captionLocked') : t('challenge.sheet.error'), { tone: 'error' })
+  }
   e.caption = caption
   editOpen.value = false
 }
@@ -176,7 +207,7 @@ async function saveCaption() {
 <template>
   <div>
     <AppHeader
-      :title="challenge?.title ?? t('challenge.title')"
+      :title="title"
       :subtitle="challenge ? monthLabel(challenge.starts_at) : undefined"
       back
     />
@@ -233,10 +264,11 @@ async function saveCaption() {
           <div class="intro-body">
             <ChallengePhaseBadge :phase="phase" />
             <p
-              v-if="challenge.description"
+              v-if="description"
               class="desc"
+              :lang="description === challenge.description ? 'en' : 'cs'"
             >
-              {{ challenge.description }}
+              {{ description }}
             </p>
             <ChallengeCountdown
               :challenge="challenge"
@@ -248,6 +280,16 @@ async function saveCaption() {
             >
               <UIcon name="i-tabler-info-circle" />{{ t('challenge.rules') }}
             </p>
+            <p
+              v-if="phase === 'entries' && !myEntry && firstTimer"
+              class="welcome"
+            >
+              <GrowIcon
+                name="seedling"
+                class="welcome-glyph"
+              />
+              <span><strong>{{ t('challenge.firstTitle') }}</strong> {{ t('challenge.firstText') }}</span>
+            </p>
             <button
               v-if="phase === 'entries' && !myEntry"
               type="button"
@@ -256,6 +298,13 @@ async function saveCaption() {
             >
               <UIcon name="i-tabler-photo-plus" />{{ t('challenge.enter') }}
             </button>
+            <p
+              v-if="ineligible && votingOpen"
+              class="eligibility"
+              role="status"
+            >
+              <UIcon name="i-tabler-clock-pause" />{{ t('challenge.notEligible') }}
+            </p>
           </div>
         </section>
 
@@ -270,7 +319,10 @@ async function saveCaption() {
             <h2 class="section-title">
               <GrowIcon name="photo" />{{ t('challenge.yourEntry') }}
             </h2>
-            <span class="section-meta num">{{ t('challenge.votes', { n: myEntry.votes_count }) }}</span>
+            <span
+              v-if="myEntry.votes_count != null && !resultsHidden"
+              class="section-meta num"
+            >{{ t('challenge.votes', { n: myEntry.votes_count }) }}</span>
           </div>
           <article class="mine card">
             <img
@@ -291,9 +343,11 @@ async function saveCaption() {
               >
                 {{ myEntry.caption }}
               </p>
-              <div class="mine-actions">
+              <div
+                v-if="editable"
+                class="mine-actions"
+              >
                 <button
-                  v-if="phase !== 'finished'"
                   type="button"
                   class="btn btn-ghost"
                   @click="startEdit"
@@ -301,7 +355,6 @@ async function saveCaption() {
                   <UIcon name="i-tabler-pencil" />{{ t('common.edit') }}
                 </button>
                 <button
-                  v-if="phase !== 'finished'"
                   type="button"
                   class="btn btn-danger"
                   @click="withdraw"
@@ -309,6 +362,12 @@ async function saveCaption() {
                   {{ t('challenge.withdraw') }}
                 </button>
               </div>
+              <p
+                v-else-if="phase === 'voting'"
+                class="locked"
+              >
+                <UIcon name="i-tabler-lock" />{{ t('challenge.lockedText') }}
+              </p>
             </div>
           </article>
         </section>
@@ -318,6 +377,12 @@ async function saveCaption() {
             <h2 class="section-title">
               <UIcon name="i-tabler-layout-grid" />{{ t('challenge.allEntries') }}
             </h2>
+            <span
+              v-if="resultsHidden && visible.length"
+              class="section-meta"
+            >
+              <UIcon name="i-tabler-eye-off" />{{ t('challenge.resultsLater') }}
+            </span>
           </div>
           <EmptyState
             v-if="!visible.length && entriesDone"
@@ -367,17 +432,20 @@ async function saveCaption() {
                   v-if="votingOpen"
                   type="button"
                   class="vote"
-                  :class="{ on: myVote === e.id }"
+                  :class="{ on: myVote === e.id, blind: e.votes_count == null }"
                   :aria-pressed="myVote === e.id"
                   :aria-label="myVote === e.id ? t('challenge.removeVote') : t('challenge.voteFor', { name: name(e) })"
                   @click="vote(e)"
                 >
                   <UIcon :name="myVote === e.id ? 'i-tabler-star-filled' : 'i-tabler-star'" />
-                  <span class="num">{{ e.votes_count }}</span>
+                  <span
+                    v-if="e.votes_count != null"
+                    class="num"
+                  >{{ e.votes_count }}</span>
                   <span class="vote-label">{{ myVote === e.id ? t('challenge.voted') : t('challenge.vote') }}</span>
                 </button>
                 <span
-                  v-else
+                  v-else-if="e.votes_count != null"
                   class="votes num"
                 >
                   <UIcon name="i-tabler-star" />{{ t('challenge.votes', { n: e.votes_count }) }}
@@ -498,6 +566,55 @@ async function saveCaption() {
   font-size: 15px;
 }
 
+.welcome {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.welcome strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.welcome-glyph {
+  flex-shrink: 0;
+  font-size: 22px;
+  color: var(--leaf);
+}
+
+.eligibility,
+.locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.eligibility .iconify,
+.locked .iconify {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 16px;
+  color: var(--text-3);
+}
+
+.section-meta .iconify {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+
 .mine {
   display: flex;
   gap: 12px;
@@ -588,8 +705,7 @@ async function saveCaption() {
   top: 4px;
   right: 4px;
   border-radius: 12px;
-  background: rgba(7, 8, 10, 0.55);
-  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
 }
 
 .tile-more :deep(.more-btn) {
@@ -651,6 +767,14 @@ async function saveCaption() {
 
 .vote-label {
   margin-left: auto;
+}
+
+.vote.blind {
+  justify-content: center;
+}
+
+.vote.blind .vote-label {
+  margin-left: 0;
 }
 
 .vote.on {

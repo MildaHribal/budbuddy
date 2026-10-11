@@ -3,14 +3,34 @@ import type { EntryType, StageId } from '../types/grow'
 import { translate } from '../composables/useI18n'
 import { formatDate } from './date'
 
-export type GrowerLevel = 'seedling' | 'grower' | 'cultivator' | 'master'
+export type GrowerLevel = 'seedling' | 'sprout' | 'veg' | 'flowering' | 'master'
 
-/** Reputation → level: 0–9 Seedling, 10–49 Grower, 50–199 Cultivator, 200+ Master. */
-export function growerLevel(reputation: number): { id: GrowerLevel, glyph: string, color: string } {
-  if (reputation >= 200) return { id: 'master', glyph: 'harvest', color: '#ffd28a' }
-  if (reputation >= 50) return { id: 'cultivator', glyph: 'flowering', color: '#c9a2ff' }
-  if (reputation >= 10) return { id: 'grower', glyph: 'vegetative', color: '#9be36b' }
-  return { id: 'seedling', glyph: 'seedling', color: '#c8f08f' }
+/** Reputation thresholds (research #11); each level unlocks a privilege. */
+export const LEVELS: { id: GrowerLevel, min: number, color: string, glyph: string }[] = [
+  { id: 'seedling', min: 0, color: '#a9b5a6', glyph: 'germination' },
+  { id: 'sprout', min: 25, color: '#c8f08f', glyph: 'seedling' },
+  { id: 'veg', min: 100, color: '#9be36b', glyph: 'vegetative' },
+  { id: 'flowering', min: 300, color: '#c9a2ff', glyph: 'flowering' },
+  { id: 'master', min: 1000, color: '#ffd28a', glyph: 'harvest' }
+]
+
+export interface GrowerLevelInfo {
+  id: GrowerLevel
+  /** 0-based tier */
+  tier: number
+  glyph: string
+  color: string
+  label: string
+  /** reputation needed for the next level (null at the top) */
+  next: number | null
+}
+
+export function growerLevel(reputation: number): GrowerLevelInfo {
+  const rep = Math.max(0, reputation || 0)
+  let tier = 0
+  for (let i = 0; i < LEVELS.length; i++) if (rep >= LEVELS[i]!.min) tier = i
+  const l = LEVELS[tier]!
+  return { id: l.id, tier, glyph: l.glyph, color: l.color, label: translate(`feed.levels.${l.id}`), next: LEVELS[tier + 1]?.min ?? null }
 }
 
 export interface PublicPlant {

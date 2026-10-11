@@ -130,7 +130,7 @@ const tip = computed(() => {
             :x="PAD.left - 8"
             :y="scale.y(g) + 3.5"
             text-anchor="end"
-          >{{ g }}</text>
+          >{{ formatNumber(g, 2) }}</text>
         </template>
       </g>
       <path
@@ -185,7 +185,7 @@ const tip = computed(() => {
       class="tip"
       :style="{ left: `${tip.left}%`, top: `${tip.top}%` }"
     >
-      <strong class="num">{{ tip.value }}{{ unit }}</strong>
+      <strong class="num">{{ formatNumber(tip.value, 2) }}{{ unit }}</strong>
       <span>{{ tip.label }}</span>
     </div>
   </figure>

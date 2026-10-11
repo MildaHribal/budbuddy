@@ -160,8 +160,8 @@ async function toggleBlock() {
 
 <style scoped>
 .more-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-color: transparent;
   background: transparent;
   box-shadow: none;

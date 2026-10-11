@@ -99,15 +99,7 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, max: number): stri
   return `${s.trimEnd()}…`
 }
 
-/** Renders the plant card; resolves with a PNG blob. */
-export async function renderShareCard(data: ShareCardData): Promise<Blob> {
-  await ensureFonts()
-  const canvas = document.createElement('canvas')
-  canvas.width = CARD_W
-  canvas.height = CARD_H
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('canvas unavailable')
-
+function drawGround(ctx: CanvasRenderingContext2D) {
   // mylar ground + lamp glow from the top edge
   ctx.fillStyle = '#07080a'
   ctx.fillRect(0, 0, CARD_W, CARD_H)
@@ -119,14 +111,16 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
   ctx.fillRect(0, 0, CARD_W, CARD_H)
   ctx.fillStyle = 'rgba(255, 210, 138, 0.9)'
   ctx.fillRect(CARD_W * 0.22, 0, CARD_W * 0.56, 4)
+}
 
-  // media tile
-  const pad = 72
-  const tile = { x: pad, y: 120, w: CARD_W - pad * 2, h: 700 }
+interface Box { x: number, y: number, w: number, h: number }
+
+async function drawTile(ctx: CanvasRenderingContext2D, tile: Box, photoUrl: string | null, glyph: string, color: string) {
   ctx.save()
   roundRect(ctx, tile.x, tile.y, tile.w, tile.h, 44)
   ctx.clip()
-  const img = data.photoUrl ? await loadImage(data.photoUrl) : null
+  // drawn onto the canvas and re-encoded, so no EXIF / location survives
+  const img = photoUrl ? await loadImage(photoUrl) : null
   if (img) {
     const s = Math.max(tile.w / img.width, tile.h / img.height)
     const w = img.width * s
@@ -140,10 +134,10 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
     ctx.fillStyle = g
     ctx.fillRect(tile.x, tile.y, tile.w, tile.h)
     ctx.globalAlpha = 0.22
-    ctx.fillStyle = data.stageColor
+    ctx.fillStyle = color
     ctx.fillRect(tile.x, tile.y, tile.w, tile.h)
     ctx.globalAlpha = 1
-    drawGlyph(ctx, data.stageGlyph, data.stageColor, CARD_W / 2, tile.y + tile.h / 2, 420)
+    drawGlyph(ctx, glyph, color, CARD_W / 2, tile.y + tile.h / 2, Math.min(420, tile.h * 0.6))
   }
   ctx.restore()
   ctx.save()
@@ -152,6 +146,40 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
   ctx.lineWidth = 2
   ctx.stroke()
   ctx.restore()
+}
+
+function drawBrand(ctx: CanvasRenderingContext2D, pad: number) {
+  ctx.font = `600 28px ${FONT}`
+  ctx.fillStyle = '#9be36b'
+  ctx.textAlign = 'right'
+  ctx.fillText('BudBuddy', CARD_W - pad, CARD_H - 56)
+  drawGlyph(ctx, 'vegetative', '#9be36b', CARD_W - pad - ctx.measureText('BudBuddy').width - 30, CARD_H - 66, 34)
+  ctx.textAlign = 'left'
+}
+
+function toPng(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(b => (b ? resolve(b) : reject(new Error('png encode failed'))), 'image/png')
+  })
+}
+
+async function setup(): Promise<{ canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D }> {
+  await ensureFonts()
+  const canvas = document.createElement('canvas')
+  canvas.width = CARD_W
+  canvas.height = CARD_H
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('canvas unavailable')
+  drawGround(ctx)
+  return { canvas, ctx }
+}
+
+/** Renders the plant card; resolves with a PNG blob. */
+export async function renderShareCard(data: ShareCardData): Promise<Blob> {
+  const { canvas, ctx } = await setup()
+  const pad = 72
+  const tile = { x: pad, y: 120, w: CARD_W - pad * 2, h: 700 }
+  await drawTile(ctx, tile, data.photoUrl, data.stageGlyph, data.stageColor)
 
   // text block
   let y = tile.y + tile.h + 108
@@ -186,17 +214,72 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
     ctx.fillText(fitText(ctx, data.harvestLine, CARD_W - pad * 2), pad, y)
   }
 
-  // brand mark
-  ctx.font = `600 28px ${FONT}`
-  ctx.fillStyle = '#9be36b'
-  ctx.textAlign = 'right'
-  ctx.fillText('BudBuddy', CARD_W - pad, CARD_H - 56)
-  drawGlyph(ctx, 'vegetative', '#9be36b', CARD_W - pad - ctx.measureText('BudBuddy').width - 30, CARD_H - 66, 34)
-  ctx.textAlign = 'left'
+  drawBrand(ctx, pad)
+  return toPng(canvas)
+}
 
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(b => (b ? resolve(b) : reject(new Error('png encode failed'))), 'image/png')
+export interface RecapStat {
+  value: string
+  label: string
+  /** lamp-coloured (yield) instead of text colour */
+  warm?: boolean
+}
+
+export interface RecapCardData {
+  /** "Harvest recap" */
+  title: string
+  name: string
+  strain: string
+  photoUrl: string | null
+  /** 2–4 numbers, e.g. days · trainings · waterings · dry g */
+  stats: RecapStat[]
+}
+
+/** Harvest recap card: photo, name and a row of big numbers. No dates or location. */
+export async function renderRecapCard(data: RecapCardData): Promise<Blob> {
+  const { canvas, ctx } = await setup()
+  const pad = 72
+  const tile = { x: pad, y: 120, w: CARD_W - pad * 2, h: 620 }
+  await drawTile(ctx, tile, data.photoUrl, 'harvest', '#ffd28a')
+
+  let y = tile.y + tile.h + 96
+  ctx.textBaseline = 'alphabetic'
+  ctx.font = `600 34px ${FONT}`
+  ctx.fillStyle = '#ffd28a'
+  ctx.shadowColor = '#ffd28a'
+  ctx.shadowBlur = 22
+  ctx.fillText(fitText(ctx, data.title, CARD_W - pad * 2), pad, y)
+  ctx.shadowBlur = 0
+
+  y += 80
+  ctx.fillStyle = '#e9f3e4'
+  ctx.font = `600 68px ${FONT}`
+  ctx.fillText(fitText(ctx, data.name, CARD_W - pad * 2), pad, y)
+  if (data.strain) {
+    y += 52
+    ctx.font = `400 34px ${FONT}`
+    ctx.fillStyle = 'rgba(233, 243, 228, 0.68)'
+    ctx.fillText(fitText(ctx, data.strain, CARD_W - pad * 2), pad, y)
+  }
+
+  // stat row: hairline above, equal columns
+  const stats = data.stats.slice(0, 4)
+  y += 64
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.10)'
+  ctx.fillRect(pad, y, CARD_W - pad * 2, 2)
+  const col = (CARD_W - pad * 2) / Math.max(1, stats.length)
+  stats.forEach((s, i) => {
+    const x = pad + i * col
+    ctx.font = `300 92px ${FONT}`
+    ctx.fillStyle = s.warm ? '#ffd28a' : '#e9f3e4'
+    ctx.fillText(fitText(ctx, s.value, col - 24), x, y + 118)
+    ctx.font = `500 28px ${FONT}`
+    ctx.fillStyle = 'rgba(233, 243, 228, 0.66)'
+    ctx.fillText(fitText(ctx, s.label, col - 24), x, y + 164)
   })
+
+  drawBrand(ctx, pad)
+  return toPng(canvas)
 }
 
 export function blobToBase64(blob: Blob): Promise<string> {

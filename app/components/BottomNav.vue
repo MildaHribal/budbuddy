@@ -51,9 +51,7 @@ const isActive = (to: string) => {
   right: 0;
   bottom: 0;
   z-index: 50;
-  background: linear-gradient(180deg, rgba(13, 15, 18, 0.88), rgba(7, 8, 10, 0.98));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, #0d0f12, #07080a);
   border-top: 1px solid var(--line);
 }
 

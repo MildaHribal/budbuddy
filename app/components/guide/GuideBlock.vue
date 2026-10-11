@@ -2,6 +2,7 @@
 import type { Block } from '~/guide'
 
 defineProps<{ block: Block, lessonId: string }>()
+defineEmits<{ quizFinished: [score: number, total: number] }>()
 const { tr } = useGuide()
 </script>
 
@@ -51,6 +52,7 @@ const { tr } = useGuide()
       v-else-if="block.type === 'quiz'"
       :questions="block.questions"
       :quiz-key="lessonId"
+      @finished="(score, total) => $emit('quizFinished', score, total)"
     />
     <GuideChecklist
       v-else-if="block.type === 'checklist'"

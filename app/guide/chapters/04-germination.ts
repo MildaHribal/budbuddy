@@ -24,6 +24,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'germination-sprouting-seed.webp',
+          caption: {
+            en: 'A hemp seed sown straight into soil: the white taproot is already out and heading down.',
+            cs: 'Semínko konopí zasazené rovnou do hlíny: bílý kořínek už je venku a míří dolů.'
+          },
+          credit: 'Vschlothauer · CC0 1.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'compare',
           columns: [
             {
@@ -120,6 +129,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'germination-emerging-seedling.webp',
+          caption: {
+            en: 'Just broke the surface: the cotyledons open while the empty seed shell lies next to the stem.',
+            cs: 'Právě vylezla nad povrch: děložní lístky se otevírají a prázdná slupka leží vedle stonku.'
+          },
+          credit: 'almogaver · CC BY-SA 2.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'table',
           head: [
             { en: 'Factor', cs: 'Faktor' },
@@ -179,6 +197,15 @@ export default {
             en: 'The sprout first opens two round **cotyledons** (seed leaves), then the first serrated **true leaves**. The seedling stage lasts about 2–3 weeks, until the plant has 3–5 sets of true leaves. Your job now is mostly to *not overdo it*.',
             cs: 'Klíček nejdřív rozevře dva kulaté **děložní lístky**, pak přijdou první zubaté **pravé listy**. Fáze sazenice trvá zhruba 2–3 týdny, dokud rostlina nemá 3–5 pater pravých listů. Tvým úkolem je teď hlavně *to nepřehnat*.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'germination-seedling-under-led.webp',
+          caption: {
+            en: 'A two-to-three-week-old autoflower seedling under an LED bar: short, sturdy stem and leaves close to the light.',
+            cs: 'Dva až tři týdny stará automatka pod LED lištou: krátký pevný stonek a listy blízko světla.'
+          },
+          credit: 'Trougnouf (Benoit Brummer) · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'steps',
@@ -250,6 +277,15 @@ export default {
             en: '**Stretch** is a long, thin, wobbly stem with few leaves. The cause is almost always **too little light** (lamp too far or too weak), sometimes too much heat. Fix it by lowering the light or raising its power, then bury the stretched stem deeper when you transplant – cannabis grows roots along a buried stem.',
             cs: '**Vytáhlá sazenice** má dlouhý, tenký, vratký stonek a málo listů. Příčinou je skoro vždycky **málo světla** (lampa moc daleko nebo moc slabá), občas i horko. Spusť lampu níž nebo přidej výkon a při přesazování zasaď natažený stonek hlouběji – konopí na zahrabaném stonku pustí nové kořeny.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'germination-stretched-seedlings.webp',
+          caption: {
+            en: 'Stretched seedlings on a windowsill: long, thin stems and tiny leaves – a clear sign of too little light.',
+            cs: 'Vytáhlé sazenice na parapetu: dlouhé tenké stonky a malinké lístky – jasný znak málo světla.'
+          },
+          credit: 'rawpixel · CC0 1.0 (Openverse), resized'
         },
         {
           type: 'callout',

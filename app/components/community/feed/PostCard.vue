@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { stageInfo } from '~/utils/stages'
 import { useFeedActions } from '~/utils/feed/actions'
-import { authorName, CATEGORY_GLYPH, relTime, type Post } from '~/utils/feed/feed'
+import { authorName, CATEGORY_GLYPH, isHelp, isSolved, relTime, type Post } from '~/utils/feed/feed'
 
 const props = defineProps<{
   post: Post
@@ -11,31 +11,20 @@ const props = defineProps<{
 const emit = defineEmits<{ edit: [post: Post], deleted: [post: Post], comment: [] }>()
 
 const { t } = useI18n()
-const { liked, saved, toggleLike, toggleSave, share, deletePost } = useFeedActions()
+const { saved, toggleSave, share, deletePost } = useFeedActions()
 
 const Link = resolveComponent('NuxtLink')
 const to = computed(() => `/community/post/${props.post.id}`)
 const name = computed(() => authorName(props.post.author))
-const isLiked = computed(() => liked.value.has(props.post.id))
 const isSaved = computed(() => saved.value.has(props.post.id))
 const plantStage = computed(() => (props.post.plant ? stageInfo(props.post.plant.stage) : null))
+const help = computed(() => (isHelp(props.post) ? (isSolved(props.post) ? 'solved' : 'open') : null))
+const solver = computed(() => props.post.solver?.author?.username ?? null)
+const symptoms = computed(() => props.post.symptom_tags ?? [])
 
 const expanded = ref(false)
 const long = computed(() => props.post.body.length > 260 || props.post.body.split('\n').length > 5)
 const clamped = computed(() => !props.detail && !expanded.value && long.value)
-
-const burst = ref(false)
-let burstTimer: ReturnType<typeof setTimeout> | undefined
-async function like() {
-  const on = !isLiked.value
-  if (on) {
-    burst.value = false
-    requestAnimationFrame(() => (burst.value = true))
-    clearTimeout(burstTimer)
-    burstTimer = setTimeout(() => (burst.value = false), 700)
-  }
-  await toggleLike(props.post)
-}
 
 async function remove() {
   if (await deletePost(props.post)) emit('deleted', props.post)
@@ -57,9 +46,8 @@ async function remove() {
     </div>
 
     <header class="head">
-      <NuxtLink
+      <div
         v-if="post.author"
-        :to="`/u/${post.author.username}`"
         class="who"
       >
         <CommunityUserAvatar
@@ -69,7 +57,10 @@ async function remove() {
         />
         <span class="who-text">
           <span class="who-line">
-            <span class="who-name">{{ name }}</span>
+            <NuxtLink
+              :to="`/u/${post.author.username}`"
+              class="who-name"
+            >{{ name }}</NuxtLink>
             <CommunityFeedRepBadge :rep="post.author.reputation" />
           </span>
           <span class="who-meta">
@@ -85,7 +76,7 @@ async function remove() {
             </template>
           </span>
         </span>
-      </NuxtLink>
+      </div>
       <CommunityReportMenu
         target-type="post"
         :target-id="post.id"
@@ -105,12 +96,31 @@ async function remove() {
         {{ t(`feed.cats.${post.category}`) }}
       </span>
       <span
-        v-if="post.category === 'question' && post.accepted_comment_id"
-        class="badge answered"
+        v-if="help === 'open'"
+        class="badge badge-attention help"
       >
-        <UIcon name="i-tabler-circle-check" />
-        {{ t('feed.answered') }}
+        <span
+          class="pulse"
+          aria-hidden="true"
+        />
+        {{ t('feed.help.needs') }}
       </span>
+      <span
+        v-else-if="help === 'solved'"
+        class="badge solved"
+      >
+        <UIcon name="i-tabler-circle-check-filled" />
+        {{ solver ? t('feed.help.solvedBy', { name: solver }) : t('feed.help.solved') }}
+      </span>
+      <CommunityFeedFirstGrowChip
+        v-if="post.author?.first_grow"
+        class="tag-first"
+      />
+      <span
+        v-for="s in symptoms"
+        :key="s"
+        class="symptom"
+      >{{ t(`feed.symptoms.${s}`) }}</span>
     </div>
 
     <component
@@ -185,27 +195,7 @@ async function remove() {
     />
 
     <footer class="actions">
-      <button
-        type="button"
-        class="act like"
-        :class="{ on: isLiked, burst }"
-        :aria-pressed="isLiked"
-        :aria-label="isLiked ? t('feed.unlike') : t('feed.like')"
-        @click="like"
-      >
-        <span class="heart">
-          <UIcon :name="isLiked ? 'i-tabler-heart-filled' : 'i-tabler-heart'" />
-          <span
-            class="sparks"
-            aria-hidden="true"
-          ><i
-            v-for="n in 6"
-            :key="n"
-            :style="{ '--a': `${n * 60}deg` }"
-          /></span>
-        </span>
-        <span class="num">{{ post.likes_count }}</span>
-      </button>
+      <CommunityFeedReactionBar :post="post" />
       <component
         :is="detail ? 'button' : Link"
         v-bind="detail ? { type: 'button' } : { to: `${to}#comments` }"
@@ -214,7 +204,10 @@ async function remove() {
         @click="detail && emit('comment')"
       >
         <UIcon name="i-tabler-message-circle" />
-        <span class="num">{{ post.comments_count }}</span>
+        <span
+          class="num"
+          aria-hidden="true"
+        >{{ post.comments_count }}</span>
       </component>
       <span class="spacer" />
       <button
@@ -222,7 +215,7 @@ async function remove() {
         class="act"
         :class="{ on: isSaved, saved: isSaved }"
         :aria-pressed="isSaved"
-        :aria-label="isSaved ? t('feed.unsave') : t('feed.save')"
+        :aria-label="t('feed.save')"
         @click="toggleSave(post)"
       >
         <UIcon :name="isSaved ? 'i-tabler-bookmark-filled' : 'i-tabler-bookmark'" />
@@ -274,14 +267,13 @@ async function remove() {
 }
 
 .who {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 44px;
-  color: inherit;
-  text-decoration: none;
 }
 
 .who-text {
@@ -299,12 +291,22 @@ async function remove() {
 }
 
 .who-name {
+  min-width: 5ch;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* stretched link: the whole author block opens the profile */
+.who-name::after {
+  content: '';
+  position: absolute;
+  inset: 0;
 }
 
 .who-meta {
@@ -353,8 +355,63 @@ async function remove() {
   color: var(--leaf);
 }
 
-.answered {
+.solved {
   color: var(--leaf);
+}
+
+.solved .iconify {
+  font-size: 13px;
+}
+
+.help {
+  gap: 6px;
+}
+
+.pulse {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2.4s var(--ease-out) infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.tag-first {
+  height: auto;
+  padding: 3px 9px 3px 7px;
+  line-height: 1.4;
+}
+
+.symptom {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-2);
 }
 
 .content {
@@ -401,8 +458,8 @@ async function remove() {
 
 .more {
   align-self: flex-start;
-  margin-top: -8px;
-  min-height: 32px;
+  margin-top: -10px;
+  min-height: 44px;
 }
 
 .media {
@@ -516,59 +573,8 @@ async function remove() {
   color: var(--leaf);
 }
 
-.like.on {
-  color: var(--leaf);
-}
-
-.heart {
-  position: relative;
-  display: inline-flex;
-}
-
-.burst .heart > .iconify {
-  animation: heart-pop 0.5s var(--ease-out);
-}
-
-.sparks {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  pointer-events: none;
-}
-
-.sparks i {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  margin: -2px;
-  border-radius: 50%;
-  background: var(--leaf);
-  opacity: 0;
-}
-
-.burst .sparks i {
-  animation: spark 0.6s var(--ease-out) forwards;
-}
-
-@keyframes heart-pop {
-  0% { transform: scale(0.6); }
-  45% { transform: scale(1.35); }
-  100% { transform: scale(1); }
-}
-
-@keyframes spark {
-  0% {
-    opacity: 1;
-    transform: rotate(var(--a)) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: rotate(var(--a)) translateY(-16px) scale(0.4);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .burst .heart > .iconify,
-  .burst .sparks i {
+  .pulse::after {
     animation: none;
   }
 }

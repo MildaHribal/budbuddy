@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { challengePhase, rankEntries, type Challenge, type ChallengeEntry } from '~/utils/challenge'
+import { challengeDescription, challengePhase, challengeTitle, rankEntries, type Challenge, type ChallengeEntry } from '~/utils/challenge'
 
 const { t } = useI18n()
 useHead({ title: () => t('challenge.title') })
@@ -20,8 +20,7 @@ const now = ref(Date.now())
 const phase = computed(() => (current.value ? challengePhase(current.value, now.value) : null))
 
 async function winnersOf(id: string): Promise<ChallengeEntry[]> {
-  const { data } = await sb.from('challenge_entries').select(ENTRY_SELECT)
-    .eq('challenge_id', id).order('votes_count', { ascending: false }).order('created_at').limit(6)
+  const { data } = await queryEntries(q => q.eq('challenge_id', id).order('votes_count', { ascending: false }).order('created_at').limit(6))
   return rankEntries((data ?? []) as unknown as ChallengeEntry[]).filter(e => !isBlocked(e.user_id)).slice(0, 3)
 }
 
@@ -78,6 +77,7 @@ useIntersectionObserver(sentinel, ([e]) => {
 
 const monthLabel = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { month: 'long', year: 'numeric' }).format(new Date(iso))
 const authorName = (e: ChallengeEntry) => e.author?.display_name || e.author?.username || '—'
+const crownDate = computed(() => (current.value ? new Intl.DateTimeFormat(intlLocale(), { day: 'numeric', month: intlLocale() === 'cs-CZ' ? 'numeric' : 'short' }).format(new Date(current.value.voting_ends_at)) : null))
 </script>
 
 <template>
@@ -137,12 +137,12 @@ const authorName = (e: ChallengeEntry) => e.author?.display_name || e.author?.us
                 <ChallengePhaseBadge :phase="phase" />
                 <span class="section-meta num">{{ monthLabel(current.starts_at) }}</span>
               </div>
-              <h3>{{ current.title }}</h3>
+              <h3>{{ challengeTitle(current) }}</h3>
               <p
                 v-if="current.description"
                 class="desc"
               >
-                {{ current.description }}
+                {{ challengeDescription(current) }}
               </p>
               <div class="hero-foot">
                 <ChallengeCountdown
@@ -171,12 +171,12 @@ const authorName = (e: ChallengeEntry) => e.author?.display_name || e.author?.us
               <UIcon name="i-tabler-trophy" />{{ t('challenge.past') }}
             </h2>
           </div>
-          <p
+          <EmptyState
             v-if="!past.length"
-            class="muted small"
-          >
-            {{ t('challenge.noPast') }}
-          </p>
+            icon="harvest"
+            :title="t('challenge.noPastTitle')"
+            :text="crownDate ? t('challenge.noPastDated', { date: crownDate }) : t('challenge.noPast')"
+          />
           <ul
             v-else
             class="past rise"
@@ -192,7 +192,7 @@ const authorName = (e: ChallengeEntry) => e.author?.display_name || e.author?.us
                 <div class="past-head">
                   <div>
                     <p class="past-title">
-                      {{ p.c.title }}
+                      {{ challengeTitle(p.c) }}
                     </p>
                     <p class="section-meta">
                       {{ monthLabel(p.c.starts_at) }}

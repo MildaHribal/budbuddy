@@ -26,6 +26,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'start-legal-home-plant.webp',
+          caption: { en: 'A single plant in a pot at home. Small and personal is the whole idea.', cs: 'Jedna rostlina v květináči doma. Malé a pro sebe, o to tu jde.' },
+          credit: 'Qadry Anthony · CC BY 4.0 (iNaturalist), resized'
+        },
+        {
           type: 'text',
           md: {
             en: 'This guide is about growing a few plants for yourself. It does not cover selling or trading. Even where home growing is allowed, selling usually is not.',
@@ -78,6 +84,12 @@ export default {
             en: 'A plant needs five things: **light, air, water, food and a root zone**. The gear list below covers all of them. Outdoors the sun replaces the lamp and the tent, so the list gets much shorter.',
             cs: 'Rostlina potřebuje pět věcí: **světlo, vzduch, vodu, živiny a prostor pro kořeny**. Seznam níže pokrývá všechny. Venku nahradí lampu i stan slunce, takže seznam se hodně zkrátí.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'start-gear-tent.webp',
+          caption: { en: 'A small tent with a lamp, reflective walls and plants in pots: the core of an indoor setup.', cs: 'Malý stan s lampou, reflexními stěnami a rostlinami v květináčích: základ pěstování uvnitř.' },
+          credit: 'spotreporting · CC BY-SA 2.0 (Flickr), resized'
         },
         {
           type: 'checklist',
@@ -146,6 +158,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'start-auto-vs-photo-cola.webp',
+          caption: { en: 'A flowering top. Autoflowers get here on their own, photoperiods only after the switch to 12/12.', cs: 'Kvetoucí vrchol. Automat se sem dostane sám, fotoperioda až po přepnutí na 12/12.' },
+          credit: 'Alex Abair · CC BY 4.0 (iNaturalist), resized'
+        },
+        {
           type: 'compare',
           columns: [
             {
@@ -208,6 +226,12 @@ export default {
             en: 'Only **female** plants grow the buds you want. A male pollinates them, and pollinated buds fill with seeds instead of resin. That is why the type of seed matters.',
             cs: 'Palice, o které ti jde, dělají jen **samičí** rostliny. Samec je opyluje a opylené palice se místo pryskyřice plní semínky. Proto záleží na tom, jaká semínka koupíš.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'start-seeds-pile.webp',
+          caption: { en: 'Cannabis seeds. Healthy ones are hard, dry and grey-brown, often with darker stripes.', cs: 'Konopná semínka. Zdravá jsou tvrdá, suchá a šedohnědá, často s tmavším žíháním.' },
+          credit: 'Yo · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'compare',

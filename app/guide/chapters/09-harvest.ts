@@ -24,6 +24,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'harvest-ripe-cola.webp',
+          caption: { en: 'A ripe cola on chop day: swollen, sticky and covered in trichomes.', cs: 'Zralá palice v den sklizně: nabitá, lepkavá a pokrytá trichomy.' },
+          credit: 'bshamblen · CC BY 2.0 (Flickr), resized'
+        },
+        {
           type: 'checklist',
           id: 'harvest-chop-prep',
           items: [
@@ -91,6 +97,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'harvest-trimming.webp',
+          caption: { en: 'Trimming with small scissors and gloves on: resin sticks to everything.', cs: 'Trimování malými nůžkami a v rukavicích: pryskyřice se lepí na všechno.' },
+          credit: 'Cannabis Tours · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'compare',
           columns: [
             {
@@ -147,6 +159,12 @@ export default {
           }
         },
         { type: 'figure', illustration: 'drying-hang', caption: { en: 'Branches hung upside down with space between them, in the dark.', cs: 'Větve zavěšené vzhůru nohama s mezerami mezi sebou, ve tmě.' } },
+        {
+          type: 'figure',
+          photo: 'harvest-hanging-bud.webp',
+          caption: { en: 'A whole branch hanging upside down to dry.', cs: 'Celá větev zavěšená vzhůru nohama, aby schla.' },
+          credit: 'eggrole · CC BY 2.0 (Flickr), resized'
+        },
         {
           type: 'table',
           head: [
@@ -220,6 +238,12 @@ export default {
         },
         { type: 'figure', illustration: 'curing-jar', caption: { en: 'Jar about ¾ full with a small hygrometer inside.', cs: 'Sklenice zhruba ze ¾ plná, uvnitř malý vlhkoměr.' } },
         {
+          type: 'figure',
+          photo: 'harvest-curing-jar.webp',
+          caption: { en: 'Dried buds in an airtight glass jar, ready to cure.', cs: 'Usušené palice ve vzduchotěsné sklenici, připravené na dozrávání.' },
+          credit: 'Cannabis Culture · CC BY 2.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'steps',
           items: [
             {
@@ -282,6 +306,12 @@ export default {
             en: 'After the cure, the enemies are **light, heat, air and wrong humidity**. Stored well, buds keep most of their quality for 6–12 months.',
             cs: 'Po zrání jsou nepřáteli **světlo, teplo, vzduch a špatná vlhkost**. Při dobrém skladování si palice většinu kvality udrží 6–12 měsíců.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'harvest-glass-storage.webp',
+          caption: { en: 'Glass holds no smell and builds no static, so it is the best home for dry buds.', cs: 'Sklo nenasává pach a nenabíjí se, takže je pro suché palice nejlepší.' },
+          credit: 'Dj701 · Public domain (Wikimedia Commons), resized'
         },
         {
           type: 'compare',

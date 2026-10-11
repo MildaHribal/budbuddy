@@ -54,7 +54,7 @@ const name = (e: ChallengeEntry) => e.author?.display_name || e.author?.username
           v-else
           class="who"
         >{{ name(s.e) }}</span>
-        <span class="votes num">{{ t('challenge.votes', { n: s.e.votes_count }) }}</span>
+        <span class="votes num">{{ t('challenge.votes', { n: s.e.votes_count ?? 0 }) }}</span>
         <div
           class="block"
           aria-hidden="true"
@@ -175,8 +175,7 @@ const name = (e: ChallengeEntry) => e.author?.display_name || e.author?.username
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(7, 8, 10, 0.72);
-  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
   font-size: 13px;
   font-weight: 600;
   color: var(--text);

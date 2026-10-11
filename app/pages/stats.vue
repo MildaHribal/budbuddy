@@ -138,7 +138,7 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
           <span>{{ t('stats.entries') }}</span>
         </div>
         <div class="figure">
-          <strong class="big num">{{ round(waterLitres, 1) }}<small>{{ t('stats.litre') }}</small></strong>
+          <strong class="big num">{{ formatNumber(waterLitres, 1) }}<small>{{ t('stats.litre') }}</small></strong>
           <span>{{ t('stats.water') }}</span>
         </div>
       </section>
@@ -243,23 +243,23 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
         </h2>
         <EmptyState
           v-if="!harvests.length"
-          icon="i-tabler-basket-off"
+          icon="harvest"
           :title="t('stats.harvests.emptyTitle')"
           :text="t('stats.harvests.emptyText')"
         />
         <template v-else>
           <div class="yield">
             <div class="yield-main">
-              <strong class="num">{{ round(dryTotal, 0) }}<small>g</small></strong>
+              <strong class="num">{{ formatNumber(dryTotal, 0) }}<small>g</small></strong>
               <span>{{ t('stats.harvests.dryTotal') }}</span>
             </div>
             <div class="yield-side">
               <div>
-                <strong class="num">{{ round(avgDry, 0) }}<small>g</small></strong>
+                <strong class="num">{{ formatNumber(avgDry, 0) }}<small>g</small></strong>
                 <span>{{ t('stats.harvests.avg') }}</span>
               </div>
               <div>
-                <strong class="num">{{ round(avgDays, 0) }}<small>{{ t('stats.harvests.dayUnit') }}</small></strong>
+                <strong class="num">{{ formatNumber(avgDays, 0) }}<small>{{ t('stats.harvests.dayUnit') }}</small></strong>
                 <span>{{ t('stats.harvests.seedToChop') }}</span>
               </div>
             </div>
@@ -281,7 +281,7 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
                 <span
                   class="harvest-weight num"
                   :class="{ pending: h.harvest.dryWeight == null }"
-                >{{ h.harvest.dryWeight != null ? `${h.harvest.dryWeight} g` : t('stats.harvests.drying') }}</span>
+                >{{ h.harvest.dryWeight != null ? `${formatNumber(h.harvest.dryWeight)} g` : t('stats.harvests.drying') }}</span>
               </NuxtLink>
             </li>
           </ul>
@@ -312,7 +312,7 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
                 class="num"
                 :class="{ yielded: s.dry }"
               >
-                {{ s.dry ? `${round(s.dry, 0)} g` : '–' }}
+                {{ s.dry ? `${formatNumber(s.dry, 0)} g` : '–' }}
               </td>
             </tr>
           </tbody>
@@ -387,7 +387,7 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 0 14px;
+  padding: 0 12px;
   min-width: 0;
 }
 
@@ -396,7 +396,8 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 }
 
 .big {
-  font-size: 34px;
+  font-size: 28px;
+  white-space: nowrap;
   font-weight: 300;
   line-height: 1.05;
   letter-spacing: -0.03em;
@@ -438,7 +439,7 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
   font-weight: 300;
   line-height: 1;
   letter-spacing: -0.03em;
-  color: var(--lamp);
+  color: var(--leaf);
 }
 
 .days {
@@ -455,15 +456,15 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 }
 
 .day.lit {
-  background: color-mix(in srgb, var(--lamp) 42%, #0b0d10);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--leaf) 34%, #0b0d10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   animation: lamp-on 0.5s var(--ease-out) both;
   animation-delay: calc(var(--i) * 45ms + 200ms);
 }
 
 .day.run {
-  background: linear-gradient(180deg, #ffe4b5, var(--lamp));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 12px rgba(255, 210, 138, 0.35);
+  background: linear-gradient(180deg, var(--leaf), var(--leaf-deep));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 12px rgba(155, 227, 107, 0.3);
 }
 
 .day.today {

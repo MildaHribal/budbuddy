@@ -1,5 +1,6 @@
 export default {
   en: {
+    offline: 'Can’t reach the community right now. Check your connection and try again.',
     terms: 'Terms',
     privacy: 'Privacy Policy',
     and: 'and',
@@ -19,7 +20,9 @@ export default {
       working: 'Signing you in…',
       failed: 'Sign-in didn’t finish',
       noCode: 'The sign-in link is missing its code. Please try again.',
-      back: 'Back to the community'
+      back: 'Back to the community',
+      denied: 'Sign-in was cancelled or Google refused it. Please try again.',
+      exchangeFailed: 'The sign-in link expired or was already used. Please try again.'
     },
     gate: {
       title: 'Welcome, grower',
@@ -93,10 +96,18 @@ export default {
       makePrivate: 'Make private',
       nowPublic: 'Plant shared with the community',
       nowPrivate: 'Plant is private again',
-      failed: 'Couldn’t update sharing. Check your connection.'
+      failed: 'Couldn’t update sharing. Check your connection.',
+      otherAccount: 'Other account',
+      chipOtherAria: 'Shared from another account – tap to choose',
+      otherTitle: 'Shared from another account',
+      otherMessage: 'This plant was made public while a different account was signed in. Publish it under your account too? The other account’s copy stays theirs.',
+      unlinkedTitle: { one: '{n} plant was shared by another account', other: '{n} plants were shared by another account' },
+      unlinkedMessage: 'Shared while a different account was signed in on this phone. Nothing goes public under your name unless you say so.',
+      unlinkedPublish: 'Publish as me'
     }
   },
   cs: {
+    offline: 'Komunita teď není dostupná. Zkontroluj připojení a zkus to znovu.',
     terms: 'Podmínky',
     privacy: 'Zásady ochrany soukromí',
     and: 'a',
@@ -116,7 +127,9 @@ export default {
       working: 'Přihlašuju tě…',
       failed: 'Přihlášení se nedokončilo',
       noCode: 'Odkazu pro přihlášení chybí kód. Zkus to prosím znovu.',
-      back: 'Zpět do komunity'
+      back: 'Zpět do komunity',
+      denied: 'Přihlášení bylo zrušeno nebo ho Google odmítl. Zkus to znovu.',
+      exchangeFailed: 'Odkaz pro přihlášení vypršel nebo už byl použitý. Zkus to znovu.'
     },
     gate: {
       title: 'Vítej, pěstiteli',
@@ -171,7 +184,7 @@ export default {
       saved: 'Profil uložen',
       failed: 'Profil se nepodařilo uložit.',
       levels: { beginner: 'Začátečník', intermediate: 'Pokročilý', advanced: 'Zkušený', expert: 'Expert' },
-      env: { indoor: 'Interiér', outdoor: 'Venku', greenhouse: 'Skleník' },
+      env: { indoor: 'Uvnitř', outdoor: 'Venku', greenhouse: 'Skleník' },
       medium: { soil: 'Hlína', coco: 'Kokos', hydro: 'Hydro', other: 'Jiné' }
     },
     share: {
@@ -190,7 +203,14 @@ export default {
       makePrivate: 'Skrýt',
       nowPublic: 'Rostlina je sdílená s komunitou',
       nowPrivate: 'Rostlina je zase soukromá',
-      failed: 'Sdílení se nepodařilo změnit. Zkontroluj připojení.'
+      failed: 'Sdílení se nepodařilo změnit. Zkontroluj připojení.',
+      otherAccount: 'Jiný účet',
+      chipOtherAria: 'Sdíleno z jiného účtu – klepnutím vyber, co dál',
+      otherTitle: 'Sdíleno z jiného účtu',
+      otherMessage: 'Tuhle rostlinu zveřejnil jiný účet, který byl na tomhle telefonu přihlášený. Zveřejnit ji i pod tvým účtem? Kopie druhého účtu zůstane jemu.',
+      unlinkedTitle: { one: 'Jiný účet sdílel {n} rostlinu', few: 'Jiný účet sdílel {n} rostliny', other: 'Jiný účet sdílel {n} rostlin' },
+      unlinkedMessage: 'Sdíleno v době, kdy byl na tomhle telefonu přihlášený jiný účet. Pod tvým jménem se nic nezveřejní, dokud to sám nepotvrdíš.',
+      unlinkedPublish: 'Zveřejnit za mě'
     }
   }
 }

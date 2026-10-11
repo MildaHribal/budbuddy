@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import { compressImage } from '~/utils/image'
 import { createId } from '~/utils/id'
+import { contentBlockedKey, isMissingSchema } from '~/utils/dbErrors'
+import { badgeGlyph, badgeName, MAX_PINNED, pinErrorKey, type BadgeDef } from '~/composables/useBadges'
 import type { Profile } from '~/composables/useAuth'
 
 const { t } = useI18n()
 const { session, user, profile, accepted, signInPrompt, signOut, loadProfile } = useAuth()
 const { notify } = useNotify()
 const { confirm } = useConfirm()
+const { loadCatalog, loadEarned } = useBadges()
 
+const me = computed(() => profile.value)
 const name = computed(() => profile.value?.display_name || profile.value?.username || '')
+const banned = computed(() => !!profile.value?.is_banned)
 
 // ── Edit profile ──────────────────────────────────────────────────
 const EXPERIENCE = ['beginner', 'intermediate', 'advanced', 'expert'] as const
 const ENVIRONMENTS = ['indoor', 'outdoor', 'greenhouse'] as const
 const MEDIA = ['soil', 'coco', 'hydro', 'other'] as const
+const LIGHTS = ['led', 'hps', 'cfl', 'sun', 'mixed'] as const
 
 const editOpen = ref(false)
 const saving = ref(false)
@@ -25,12 +31,31 @@ const form = reactive({
   environments: [] as string[],
   media: [] as string[],
   favorite_strain: '',
-  avatar_url: null as string | null
+  avatar_url: null as string | null,
+  first_grow: true,
+  light_type: null as Profile['light_type'],
+  space: '',
+  pinned_badges: [] as string[]
 })
+/** wave-2 columns exist in the DB */
+const extended = computed(() => !!me.value && 'first_grow' in me.value)
+const earnedBadges = shallowRef<BadgeDef[]>([])
+
+async function loadEarnedBadges() {
+  const uid = user.value?.id
+  if (!uid || !extended.value) return
+  const [defs, earned] = await Promise.all([loadCatalog(), loadEarned(uid)])
+  const ids = new Set(earned.map(e => e.badge_id))
+  earnedBadges.value = defs.filter(d => ids.has(d.id))
+}
 
 function openEdit() {
-  const p = profile.value
+  const p = me.value
   if (!p) return
+  if (banned.value) {
+    notify(t('profile.account.bannedEdit'), { tone: 'error' })
+    return
+  }
   Object.assign(form, {
     display_name: p.display_name ?? '',
     bio: p.bio ?? '',
@@ -38,15 +63,28 @@ function openEdit() {
     environments: [...p.environments],
     media: [...p.media],
     favorite_strain: p.favorite_strain ?? '',
-    avatar_url: p.avatar_url
+    avatar_url: p.avatar_url,
+    first_grow: p.first_grow ?? true,
+    light_type: p.light_type ?? null,
+    space: p.space ?? '',
+    pinned_badges: [...(p.pinned_badges ?? [])]
   })
   editOpen.value = true
+  loadEarnedBadges()
 }
 
 function toggle(list: string[], value: string) {
   const i = list.indexOf(value)
   if (i === -1) list.push(value)
   else list.splice(i, 1)
+}
+
+function togglePin(id: string) {
+  if (!form.pinned_badges.includes(id) && form.pinned_badges.length >= MAX_PINNED) {
+    notify(t('profile.badges.pinFull'), { tone: 'info' })
+    return
+  }
+  toggle(form.pinned_badges, id)
 }
 
 const MEDIA_MARK = '/object/public/media/'
@@ -87,9 +125,9 @@ async function changeAvatar() {
 
 async function saveProfile() {
   const uid = session.value?.user.id
-  if (!uid) return
+  if (!uid || saving.value) return
   saving.value = true
-  const { error } = await useSupabase().from('profiles').update({
+  const base = {
     display_name: form.display_name.trim().slice(0, 40) || null,
     bio: form.bio.trim().slice(0, 300) || null,
     experience: form.experience,
@@ -97,11 +135,22 @@ async function saveProfile() {
     media: form.media,
     favorite_strain: form.favorite_strain.trim().slice(0, 60) || null,
     avatar_url: form.avatar_url
-  }).eq('id', uid)
+  }
+  const extra = {
+    first_grow: form.first_grow,
+    light_type: form.light_type,
+    space: form.space.trim().slice(0, 20) || null,
+    pinned_badges: form.pinned_badges.slice(0, MAX_PINNED)
+  }
+  const sb = useSupabase()
+  let { error } = await sb.from('profiles').update(extended.value ? { ...base, ...extra } : base).eq('id', uid)
+  if (error && isMissingSchema(error)) ({ error } = await sb.from('profiles').update(base).eq('id', uid))
   saving.value = false
   if (error) {
     console.error(error)
-    notify(t('auth.profile.failed'), { tone: 'error' })
+    const blocked = contentBlockedKey(error)
+    const pinErr = /pin badges/i.test(error.message ?? '') ? pinErrorKey(error.message) : null
+    notify(blocked ? t(`profile.account.blocked.${blocked}`) : pinErr ? t(pinErr) : t('auth.profile.failed'), { tone: 'error' })
     return
   }
   await loadProfile()
@@ -115,35 +164,71 @@ async function doSignOut() {
   notify(t('auth.account.signedOut'), { tone: 'info' })
 }
 
-// SQL can't delete storage rows, so empty the user's folder via the Storage API first
-async function removeMyFiles(prefix = user.value?.id ?? ''): Promise<void> {
-  if (!prefix) return
+/** Every file path under the user's folder (paged, recursive). Throws on any list error. */
+async function listMyFiles(prefix: string): Promise<string[]> {
   const bucket = useSupabase().storage.from('media')
-  const { data } = await bucket.list(prefix, { limit: 1000 })
-  if (!data?.length) return
-  const files = data.filter(f => f.id).map(f => `${prefix}/${f.name}`)
-  if (files.length) await bucket.remove(files)
-  for (const dir of data.filter(f => !f.id)) await removeMyFiles(`${prefix}/${dir.name}`)
+  const out: string[] = []
+  const LIMIT = 100
+  for (let offset = 0; ; offset += LIMIT) {
+    const { data, error } = await bucket.list(prefix, { limit: LIMIT, offset })
+    if (error) throw error
+    for (const f of data ?? []) {
+      if (f.id) out.push(`${prefix}/${f.name}`)
+      else out.push(...await listMyFiles(`${prefix}/${f.name}`))
+    }
+    if ((data?.length ?? 0) < LIMIT) return out
+  }
+}
+
+// SQL can't delete storage objects, so the Storage API empties the folder before the RPC
+async function removeMyFiles(uid: string) {
+  const files = await listMyFiles(uid)
+  const bucket = useSupabase().storage.from('media')
+  for (let i = 0; i < files.length; i += 100) {
+    const { error } = await bucket.remove(files.slice(i, i + 100))
+    if (error) throw error
+  }
 }
 
 const deleting = ref(false)
 async function deleteAccount() {
+  const uid = user.value?.id
+  if (!uid || deleting.value) return
   const first = await confirm({ title: t('auth.account.deleteTitle'), message: t('auth.account.deleteMessage'), confirmLabel: t('auth.account.delete'), danger: true })
   if (!first) return
   const second = await confirm({ title: t('auth.account.deleteAgainTitle'), message: t('auth.account.deleteAgainMessage'), confirmLabel: t('auth.account.deleteConfirm'), danger: true })
   if (!second) return
-  deleting.value = true
-  await removeMyFiles()
-  const { error } = await useSupabase().rpc('delete_my_account')
-  deleting.value = false
-  if (error) {
-    console.error(error)
-    notify(t('auth.account.deleteFailed'), { tone: 'error' })
+  if (!navigator.onLine) {
+    notify(t('profile.account.deleteOffline'), { tone: 'error' })
     return
   }
-  usePlantSharing().forgetAll()
-  await signOut()
-  notify(t('auth.account.deleted'), { tone: 'info' })
+  deleting.value = true
+  try {
+    // cheap authenticated round-trip first, so a dead session or network stops us before any file is touched
+    const pre = await useSupabase().from('profiles').select('id').eq('id', uid).maybeSingle()
+    if (pre.error) {
+      notify(t('auth.account.deleteFailed'), { tone: 'error' })
+      return
+    }
+    try {
+      await removeMyFiles(uid)
+    } catch (e) {
+      console.error(e)
+      notify(t('profile.account.deleteFilesFailed'), { tone: 'error' })
+      return
+    }
+    const { error } = await useSupabase().rpc('delete_my_account')
+    if (error) {
+      console.error(error)
+      notify(t('profile.account.deletePartial'), { tone: 'error' })
+      return
+    }
+    usePlantSharing().forgetAll()
+    await signOut()
+    notify(t('auth.account.deleted'), { tone: 'info' })
+  } finally {
+    deleting.value = false
+  }
 }
 </script>
 
@@ -194,8 +279,28 @@ async function deleteAccount() {
           <span v-if="profile">@{{ profile.username }} · <span class="num">{{ t('auth.account.reputation', { n: profile.reputation }) }}</span></span>
         </div>
       </div>
+      <div
+        v-if="banned"
+        class="banned"
+        role="status"
+      >
+        <UIcon
+          name="i-tabler-ban"
+          class="size-5 banned-icon"
+        />
+        <span class="row-text">
+          <strong>{{ t('profile.account.bannedTitle') }}</strong>
+          <span>{{ t('profile.account.bannedText') }}</span>
+          <a
+            href="https://github.com/MildaHribal/budbuddy/issues"
+            target="_blank"
+            rel="noopener"
+            class="link appeal"
+          >{{ t('profile.account.appeal') }}</a>
+        </span>
+      </div>
       <button
-        v-if="profile && !accepted"
+        v-if="profile && !accepted && !banned"
         type="button"
         class="row attention"
         @click="signInPrompt = true"
@@ -212,7 +317,7 @@ async function deleteAccount() {
       <button
         type="button"
         class="row"
-        :disabled="!profile"
+        :disabled="!profile || banned"
         @click="openEdit"
       >
         <span class="row-text">
@@ -255,6 +360,15 @@ async function deleteAccount() {
         />
       </button>
     </div>
+    <a
+      v-if="session"
+      href="/delete-account.html"
+      target="_blank"
+      rel="noopener"
+      class="delete-info"
+    >
+      <UIcon name="i-tabler-info-circle" /> {{ t('profile.account.deleteInfo') }}
+    </a>
 
     <BottomSheet
       v-model:open="editOpen"
@@ -374,6 +488,57 @@ async function deleteAccount() {
           </div>
         </fieldset>
 
+        <template v-if="extended">
+          <button
+            type="button"
+            role="switch"
+            class="switch-row"
+            :aria-checked="form.first_grow"
+            @click="form.first_grow = !form.first_grow"
+          >
+            <span class="switch-text">
+              <span class="switch-label">{{ t('profile.account.firstGrow') }}</span>
+              <span class="field-hint">{{ t('profile.account.firstGrowHint') }}</span>
+            </span>
+            <span
+              class="switch"
+              aria-hidden="true"
+            />
+          </button>
+
+          <fieldset class="field">
+            <legend class="field-label">
+              {{ t('profile.account.lightType') }}
+            </legend>
+            <div class="wrap-chips">
+              <button
+                v-for="l in LIGHTS"
+                :key="l"
+                type="button"
+                class="chip"
+                :aria-pressed="form.light_type === l"
+                @click="form.light_type = form.light_type === l ? null : l"
+              >
+                {{ t(`profile.light.${l}`) }}
+              </button>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label
+              class="field-label"
+              for="pf-space"
+            >{{ t('profile.account.space') }}</label>
+            <input
+              id="pf-space"
+              v-model="form.space"
+              class="input"
+              maxlength="20"
+              :placeholder="t('profile.account.spacePlaceholder')"
+            >
+          </div>
+        </template>
+
         <div class="field">
           <label
             class="field-label"
@@ -386,6 +551,38 @@ async function deleteAccount() {
             maxlength="60"
           >
         </div>
+
+        <fieldset
+          v-if="extended"
+          class="field"
+        >
+          <legend class="field-label">
+            {{ t('profile.account.pinned') }} <span class="num pin-count">{{ form.pinned_badges.length }}/3</span>
+          </legend>
+          <p class="field-hint pin-hint">
+            {{ earnedBadges.length ? t('profile.account.pinnedHint') : t('profile.account.pinnedNone') }}
+          </p>
+          <div
+            v-if="earnedBadges.length"
+            class="wrap-chips"
+          >
+            <button
+              v-for="b in earnedBadges"
+              :key="b.id"
+              type="button"
+              class="chip pin-chip"
+              :aria-pressed="form.pinned_badges.includes(b.id)"
+              @click="togglePin(b.id)"
+            >
+              <CommunityBadgeMedal
+                :glyph="badgeGlyph(b)"
+                :tier="b.tier"
+                :size="26"
+              />
+              {{ badgeName(b) }}
+            </button>
+          </div>
+        </fieldset>
       </form>
       <template #footer>
         <button
@@ -558,5 +755,114 @@ legend {
 
 .wrap-chips .chip {
   min-height: 44px;
+}
+
+.pin-chip {
+  padding-left: 8px;
+}
+
+.pin-count {
+  margin-left: 6px;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.pin-hint {
+  margin: -2px 0 10px;
+}
+
+.banned {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--danger-soft);
+}
+
+.banned-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #ff9aa3;
+}
+
+.banned .row-text span {
+  line-height: 1.45;
+}
+
+.appeal {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.delete-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+
+.switch-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.switch-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background: #0b0d10;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  transition: background var(--dur) var(--ease-out), box-shadow var(--dur) ease;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text-3);
+  transition: transform var(--dur-slow) var(--ease-out), background var(--dur) ease;
+}
+
+.switch-row[aria-checked="true"] .switch {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line), var(--glow-leaf);
+}
+
+.switch-row[aria-checked="true"] .switch::after {
+  transform: translateX(22px);
+  background: var(--leaf);
 }
 </style>

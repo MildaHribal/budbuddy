@@ -2,7 +2,8 @@
 import { Capacitor } from '@capacitor/core'
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
-import { DEMO_PHOTO_CREDITS } from '~/utils/demoPhotos'
+import { NotBackupError } from '~/composables/useGrow'
+import { DEMO_PHOTO_CREDITS } from '~/utils/demoCredits'
 import { LOCALES, type Locale } from '~/utils/locale'
 
 const { t } = useI18n()
@@ -89,7 +90,7 @@ onMounted(async () => {
   if (route.hash === '#ai') nextTick(() => aiSection.value?.scrollIntoView({ block: 'start' }))
   try {
     const est = await navigator.storage?.estimate?.()
-    if (est?.usage != null) usage.value = `${(est.usage / 1024 / 1024).toFixed(1)} MB`
+    if (est?.usage != null) usage.value = `${formatNumber(est.usage / 1024 / 1024)} MB`
   } catch {
     // not supported – just hide the number
   }
@@ -162,14 +163,18 @@ async function importData() {
     const result = await grow.importBackup(await file.text())
     name.value = state.settings.growerName
     syncLight()
-    notify(t('settings.toast.restored', {
+    const restored = t('settings.toast.restored', {
       plants: t('common.plants', { n: result.plants }),
       entries: t('common.entries', { n: result.entries }),
       photos: t('common.photos', { n: result.photos })
-    }))
+    })
+    notify(result.skipped ? `${restored}. ${t('settings.toast.skipped', { n: result.skipped })}` : restored, { duration: result.skipped ? 6000 : undefined })
   } catch (e) {
     console.error(e)
-    notify(e instanceof SyntaxError ? t('settings.toast.invalidJson') : (e as Error).message || t('settings.toast.importFailed'), { tone: 'error' })
+    const msg = e instanceof SyntaxError
+      ? t('settings.toast.invalidJson')
+      : e instanceof NotBackupError ? t('settings.toast.notBackup') : t('settings.toast.importFailed')
+    notify(msg, { tone: 'error' })
   } finally {
     busy.value = null
   }
@@ -212,7 +217,7 @@ async function erase() {
       back
     />
     <div class="page rise">
-      <CommunityAccountSection />
+      <CommunityAccountSection class="account-quiet" />
       <section aria-labelledby="h-you">
         <div class="section-head">
           <h2
@@ -860,5 +865,13 @@ async function erase() {
 
 .test-field {
   justify-content: flex-end;
+}
+
+/* the optional community sign-in must not outshout the core settings below it */
+.account-quiet :deep(.btn-primary) {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--leaf);
+  box-shadow: none;
 }
 </style>

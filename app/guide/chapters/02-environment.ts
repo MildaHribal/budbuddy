@@ -52,6 +52,12 @@ export default {
           ]
         },
         {
+          type: 'figure',
+          photo: 'environment-choose-greenhouse.webp',
+          caption: { en: 'A greenhouse sits between the two: free sunlight, but with a roof over the plants.', cs: 'Skleník je něco mezi: slunce zdarma, ale nad rostlinami je střecha.' },
+          credit: 'Cannabis Tours · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'text',
           md: {
             en: 'Not sure? Indoors is the easiest place to **learn**, because you can see cause and effect. Outdoors is the cheapest if you have a garden and a summer long enough for your strain.',
@@ -96,6 +102,12 @@ export default {
             [{ en: '100×100 cm', cs: '100×100 cm' }, { en: '3–6', cs: '3–6' }, { en: '300–400 W', cs: '300–400 W' }, { en: '125 mm, ~300 m³/h', cs: '125 mm, ~300 m³/h' }],
             [{ en: '120×120 cm', cs: '120×120 cm' }, { en: '4–9', cs: '4–9' }, { en: '450–600 W', cs: '450–600 W' }, { en: '150 mm, ~400 m³/h', cs: '150 mm, ~400 m³/h' }]
           ]
+        },
+        {
+          type: 'figure',
+          photo: 'environment-tent-canopy.webp',
+          caption: { en: 'Inside a tent late in flower: reflective walls, pots on the floor, an even canopy.', cs: 'Uvnitř stanu na konci kvetení: reflexní stěny, květináče na zemi, vyrovnané vršky.' },
+          credit: 'eggrole · CC BY 2.0 (Flickr), resized'
         },
         {
           type: 'steps',
@@ -162,6 +174,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'environment-light-led-seedling.webp',
+          caption: { en: 'A seedling under a red-blue LED. The purple tint is just the light; full-spectrum LEDs look white.', cs: 'Sazenice pod červeno-modrou LED. Fialová je jen barva světla; full-spectrum LED svítí bíle.' },
+          credit: 'cannabispictures · CC BY 2.0 (Flickr), resized'
+        },
+        {
           type: 'table',
           head: [
             { en: 'Stage', cs: 'Fáze' },
@@ -222,6 +240,12 @@ export default {
             en: 'Plants "breathe" through their leaves. How fast they drink and transpire depends on temperature and humidity together. Growers combine the two into one number: **VPD** (vapour pressure deficit), in kPa. Too low and plants are sluggish and mould loves it; too high and they close up and stress.',
             cs: 'Rostliny „dýchají" listy. Jak rychle pijí a odpařují vodu, záleží na teplotě a vlhkosti dohromady. Pěstitelé to spojují do jednoho čísla: **VPD** (deficit tlaku páry) v kPa. Moc nízké a rostliny jsou líné a plíseň má hody, moc vysoké a rostliny se zavřou a stresují.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'environment-climate-hygrometer.webp',
+          caption: { en: 'A cheap thermo-hygrometer. Put it at plant height, not on the floor or right under the lamp.', cs: 'Levný teploměr s vlhkoměrem. Dej ho do výšky rostlin, ne na zem ani přímo pod lampu.' },
+          credit: 'Jacek Halicki · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'table',
@@ -334,6 +358,12 @@ export default {
           ]
         },
         {
+          type: 'figure',
+          photo: 'environment-outdoor-plant.webp',
+          caption: { en: 'An outdoor plant in flower by a sunny wall that keeps off the wind.', cs: 'Venkovní rostlina v květu u slunné zdi, která ji kryje před větrem.' },
+          credit: 'Gonzalo Ganda Álvarez · CC BY 4.0 (iNaturalist), resized'
+        },
+        {
           type: 'table',
           head: [
             { en: 'When (central Europe)', cs: 'Kdy (střední Evropa)' },
@@ -387,6 +417,12 @@ export default {
             en: 'A greenhouse gives you outdoor sunlight with a roof over the buds. You can plant out 2–4 weeks earlier, harvest later, and autumn rain cannot reach the flowers. The price is heat and humidity: on a sunny day a closed greenhouse passes 40 °C within an hour.',
             cs: 'Skleník ti dá venkovní slunce se střechou nad palicemi. Vysadit můžeš o 2–4 týdny dřív, sklízet později a podzimní déšť na květy nedosáhne. Daní je teplo a vlhkost: zavřený skleník se za slunečného dne do hodiny rozpálí přes 40 °C.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'environment-greenhouse-tunnel.webp',
+          caption: { en: 'A simple foil tunnel with open sides. Even this keeps rain off the buds.', cs: 'Jednoduchý fóliový tunel s otevřenými boky. I ten udrží déšť mimo palice.' },
+          credit: 'Dr. Guido Bohne · CC BY-SA 4.0 (iNaturalist), resized'
         },
         {
           type: 'steps',
@@ -448,6 +484,12 @@ export default {
             { en: 'Smell is handled (carbon filter or a discreet spot)', cs: 'Vůně je vyřešená (uhlíkový filtr nebo nenápadné místo)' },
             { en: 'Water is within easy reach', cs: 'Voda je snadno po ruce' }
           ]
+        },
+        {
+          type: 'figure',
+          photo: 'environment-ready-young-plant.webp',
+          caption: { en: 'If the space is ready before the seed, the young plant gets a calm start.', cs: 'Když je místo připravené dřív než semínko, mladá rostlina má klidný start.' },
+          credit: 'rawpixel · CC0 1.0 (rawpixel)'
         },
         {
           type: 'text',

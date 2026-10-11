@@ -1,10 +1,13 @@
 import type { PublicAuthor } from '../types/community'
+import { locale } from './locale'
 
 export interface Challenge {
   id: string
   slug: string
   title: string
   description: string
+  title_cs?: string | null
+  description_cs?: string | null
   cover_url: string | null
   starts_at: string
   ends_at: string
@@ -21,7 +24,8 @@ export interface ChallengeEntry {
   plant_id: string | null
   image_url: string
   caption: string | null
-  votes_count: number
+  /** null while voting is open (challenge_entries_public hides results) */
+  votes_count: number | null
   is_hidden?: boolean
   created_at: string
   author?: EntryAuthor | null
@@ -58,7 +62,20 @@ export function splitDuration(ms: number): { d: number, h: number, m: number, s:
 
 /** Highest votes first; ties go to the earlier entry. */
 export function rankEntries<T extends Pick<ChallengeEntry, 'votes_count' | 'created_at'>>(list: T[]): T[] {
-  return [...list].sort((a, b) => b.votes_count - a.votes_count || a.created_at.localeCompare(b.created_at))
+  return [...list].sort((a, b) => (b.votes_count ?? 0) - (a.votes_count ?? 0) || a.created_at.localeCompare(b.created_at))
+}
+
+export function challengeTitle(c: Pick<Challenge, 'title' | 'title_cs'>): string {
+  return (locale.value === 'cs' && c.title_cs?.trim()) || c.title
+}
+
+export function challengeDescription(c: Pick<Challenge, 'description' | 'description_cs'>): string {
+  return (locale.value === 'cs' && c.description_cs?.trim()) || c.description
+}
+
+/** The vote trigger rejects accounts younger than 3 days or without any activity. */
+export function isVoteIneligible(message: string | undefined): boolean {
+  return /vote_not_eligible|eligib/i.test(message ?? '')
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')

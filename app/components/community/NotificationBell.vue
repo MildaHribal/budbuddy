@@ -1,43 +1,35 @@
 <script setup lang="ts">
-import type { RealtimeChannel } from '@supabase/supabase-js'
-
 const { t } = useI18n()
 const { user, signedIn } = useAuth()
 const { unread, refresh } = useNotifications()
+const { checkCelebration } = useBadges()
 
 let timer: ReturnType<typeof setInterval> | null = null
-let channel: RealtimeChannel | null = null
+let lastBadgeCheck = 0
 
-const onVisible = () => {
-  if (document.visibilityState === 'visible') refresh()
+function tick() {
+  if (document.visibilityState !== 'visible') return
+  refresh()
+  if (user.value && Date.now() - lastBadgeCheck > 5 * 60e3) {
+    lastBadgeCheck = Date.now()
+    checkCelebration(user.value.id)
+  }
 }
 
 function stop() {
   if (timer) clearInterval(timer)
   timer = null
-  if (channel) useSupabase().removeChannel(channel).catch(() => {})
-  channel = null
 }
 
-function start(uid: string) {
+function start() {
   stop()
-  refresh()
-  timer = setInterval(() => {
-    if (document.visibilityState === 'visible') refresh()
-  }, 60_000)
-  // realtime is a bonus; polling covers it when the table isn't published
-  try {
-    channel = useSupabase()
-      .channel(`notif-${uid}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` }, () => refresh())
-      .subscribe()
-  } catch {
-    channel = null
-  }
+  lastBadgeCheck = 0
+  tick()
+  timer = setInterval(tick, 60_000)
 }
 
 watch(() => user.value?.id, (uid) => {
-  if (uid) start(uid)
+  if (uid) start()
   else {
     stop()
     unread.value = 0
@@ -45,16 +37,16 @@ watch(() => user.value?.id, (uid) => {
 }, { immediate: true })
 
 onMounted(() => {
-  window.addEventListener('focus', refresh)
-  document.addEventListener('visibilitychange', onVisible)
+  window.addEventListener('focus', tick)
+  document.addEventListener('visibilitychange', tick)
 })
 onBeforeUnmount(() => {
   stop()
-  window.removeEventListener('focus', refresh)
-  document.removeEventListener('visibilitychange', onVisible)
+  window.removeEventListener('focus', tick)
+  document.removeEventListener('visibilitychange', tick)
 })
 
-const label = computed(() => (unread.value ? t('profile.notif.bellUnread', { n: unread.value }) : t('profile.notif.bell')))
+const label = computed(() => (unread.value ? t('notifications.bellUnread', { n: unread.value }) : t('notifications.bell')))
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { dli } from '~/utils/calc'
-import { intlLocale } from '~/utils/locale'
+import { formatNumber } from '~/utils/locale'
 import { stageInfo } from '~/utils/stages'
 
 const props = withDefaults(defineProps<{ watts?: number, area?: number }>(), { watts: 240, area: 1 })
@@ -48,7 +48,6 @@ const verdicts = computed(() => STAGES.map((s) => {
   return { ...s, tone: 'dim', text: t('guideWidgets.light.dim', { p: pct }) }
 }))
 
-const fmt = (n: number, d = 0) => n.toLocaleString(intlLocale(), { minimumFractionDigits: d, maximumFractionDigits: d })
 const pos = computed(() => Math.min(1, ppfd.value / MAX))
 const ticks = [0, 400, 800, 1200]
 </script>
@@ -155,7 +154,7 @@ const ticks = [0, 400, 800, 1200]
           :aria-pressed="eff === k"
           @click="eff = k"
         >
-          {{ t(`guideWidgets.light.${k}`) }} <span class="num muted">{{ fmt(v, 1) }}</span>
+          {{ t(`guideWidgets.light.${k}`) }} <span class="num muted">{{ formatNumber(v, 1, true) }}</span>
         </button>
       </div>
     </div>
@@ -166,13 +165,13 @@ const ticks = [0, 400, 800, 1200]
     >
       <div>
         <p class="gw-big num dens">
-          {{ fmt(density) }}<span class="gw-unit">W/m²</span>
+          {{ formatNumber(density, 0, true) }}<span class="gw-unit">W/m²</span>
         </p>
-        <span class="gw-hint">{{ t('guideWidgets.light.density') }} · {{ fmt(areaM2, 2) }} m²</span>
+        <span class="gw-hint">{{ t('guideWidgets.light.density') }} · {{ formatNumber(areaM2, 2, true) }} m²</span>
       </div>
       <div class="ppfd">
         <span class="gw-label">{{ t('guideWidgets.light.ppfd') }}</span>
-        <span class="ppfd-v num">{{ t('guideWidgets.light.ppfdNote', { v: fmt(ppfd) }) }}</span>
+        <span class="ppfd-v num">{{ t('guideWidgets.light.ppfdNote', { v: formatNumber(ppfd, 0, true) }) }}</span>
       </div>
     </div>
 
@@ -199,7 +198,7 @@ const ticks = [0, 400, 800, 1200]
           v-for="tk in ticks"
           :key="tk"
           :style="{ left: `${(tk / MAX) * 100}%` }"
-        >{{ fmt(tk) }}</span>
+        >{{ formatNumber(tk, 0, true) }}</span>
       </div>
     </div>
 
@@ -222,7 +221,7 @@ const ticks = [0, 400, 800, 1200]
     </ul>
 
     <p class="gw-hint">
-      {{ t('guideWidgets.light.dli', { veg: fmt(dli(ppfd, 18)), flower: fmt(dli(ppfd, 12)) }) }}
+      {{ t('guideWidgets.light.dli', { veg: formatNumber(dli(ppfd, 18), 0, true), flower: formatNumber(dli(ppfd, 12), 0, true) }) }}
     </p>
     <p class="gw-hint">
       {{ t('guideWidgets.light.estimate') }}

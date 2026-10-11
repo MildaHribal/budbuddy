@@ -1,8 +1,107 @@
 export default {
   en: {
     title: 'Community',
-    subtitle: 'Growers helping growers',
-    tabs: { forYou: 'For you', following: 'Following', new: 'New', popular: 'Popular' },
+    subtitle: 'Growers sharing what works',
+    reactions: { one: '{n} reaction', other: '{n} reactions' },
+    react: {
+      like: 'Like',
+      healthy: 'Looking healthy',
+      training: 'Great training',
+      frosty: 'Frosty',
+      helpful: 'Helpful',
+      count: '{label}, {n}',
+      more: 'More reactions',
+      picker: 'Pick a reaction'
+    },
+    help: {
+      needs: 'Needs help',
+      solved: 'Solved',
+      solvedBy: 'Solved by @{name}'
+    },
+    symptoms: {
+      yellowing: 'Yellowing',
+      spots: 'Spots',
+      burn: 'Tip burn',
+      claw: 'Clawing',
+      droop: 'Drooping',
+      curl: 'Curling',
+      purple: 'Purple stems',
+      pests: 'Pests',
+      mould: 'Mould',
+      slow: 'Slow growth',
+      other: 'Other'
+    },
+    firstGrow: 'First grow',
+    firstGrowHint: 'This grower is on their first grow',
+    beKind: 'Be kind – this is their first grow.',
+    levelSheet: {
+      title: 'Grower levels',
+      open: '{level}, {n} reputation. What levels mean',
+      intro: 'Reputation grows when you help: reactions on your posts, answers marked as the solution and tips other growers find helpful.',
+      rep: '{n} rep',
+      you: 'You',
+      toNext: '{n} more rep to {level}',
+      top: 'Top level. Thanks for helping so many growers.',
+      how: 'Fastest way up: answer questions in Unanswered. An answer marked as the solution counts the most.',
+      perks: {
+        seedling: 'Post, comment and react',
+        sprout: 'Add links and edit tags',
+        veg: 'Vote in challenges, your reports weigh more',
+        flowering: 'Your tips go live without review',
+        master: 'A trusted voice across the community'
+      }
+    },
+    blocked: {
+      contact: 'Not sent: phone numbers, emails and messenger handles aren’t allowed here.',
+      sale: 'Not sent: buying or selling seeds, clones or buds isn’t allowed here.'
+    },
+    precheck: {
+      contactTitle: 'Contact details spotted',
+      contactText: 'Phone numbers, emails and messenger handles get blocked. Edit the text, or send it anyway if this is a false alarm.',
+      saleTitle: 'This reads like a deal',
+      saleText: 'Buying or selling seeds, clones or buds gets blocked. Edit the text, or send it anyway if it isn’t about a deal.',
+      sendAnyway: 'Send anyway'
+    },
+    home: {
+      starter: 'What’s growing on?',
+      ask: 'Ask for help',
+      show: 'Share a plant',
+      examplesTitle: 'Questions that get answers',
+      examplesText: 'A clear title, the stage and two good photos. Tap one to start from it.',
+      examples: {
+        a: 'Yellow tips in week 3 of flower – nute burn or deficiency?',
+        b: 'Rusty spots on lower fan leaves, coco, pH 6.0',
+        c: 'Leaves curling up under a new LED – too close?'
+      },
+      firstTitle: 'Start the conversation',
+      firstText: 'The community is just getting going. Your first post sets the tone – show a plant or ask something you’ve been wondering about.'
+    },
+    growers: {
+      title: 'Growers like you',
+      titleAnon: 'Growers to follow',
+      follow: 'Follow',
+      following: 'Following',
+      followLabel: 'Follow {name}',
+      rep: '{n} rep',
+      light: { led: 'LED', hps: 'HPS', cfl: 'CFL', sun: 'Sun', mixed: 'Mixed light' }
+    },
+    week: {
+      title: 'This week',
+      dismiss: 'Hide until next week',
+      diaries: { one: '{n} diary you follow got an update', few: '{n} diaries you follow got updates', other: '{n} diaries you follow got updates' },
+      matching: { one: '{n} grower with your setup is waiting for an answer', other: '{n} growers with your setup are waiting for an answer' },
+      waiting: { one: '{n} question is waiting for an answer', other: '{n} questions are waiting for an answer' },
+      help: 'Help out',
+      topTip: 'Top tip this week',
+      entriesClose: 'Challenge entries close {date}',
+      votingEnds: 'Challenge voting ends {date}',
+      quiet: 'A quiet week so far. Add an update or answer a question to get things moving.'
+    },
+    unanswered: {
+      title: 'Nobody is waiting',
+      text: 'Every question has at least one answer. Stuck yourself? Ask, and attach your plant context.'
+    },
+    tabs: { forYou: 'For you', following: 'Following', new: 'New', popular: 'Popular', unanswered: 'Unanswered' },
     cats: {
       all: 'All',
       question: 'Q&A',
@@ -43,7 +142,7 @@ export default {
     photo: 'Photo {n} of {total}',
     morePhotos: '+{n}',
     reputation: '{n} reputation',
-    levels: { seedling: 'Seedling', grower: 'Grower', cultivator: 'Cultivator', master: 'Master' },
+    levels: { seedling: 'Seedling', sprout: 'Sprout', veg: 'Veg', flowering: 'Flowering', master: 'Master Grower' },
     empty: {
       title: 'Nothing here yet',
       text: 'Be the first to post – show your plants or ask a question.',
@@ -74,7 +173,18 @@ export default {
       category: 'Category',
       titleLabel: 'Title',
       titleOptional: 'Title (optional)',
-      titleRequired: 'A question needs a title',
+      titleRequired: 'Questions and problems need a title',
+      symptoms: 'What do you see?',
+      symptomsHint: 'Pick up to 6',
+      checklist: 'Photos that get answers',
+      check: {
+        leaf: 'Leaf top and underside, up close',
+        light: 'Whole plant under white light, not purple',
+        context: 'Plant context attached (stage, pH, EC, last feed)'
+      },
+      autoPhotos: { one: 'Added the latest photo of {name}', other: 'Added the {n} latest photos of {name}' },
+      privacy: 'Check photos for faces, addresses or anything that identifies your home.',
+      problemPh: 'e.g. Rusty spots on lower leaves, week 4 of veg',
       titlePh: 'What do you want to show or ask?',
       questionPh: 'e.g. Yellow tips in week 3 of flower?',
       bodyLabel: 'Text',
@@ -149,8 +259,107 @@ export default {
   },
   cs: {
     title: 'Komunita',
-    subtitle: 'Pěstitelé pomáhají pěstitelům',
-    tabs: { forYou: 'Pro tebe', following: 'Sledovaní', new: 'Nové', popular: 'Populární' },
+    subtitle: 'Pěstitelé sdílí, co funguje',
+    reactions: { one: '{n} reakce', few: '{n} reakce', other: '{n} reakcí' },
+    react: {
+      like: 'Líbí se',
+      healthy: 'Vypadá zdravě',
+      training: 'Pěkný trénink',
+      frosty: 'Plná trichomů',
+      helpful: 'Užitečné',
+      count: '{label}, {n}',
+      more: 'Další reakce',
+      picker: 'Vyber reakci'
+    },
+    help: {
+      needs: 'Potřebuje pomoc',
+      solved: 'Vyřešeno',
+      solvedBy: 'Vyřešeno díky @{name}'
+    },
+    symptoms: {
+      yellowing: 'Žloutnutí',
+      spots: 'Skvrny',
+      burn: 'Spálené špičky',
+      claw: 'Drápky',
+      droop: 'Povadlé listy',
+      curl: 'Kroucení',
+      purple: 'Fialové stonky',
+      pests: 'Škůdci',
+      mould: 'Plíseň',
+      slow: 'Pomalý růst',
+      other: 'Jiné'
+    },
+    firstGrow: 'Pěstuje poprvé',
+    firstGrowHint: 'Tenhle pěstitel pěstuje poprvé',
+    beKind: 'Buď laskavý – pěstuje poprvé.',
+    levelSheet: {
+      title: 'Úrovně pěstitelů',
+      open: '{level}, reputace {n}. Co znamenají úrovně',
+      intro: 'Reputace roste, když pomáháš: reakce na tvoje příspěvky, odpovědi označené jako řešení a tipy, které ostatním pomohly.',
+      rep: '{n} rep.',
+      you: 'Ty',
+      toNext: 'Ještě {n} rep. do úrovně {level}',
+      top: 'Nejvyšší úroveň. Díky, že pomáháš tolika pěstitelům.',
+      how: 'Nejrychlejší cesta nahoru: odpovídej na dotazy v záložce Bez odpovědi. Nejvíc se počítá odpověď označená jako řešení.',
+      perks: {
+        seedling: 'Přidávej příspěvky, komentuj a reaguj',
+        sprout: 'Přidávej odkazy a upravuj štítky',
+        veg: 'Hlasuj ve výzvách, tvoje nahlášení mají větší váhu',
+        flowering: 'Tvoje tipy se zveřejní bez kontroly',
+        master: 'Důvěryhodný hlas celé komunity'
+      }
+    },
+    blocked: {
+      contact: 'Neodesláno: telefonní čísla, e-maily ani kontakty na messengery sem nepatří.',
+      sale: 'Neodesláno: nákup ani prodej semínek, řízků nebo palic tu není povolený.'
+    },
+    precheck: {
+      contactTitle: 'Vypadá to na kontakt',
+      contactText: 'Telefonní čísla, e-maily a kontakty na messengery se blokují. Uprav text, nebo ho pošli i tak, pokud jde o planý poplach.',
+      saleTitle: 'Zní to jako obchod',
+      saleText: 'Nákup a prodej semínek, řízků nebo palic se blokuje. Uprav text, nebo ho pošli i tak, pokud nejde o obchod.',
+      sendAnyway: 'Poslat i tak'
+    },
+    home: {
+      starter: 'Co ti roste?',
+      ask: 'Chci poradit',
+      show: 'Ukázat rostlinu',
+      examplesTitle: 'Dotazy, na které přijdou odpovědi',
+      examplesText: 'Jasný nadpis, fáze a dvě dobré fotky. Klepni na příklad a začni z něj.',
+      examples: {
+        a: 'Yellow tips in week 3 of flower – nute burn or deficiency?',
+        b: 'Rusty spots on lower fan leaves, coco, pH 6.0',
+        c: 'Leaves curling up under a new LED – too close?'
+      },
+      firstTitle: 'Rozjeď to tady',
+      firstText: 'Komunita se teprve rozjíždí. Tvůj první příspěvek udá tón – ukaž rostlinu nebo se zeptej na to, co ti vrtá hlavou.'
+    },
+    growers: {
+      title: 'Pěstitelé jako ty',
+      titleAnon: 'Koho sledovat',
+      follow: 'Sledovat',
+      following: 'Sleduješ',
+      followLabel: 'Sledovat uživatele {name}',
+      rep: '{n} rep.',
+      light: { led: 'LED', hps: 'HPS', cfl: 'CFL', sun: 'Slunce', mixed: 'Kombinované světlo' }
+    },
+    week: {
+      title: 'Tento týden',
+      dismiss: 'Skrýt do příštího týdne',
+      diaries: { one: '{n} sledovaný deník má novinky', few: '{n} sledované deníky mají novinky', other: '{n} sledovaných deníků má novinky' },
+      matching: { one: '{n} pěstitel s podobným setupem čeká na odpověď', few: '{n} pěstitelé s podobným setupem čekají na odpověď', other: '{n} pěstitelů s podobným setupem čeká na odpověď' },
+      waiting: { one: '{n} dotaz čeká na odpověď', few: '{n} dotazy čekají na odpověď', other: '{n} dotazů čeká na odpověď' },
+      help: 'Pomoct',
+      topTip: 'Nejlepší tip týdne',
+      entriesClose: 'Přihlášky do výzvy končí {date}',
+      votingEnds: 'Hlasování ve výzvě končí {date}',
+      quiet: 'Zatím klidný týden. Přidej novinku nebo odpověz na dotaz a rozhýbej to.'
+    },
+    unanswered: {
+      title: 'Nikdo nečeká',
+      text: 'Každý dotaz má aspoň jednu odpověď. Zasekl ses? Zeptej se a přilož kontext rostliny.'
+    },
+    tabs: { forYou: 'Pro tebe', following: 'Sledovaní', new: 'Nové', popular: 'Populární', unanswered: 'Bez odpovědi' },
     cats: {
       all: 'Vše',
       question: 'Dotazy',
@@ -191,7 +400,7 @@ export default {
     photo: 'Fotka {n} z {total}',
     morePhotos: '+{n}',
     reputation: 'Reputace {n}',
-    levels: { seedling: 'Sazenička', grower: 'Pěstitel', cultivator: 'Kultivátor', master: 'Mistr' },
+    levels: { seedling: 'Klíček', sprout: 'Výhonek', veg: 'Vegetace', flowering: 'Kvetení', master: 'Mistr pěstitel' },
     empty: {
       title: 'Zatím tu nic není',
       text: 'Buď první – ukaž své rostliny nebo se na něco zeptej.',
@@ -222,7 +431,18 @@ export default {
       category: 'Kategorie',
       titleLabel: 'Nadpis',
       titleOptional: 'Nadpis (nepovinný)',
-      titleRequired: 'Dotaz potřebuje nadpis',
+      titleRequired: 'Dotaz a problém potřebují nadpis',
+      symptoms: 'Co vidíš?',
+      symptomsHint: 'Vyber až 6',
+      checklist: 'Fotky, na které přijdou odpovědi',
+      check: {
+        leaf: 'Horní i spodní strana listu zblízka',
+        light: 'Celá rostlina pod bílým světlem, ne fialovým',
+        context: 'Přiložený kontext rostliny (fáze, pH, EC, hnojení)'
+      },
+      autoPhotos: { one: 'Přidal jsem poslední fotku rostliny {name}', few: 'Přidal jsem {n} poslední fotky rostliny {name}', other: 'Přidal jsem {n} posledních fotek rostliny {name}' },
+      privacy: 'Zkontroluj, že na fotkách nejsou obličeje, adresy ani nic, podle čeho by šlo poznat, kde bydlíš.',
+      problemPh: 'např. Rezavé skvrny na spodních listech, 4. týden vegetace',
       titlePh: 'Co chceš ukázat nebo se zeptat?',
       questionPh: 'např. Žluté špičky ve 3. týdnu kvetení?',
       bodyLabel: 'Text',

@@ -3,13 +3,42 @@ import { locale, plural, type Locale, type Plural } from '~/utils/locale'
 type Entry = string | Plural | { [key: string]: Entry }
 type Dict = Record<string, Entry>
 
+type LocaleModule = { default: Record<Locale, Dict> }
+
 // Every app/locales/<ns>.ts exports { en, cs }; keys resolve as "<ns>.<path>".
-const modules = import.meta.glob<{ default: Record<Locale, Dict> }>('../locales/*.ts', { eager: true })
+// Heavy namespaces used only on a few routes load on demand (see middleware/i18n.global.ts).
+export const LAZY_NAMESPACES = ['guide', 'guideWidgets', 'guideArt'] as const
+export type LazyNamespace = typeof LAZY_NAMESPACES[number]
+
+const eager = import.meta.glob<LocaleModule>(['../locales/*.ts', '!../locales/{guide,guideWidgets,guideArt}.ts'], { eager: true })
+const lazy = import.meta.glob<LocaleModule>('../locales/{guide,guideWidgets,guideArt}.ts')
 const dicts: Record<Locale, Dict> = { en: {}, cs: {} }
-for (const [path, mod] of Object.entries(modules)) {
-  const ns = path.split('/').pop()!.replace(/\.ts$/, '')
+const nsOf = (path: string) => path.split('/').pop()!.replace(/\.ts$/, '')
+
+function register(path: string, mod: LocaleModule) {
+  const ns = nsOf(path)
   dicts.en[ns] = mod.default.en
   dicts.cs[ns] = mod.default.cs
+}
+for (const [path, mod] of Object.entries(eager)) register(path, mod)
+
+const pending = new Map<string, Promise<void>>()
+
+/** Loads lazy namespaces before a page that needs them renders. */
+export function loadNamespaces(names: readonly LazyNamespace[]): Promise<void> {
+  return Promise.all(names.map((ns) => {
+    if (dicts.en[ns]) return undefined
+    const path = `../locales/${ns}.ts`
+    let p = pending.get(ns)
+    if (!p) {
+      p = lazy[path]!().then(mod => register(path, mod)).catch((e) => {
+        pending.delete(ns)
+        console.error('[i18n] could not load', ns, e)
+      })
+      pending.set(ns, p)
+    }
+    return p
+  })).then(() => undefined)
 }
 
 function lookup(dict: Dict, key: string): Entry | undefined {

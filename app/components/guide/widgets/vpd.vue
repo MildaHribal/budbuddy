@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { vpd, vpdZone } from '~/utils/calc'
-import { intlLocale } from '~/utils/locale'
+import { formatNumber } from '~/utils/locale'
 
 const props = withDefaults(defineProps<{ temp?: number, rh?: number }>(), { temp: 25, rh: 60 })
 const { t } = useI18n()
@@ -18,7 +18,6 @@ const bands = computed(() => ([[0, 0.4], [0.4, 0.8], [0.8, 1.2], [1.2, 1.6], [1.
 const pos = computed(() => Math.min(1, value.value / MAX))
 const ticks = [0, 0.4, 0.8, 1.2, 1.6, 2]
 
-const fmt = (n: number, d = 1) => n.toLocaleString(intlLocale(), { minimumFractionDigits: d, maximumFractionDigits: d })
 const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)) * 100}%`
 </script>
 
@@ -41,7 +40,7 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
       aria-live="polite"
     >
       <p class="gw-big num value">
-        {{ fmt(value, 2) }}<span class="gw-unit">kPa</span>
+        {{ formatNumber(value, 2, true) }}<span class="gw-unit">kPa</span>
       </p>
       <Transition
         name="gw-fade"
@@ -88,7 +87,7 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
           v-for="tk in ticks"
           :key="tk"
           :style="{ left: `${(tk / MAX) * 100}%` }"
-        >{{ fmt(tk) }}</span>
+        >{{ formatNumber(tk, 1, true) }}</span>
       </div>
     </div>
 
@@ -105,7 +104,7 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
         <output
           class="gw-value"
           :for="`${uid}-t`"
-        >{{ fmt(temp) }} °C</output>
+        >{{ formatNumber(temp, 1, true) }} °C</output>
       </div>
       <input
         :id="`${uid}-t`"
@@ -149,7 +148,7 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
         <output
           class="gw-value"
           :for="`${uid}-leaf`"
-        >{{ leaf > 0 ? '+' : '' }}{{ fmt(leaf) }} °C</output>
+        >{{ leaf > 0 ? '+' : '' }}{{ formatNumber(leaf, 1, true) }} °C</output>
       </div>
       <input
         :id="`${uid}-leaf`"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { intlLocale } from '~/utils/locale'
+import { formatNumber } from '~/utils/locale'
 
 type Medium = 'soil' | 'coco'
 type Stage = 'seedling' | 'veg' | 'flower'
@@ -22,7 +22,7 @@ const FRACTION: Record<Medium, Record<Stage, [number, number]>> = {
 
 const frac = computed(() => FRACTION[medium.value][stage.value])
 const amount = computed(() => frac.value.map(f => f * litres.value) as [number, number])
-const fmtL = (n: number) => n.toLocaleString(intlLocale(), { maximumFractionDigits: n < 1 ? 2 : 1, minimumFractionDigits: n < 10 ? 1 : 0 })
+const fmtL = (n: number) => formatNumber(n, n < 1 ? 2 : 1, n >= 1 && n < 10)
 const freq = computed(() => t(`guideWidgets.water.${medium.value}${stage.value[0]!.toUpperCase()}${stage.value.slice(1)}`))
 
 const POT_TOP = 30

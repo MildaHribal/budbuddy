@@ -1,5 +1,8 @@
 <script setup lang="ts">
-type Kind = 'like' | 'comment' | 'reply' | 'follow' | 'accepted' | 'tip_vote' | 'challenge' | 'moderation'
+import { isMissingSchema } from '~/utils/dbErrors'
+import { badgeDesc, badgeGlyph, badgeName } from '~/composables/useBadges'
+
+type Kind = 'like' | 'reaction' | 'comment' | 'reply' | 'follow' | 'accepted' | 'tip_vote' | 'challenge' | 'moderation' | 'badge' | 'solve_ping' | 'update'
 interface Actor { id: string, username: string, display_name: string | null, avatar_url: string | null }
 interface Row {
   id: string
@@ -9,31 +12,45 @@ interface Row {
   comment_id: string | null
   read_at: string | null
   created_at: string
+  meta?: Record<string, unknown> | null
   actor: Actor | null
   post: { id: string, title: string | null, body: string } | null
+}
+interface Item {
+  key: string
+  type: Kind
+  lead: Row
+  rows: Row[]
+  actors: Actor[]
 }
 
 const PAGE = 20
 const NuxtLink = resolveComponent('NuxtLink')
 const GLYPH: Record<Kind, { icon: string, color: string }> = {
   like: { icon: 'i-tabler-heart-filled', color: '#ff8fb8' },
+  reaction: { icon: 'vegetative', color: '#9be36b' },
   comment: { icon: 'i-tabler-message-circle', color: '#7cc8f2' },
   reply: { icon: 'i-tabler-arrow-back-up', color: '#7cc8f2' },
   follow: { icon: 'i-tabler-user-plus', color: '#9be36b' },
   accepted: { icon: 'i-tabler-circle-check', color: '#9be36b' },
   tip_vote: { icon: 'i-tabler-thumb-up', color: '#9be36b' },
   challenge: { icon: 'i-tabler-trophy', color: '#ffd28a' },
-  moderation: { icon: 'i-tabler-shield-check', color: '#a9b5a6' }
+  moderation: { icon: 'i-tabler-shield-check', color: '#a9b5a6' },
+  badge: { icon: 'i-tabler-award', color: '#ffd28a' },
+  solve_ping: { icon: 'i-tabler-circle-check', color: '#ffd28a' },
+  update: { icon: 'photo', color: '#9be36b' }
 }
+const REACTION_KINDS = ['like', 'healthy', 'training', 'frosty', 'helpful']
 
 const { t } = useI18n()
 const { user, profile, signedIn, ready, requireAuth } = useAuth()
 const { isBlocked, load: loadBlocks } = useBlocks()
 const { unread } = useNotifications()
+const { loadCatalog, byId } = useBadges()
 const { notify } = useNotify()
 const sb = useSupabase()
 
-useHead({ title: () => t('profile.notif.title') })
+useHead({ title: () => t('notifications.title') })
 
 const rows = ref<Row[]>([])
 const busy = ref(false)
@@ -42,24 +59,36 @@ const error = ref(false)
 /** ids that were unread when the page opened, kept highlighted */
 const fresh = ref(new Set<string>())
 
-const SELECT = 'id, type, actor_id, post_id, comment_id, read_at, created_at, actor:profiles!notifications_actor_id_fkey(id, username, display_name, avatar_url), post:posts(id, title, body)'
+const BASE = 'id, type, actor_id, post_id, comment_id, read_at, created_at, actor:profiles!notifications_actor_id_fkey(id, username, display_name, avatar_url), post:posts(id, title, body)'
+let withMeta = true
+
+async function fetchPage(uid: string, from: number) {
+  const q = (cols: string) => sb.from('notifications').select(cols)
+    .eq('user_id', uid).order('created_at', { ascending: false }).range(from, from + PAGE - 1)
+  if (withMeta) {
+    const res = await q(`${BASE}, meta`)
+    if (!isMissingSchema(res.error)) return res
+    withMeta = false
+  }
+  return q(BASE)
+}
 
 async function loadMore() {
   const uid = user.value?.id
   if (!uid || busy.value || done.value) return
   busy.value = true
   error.value = false
-  const from = rows.value.length
-  const { data, error: e } = await sb.from('notifications').select(SELECT)
-    .eq('user_id', uid).order('created_at', { ascending: false }).range(from, from + PAGE - 1)
+  const { data, error: e } = await fetchPage(uid, rows.value.length)
   busy.value = false
+  if (uid !== user.value?.id) return
   if (e) {
     error.value = true
     return
   }
   const list = (data ?? []) as unknown as Row[]
   for (const r of list) if (!r.read_at) fresh.value.add(r.id)
-  rows.value.push(...list)
+  const seen = new Set(rows.value.map(r => r.id))
+  rows.value.push(...list.filter(r => !seen.has(r.id)))
   if (list.length < PAGE) done.value = true
 }
 
@@ -73,54 +102,136 @@ async function markAllRead() {
 async function init() {
   rows.value = []
   done.value = false
+  error.value = false
   fresh.value = new Set()
   if (!user.value) return
   loadBlocks()
+  loadCatalog()
   await loadMore()
   markAllRead()
 }
 
 watch(() => user.value?.id, init, { immediate: true })
 
-async function remove(r: Row) {
-  const i = rows.value.indexOf(r)
-  if (i < 0) return
-  rows.value.splice(i, 1)
-  const { error: e } = await sb.from('notifications').delete().eq('id', r.id)
+async function remove(item: Item) {
+  const ids = new Set(item.rows.map(r => r.id))
+  const before = rows.value
+  rows.value = rows.value.filter(r => !ids.has(r.id))
+  const { error: e } = await sb.from('notifications').delete().in('id', [...ids])
   if (e) {
-    rows.value.splice(i, 0, r)
+    rows.value = before
     notify(t('profile.loadError'), { tone: 'error' })
-  } else notify(t('profile.notif.deleted'), { tone: 'info' })
+  } else notify(t('notifications.deleted'), { tone: 'info' })
 }
 
-const visible = computed(() => rows.value.filter(r => !isBlocked(r.actor_id)))
+const meta = (r: Row, k: string) => {
+  const v = r.meta?.[k]
+  return typeof v === 'string' || typeof v === 'number' ? String(v) : ''
+}
+
+function groupKey(r: Row): string | null {
+  const day = toISODate(new Date(r.created_at))
+  if ((r.type === 'reaction' || r.type === 'like') && r.post_id) return `r:${r.post_id}`
+  if (r.type === 'follow') return `f:${day}`
+  if (r.type === 'tip_vote') return `t:${day}`
+  return null
+}
+
+// "@a and 4 others reacted": rows sharing a key collapse into the newest one
+const items = computed<Item[]>(() => {
+  const out: Item[] = []
+  const byKey = new Map<string, Item>()
+  for (const r of rows.value) {
+    if (isBlocked(r.actor_id)) continue
+    const key = groupKey(r)
+    const hit = key ? byKey.get(key) : undefined
+    if (hit) {
+      hit.rows.push(r)
+      if (r.actor && !hit.actors.some(a => a.id === r.actor!.id)) hit.actors.push(r.actor)
+      continue
+    }
+    const item: Item = { key: key ?? r.id, type: r.type === 'like' && key ? 'reaction' : r.type, lead: r, rows: [r], actors: r.actor ? [r.actor] : [] }
+    if (key) byKey.set(key, item)
+    out.push(item)
+  }
+  for (const i of out) if (i.rows.length === 1) i.type = i.lead.type
+  return out
+})
+
 const groups = computed(() => {
   const today = todayISO()
-  const out: { key: string, label: string, items: Row[] }[] = [
-    { key: 'today', label: t('profile.notif.today'), items: [] },
-    { key: 'earlier', label: t('profile.notif.earlier'), items: [] }
+  const out: { key: string, label: string, items: Item[] }[] = [
+    { key: 'today', label: t('notifications.today'), items: [] },
+    { key: 'earlier', label: t('notifications.earlier'), items: [] }
   ]
-  for (const r of visible.value) out[toISODate(new Date(r.created_at)) === today ? 0 : 1]!.items.push(r)
+  for (const i of items.value) out[toISODate(new Date(i.lead.created_at)) === today ? 0 : 1]!.items.push(i)
   return out.filter(g => g.items.length)
 })
 
-const actorName = (r: Row) => r.actor?.display_name?.trim() || r.actor?.username || t('profile.notif.someone')
-function link(r: Row): string | null {
+const nameOf = (a: Actor | null | undefined) => a?.display_name?.trim() || a?.username || t('notifications.someone')
+const isFresh = (i: Item) => i.rows.some(r => fresh.value.has(r.id))
+const badgeOf = (i: Item) => byId(meta(i.lead, 'badge') || meta(i.lead, 'badge_id'))
+
+function line(i: Item): string {
+  const r = i.lead
+  const name = nameOf(r.actor)
+  const others = i.actors.length - 1
+  if (others > 0 && (i.type === 'reaction' || i.type === 'follow' || i.type === 'tip_vote')) {
+    return t(`notifications.grouped.${i.type}`, { name, n: others })
+  }
+  switch (r.type) {
+    case 'reaction': {
+      const kind = meta(r, 'kind')
+      return kind && kind !== 'like' && REACTION_KINDS.includes(kind)
+        ? t('notifications.reactionKind', { name, kind: t(`notifications.kinds.${kind}`) })
+        : t('notifications.types.reaction', { name })
+    }
+    case 'badge': {
+      const b = badgeOf(i)
+      return b ? t('notifications.types.badge', { badge: badgeName(b) }) : t('notifications.types.badgeAny')
+    }
+    case 'solve_ping':
+      return r.actor ? t('notifications.types.solve_ping', { name }) : t('notifications.types.solvePingAny')
+    case 'update': {
+      const week = meta(r, 'week_no') || meta(r, 'week')
+      const plant = meta(r, 'plant_name') || meta(r, 'plant')
+      if (week && plant) return t('notifications.types.update', { name, week, plant })
+      return week ? t('notifications.types.updateWeek', { name, week }) : t('notifications.types.updateAny', { name })
+    }
+    default:
+      return t(`notifications.types.${r.type}`, { name })
+  }
+}
+
+function link(i: Item): string | null {
+  const r = i.lead
   switch (r.type) {
     case 'follow':
-      return r.actor ? `/u/${r.actor.username}` : null
+      return i.actors.length > 1 && profile.value ? `/u/${profile.value.username}` : r.actor ? `/u/${r.actor.username}` : null
     case 'tip_vote':
       return profile.value ? `/u/${profile.value.username}?tab=tips` : null
     case 'challenge':
       return '/challenges'
+    case 'badge':
+      return profile.value ? `/u/${profile.value.username}#badges` : null
+    case 'update': {
+      const plant = meta(r, 'plant_id')
+      return plant ? `/plant/${plant}` : r.actor ? `/u/${r.actor.username}` : null
+    }
+    case 'solve_ping':
+      return r.post_id ? `/community/post/${r.post_id}?solve=1` : null
     case 'moderation':
       return r.post_id ? `/community/post/${r.post_id}` : null
     default:
       return r.post_id ? `/community/post/${r.post_id}${r.comment_id ? `#c-${r.comment_id}` : ''}` : null
   }
 }
-const snippet = (r: Row) => {
-  const s = r.post?.title || r.post?.body || ''
+const snippet = (i: Item) => {
+  if (i.type === 'badge') {
+    const b = badgeOf(i)
+    return b ? badgeDesc(b) : ''
+  }
+  const s = i.lead.post?.title || i.lead.post?.body || ''
   return s.length > 70 ? `${s.slice(0, 70).trimEnd()}…` : s
 }
 
@@ -139,7 +250,7 @@ onBeforeUnmount(() => io?.disconnect())
 <template>
   <div>
     <AppHeader
-      :title="t('profile.notif.title')"
+      :title="t('notifications.title')"
       back
     />
     <div class="page">
@@ -147,14 +258,14 @@ onBeforeUnmount(() => io?.disconnect())
       <EmptyState
         v-else-if="!signedIn"
         icon="community"
-        :title="t('profile.notif.signIn')"
+        :title="t('notifications.signIn')"
       >
         <button
           type="button"
           class="btn btn-primary"
           @click="requireAuth()"
         >
-          {{ t('profile.notif.signInBtn') }}
+          {{ t('notifications.signInBtn') }}
         </button>
       </EmptyState>
 
@@ -174,7 +285,7 @@ onBeforeUnmount(() => io?.disconnect())
 
         <EmptyState
           v-else-if="error && !rows.length"
-          icon="i-tabler-plant-off"
+          icon="seedling"
           :title="t('profile.loadError')"
         >
           <button
@@ -187,10 +298,10 @@ onBeforeUnmount(() => io?.disconnect())
         </EmptyState>
 
         <EmptyState
-          v-else-if="done && !visible.length"
+          v-else-if="done && !items.length"
           icon="lamp"
-          :title="t('profile.notif.empty')"
-          :text="t('profile.notif.emptyText')"
+          :title="t('notifications.empty')"
+          :text="t('notifications.emptyText')"
         />
 
         <section
@@ -206,46 +317,70 @@ onBeforeUnmount(() => io?.disconnect())
             class="list"
           >
             <li
-              v-for="r in g.items"
-              :key="r.id"
+              v-for="i in g.items"
+              :key="i.key"
               class="item"
-              :class="{ fresh: fresh.has(r.id) }"
+              :class="{ fresh: isFresh(i), celebrate: i.type === 'badge' }"
             >
               <component
-                :is="link(r) ? NuxtLink : 'div'"
-                :to="link(r) ?? undefined"
+                :is="link(i) ? NuxtLink : 'div'"
+                :to="link(i) ?? undefined"
                 class="item-main"
               >
-                <span class="who">
-                  <CommunityUserAvatar
-                    v-if="r.actor"
-                    :url="r.actor.avatar_url"
-                    :name="actorName(r)"
+                <span
+                  class="who"
+                  :class="{ stack: i.actors.length > 1 }"
+                >
+                  <CommunityBadgeMedal
+                    v-if="i.type === 'badge'"
+                    :glyph="badgeGlyph(badgeOf(i))"
+                    :tier="badgeOf(i)?.tier ?? 2"
                     :size="44"
                   />
+                  <template v-else-if="i.actors.length">
+                    <CommunityUserAvatar
+                      :url="i.actors[0]!.avatar_url"
+                      :name="nameOf(i.actors[0])"
+                      :size="44"
+                    />
+                    <CommunityUserAvatar
+                      v-if="i.actors[1]"
+                      class="second"
+                      :url="i.actors[1].avatar_url"
+                      :name="nameOf(i.actors[1])"
+                      :size="28"
+                    />
+                  </template>
                   <span
                     v-else
                     class="sys-avatar"
                   ><GrowIcon name="lamp" /></span>
                   <span
+                    v-if="i.type !== 'badge'"
                     class="kind"
-                    :style="{ color: GLYPH[r.type].color }"
-                  ><UIcon :name="GLYPH[r.type].icon" /></span>
+                    :style="{ color: GLYPH[i.type]?.color }"
+                  ><GrowIcon :name="GLYPH[i.type]?.icon ?? 'note'" /></span>
                 </span>
                 <span class="text">
-                  <span class="line">{{ t(`profile.notif.types.${r.type}`, { name: actorName(r) }) }}</span>
+                  <span class="line">{{ line(i) }}</span>
                   <span
-                    v-if="snippet(r)"
+                    v-if="snippet(i)"
                     class="snippet"
-                  >{{ snippet(r) }}</span>
-                  <span class="ago num">{{ communityAgo(r.created_at) }}</span>
+                  >{{ snippet(i) }}</span>
+                  <span class="foot">
+                    <span class="ago num">{{ communityAgo(i.lead.created_at) }}</span>
+                    <span
+                      v-if="i.type === 'solve_ping'"
+                      class="cta"
+                    >{{ t('notifications.solveCta') }} <UIcon name="i-tabler-chevron-right" /></span>
+                  </span>
                 </span>
               </component>
               <button
                 type="button"
                 class="del"
-                :aria-label="t('profile.notif.delete')"
-                @click="remove(r)"
+                :aria-label="i.rows.length > 1 ? t('notifications.deleteGroup') : t('notifications.delete')"
+                @click="remove(i)"
               >
                 <UIcon name="i-tabler-x" />
               </button>
@@ -324,6 +459,13 @@ onBeforeUnmount(() => io?.disconnect())
   box-shadow: 0 0 10px rgba(255, 210, 138, 0.6);
 }
 
+.item.celebrate {
+  border-color: rgba(255, 210, 138, 0.34);
+  background:
+    radial-gradient(80% 120% at 0% 0%, rgba(255, 210, 138, 0.14), transparent 60%),
+    var(--panel);
+}
+
 .item-main {
   flex: 1;
   min-width: 0;
@@ -336,6 +478,21 @@ onBeforeUnmount(() => io?.disconnect())
   position: relative;
   flex-shrink: 0;
   height: 44px;
+}
+
+.who.stack {
+  width: 62px;
+}
+
+.who .second {
+  position: absolute;
+  right: 0;
+  top: -6px;
+  box-shadow: 0 0 0 2px var(--surface-2);
+}
+
+.who.stack .kind {
+  right: 14px;
 }
 
 .sys-avatar {
@@ -383,6 +540,21 @@ onBeforeUnmount(() => io?.disconnect())
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lamp);
 }
 
 .ago {

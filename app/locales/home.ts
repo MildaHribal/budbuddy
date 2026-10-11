@@ -14,7 +14,7 @@ export default {
     lightCycle: 'Light cycle',
     editLight: 'Edit light schedule',
     tasks: {
-      left: '{open} of {total} left',
+      left: '{open} to go',
       allDone: 'All done',
       add: 'Add task',
       placeholder: 'e.g. Raise the light 10 cm',
@@ -62,7 +62,8 @@ export default {
     },
     tip: {
       title: 'Grow tip',
-      next: 'Tap for another tip'
+      next: 'Tap for another tip',
+      guide: 'Read more in the guide'
     },
     light: {
       title: 'Light schedule',
@@ -88,7 +89,7 @@ export default {
     lightCycle: 'Světelný cyklus',
     editLight: 'Upravit světelný režim',
     tasks: {
-      left: 'Zbývá {open} z {total}',
+      left: 'Ještě {open} z {total}',
       allDone: 'Vše hotovo',
       add: 'Přidat úkol',
       placeholder: 'např. Zvednout světlo o 10 cm',
@@ -136,7 +137,8 @@ export default {
     },
     tip: {
       title: 'Pěstitelský tip',
-      next: 'Klepni pro další tip'
+      next: 'Klepni pro další tip',
+      guide: 'Víc v průvodci'
     },
     light: {
       title: 'Světelný režim',

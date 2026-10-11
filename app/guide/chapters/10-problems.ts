@@ -175,6 +175,12 @@ export default {
           caption: { en: 'Phosphorus: dark leaves with bronze blotches and purple stems.', cs: 'Fosfor: tmavé listy s bronzovými skvrnami a fialové řapíky.' }
         },
         {
+          type: 'figure',
+          photo: 'problems-phosphorus-leaves.webp',
+          caption: { en: 'Leaves from a phosphorus-deficiency trial: dark, dull green that turns into bronze blotches.', cs: 'Listy z pokusu s nedostatkem fosforu: tmavá matná zeleň, která přechází v bronzové skvrny.' },
+          credit: 'Llewellyn et al. (Plants 2023) · CC BY 4.0 (PubMed Central), cropped & resized'
+        },
+        {
           type: 'text',
           md: {
             en: '## Potassium (K)\n**Symptoms:** the edges and tips of older and middle leaves yellow, then turn brown and crispy, like they\'ve been scorched. Common in flower, when the plant needs a lot of K.\n**Cause:** too little bloom food, pH lockout, or too much calcium/sodium competing with potassium.\n**Fix:** correct pH and use a bloom feed with enough K. If you use hard tap water, test it.',
@@ -454,6 +460,12 @@ export default {
           caption: { en: 'Thrips: silvery streaks with black specks.', cs: 'Třásněnky: stříbřité čárky s černými tečkami.' }
         },
         {
+          type: 'figure',
+          photo: 'problems-thrips.webp',
+          caption: { en: 'Western flower thrips on a hemp leaf: a pale larva and a slim adult.', cs: 'Třásněnka západní na listu konopí: světlá larva a štíhlý dospělec.' },
+          credit: 'Dr. Guido Bohne · CC BY-SA 4.0 (iNaturalist), resized'
+        },
+        {
           type: 'text',
           md: {
             en: '## Aphids\n**ID:** clusters of small green, black or white soft-bodied insects on stems and under leaves, sticky honeydew, sometimes ants farming them.\n**Prevention:** check new plants, keep outdoor plants away from heavily infested neighbours.\n**Treatment:** squash or shower them off, spray insecticidal soap in veg. Ladybirds, lacewing larvae and the parasitic wasp *Aphidius colemani* clean them up fast.',
@@ -464,6 +476,12 @@ export default {
           type: 'figure',
           illustration: 'pest-aphids',
           caption: { en: 'Aphids: soft-bodied clusters on stems and leaf undersides.', cs: 'Mšice: shluky na stoncích a spodní straně listů.' }
+        },
+        {
+          type: 'figure',
+          photo: 'problems-aphids.webp',
+          caption: { en: 'Black bean aphids crowding a hemp plant between its seeds.', cs: 'Mšice maková se hromadí na konopí mezi semeny.' },
+          credit: 'Igor Balashov · CC BY 4.0 (iNaturalist), resized'
         },
         {
           type: 'checklist',
@@ -615,6 +633,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'problems-male-flowers.webp',
+          caption: { en: 'An open male flower among developing seeds: where there is pollen, there will be seeds.', cs: 'Otevřený samčí květ mezi dozrávajícími semeny: kde je pyl, tam budou semena.' },
+          credit: 'Patrick Hacker · CC BY 4.0 (iNaturalist), resized'
+        },
+        {
           type: 'text',
           md: {
             en: '## Common causes\n- **Light leaks** during the dark period of flowering (the classic one)\n- Irregular light schedule or long interruptions\n- Heat stress, severe nutrient or pH stress, root damage\n- Heavy damage or stress late in flower, or harvesting very late\n- Genetics: some strains are simply prone to it',
@@ -675,6 +699,12 @@ export default {
             en: '- Check **pH, EC, watering, light and climate** before blaming a nutrient.\n- **Old leaves** first = mobile nutrient (N, P, K, Mg). **New growth** first = immobile (Ca, Fe, S, Zn).\n- Burnt tips = too much food; bleached tops = too much light; taco leaves = heat.\n- Inspect leaf undersides weekly; no sprays on buds.\n- Late flower: humidity around 40–50 % and plenty of airflow against bud rot.\n- Hermies are mostly caused by stress, especially light leaks.',
             cs: '- Než to svedeš na živinu, zkontroluj **pH, EC, zálivku, světlo a klima**.\n- Nejdřív **staré listy** = pohyblivá živina (N, P, K, Mg). Nejdřív **nové přírůstky** = nepohyblivá (Ca, Fe, S, Zn).\n- Spálené špičky = moc hnojiva; vybledlé vršky = moc světla; listy jako taco = horko.\n- Spodní strany listů kontroluj každý týden; na palice nestříkej.\n- V pozdním kvetení drž vlhkost kolem 40–50 % a hodně proudění proti hnilobě palic.\n- Hermafroditi vznikají hlavně ze stresu, nejčastěji z prosvítajícího světla.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'problems-mites-macro.webp',
+          caption: { en: 'Spider mites under a loupe. Five minutes with a lens every week catches them early.', cs: 'Svilušky pod lupou. Pět minut s lupou každý týden je odhalí včas.' },
+          credit: 'Dr. Guido Bohne · CC BY-SA 4.0 (iNaturalist), resized'
         },
         {
           type: 'quiz',

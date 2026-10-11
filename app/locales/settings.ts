@@ -55,6 +55,8 @@ export default {
       restored: 'Restored {plants}, {entries} and {photos}',
       invalidJson: 'That file is not valid JSON',
       importFailed: 'Import failed',
+      notBackup: 'That file is not a BudBuddy backup',
+      skipped: { one: '{n} damaged photo was skipped', other: '{n} damaged photos were skipped' },
       demoLoaded: 'Demo garden loaded',
       erased: 'All data erased'
     },
@@ -127,6 +129,8 @@ export default {
       restored: 'Obnoveno: {plants}, {entries} a {photos}',
       invalidJson: 'Soubor není platný JSON',
       importFailed: 'Import se nepovedl',
+      notBackup: 'Tohle není záloha BudBuddy',
+      skipped: { one: '{n} poškozenou fotku jsme přeskočili', few: '{n} poškozené fotky jsme přeskočili', other: '{n} poškozených fotek jsme přeskočili' },
       demoLoaded: 'Ukázková zahrada načtena',
       erased: 'Všechna data smazána'
     },

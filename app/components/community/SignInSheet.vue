@@ -31,6 +31,7 @@ watch(gateOpen, (v) => {
 
 const busy = ref(false)
 async function google() {
+  if (busy.value) return
   busy.value = true
   try {
     await signIn()
@@ -65,6 +66,13 @@ const terms = ref(false)
 const usernameError = ref<string | null>(null)
 const saving = ref(false)
 
+// a different account must never inherit the previous handle or ticked boxes
+watch(() => session.value?.user.id, () => {
+  username.value = profile.value?.username ?? ''
+  adult.value = false
+  terms.value = false
+  usernameError.value = null
+})
 watch(() => profile.value?.username, (u) => {
   if (u && !username.value) username.value = u
 }, { immediate: true })
@@ -78,7 +86,7 @@ watch(username, (v) => {
 
 async function accept() {
   const p = profile.value
-  if (!p || !usernameValid.value || !adult.value || !terms.value) return
+  if (saving.value || !p || p.id !== session.value?.user.id || !usernameValid.value || !adult.value || !terms.value) return
   saving.value = true
   usernameError.value = null
   const sb = useSupabase()

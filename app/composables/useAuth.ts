@@ -12,6 +12,10 @@ export interface Profile {
   environments: string[]
   media: string[]
   favorite_strain: string | null
+  first_grow: boolean
+  light_type: 'led' | 'hps' | 'cfl' | 'sun' | 'mixed' | null
+  space: string | null
+  pinned_badges: string[]
   reputation: number
   is_admin: boolean
   is_banned: boolean
@@ -26,13 +30,29 @@ const ready = ref(false)
 const signInPrompt = ref(false)
 let started = false
 
-async function loadProfile() {
+let profileSeq = 0
+let retryTimer: ReturnType<typeof setTimeout> | undefined
+let retryDelay = 2000
+
+/** Loads the signed-in profile; on a network error the last good profile stays and the load retries. */
+async function loadProfile(): Promise<void> {
   const uid = session.value?.user.id
+  const seq = ++profileSeq
+  clearTimeout(retryTimer)
   if (!uid) {
     profile.value = null
     return
   }
-  const { data } = await useSupabase().from('profiles').select('*').eq('id', uid).maybeSingle()
+  if (profile.value && profile.value.id !== uid) profile.value = null
+  const { data, error } = await useSupabase().from('profiles').select('*').eq('id', uid).maybeSingle()
+  // signed out, switched account or a newer load started meanwhile
+  if (seq !== profileSeq || session.value?.user.id !== uid) return
+  if (error) {
+    retryTimer = setTimeout(() => loadProfile().catch(() => {}), retryDelay)
+    retryDelay = Math.min(retryDelay * 2, 60000)
+    return
+  }
+  retryDelay = 2000
   profile.value = (data as Profile | null) ?? null
 }
 
@@ -69,9 +89,16 @@ export function useAuth() {
       session.value = data.session
       return loadProfile()
     }).finally(() => (ready.value = true))
-    sb.auth.onAuthStateChange((_e, s) => {
+    sb.auth.onAuthStateChange((event, s) => {
+      const sameUser = !!s && s.user.id === session.value?.user.id
       session.value = s
-      loadProfile()
+      // token refreshes keep the same user; no need to refetch a loaded profile
+      if (sameUser && event === 'TOKEN_REFRESHED' && profile.value) return
+      // defer: supabase-js forbids awaiting its own calls inside this callback
+      setTimeout(() => loadProfile().catch(() => {}), 0)
+    })
+    window.addEventListener('online', () => {
+      if (session.value && !profile.value) loadProfile().catch(() => {})
     })
   }
 
@@ -83,12 +110,20 @@ export function useAuth() {
   /** True when signed in and terms are accepted; otherwise opens the sign-in / terms sheet. */
   function requireAuth(): boolean {
     if (accepted.value) return true
+    if (session.value && !profile.value) {
+      // signed in but the profile could not load (offline); retry instead of a dead sign-in prompt
+      useNotify().notify(translate('auth.offline'), { tone: 'error' })
+      loadProfile().catch(() => {})
+      return false
+    }
     signInPrompt.value = true
     return false
   }
 
   async function signOut() {
     await useSupabase().auth.signOut().catch(() => {})
+    profileSeq++
+    clearTimeout(retryTimer)
     session.value = null
     profile.value = null
   }

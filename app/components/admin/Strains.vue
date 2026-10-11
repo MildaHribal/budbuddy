@@ -11,6 +11,7 @@ interface Strain {
   flowering_weeks_min: number | null
   flowering_weeks_max: number | null
   description: string | null
+  description_cs?: string | null
   image_url: string | null
   created_at: string
   author: { username: string } | null
@@ -25,13 +26,18 @@ const items = ref<Strain[]>([])
 const loading = ref(true)
 const failed = ref(false)
 const busy = ref<string | null>(null)
+const hasCs = ref(true)
+const COLS = 'id, slug, name, breeder, dominance, flowering, flowering_weeks_min, flowering_weeks_max, description, image_url, created_at, author:profiles!strains_created_by_fkey(username)'
 
 async function load() {
   loading.value = true
   failed.value = false
-  const { data, error } = await sb.from('strains')
-    .select('id, slug, name, breeder, dominance, flowering, flowering_weeks_min, flowering_weeks_max, description, image_url, created_at, author:profiles!strains_created_by_fkey(username)')
-    .eq('approved', false).order('created_at').limit(100)
+  const run = (cols: string) => sb.from('strains').select(cols).eq('approved', false).order('created_at').limit(100)
+  let { data, error } = await run(hasCs.value ? `${COLS}, description_cs` : COLS)
+  if (isMissingSchema(error)) {
+    hasCs.value = false;
+    ({ data, error } = await run(COLS))
+  }
   loading.value = false
   if (error) failed.value = true
   else items.value = (data ?? []) as unknown as Strain[]
@@ -57,7 +63,7 @@ async function remove(s: Strain) {
 
 const editOpen = ref(false)
 const editing = ref<Strain | null>(null)
-const form = reactive({ name: '', slug: '', breeder: '', dominance: '', flowering: '', min: '', max: '', description: '' })
+const form = reactive({ name: '', slug: '', breeder: '', dominance: '', flowering: '', min: '', max: '', description: '', descriptionCs: '' })
 const saving = ref(false)
 
 function edit(s: Strain) {
@@ -70,7 +76,8 @@ function edit(s: Strain) {
     flowering: s.flowering ?? '',
     min: s.flowering_weeks_min?.toString() ?? '',
     max: s.flowering_weeks_max?.toString() ?? '',
-    description: s.description ?? ''
+    description: s.description ?? '',
+    descriptionCs: s.description_cs ?? ''
   })
   editOpen.value = true
 }
@@ -90,6 +97,7 @@ async function save(approveToo: boolean) {
     flowering_weeks_min: num(form.min),
     flowering_weeks_max: num(form.max),
     description: form.description.trim() || null,
+    ...(hasCs.value ? { description_cs: form.descriptionCs.trim() || null } : {}),
     ...(approveToo ? { approved: true } : {})
   }
   const { error } = await sb.from('strains').update(patch).eq('id', s.id)
@@ -290,6 +298,20 @@ async function save(approveToo: boolean) {
             class="input"
             maxlength="1200"
             rows="4"
+            lang="en"
+          />
+        </label>
+        <label
+          v-if="hasCs"
+          class="field"
+        >
+          <span class="field-label">{{ t('admin.strains.descriptionCs') }}</span>
+          <textarea
+            v-model="form.descriptionCs"
+            class="input"
+            maxlength="1200"
+            rows="4"
+            lang="cs"
           />
         </label>
         <div class="sheet-actions">

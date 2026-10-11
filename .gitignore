@@ -38,3 +38,8 @@ android/app/build
 /.impeccable/hook.cache.json
 /.impeccable/decision-payload.json
 /BudBuddy*.apk
+
+# signing keys never belong in the repo
+keystore
+*.keystore
+*.p12

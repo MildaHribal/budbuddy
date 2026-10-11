@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { formatDate } from '~/utils/date'
 import { stageInfo } from '~/utils/stages'
-import type { PlantContext } from '~/utils/feed/feed'
+import type { PostPlantContext } from '~/utils/feed/feed'
 
-const props = defineProps<{ ctx: PlantContext, compact?: boolean }>()
+const props = defineProps<{ ctx: PostPlantContext, compact?: boolean }>()
 const { t } = useI18n()
 
 const stage = computed(() => (props.ctx.stage ? stageInfo(props.ctx.stage) : null))
-const facts = computed(() => [props.ctx.medium, props.ctx.environment, props.ctx.type].filter(Boolean).join(' · '))
+const facts = computed(() => {
+  const { medium, environment, type } = props.ctx
+  return [
+    medium && tOr(`profile.media.${medium}`, medium),
+    environment && tOr(`profile.env.${environment}`, environment),
+    type && tOr(`plantForm.${type}`, type)
+  ].filter(Boolean).join(' · ')
+})
 const feed = computed(() => {
   const f = props.ctx.lastFeed
   if (!f) return null

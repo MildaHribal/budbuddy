@@ -37,20 +37,22 @@ async function loadPage(reset = false) {
   loading.value = true
   error.value = null
   const sb = useSupabase()
-  let q = sb.from('strains').select(STRAIN_COLUMNS).eq('approved', true)
   const term = debounced.value.replace(/[%*,()\\]/g, ' ').trim()
-  if (term) q = q.or(`name.ilike.%${term}%,breeder.ilike.%${term}%`)
-  if (dom.value) q = q.eq('dominance', dom.value)
-  if (flow.value) q = q.eq('flowering', flow.value)
   const from = strains.value.length
-  const { data, error: err } = await q.order('name').range(from, from + PAGE - 1)
+  const { data, error: err } = await withStrainColumns((cols) => {
+    let q = sb.from('strains').select(cols).eq('approved', true)
+    if (term) q = q.or(`name.ilike.%${term}%,breeder.ilike.%${term}%`)
+    if (dom.value) q = q.eq('dominance', dom.value)
+    if (flow.value) q = q.eq('flowering', flow.value)
+    return q.order('name').range(from, from + PAGE - 1)
+  })
   if (my !== seq) return
   loading.value = false
   if (err) {
     error.value = navigator.onLine ? 'error' : 'offline'
     return
   }
-  const rows = (data ?? []) as Strain[]
+  const rows = (data ?? []) as unknown as Strain[]
   strains.value = [...strains.value, ...rows]
   if (rows.length < PAGE) done.value = true
   if (rows.length) {
@@ -101,7 +103,7 @@ const loaded = reactive(new Set<string>())
       <template #actions>
         <button
           type="button"
-          class="icon-btn"
+          class="icon-btn accent"
           :aria-label="t('strains.suggest')"
           @click="suggest"
         >
@@ -144,9 +146,9 @@ const loaded = reactive(new Set<string>())
             :aria-pressed="dom === d"
             @click="dom = dom === d ? null : d"
           >
-            <i
-              class="dot"
-              :style="{ background: dominanceColor(d) }"
+            <UIcon
+              :name="dominanceIcon(d)"
+              class="dom-icon"
             />{{ t(`strains.dominance.${d}`) }}
           </button>
           <span
@@ -218,7 +220,6 @@ const loaded = reactive(new Set<string>())
               <span
                 class="thumb"
                 :class="{ loaded: !s.image_url || loaded.has(s.id) }"
-                :style="{ color: dominanceColor(s.dominance) }"
               >
                 <img
                   v-if="s.image_url"
@@ -242,13 +243,15 @@ const loaded = reactive(new Set<string>())
               </span>
               <span class="meta">
                 <strong class="name">{{ s.name }}</strong>
-                <span class="breeder">{{ s.breeder || '–' }}</span>
+                <span class="breeder">{{ isVariousBreeder(s.breeder) ? t('strains.various') : s.breeder || '–' }}</span>
                 <span class="facts">
                   <span
                     v-if="s.dominance"
-                    class="fact"
-                    :style="{ color: dominanceColor(s.dominance) }"
-                  >{{ t(`strains.dominance.${s.dominance}`) }}</span>
+                    class="fact dom"
+                  ><UIcon
+                    :name="dominanceIcon(s.dominance)"
+                    aria-hidden="true"
+                  />{{ t(`strains.dominance.${s.dominance}`) }}</span>
                   <span
                     v-if="weeks(s)"
                     class="fact lamp num"
@@ -362,10 +365,13 @@ const loaded = reactive(new Set<string>())
   min-height: 44px;
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.dom-icon {
+  font-size: 16px;
+  color: var(--text-3);
+}
+
+.filter-row .chip[aria-pressed='true'] .dom-icon {
+  color: inherit;
 }
 
 .divider {
@@ -410,8 +416,9 @@ const loaded = reactive(new Set<string>())
   place-items: center;
   aspect-ratio: 4 / 3;
   overflow: hidden;
+  color: var(--text-3);
   background:
-    radial-gradient(80% 70% at 50% 0%, color-mix(in srgb, currentColor 14%, transparent), transparent 70%),
+    radial-gradient(80% 70% at 50% 0%, rgba(233, 243, 228, 0.07), transparent 70%),
     #0b0d10;
 }
 
@@ -438,9 +445,9 @@ const loaded = reactive(new Set<string>())
   position: absolute;
   top: 8px;
   left: 8px;
-  color: var(--lamp);
-  background: color-mix(in srgb, var(--lamp) 14%, rgba(7, 8, 10, 0.72));
-  backdrop-filter: blur(6px);
+  color: var(--text-2);
+  background: rgba(7, 8, 10, 0.78);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
 }
 
 .meta {
@@ -476,6 +483,18 @@ const loaded = reactive(new Set<string>())
   margin-top: 4px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.fact.dom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+}
+
+.fact.dom .iconify {
+  font-size: 13px;
+  color: var(--text-3);
 }
 
 .fact.lamp {

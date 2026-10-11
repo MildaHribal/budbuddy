@@ -38,7 +38,7 @@ function save(data: PlantInput) {
       />
       <EmptyState
         v-else
-        icon="i-tabler-plant-off"
+        icon="seedling"
         :title="t('plants.edit.notFoundTitle')"
         :text="t('plants.edit.notFoundText')"
       >

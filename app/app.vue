@@ -6,6 +6,20 @@ const { t } = useI18n()
 const lit = ref(false)
 onMounted(() => requestAnimationFrame(() => (lit.value = true)))
 
+// supabase-js lives in the sign-in sheet's chunk: mount it on community routes or once the app is idle
+const route = useRoute()
+const authUi = ref(false)
+const COMMUNITY = /^\/(community|u|plant|strains|challenges|auth|auth-callback|admin)(\/|$)/
+watch(() => route.path, (p) => {
+  if (COMMUNITY.test(p)) authUi.value = true
+}, { immediate: true })
+watch(ready, (v) => {
+  if (!v || authUi.value) return
+  const show = () => (authUi.value = true)
+  if ('requestIdleCallback' in window) requestIdleCallback(show, { timeout: 4000 })
+  else setTimeout(show, 2500)
+}, { immediate: true })
+
 useHead({
   titleTemplate: chunk => (chunk ? `${chunk} · BudBuddy` : 'BudBuddy – grow journal'),
   meta: [
@@ -68,7 +82,8 @@ useHead({
       </NuxtLayout>
       <AppToaster />
       <ConfirmDialog />
-      <CommunitySignInSheet v-if="ready" />
+      <LazyCommunitySignInSheet v-if="ready && authUi" />
+      <LazyCommunityBadgeCelebration v-if="ready && authUi" />
     </div>
   </div>
 </template>

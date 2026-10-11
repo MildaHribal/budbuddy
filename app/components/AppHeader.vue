@@ -47,9 +47,8 @@ const { t } = useI18n()
   gap: 12px;
   min-height: 64px;
   padding: calc(14px + var(--safe-top)) 20px 12px;
-  background: linear-gradient(180deg, rgba(7, 8, 10, 0.94) 0%, rgba(7, 8, 10, 0.82) 70%, rgba(7, 8, 10, 0) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  /* opaque gradient: a backdrop blur re-renders on every scroll frame */
+  background: linear-gradient(180deg, #07080a 0%, rgba(7, 8, 10, 0.97) 62%, rgba(7, 8, 10, 0.88) 84%, rgba(7, 8, 10, 0) 100%);
 }
 
 .header-text {

@@ -1,6 +1,7 @@
 import { onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import { todayISO } from '~/utils/date'
 import { haptic } from '~/utils/haptics'
+import { compressImage } from '~/utils/image'
 import { photoStore } from '~/utils/photoStore'
 
 // ── Toasts ─────────────────────────────────────────────────────────
@@ -103,37 +104,149 @@ export function useToday() {
 }
 
 // ── Photos ─────────────────────────────────────────────────────────
+// Object URLs are ref-counted; unused ones stay in a small LRU, older ones are revoked.
 
-const urlCache = new Map<string, Promise<string | null>>()
+export type PhotoSize = 'thumb' | 'full'
+export const THUMB_SUFFIX = ':t'
+const THUMB_MAX = 480
+const IDLE_URLS = 40
+
+interface UrlEntry { url: Promise<string | null>, refs: number }
+const urlCache = new Map<string, UrlEntry>()
+let urlEpoch = 0
+
+const revoke = (e: UrlEntry) => e.url.then(u => u?.startsWith('blob:') && URL.revokeObjectURL(u))
+
+function trimIdle() {
+  const idle = [...urlCache].filter(([, e]) => e.refs <= 0)
+  for (const [key, e] of idle.slice(0, Math.max(0, idle.length - IDLE_URLS))) {
+    urlCache.delete(key)
+    revoke(e)
+  }
+}
 
 /** Forget cached object URLs (after a restore / erase replaced the photo library). */
 export function resetPhotoUrls() {
-  for (const p of urlCache.values()) p.then(url => url && URL.revokeObjectURL(url))
+  urlEpoch++
+  for (const e of urlCache.values()) revoke(e)
   urlCache.clear()
 }
 
-export function photoUrl(id: string): Promise<string | null> {
-  // remote (community) photos are already URLs
-  if (/^(https?:|blob:|data:)/.test(id)) return Promise.resolve(id)
-  let p = urlCache.get(id)
-  if (!p) {
-    p = photoStore.get(id)
-      .then(photo => (photo ? URL.createObjectURL(photo.blob) : null))
-      .catch(() => null)
-    urlCache.set(id, p)
-  }
-  return p
+async function demoBlob(id: string): Promise<Blob | null> {
+  const src = (await import('~/utils/demoPhotos')).demoPhotoUrl(id)
+  if (!src) return null
+  const res = await fetch(src)
+  return res.ok ? res.blob() : null
 }
 
-export function usePhotoUrl(id: Ref<string | null | undefined>) {
-  const url = ref<string | null>(null)
-  watch(id, async (value) => {
-    url.value = null
-    if (!value) return
-    const resolved = await photoUrl(value)
-    if (id.value === value) url.value = resolved
-  }, { immediate: true })
+async function fullBlob(id: string): Promise<Blob | null> {
+  const photo = await photoStore.get(id).catch(() => undefined)
+  if (photo) return photo.blob
+  return id.startsWith('demo-') ? demoBlob(id) : null
+}
+
+// thumbnails decode full-size photos, so keep at most two in flight
+let thumbJobs = 0
+const thumbQueue: (() => void)[] = []
+async function limited<T>(fn: () => Promise<T>): Promise<T> {
+  if (thumbJobs >= 2) await new Promise<void>(r => thumbQueue.push(r))
+  thumbJobs++
+  try {
+    return await fn()
+  } finally {
+    thumbJobs--
+    thumbQueue.shift()?.()
+  }
+}
+
+async function thumbBlob(id: string): Promise<Blob | null> {
+  const cached = await photoStore.get(id + THUMB_SUFFIX).catch(() => undefined)
+  if (cached) return cached.blob
+  const epoch = urlEpoch
+  return limited(async () => {
+    const full = await fullBlob(id)
+    if (!full) return null
+    try {
+      const thumb = await compressImage(full, THUMB_MAX, 0.74)
+      if (epoch === urlEpoch) photoStore.put({ id: id + THUMB_SUFFIX, blob: thumb, createdAt: new Date().toISOString() }).catch(() => {})
+      return thumb
+    } catch {
+      return full
+    }
+  })
+}
+
+function acquire(id: string, size: PhotoSize): { key: string, url: Promise<string | null> } {
+  const key = size === 'thumb' ? id + THUMB_SUFFIX : id
+  let e = urlCache.get(key)
+  if (!e) {
+    const blob = size === 'thumb' ? thumbBlob(id) : fullBlob(id)
+    e = { url: blob.then(b => (b ? URL.createObjectURL(b) : null)).catch(() => null), refs: 0 }
+    urlCache.set(key, e)
+  }
+  e.refs++
+  return { key, url: e.url }
+}
+
+function release(key: string) {
+  const e = urlCache.get(key)
+  if (!e) return
+  e.refs--
+  if (e.refs <= 0) {
+    // most recently used goes to the end of the LRU
+    urlCache.delete(key)
+    urlCache.set(key, e)
+    trimIdle()
+  }
+}
+
+const isRemote = (id: string) => /^(https?:|blob:|data:)/.test(id)
+
+/** One-off URL (not ref-counted); it stays valid while it sits in the LRU. */
+export function photoUrl(id: string, size: PhotoSize = 'full'): Promise<string | null> {
+  if (isRemote(id)) return Promise.resolve(id)
+  const { key, url } = acquire(id, size)
+  release(key)
   return url
+}
+
+export interface PhotoOptions {
+  size?: PhotoSize
+  /** false while the photo is far off-screen: the URL is released */
+  active?: Ref<boolean>
+}
+
+export function usePhoto(id: Ref<string | null | undefined>, opts: PhotoOptions = {}) {
+  const url = ref<string | null>(null)
+  const missing = ref(false)
+  let held: string | null = null
+  const drop = () => {
+    if (held) release(held)
+    held = null
+  }
+  watch([id, () => opts.active?.value ?? true], async ([value, active]) => {
+    drop()
+    url.value = null
+    missing.value = false
+    if (!value) return
+    if (isRemote(value)) {
+      url.value = value
+      return
+    }
+    if (!active) return
+    const got = acquire(value, opts.size ?? 'full')
+    held = got.key
+    const resolved = await got.url
+    if (held !== got.key || id.value !== value) return
+    url.value = resolved
+    missing.value = !resolved
+  }, { immediate: true })
+  onBeforeUnmount(drop)
+  return { url, missing }
+}
+
+export function usePhotoUrl(id: Ref<string | null | undefined>, opts: PhotoOptions = {}) {
+  return usePhoto(id, opts).url
 }
 
 /** Opens the system file picker and resolves with the chosen image (or null). */

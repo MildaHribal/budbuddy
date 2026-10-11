@@ -2,7 +2,7 @@
 </script>
 
 <script setup lang="ts">
-import type { EntryType, JournalEntry, Plant, Task } from '~/types/grow'
+import type { EntryType, JournalEntry, Plant, StageId, Task } from '~/types/grow'
 
 let settledOnce = false
 
@@ -197,6 +197,15 @@ const tips = computed(() => {
   const fromStages = all.filter(s => active.has(s.id)).flatMap(s => s.tips.map(text => ({ stage: s, text })))
   return fromStages.length ? fromStages : all.slice(0, 4).flatMap(s => s.tips.map(text => ({ stage: s, text })))
 })
+// tip stage → the guide chapter that covers it
+const GUIDE_CHAPTER: Record<StageId, string> = {
+  germination: 'germination',
+  seedling: 'germination',
+  vegetative: 'vegetative',
+  flowering: 'flowering',
+  drying: 'harvest',
+  curing: 'harvest'
+}
 const tipIndex = ref(Math.floor(Math.random() * 100))
 const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 </script>
@@ -225,14 +234,14 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
         <NuxtLink
           to="/tools"
-          class="avatar dash-tools"
+          class="icon-btn dash-tools"
           :aria-label="t('common.nav.tools')"
         >
           <GrowIcon name="tools" />
         </NuxtLink>
         <NuxtLink
           to="/settings"
-          class="avatar"
+          class="icon-btn dash-me"
           :aria-label="t('home.settings')"
         >
           <span v-if="initial">{{ initial }}</span>
@@ -558,7 +567,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
       </section>
 
-      <CommunityTopTips />
+      <LazyCommunityTopTips />
 
       <NuxtLink
         to="/stats"
@@ -569,7 +578,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           <strong class="num">{{ growing.length }}</strong>
           <span>{{ t('home.stats.growing') }}</span>
         </span>
-        <span class="week-cell">
+        <span class="week-cell week-health">
           <strong>
             <i
               v-if="avgHealth"
@@ -591,6 +600,40 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           />
         </span>
       </NuxtLink>
+
+      <div class="tip">
+        <button
+          type="button"
+          class="tip-cycle"
+          @click="tipIndex++"
+        >
+          <GrowIcon
+            name="lamp"
+            class="tip-glyph"
+          />
+          <span class="tip-body">
+            <span class="tip-head">
+              <span class="tip-title">{{ t('home.tip.title') }}</span>
+              <span
+                class="tip-stage"
+                :style="{ color: tip.stage.color }"
+              >{{ tip.stage.label }}</span>
+            </span>
+            <span class="tip-text">{{ tip.text }}</span>
+            <span class="tip-next">{{ t('home.tip.next') }}</span>
+          </span>
+        </button>
+        <NuxtLink
+          :to="`/guide/${GUIDE_CHAPTER[tip.stage.id]}`"
+          class="link tip-guide"
+        >
+          {{ t('home.tip.guide') }}
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="size-4"
+          />
+        </NuxtLink>
+      </div>
 
       <section
         v-if="recent.length"
@@ -624,28 +667,6 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           </NuxtLink>
         </div>
       </section>
-
-      <button
-        type="button"
-        class="tip"
-        @click="tipIndex++"
-      >
-        <GrowIcon
-          name="lamp"
-          class="tip-glyph"
-        />
-        <span class="tip-body">
-          <span class="tip-head">
-            <span class="tip-title">{{ t('home.tip.title') }}</span>
-            <span
-              class="tip-stage"
-              :style="{ color: tip.stage.color }"
-            >{{ tip.stage.label }}</span>
-          </span>
-          <span class="tip-text">{{ tip.text }}</span>
-          <span class="tip-next">{{ t('home.tip.next') }}</span>
-        </span>
-      </button>
     </div>
 
     <EntrySheet
@@ -798,9 +819,15 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
   min-width: 0;
 }
 
-.avatar.dash-tools {
+.dash-tools {
   color: var(--text-2);
-  font-size: 20px;
+}
+
+.dash-me {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
 }
 
 .dash-date {
@@ -811,7 +838,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 }
 
 .demo-tag {
-  color: var(--lamp);
+  color: var(--text-2);
   font-weight: 500;
 }
 
@@ -822,27 +849,6 @@ h1 {
   letter-spacing: -0.02em;
   line-height: 1.2;
   overflow-wrap: anywhere;
-}
-
-.avatar {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight);
-  color: var(--lamp);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-
-.avatar:active {
-  transform: scale(0.94);
 }
 
 /* Ring */
@@ -1255,6 +1261,12 @@ h1 {
   padding: 0 14px;
 }
 
+.week-health strong {
+  font-size: 17px;
+  white-space: normal;
+  line-height: 1.15;
+}
+
 .week-cell + .week-cell {
   border-left: 1px solid var(--line);
 }
@@ -1353,8 +1365,15 @@ h1 {
 /* Tip */
 .tip {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.tip-cycle {
+  display: flex;
   align-items: flex-start;
   gap: 14px;
+  width: 100%;
   padding: 4px 0;
   border: 0;
   background: none;
@@ -1365,7 +1384,7 @@ h1 {
 .tip-glyph {
   margin-top: 2px;
   font-size: 24px;
-  color: var(--lamp);
+  color: var(--leaf);
 }
 
 .tip-body {
@@ -1386,7 +1405,16 @@ h1 {
 .tip-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--lamp);
+  color: var(--text);
+}
+
+.tip-guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  margin-left: 38px;
+  font-size: 14px;
 }
 
 .tip-stage {

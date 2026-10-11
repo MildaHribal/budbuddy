@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { Environment, Medium } from '~/guide'
+import { STAGE_CHAPTER } from '~/guide/actions'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 useHead({ title: () => t('guide.title') })
 
-const { chapters, tr, environment, medium, setSetup, chapterProgress, overall, resume } = useGuide()
+const { chapters, tr, environment, medium, setSetup, chapterProgress, overall, resume, week } = useGuide()
+const { state } = useGrow()
 
 const ENVS: Environment[] = ['indoor', 'outdoor', 'greenhouse']
 const MEDIA: Medium[] = ['soil', 'coco', 'hydro']
@@ -14,6 +16,33 @@ const started = computed(() => overall.value.done > 0)
 const path = computed(() => chapters.map(c => ({ chapter: c, p: chapterProgress(c) })))
 const problems = computed(() => chapters.find(c => c.id === 'problems'))
 const resumeLink = computed(() => (resume.value ? `/guide/${resume.value.chapter.id}#${resume.value.lesson.id}` : '/guide'))
+
+function fmtTime(min: number) {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  if (!h) return `${m} min`
+  return m ? `${h} h ${m} min` : `${h} h`
+}
+const totalTime = computed(() => fmtTime(Math.max(10, Math.round(overall.value.minutes / 10) * 10)))
+const timeLeft = computed(() => fmtTime(overall.value.minutesLeft > 30 ? Math.round(overall.value.minutesLeft / 5) * 5 : overall.value.minutesLeft))
+
+const weekday = computed(() => new Intl.DateTimeFormat(locale.value, { weekday: 'narrow' }))
+const weekText = computed(() => {
+  const w = week.value
+  if (!w.lessons) return resume.value ? t('guide.hub.weekQuiet', { min: resume.value.lesson.minutes }) : ''
+  return w.activeDays >= 2 ? t('guide.hub.weekRhythm', { n: w.activeDays }) : t('guide.hub.weekLessons', { n: w.lessons })
+})
+
+// A chapter that matches a plant growing right now.
+const forGrow = computed(() => {
+  for (const plant of state.plants) {
+    if (plant.archived) continue
+    const chapter = chapters.find(c => c.id === STAGE_CHAPTER[plant.stage])
+    if (!chapter || chapter.id === resume.value?.chapter.id || chapterProgress(chapter).complete) continue
+    return { plant, chapter, stage: stageInfo(plant.stage).label.toLowerCase() }
+  }
+  return null
+})
 
 const TOOL_LINKS = [
   { id: 'vpd', icon: 'i-tabler-droplet-half-2' },
@@ -44,65 +73,153 @@ const TOOL_LINKS = [
       v-else
       class="page rise"
     >
-      <section class="hero card">
-        <GuideProgressRing
-          :value="overall.ratio"
-          :size="124"
-          :label="t('guide.hub.progressLabel', { done: overall.done, total: overall.total })"
-        >
-          <span class="pct num">{{ percent }}<small>%</small></span>
-        </GuideProgressRing>
-        <div class="hero-text">
-          <p class="hero-big num">
-            {{ t('guide.hub.lessonsDone', { n: overall.done }) }}
-          </p>
-          <p class="hero-of num">
-            {{ t('guide.hub.ofTotal', { total: overall.total }) }}
-          </p>
-          <p class="hero-left">
-            {{ overall.minutesLeft ? t('guide.hub.minutesLeft', { n: overall.minutesLeft }) : t('guide.hub.allRead') }}
-          </p>
-        </div>
-      </section>
-
-      <NuxtLink
-        v-if="resume"
-        :to="resumeLink"
-        class="resume card"
+      <section
+        v-if="!started && resume"
+        class="welcome card"
+        aria-labelledby="welcome-h"
       >
         <span
-          class="resume-glyph"
-          :style="{ color: resume.chapter.color }"
+          class="welcome-glyph"
+          aria-hidden="true"
         >
+          <span class="welcome-halo" />
           <GrowIcon
-            :name="resume.chapter.glyph"
+            name="seedling"
+            draw
             glow
+            :stroke-width="1.2"
           />
         </span>
-        <span class="resume-text">
-          <span class="resume-lead">{{ started ? t('guide.hub.continue') : t('guide.hub.start') }}</span>
-          <span class="resume-title">{{ tr(resume.lesson.title) }}</span>
-          <span class="resume-meta num">{{ tr(resume.chapter.title) }} · {{ t('guide.chapter.minutes', { n: resume.lesson.minutes }) }}</span>
-        </span>
-        <span class="btn btn-primary resume-btn">
-          {{ started ? t('guide.hub.continueBtn') : t('guide.hub.startBtn') }}
-        </span>
-      </NuxtLink>
-      <section
-        v-else
-        class="resume card finished"
-      >
-        <span class="resume-glyph">
-          <GrowIcon
-            name="harvest"
-            glow
-          />
-        </span>
-        <span class="resume-text">
-          <span class="resume-title">{{ t('guide.hub.finishedTitle') }}</span>
-          <span class="resume-meta">{{ t('guide.hub.finishedText') }}</span>
-        </span>
+        <h2
+          id="welcome-h"
+          class="welcome-title"
+        >
+          {{ t('guide.hub.welcomeTitle') }}
+        </h2>
+        <p class="welcome-text num">
+          {{ t('guide.hub.welcomeText', { n: overall.total, time: totalTime }) }}
+        </p>
+        <NuxtLink
+          :to="resumeLink"
+          class="first"
+        >
+          <span class="first-lead num">{{ t('guide.hub.firstLesson') }} · {{ t('guide.chapter.minutes', { n: resume.lesson.minutes }) }}</span>
+          <span class="first-title">{{ tr(resume.lesson.title) }}</span>
+          <span class="btn btn-primary btn-block first-btn">
+            {{ t('guide.hub.firstCta') }}
+            <UIcon name="i-tabler-arrow-right" />
+          </span>
+        </NuxtLink>
       </section>
+
+      <template v-else>
+        <section class="hero card">
+          <div class="hero-main">
+            <GuideProgressRing
+              :value="overall.ratio"
+              :size="112"
+              :label="t('guide.hub.progressLabel', { done: overall.done, total: overall.total })"
+            >
+              <span class="pct num">{{ percent }}<small>%</small></span>
+            </GuideProgressRing>
+            <div class="hero-text">
+              <p class="hero-big num">
+                {{ t('guide.hub.lessonsDone', { n: overall.done }) }}
+              </p>
+              <p class="hero-of num">
+                {{ t('guide.hub.ofTotal', { total: overall.total }) }}
+              </p>
+              <p class="hero-left num">
+                {{ overall.minutesLeft ? t('guide.hub.timeLeft', { time: timeLeft }) : t('guide.hub.allRead') }}
+              </p>
+            </div>
+          </div>
+          <div
+            v-if="weekText"
+            class="week"
+          >
+            <div
+              class="week-days"
+              role="img"
+              :aria-label="`${t('guide.hub.weekLabel')}: ${week.lessons}`"
+            >
+              <span
+                v-for="d in week.days"
+                :key="d.key"
+                class="day"
+                :class="{ on: d.count > 0, today: d.today }"
+              >
+                <i />
+                <small>{{ weekday.format(d.date) }}</small>
+              </span>
+            </div>
+            <p class="week-text">
+              {{ weekText }}
+            </p>
+          </div>
+        </section>
+
+        <NuxtLink
+          v-if="resume"
+          :to="resumeLink"
+          class="resume card"
+        >
+          <span
+            class="resume-glyph"
+            :style="{ color: resume.chapter.color }"
+          >
+            <GrowIcon
+              :name="resume.chapter.glyph"
+              glow
+            />
+          </span>
+          <span class="resume-text">
+            <span class="resume-lead">{{ t('guide.hub.continue') }}</span>
+            <span class="resume-title">{{ tr(resume.lesson.title) }}</span>
+            <span class="resume-meta num">{{ tr(resume.chapter.title) }} · {{ t('guide.chapter.minutes', { n: resume.lesson.minutes }) }}</span>
+          </span>
+          <span class="btn btn-primary resume-btn">
+            {{ t('guide.hub.continueBtn') }}
+            <UIcon name="i-tabler-arrow-right" />
+          </span>
+        </NuxtLink>
+        <section
+          v-else
+          class="resume card finished"
+        >
+          <span class="resume-glyph">
+            <GrowIcon
+              name="harvest"
+              glow
+            />
+          </span>
+          <span class="resume-text">
+            <span class="resume-title">{{ t('guide.hub.finishedTitle') }}</span>
+            <span class="resume-meta">{{ t('guide.hub.finishedText') }}</span>
+          </span>
+        </section>
+      </template>
+
+      <NuxtLink
+        v-if="forGrow"
+        :to="`/guide/${forGrow.chapter.id}`"
+        class="for-grow card"
+        :style="{ '--c': forGrow.chapter.color }"
+      >
+        <GrowIcon
+          :name="forGrow.chapter.glyph"
+          class="diag-glyph"
+        />
+        <span class="diag-text">
+          <span class="for-lead">{{ t('guide.hub.forGrow') }}</span>
+          <span class="diag-title">{{ tr(forGrow.chapter.title) }}</span>
+          <span class="diag-sub">{{ t('guide.hub.forGrowText', { plant: forGrow.plant.name, stage: forGrow.stage }) }}</span>
+        </span>
+        <UIcon
+          name="i-tabler-chevron-right"
+          class="stop-chev"
+        />
+      </NuxtLink>
 
       <section aria-labelledby="setup-h">
         <div class="section-head">
@@ -200,7 +317,7 @@ const TOOL_LINKS = [
                 <span class="stop-summary">{{ tr(chapter.summary) }}</span>
                 <span class="stop-meta num">
                   <template v-if="p.complete">{{ t('guide.hub.chapterDone') }} · </template>
-                  {{ t('guide.hub.chapterMeta', { done: p.done, total: p.total, min: chapter.lessons.reduce((s, l) => s + l.minutes, 0) }) }}
+                  {{ t('guide.hub.chapterMeta', { done: p.done, total: p.total, min: chapter.lessons.reduce((s, l) => s + l.minutes, 0) }) }}<template v-if="p.done && !p.complete"> · {{ t('guide.hub.chapterLeft', { min: p.minutesLeft }) }}</template>
                 </span>
                 <div
                   v-if="p.done && !p.complete"
@@ -275,14 +392,154 @@ const TOOL_LINKS = [
 </template>
 
 <style scoped>
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 20px 18px 18px;
+  background:
+    radial-gradient(90% 80% at 20% 0%, rgba(155, 227, 107, 0.1), transparent 65%),
+    var(--panel);
+}
+
+.welcome-glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  font-size: 48px;
+  color: var(--leaf);
+}
+
+.welcome-halo {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(155, 227, 107, 0.2), transparent 70%);
+  animation: welcome-breathe 4.2s ease-in-out 3 both;
+}
+
+@keyframes welcome-breathe {
+  50% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+}
+
+.welcome-title {
+  margin: 6px 0 0;
+  max-width: 20ch;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.welcome-text {
+  margin: 0;
+  max-width: 40ch;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.first {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.first-lead {
+  font-size: 12px;
+  color: var(--lamp);
+}
+
+.first-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.first-btn {
+  margin-top: 12px;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.first:active .first-btn {
+  transform: scale(0.985);
+}
+
 .hero {
   display: flex;
-  align-items: center;
-  gap: 20px;
+  flex-direction: column;
+  gap: 16px;
   padding: 18px;
   background:
     radial-gradient(90% 120% at 15% 0%, rgba(155, 227, 107, 0.08), transparent 60%),
     var(--panel);
+}
+
+.hero-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.week {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.week-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.day i {
+  width: 100%;
+  max-width: 30px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-3);
+}
+
+.day.on i {
+  background: var(--leaf);
+  box-shadow: 0 0 10px rgba(155, 227, 107, 0.35);
+}
+
+.day small {
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.day.today small {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.week-text {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
 }
 
 .pct {
@@ -554,7 +811,13 @@ const TOOL_LINKS = [
   color: var(--text-3);
 }
 
-.diagnose {
+.for-lead {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.diagnose,
+.for-grow {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -565,7 +828,8 @@ const TOOL_LINKS = [
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.diagnose:active {
+.diagnose:active,
+.for-grow:active {
   transform: scale(0.985);
 }
 
@@ -606,7 +870,8 @@ const TOOL_LINKS = [
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .stop.complete:not(:last-child)::after {
+  .stop.complete:not(:last-child)::after,
+  .welcome-halo {
     animation: none;
   }
 }

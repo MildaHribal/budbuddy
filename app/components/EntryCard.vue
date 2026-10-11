@@ -16,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const grow = useGrow()
 const info = computed(() => entryInfo(props.entry.type))
 const stage = computed(() => (props.entry.type === 'stage' && props.entry.stage ? stageInfo(props.entry.stage) : null))
 const glyph = computed(() => stage.value?.glyph ?? info.value.glyph)
@@ -38,13 +39,22 @@ const metrics = computed(() => {
     const [v, u] = formatVolume(e.amountMl).split(' ')
     m.push({ label: t('plant.entry.volume'), shown: false, value: v ?? '', unit: u })
   }
-  if (e.ph != null) m.push({ label: 'pH', shown: true, value: String(e.ph) })
-  if (e.ec != null) m.push({ label: 'EC', shown: true, value: String(e.ec) })
-  if (e.heightCm != null) m.push({ label: t('plant.entry.height'), shown: false, value: String(e.heightCm), unit: 'cm' })
-  if (e.tempC != null) m.push({ label: t('plant.entry.temp'), shown: false, value: String(e.tempC), unit: '°C' })
-  if (e.humidity != null) m.push({ label: t('plant.entry.humidity'), shown: false, value: String(e.humidity), unit: t('plant.entry.rh') })
+  if (e.ph != null) m.push({ label: 'pH', shown: true, value: formatNumber(e.ph, 2) })
+  if (e.ec != null) m.push({ label: 'EC', shown: true, value: formatNumber(e.ec, 2) })
+  if (e.heightCm != null) m.push({ label: t('plant.entry.height'), shown: false, value: formatNumber(e.heightCm), unit: 'cm' })
+  if (e.tempC != null) m.push({ label: t('plant.entry.temp'), shown: false, value: formatNumber(e.tempC), unit: '°C' })
+  if (e.humidity != null) m.push({ label: t('plant.entry.humidity'), shown: false, value: formatNumber(e.humidity), unit: t('plant.entry.rh') })
+  if (e.type === 'harvest') {
+    // weights come from the plant, so later corrections show up here too
+    const h = grow.getPlant(e.plantId)?.harvest
+    if (h?.wetWeight != null) m.push({ label: t('entry.harvest.wet'), shown: true, value: formatNumber(h.wetWeight), unit: 'g' })
+    if (h?.dryWeight != null) m.push({ label: t('entry.harvest.dry'), shown: true, value: formatNumber(h.dryWeight), unit: 'g' })
+  }
   return m
 })
+
+// older harvest entries had the English weight baked into the note
+const note = computed(() => (props.entry.type === 'harvest' ? props.entry.note.replace(/^Wet weight \d+(\.\d+)? g\.?\s*/, '') : props.entry.note))
 
 // Stage and harvest entries mirror the plant's own data – they are changed from the plant, not here.
 const editable = computed(() => props.entry.type !== 'stage' && props.entry.type !== 'harvest')
@@ -127,10 +137,10 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
         </div>
       </dl>
       <p
-        v-if="entry.note"
+        v-if="note"
         class="entry-note"
       >
-        {{ entry.note }}
+        {{ note }}
       </p>
       <div
         v-if="entry.photoIds.length"
@@ -197,13 +207,11 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
   justify-content: center;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 18%, #101317), #0b0d10 75%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent),
+    0 0 12px -3px color-mix(in srgb, var(--c) 40%, transparent);
   color: var(--c);
   font-size: 19px;
-}
-
-.node .grow-icon {
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--c) 45%, transparent));
 }
 
 .entry-main {

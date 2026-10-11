@@ -23,6 +23,12 @@ export default {
             cs: 'Fotoperiodické rostliny začnou kvést, když se prodlouží noci. Uvnitř o tom rozhoduješ ty: přepneš časovač z **18/6** (vegetace) na **12/12** — 12 hodin světla a 12 hodin *nepřerušené* tmy. Tomuhle se říká **přepnutí** (flip).\n\nAutomatky na světelný režim nereagují. Kvést začnou samy zhruba ve 3.–5. týdnu od vyklíčení, takže je necháš na 18/6 (nebo 20/4) od semínka až do sklizně.'
           }
         },
+        {
+          type: 'figure',
+          photo: 'flowering-early-bud.webp',
+          caption: { en: 'A few weeks after the flip: white pistils and the first buds starting to stack.', cs: 'Pár týdnů po přepnutí: bílé pestíky a první palice, které začínají nabírat.' },
+          credit: 'cannabisconnectza · CC BY 2.0 (Flickr), resized'
+        },
         { type: 'interactive', widget: 'photoperiod', caption: { en: 'Compare 18/6, 20/4 and 12/12.', cs: 'Porovnej 18/6, 20/4 a 12/12.' } },
         {
           type: 'steps',
@@ -89,6 +95,12 @@ export default {
             cs: 'Prvních **2–3 týdny po přepnutí** rostliny rychle vyrostou a natáhnou se mezi patry. Tomu se říká **stretch**. Indikové odrůdy obvykle přidají kolem 50 %, sativové se můžou zdvojnásobit i ztrojnásobit.'
           }
         },
+        {
+          type: 'figure',
+          photo: 'flowering-stretch-plant.webp',
+          caption: { en: 'During the stretch the plant shoots up and spaces its bud sites along the stems.', cs: 'Během natahování rostlina vyrazí do výšky a rozmístí květy podél stonků.' },
+          credit: 'blumenbiene · CC BY 2.0 (Flickr), resized'
+        },
         { type: 'figure', illustration: 'stretch', caption: { en: 'Same plant at the flip and three weeks later.', cs: 'Stejná rostlina v den přepnutí a o tři týdny později.' } },
         {
           type: 'steps',
@@ -144,6 +156,12 @@ export default {
             en: 'Most photoperiod strains flower for **8–10 weeks** (sativas up to 12+). The breeder\'s number is a guide, not a deadline — the trichomes decide. Here is a typical 9-week strain:',
             cs: 'Většina fotoperiodických odrůd kvete **8–10 týdnů** (sativy i 12 a víc). Číslo od šlechtitele je orientační, ne termín — rozhodují trichomy. Takhle vypadá typická 9týdenní odrůda:'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'flowering-pistils.webp',
+          caption: { en: 'Mid flower: buds swell, pistils start to darken and resin builds up.', cs: 'Střed kvetení: palice tloustnou, pestíky začínají tmavnout a přibývá pryskyřice.' },
+          credit: 'bshamblen · CC BY 2.0 (Flickr), resized'
         },
         {
           type: 'table',
@@ -211,6 +229,12 @@ export default {
             en: 'Dense buds hold moisture. The biggest flower-stage threat is **bud rot** (*Botrytis*): grey mould that starts inside the bud where you can\'t see it. Your defence is lower humidity, steady airflow and no big temperature drops at night.',
             cs: 'Husté palice drží vlhkost. Největší hrozbou v kvetení je **plíseň šedá** v palicích (*Botrytis*): začíná uvnitř palice, kde ji nevidíš. Bráníš se nižší vlhkostí, stálým prouděním vzduchu a tím, že v noci nenecháš teplotu prudce spadnout.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'flowering-grow-room.webp',
+          caption: { en: 'A flowering room close to harvest: fans keep air moving through the canopy, which keeps bud rot away.', cs: 'Kvetoucí pěstírna těsně před sklizní: ventilátory hýbou vzduchem v porostu, a tím drží plíseň v palicích stranou.' },
+          credit: 'Punja et al. (Front. Plant Sci. 2019) · CC BY 4.0 (PubMed Central), cropped & resized'
         },
         {
           type: 'table',
@@ -309,6 +333,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'flowering-late-cola.webp',
+          caption: { en: 'Late flower: frosty buds, darkening pistils and, after cool nights, purple leaves.', cs: 'Pozdní kvetení: ojíněné palice, tmavnoucí pestíky a po chladných nocích fialové listy.' },
+          credit: 'bshamblen · CC BY 2.0 (Flickr), resized'
+        },
+        {
           type: 'checklist',
           id: 'flowering-late-weekly',
           items: [
@@ -375,6 +405,12 @@ export default {
           }
         },
         { type: 'figure', illustration: 'trichome-stages', caption: { en: 'Clear → cloudy → amber trichome heads under magnification.', cs: 'Hlavičky trichomů pod zvětšením: čiré → mléčné → jantarové.' } },
+        {
+          type: 'figure',
+          photo: 'flowering-trichomes-close.webp',
+          caption: { en: 'Resin glands (trichomes) on a bud and its sugar leaves. To judge ripeness, check them with a loupe, not by eye.', cs: 'Pryskyřičné žlázky (trichomy) na palici a cukrových lístcích. Zralost posuzuj lupou, ne pouhým okem.' },
+          credit: 'bshamblen · CC BY 2.0 (Flickr), resized'
+        },
         {
           type: 'table',
           head: [

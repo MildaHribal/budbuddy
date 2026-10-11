@@ -11,7 +11,7 @@ const props = defineProps<{
   /** entry being edited (null = create) */
   entry?: JournalEntry | null
   /** values for a new entry, e.g. a mix from the nutrient calculator */
-  prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note'>> | null
+  prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note' | 'method'>> | null
 }>()
 const emit = defineEmits<{ saved: [entry: JournalEntry] }>()
 
@@ -85,7 +85,7 @@ watch(open, (v) => {
   form.date = props.date
   applyLast(props.type)
   if (props.prefill) Object.assign(form, props.prefill)
-})
+}, { immediate: true })
 
 onBeforeUnmount(() => clearTimeout(closeTimer))
 
@@ -397,7 +397,7 @@ function save() {
             min="0"
             max="14"
             step="0.1"
-            placeholder="6.2"
+            :placeholder="formatNumber(6.2)"
             aria-describedby="e-ph-range"
           >
           <span
@@ -405,7 +405,7 @@ function save() {
             class="range num"
             :data-state="rangeState(form.ph, phRange)"
           >
-            <i aria-hidden="true" />{{ phRange.min.toFixed(1) }}–{{ phRange.max.toFixed(1) }} {{ phRange.label }}
+            <i aria-hidden="true" />{{ formatNumber(phRange.min, 1, true) }}–{{ formatNumber(phRange.max, 1, true) }} {{ phRange.label }}
           </span>
           <span
             v-if="submitted && errors.ph"
@@ -426,7 +426,7 @@ function save() {
               inputmode="decimal"
               min="0"
               step="0.1"
-              placeholder="1.4"
+              :placeholder="formatNumber(1.4)"
               :aria-describedby="ecRange ? 'e-ec-range' : undefined"
             >
             <span
@@ -440,7 +440,7 @@ function save() {
             class="range num"
             :data-state="rangeState(form.ec, ecRange)"
           >
-            <i aria-hidden="true" />{{ ecRange.min.toFixed(1) }}–{{ ecRange.max.toFixed(1) }} {{ ecRange.label }}
+            <i aria-hidden="true" />{{ formatNumber(ecRange.min, 1, true) }}–{{ formatNumber(ecRange.max, 1, true) }} {{ ecRange.label }}
           </span>
         </div>
       </div>
@@ -570,6 +570,7 @@ function save() {
         type="submit"
         class="sr-only"
         tabindex="-1"
+        aria-hidden="true"
       >
         {{ t('entry.save') }}
       </button>

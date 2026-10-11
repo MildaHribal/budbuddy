@@ -25,15 +25,79 @@ useBackHandler(open, () => {
   open.value = false
 })
 
+// Modal: everything outside the sheet is inert while it is open; focus returns to the trigger on close.
+const root = ref<HTMLElement | null>(null)
+let trigger: HTMLElement | null = null
+let inerted: HTMLElement[] = []
+
+function lockBackground() {
+  for (let el = root.value; el?.parentElement && el !== document.body; el = el.parentElement) {
+    for (const sib of el.parentElement.children) {
+      if (sib === el || !(sib instanceof HTMLElement) || sib.inert) continue
+      // toasts stay usable (undo)
+      if (sib.hasAttribute('aria-live') || sib.matches('script, style, template')) continue
+      sib.inert = true
+      inerted.push(sib)
+    }
+  }
+}
+
+function unlockBackground() {
+  for (const el of inerted) el.inert = false
+  inerted = []
+}
+
+function restoreFocus() {
+  const el = trigger
+  trigger = null
+  if (el?.isConnected && !el.closest('[inert]')) el.focus({ preventScroll: true })
+}
+
 watch(open, async (v) => {
-  if (!v) return
+  if (!v) {
+    unlockBackground()
+    restoreFocus()
+    return
+  }
   drag.value = 0
+  const active = document.activeElement
+  trigger = active instanceof HTMLElement && active !== document.body ? active : null
   await nextTick()
+  if (!open.value) return
+  lockBackground()
   // On touch screens focusing a field would pop the keyboard, so only desktop focuses the first field.
   const coarse = window.matchMedia('(pointer: coarse)').matches
   const first = coarse ? null : sheet.value?.querySelector<HTMLElement>('input:not([type=hidden]), textarea, select')
   ;(first ?? sheet.value)?.focus({ preventScroll: true })
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  if (!open.value) return
+  unlockBackground()
+  restoreFocus()
 })
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+// keeps Tab inside the sheet (inert covers the page; this also wraps at the ends)
+function onKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Tab' || !sheet.value) return
+  const items = [...sheet.value.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => el.offsetParent !== null)
+  const first = items[0]
+  const last = items[items.length - 1]
+  if (!first || !last) {
+    e.preventDefault()
+    return
+  }
+  const current = document.activeElement
+  if (e.shiftKey && (current === first || current === sheet.value)) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && current === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
 
 // Drag down on the grip (handle + header) to dismiss.
 const drag = ref(0)
@@ -94,6 +158,7 @@ const dragProgress = computed(() => {
     >
       <div
         v-if="open"
+        ref="root"
         class="sheet-root"
         :style="{ '--drag': `${drag}px`, '--drag-p': dragProgress }"
       >
@@ -110,6 +175,7 @@ const dragProgress = computed(() => {
           aria-modal="true"
           :aria-labelledby="props.title ? titleId : undefined"
           tabindex="-1"
+          @keydown="onKeydown"
         >
           <div
             class="sheet-grip"

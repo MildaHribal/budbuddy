@@ -60,11 +60,14 @@ export function nutrientMix(lines: NutrientLine[], litres: number, strength = 10
   const factor = Math.max(0, strength) / 100
   return lines
     .filter(line => line.name.trim() || line.dose > 0)
-    .map(line => ({
-      name: line.name.trim() || unnamed(),
-      dosePerLitre: +(line.dose * factor).toFixed(2),
-      total: +(line.dose * factor * Math.max(0, litres)).toFixed(1)
-    }))
+    .map((line) => {
+      const dose = Math.max(0, line.dose)
+      return {
+        name: line.name.trim() || unnamed(),
+        dosePerLitre: +(dose * factor).toFixed(2),
+        total: +(dose * factor * Math.max(0, litres)).toFixed(1)
+      }
+    })
 }
 
 export const GALLON_IN_L = 3.785411784

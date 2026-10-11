@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useFeedActions } from '~/utils/feed/actions'
-import { authorName, COMMENT_SELECT, POST_SELECT, type Comment, type Post } from '~/utils/feed/feed'
+import { authorName, COMMENT_SELECT, ensureSchema, isHelp, POST_SELECT, type Comment, type Post } from '~/utils/feed/feed'
 import { haptic } from '~/utils/haptics'
 
 definePageMeta({ hideNav: true })
@@ -12,18 +12,21 @@ const { user, requireAuth } = useAuth()
 const { isBlocked, load: loadBlocks } = useBlocks()
 const { notify } = useNotify()
 const { confirm } = useConfirm()
-const { loadMine, fail } = useFeedActions()
+const { loadMine, fail, preCheck } = useFeedActions()
 
 const id = computed(() => String(route.params.id))
 const post = ref<Post | null>(null)
 const status = ref<'loading' | 'ok' | 'missing' | 'error'>('loading')
 const comments = ref<Comment[]>([])
 const likedComments = ref(new Set<string>())
+/** opened from a solve_ping notification */
+const solveNudge = ref(false)
 
 useHead({ title: () => post.value?.title || t('feed.detail.title') })
 
 async function load() {
   status.value = 'loading'
+  await ensureSchema()
   const sb = useSupabase()
   const [p, c] = await Promise.all([
     sb.from('posts').select(POST_SELECT).eq('id', id.value).maybeSingle(),
@@ -42,7 +45,11 @@ async function load() {
   status.value = 'ok'
   loadMine([post.value.id])
   loadCommentLikes()
-  if (route.hash === '#comments' || route.hash.startsWith('#c-')) {
+  if (route.query.solve === '1' && isOwner.value && isQuestion.value && !post.value.accepted_comment_id && comments.value.length) {
+    solveNudge.value = true
+    await nextTick()
+    document.getElementById('comments')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  } else if (route.hash === '#comments' || route.hash.startsWith('#c-')) {
     await nextTick()
     const el = document.getElementById(route.hash.slice(1)) ?? document.getElementById('comments')
     el?.scrollIntoView({ block: route.hash === '#comments' ? 'start' : 'center' })
@@ -52,9 +59,10 @@ async function load() {
 async function loadCommentLikes() {
   const uid = user.value?.id
   const ids = comments.value.map(c => c.id)
+  if (!uid) likedComments.value = new Set()
   if (!uid || !ids.length) return
   const { data } = await useSupabase().from('comment_likes').select('comment_id').eq('user_id', uid).in('comment_id', ids)
-  likedComments.value = new Set((data ?? []).map(r => r.comment_id as string))
+  if (user.value?.id === uid) likedComments.value = new Set((data ?? []).map(r => r.comment_id as string))
 }
 
 onMounted(() => {
@@ -107,7 +115,8 @@ const pinned = computed(() => {
 })
 
 const isOwner = computed(() => !!user.value && user.value.id === post.value?.author_id)
-const isQuestion = computed(() => post.value?.category === 'question')
+const isQuestion = computed(() => !!post.value && isHelp(post.value))
+const kindNudge = computed(() => !!post.value?.author?.first_grow && !isOwner.value)
 const canAccept = (c: Comment) => isOwner.value && isQuestion.value && c.author_id !== user.value?.id
 
 // ── Comment actions ────────────────────────────────────────────────
@@ -137,12 +146,16 @@ async function likeComment(c: Comment) {
 async function accept(c: Comment) {
   const p = post.value
   if (!p || !requireAuth()) return
-  const prev = p.accepted_comment_id
-  const next = prev === c.id ? null : c.id
+  const prev = { id: p.accepted_comment_id, status: p.status, solver: p.solver }
+  const next = prev.id === c.id ? null : c.id
   p.accepted_comment_id = next
+  if (p.status) p.status = next ? 'solved' : 'open'
+  p.solver = next && c.author ? { author: { username: c.author.username } } : null
   const { error } = await useSupabase().from('posts').update({ accepted_comment_id: next }).eq('id', p.id)
   if (error) {
-    p.accepted_comment_id = prev
+    p.accepted_comment_id = prev.id
+    p.status = prev.status
+    p.solver = prev.solver
     fail(error)
     return
   }
@@ -162,7 +175,11 @@ async function removeComment(c: Comment) {
   comments.value = comments.value.filter(x => !gone.has(x.id))
   if (post.value) {
     post.value.comments_count = Math.max(0, post.value.comments_count - gone.size)
-    if (post.value.accepted_comment_id && gone.has(post.value.accepted_comment_id)) post.value.accepted_comment_id = null
+    if (post.value.accepted_comment_id && gone.has(post.value.accepted_comment_id)) {
+      post.value.accepted_comment_id = null
+      post.value.solver = null
+      if (post.value.status) post.value.status = 'open'
+    }
   }
   notify(t('feed.detail.commentDeleted'), { tone: 'info' })
 }
@@ -201,6 +218,10 @@ async function send() {
   if (!p || !body || sending.value) return
   if (!requireAuth() || !user.value) return
   sending.value = true
+  if (!await preCheck(body)) {
+    sending.value = false
+    return
+  }
   const parent = replyTo.value ? rootOf(replyTo.value) : null
   const { data, error } = await useSupabase().from('comments')
     .insert({ post_id: p.id, author_id: user.value.id, parent_id: parent, body })
@@ -330,6 +351,7 @@ function onDeleted() {
               :liked="likedComments.has(th.comment.id)"
               :accepted="post.accepted_comment_id === th.comment.id"
               :can-accept="canAccept(th.comment)"
+              :nudge="solveNudge"
               @like="likeComment(th.comment)"
               @reply="startReply(th.comment)"
               @delete="removeComment(th.comment)"
@@ -349,6 +371,7 @@ function onDeleted() {
                 :liked="likedComments.has(r.id)"
                 :accepted="post.accepted_comment_id === r.id"
                 :can-accept="canAccept(r)"
+                :nudge="solveNudge"
                 @like="likeComment(r)"
                 @reply="startReply(r)"
                 @delete="removeComment(r)"
@@ -379,6 +402,13 @@ function onDeleted() {
             <UIcon name="i-tabler-x" />
           </button>
         </div>
+        <p
+          v-if="kindNudge && !replyTo"
+          class="nudge"
+        >
+          <GrowIcon name="seedling" />
+          {{ t('feed.beKind') }}
+        </p>
         <div class="composer-row">
           <textarea
             ref="input"
@@ -480,6 +510,19 @@ function onDeleted() {
   padding-bottom: 120px;
 }
 
+.nudge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -2px 0 8px;
+  font-size: 12px;
+  color: #c8f08f;
+}
+
+.nudge .grow-icon {
+  font-size: 14px;
+}
+
 .replying {
   display: flex;
   align-items: center;
@@ -498,8 +541,9 @@ function onDeleted() {
 }
 
 .replying .cancel {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+  margin: -4px -8px -4px 0;
   font-size: 16px;
   border-color: transparent;
   background: transparent;
@@ -527,9 +571,9 @@ function onDeleted() {
 .composer-input {
   flex: 1;
   min-width: 0;
-  min-height: 40px;
+  min-height: 44px;
   max-height: 140px;
-  padding: 9px 0;
+  padding: 11px 0;
   border: 0;
   background: none;
   color: var(--text);
@@ -545,8 +589,8 @@ function onDeleted() {
 }
 
 .send {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   display: grid;
   place-items: center;

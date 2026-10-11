@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import type { Plant } from '~/types/grow'
 import { compressImage } from '~/utils/image'
 import { createId } from '~/utils/id'
-import { stageInfo, stageProgress } from '~/utils/stages'
+import { photoStore } from '~/utils/photoStore'
+import { stageInfo } from '~/utils/stages'
 import { useFeedActions } from '~/utils/feed/actions'
-import { CATEGORIES, CATEGORY_GLYPH, POST_SELECT, storagePath, type Category, type PlantContext, type Post } from '~/utils/feed/feed'
+import { CATEGORIES, CATEGORY_GLYPH, HELP_CATEGORIES, POST_SELECT, storagePath, toPostContext, SYMPTOMS, type Category, type ComposerPrefill, type PostPlantContext, type Post, type Symptom } from '~/utils/feed/feed'
+import { buildPlantContext } from '~/utils/plantContext'
 
 const open = defineModel<boolean>('open', { default: false })
-const props = defineProps<{ post?: Post | null }>()
+const props = defineProps<{ post?: Post | null, prefill?: ComposerPrefill | null }>()
 const emit = defineEmits<{ saved: [post: Post, created: boolean] }>()
 
 const { t } = useI18n()
 const { user } = useAuth()
 const { notify } = useNotify()
 const { confirm } = useConfirm()
-const { fail } = useFeedActions()
+const { fail, preCheck } = useFeedActions()
 const grow = useGrow()
 
 interface Photo {
@@ -30,13 +31,15 @@ interface Photo {
 }
 
 const MAX_PHOTOS = 6
+const MAX_SYMPTOMS = 6
 const category = ref<Category>('plants')
+const symptoms = ref<Symptom[]>([])
 const title = ref('')
 const body = ref('')
 const photos = ref<Photo[]>([])
 const plantId = ref<string | null>(null)
 const contextPlant = ref<string | null>(null)
-const keepContext = ref<PlantContext | null>(null)
+const keepContext = ref<PostPlantContext | null>(null)
 const busy = ref(false)
 const touched = ref(false)
 let submitted = false
@@ -46,8 +49,10 @@ interface MyPlant { id: string, name: string, stage: string, cover_url: string |
 const myPlants = ref<MyPlant[]>([])
 
 const editing = computed(() => !!props.post)
-const isQuestion = computed(() => category.value === 'question')
+const isQuestion = computed(() => HELP_CATEGORIES.includes(category.value))
+const isProblem = computed(() => category.value === 'problem')
 const titleMissing = computed(() => isQuestion.value && !title.value.trim())
+const titleErrId = useId()
 const uploading = computed(() => photos.value.some(p => p.status === 'uploading'))
 const localPlants = computed(() => grow.state.plants.filter(p => !p.archived))
 const dirty = computed(() => !editing.value && (!!title.value.trim() || !!body.value.trim() || photos.value.length > 0))
@@ -79,13 +84,26 @@ function reset() {
   touched.value = false
   busy.value = false
   const p = props.post
-  category.value = p?.category ?? 'plants'
-  title.value = p?.title ?? ''
+  const pre = p ? null : props.prefill
+  category.value = p?.category ?? pre?.category ?? 'plants'
+  title.value = p?.title ?? pre?.title ?? ''
   body.value = p?.body ?? ''
+  symptoms.value = (p?.symptom_tags ?? []).filter((x): x is Symptom => (SYMPTOMS as readonly string[]).includes(x))
   plantId.value = p?.plant_id ?? null
   contextPlant.value = null
   keepContext.value = p?.plant_context ?? null
   photos.value = (p?.images ?? []).map(url => ({ key: url, preview: url, url, progress: 1, status: 'done', blob: null, fresh: false }))
+  const local = pre?.plant ? grow.getPlant(pre.plant) : null
+  if (local) {
+    contextPlant.value = local.id
+    if (local.sharing?.publicId) plantId.value = local.sharing.publicId
+    attachLocal(buildPlantContext(local.id)?.photoIds ?? [], local.name)
+  }
+}
+
+function toggleSymptom(x: Symptom) {
+  if (symptoms.value.includes(x)) symptoms.value = symptoms.value.filter(s => s !== x)
+  else if (symptoms.value.length < MAX_SYMPTOMS) symptoms.value = [...symptoms.value, x]
 }
 
 function cleanup() {
@@ -104,20 +122,35 @@ async function loadMyPlants() {
 
 // ── Photos ─────────────────────────────────────────────────────────
 
-async function addPhoto() {
-  if (photos.value.length >= MAX_PHOTOS) return
-  const file = await pickImage()
-  if (!file) return
+async function addBlob(file: Blob): Promise<boolean> {
+  if (photos.value.length >= MAX_PHOTOS) return false
   let blob: Blob
   try {
     blob = await compressImage(file)
   } catch {
-    notify(t('feed.err.generic'), { tone: 'error' })
-    return
+    return false
   }
   const photo = reactive<Photo>({ key: createId(), preview: URL.createObjectURL(blob), url: null, progress: 0, status: 'uploading', blob, fresh: true })
   photos.value.push(photo)
   upload(photo)
+  return true
+}
+
+async function addPhoto() {
+  if (photos.value.length >= MAX_PHOTOS) return
+  const file = await pickImage()
+  if (!file) return
+  if (!await addBlob(file)) notify(t('feed.err.generic'), { tone: 'error' })
+}
+
+/** Uploads the newest journal photos of a local plant (compressed, EXIF stripped). */
+async function attachLocal(ids: string[], name: string) {
+  let n = 0
+  for (const id of ids) {
+    const stored = await photoStore.get(id).catch(() => undefined)
+    if (stored && open.value && await addBlob(stored.blob)) n++
+  }
+  if (n) notify(t('feed.composer.autoPhotos', { n, name }), { tone: 'info', icon: 'i-tabler-photo-check' })
 }
 
 async function upload(photo: Photo) {
@@ -169,34 +202,11 @@ function removePhoto(photo: Photo) {
 
 // ── Plant context ──────────────────────────────────────────────────
 
-function buildContext(p: Plant): PlantContext {
-  const prog = stageProgress(p)
-  const water = grow.lastEntryOf(p.id, ['water', 'feed'])
-  const feed = grow.lastEntryOf(p.id, ['feed'])
-  const notes = grow.entriesFor(p.id)
-    .filter(e => e.note.trim())
-    .slice(0, 3)
-    .map(e => `${e.date}: ${e.note.trim().slice(0, 160)}`)
-  return {
-    name: p.name,
-    strain: p.strain || undefined,
-    type: p.type,
-    stage: p.stage,
-    day: prog.age,
-    dayInStage: prog.dayInStage,
-    medium: p.medium,
-    environment: p.location,
-    lastWater: water?.date ?? null,
-    lastFeed: feed ? { date: feed.date, ph: feed.ph, ec: feed.ec } : null,
-    notes
-  }
-}
-
-const context = computed<PlantContext | null>(() => {
+const context = computed<PostPlantContext | null>(() => {
   if (!isQuestion.value) return null
   if (contextPlant.value) {
-    const p = grow.getPlant(contextPlant.value)
-    return p ? buildContext(p) : null
+    const c = buildPlantContext(contextPlant.value)
+    return c ? toPostContext(c) : null
   }
   return keepContext.value
 })
@@ -223,7 +233,11 @@ async function submit() {
     return
   }
   busy.value = true
-  const row = {
+  if (!await preCheck(title.value, body.value)) {
+    busy.value = false
+    return
+  }
+  const row: Record<string, unknown> = {
     category: category.value,
     title: title.value.trim() || null,
     body: body.value.trim(),
@@ -231,10 +245,18 @@ async function submit() {
     plant_id: plantId.value,
     plant_context: context.value
   }
+  const tags = isQuestion.value ? symptoms.value : []
+  if (tags.length || props.post?.symptom_tags?.length) row.symptom_tags = tags
   const sb = useSupabase()
-  const res = props.post
-    ? await sb.from('posts').update({ ...row, edited_at: new Date().toISOString() }).eq('id', props.post.id).select(POST_SELECT).single()
-    : await sb.from('posts').insert({ ...row, author_id: uid }).select(POST_SELECT).single()
+  const write = () => props.post
+    ? sb.from('posts').update({ ...row, edited_at: new Date().toISOString() }).eq('id', props.post.id).select(POST_SELECT).single()
+    : sb.from('posts').insert({ ...row, author_id: uid }).select(POST_SELECT).single()
+  let res = await write()
+  // symptom_tags not deployed yet
+  if (res.error?.code === 'PGRST204' && 'symptom_tags' in row) {
+    delete row.symptom_tags
+    res = await write()
+  }
   busy.value = false
   if (res.error || !res.data) {
     fail(res.error)
@@ -299,12 +321,15 @@ async function submit() {
           maxlength="120"
           lang="en"
           enterkeyhint="next"
-          :placeholder="isQuestion ? t('feed.composer.questionPh') : t('feed.composer.titlePh')"
+          :placeholder="isProblem ? t('feed.composer.problemPh') : isQuestion ? t('feed.composer.questionPh') : t('feed.composer.titlePh')"
           :aria-invalid="touched && titleMissing"
+          :aria-describedby="touched && titleMissing ? titleErrId : undefined"
         >
         <span
           v-if="touched && titleMissing"
+          :id="titleErrId"
           class="field-error"
+          role="alert"
         >{{ t('feed.composer.titleRequired') }}</span>
       </label>
 
@@ -323,6 +348,26 @@ async function submit() {
           class="field-hint num"
         >{{ body.length }} / 4000</span>
       </label>
+
+      <div
+        v-if="isQuestion"
+        class="field"
+      >
+        <span class="field-label">{{ t('feed.composer.symptoms') }} <span class="count">{{ t('feed.composer.symptomsHint') }}</span></span>
+        <div class="chips wrap">
+          <button
+            v-for="x in SYMPTOMS"
+            :key="x"
+            type="button"
+            class="chip sym"
+            :aria-pressed="symptoms.includes(x)"
+            :disabled="!symptoms.includes(x) && symptoms.length >= MAX_SYMPTOMS"
+            @click="toggleSymptom(x)"
+          >
+            {{ t(`feed.symptoms.${x}`) }}
+          </button>
+        </div>
+      </div>
 
       <div class="field">
         <span class="field-label">{{ t('feed.composer.photos') }} <span class="num count">{{ photos.length }}/{{ MAX_PHOTOS }}</span></span>
@@ -377,6 +422,31 @@ async function submit() {
             <span>{{ t('feed.composer.addPhoto') }}</span>
           </button>
         </div>
+        <ul
+          v-if="isQuestion"
+          class="checklist"
+          :aria-label="t('feed.composer.checklist')"
+        >
+          <li class="check-title">
+            {{ t('feed.composer.checklist') }}
+          </li>
+          <li :class="{ ok: photos.length >= 1 }">
+            <UIcon :name="photos.length >= 1 ? 'i-tabler-circle-check-filled' : 'i-tabler-circle'" />
+            {{ t('feed.composer.check.leaf') }}
+          </li>
+          <li :class="{ ok: photos.length >= 2 }">
+            <UIcon :name="photos.length >= 2 ? 'i-tabler-circle-check-filled' : 'i-tabler-circle'" />
+            {{ t('feed.composer.check.light') }}
+          </li>
+          <li :class="{ ok: !!context }">
+            <UIcon :name="context ? 'i-tabler-circle-check-filled' : 'i-tabler-circle'" />
+            {{ t('feed.composer.check.context') }}
+          </li>
+        </ul>
+        <span
+          v-if="photos.length"
+          class="field-hint"
+        >{{ t('feed.composer.privacy') }}</span>
       </div>
 
       <div class="field">
@@ -510,6 +580,52 @@ async function submit() {
 .chip .grow-icon,
 .chip .iconify {
   font-size: 16px;
+}
+
+.chip.sym {
+  min-height: 44px;
+}
+
+.chip:disabled {
+  opacity: 0.4;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  list-style: none;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.checklist .iconify {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 16px;
+  color: var(--text-3);
+  transition: color var(--dur) ease;
+}
+
+.checklist li.ok .iconify {
+  color: var(--leaf);
+}
+
+.check-title {
+  font-weight: 600;
+  color: var(--text);
 }
 
 .count {

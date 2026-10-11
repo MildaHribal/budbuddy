@@ -1,5 +1,6 @@
 import { growerLevel } from '~/utils/grower'
 import { intlLocale } from '~/utils/locale'
+import type { PlantContext } from '~/utils/plantContext'
 
 export const CATEGORIES = ['question', 'plants', 'harvest', 'problem', 'gear', 'outdoor', 'general'] as const
 export type Category = typeof CATEGORIES[number]
@@ -20,9 +21,27 @@ export interface Author {
   display_name: string | null
   avatar_url: string | null
   reputation: number
+  first_grow?: boolean | null
 }
 
-export interface PlantContext {
+export const HELP_CATEGORIES: readonly Category[] = ['question', 'problem']
+
+export const SYMPTOMS = ['yellowing', 'spots', 'burn', 'claw', 'droop', 'curl', 'purple', 'pests', 'mould', 'slow', 'other'] as const
+export type Symptom = typeof SYMPTOMS[number]
+
+export const REACTIONS = ['like', 'healthy', 'training', 'frosty', 'helpful'] as const
+export type ReactionKind = typeof REACTIONS[number]
+
+export const REACTION_GLYPH: Record<ReactionKind, { glyph: string, on: string, color: string }> = {
+  like: { glyph: 'i-tabler-heart', on: 'i-tabler-heart-filled', color: 'var(--leaf)' },
+  healthy: { glyph: 'vegetative', on: 'vegetative', color: 'var(--leaf)' },
+  training: { glyph: 'train', on: 'train', color: 'var(--info)' },
+  frosty: { glyph: 'i-tabler-snowflake', on: 'i-tabler-snowflake', color: '#e4eefc' },
+  helpful: { glyph: 'i-tabler-bulb', on: 'i-tabler-bulb-filled', color: 'var(--lamp)' }
+}
+
+/** Plant snapshot as stored in posts.plant_context. */
+export interface PostPlantContext {
   name?: string
   strain?: string
   type?: string
@@ -34,6 +53,29 @@ export interface PlantContext {
   lastWater?: string | null
   lastFeed?: { date: string, ph: number | null, ec: number | null } | null
   notes?: string[]
+}
+
+export function toPostContext(c: PlantContext): PostPlantContext {
+  return {
+    name: c.name,
+    strain: c.strain || undefined,
+    type: c.type,
+    stage: c.stage,
+    day: c.day,
+    dayInStage: c.dayInStage,
+    medium: c.medium,
+    environment: c.environment,
+    lastWater: c.lastWater?.date ?? null,
+    lastFeed: c.lastFeed ? { date: c.lastFeed.date, ph: c.lastFeed.ph, ec: c.lastFeed.ec } : null,
+    notes: c.recentNotes.map(n => `${n.date}: ${n.text.slice(0, 160)}`)
+  }
+}
+
+export interface ComposerPrefill {
+  category?: Category
+  /** local journal plant id: attaches its context and latest photos */
+  plant?: string | null
+  title?: string
 }
 
 export interface LinkedPlant {
@@ -52,7 +94,7 @@ export interface Post {
   body: string
   images: string[]
   plant_id: string | null
-  plant_context: PlantContext | null
+  plant_context: PostPlantContext | null
   likes_count: number
   comments_count: number
   accepted_comment_id: string | null
@@ -61,6 +103,11 @@ export interface Post {
   created_at: string
   author: Author | null
   plant: LinkedPlant | null
+  status?: 'open' | 'solved' | null
+  solved_at?: string | null
+  symptom_tags?: string[] | null
+  reactions?: Partial<Record<ReactionKind, number>> | null
+  solver?: { author: { username: string } | null } | null
 }
 
 export interface Comment {
@@ -76,10 +123,39 @@ export interface Comment {
   author: Author | null
 }
 
-const AUTHOR = 'id, username, display_name, avatar_url, reputation'
-export const POST_SELECT = `*, author:profiles!posts_author_id_fkey(${AUTHOR}), plant:public_plants(id, name, strain, stage, cover_url)`
-export const COMMENT_SELECT = `*, author:profiles!comments_author_id_fkey(${AUTHOR})`
+const AUTHOR_V1 = 'id, username, display_name, avatar_url, reputation'
+const AUTHOR_V2 = `${AUTHOR_V1}, first_grow`
+const SOLVER = 'solver:comments!posts_accepted_fk(author:profiles!comments_author_id_fkey(username))'
+const postSelect = (a: string) => `*, author:profiles!posts_author_id_fkey(${a}), plant:public_plants(id, name, strain, stage, cover_url), ${SOLVER}`
+// Live bindings: downgraded by ensureSchema() while profiles.first_grow is not deployed yet.
+// eslint-disable-next-line import/no-mutable-exports
+export let POST_SELECT = postSelect(AUTHOR_V2) as '*'
+// eslint-disable-next-line import/no-mutable-exports
+export let COMMENT_SELECT = `*, author:profiles!comments_author_id_fkey(${AUTHOR_V2})` as '*'
 export const PAGE = 20
+
+let schemaCheck: Promise<void> | null = null
+/** Falls back to the pre-wave-2 author columns when the DB doesn't have them yet. */
+export function ensureSchema(): Promise<void> {
+  schemaCheck ??= (async () => {
+    const { error } = await useSupabase().from('profiles').select('first_grow').limit(0)
+    if (error?.code === '42703') {
+      POST_SELECT = postSelect(AUTHOR_V1) as '*'
+      COMMENT_SELECT = `*, author:profiles!comments_author_id_fkey(${AUTHOR_V1})` as '*'
+    }
+  })().catch(() => {})
+  return schemaCheck
+}
+
+export const isHelp = (p: Pick<Post, 'category'>) => HELP_CATEGORIES.includes(p.category)
+export const isSolved = (p: Pick<Post, 'status' | 'accepted_comment_id'>) => p.status === 'solved' || !!p.accepted_comment_id
+export const reactionCount = (p: Post, k: ReactionKind) => p.reactions?.[k] ?? (k === 'like' && !p.reactions ? p.likes_count : 0)
+
+/** Keyset cursor on (created_at desc, id desc). */
+export interface Cursor { at: string, id: string }
+export function keysetOr(c: Cursor, at = 'created_at', id = 'id'): string {
+  return `${at}.lt."${c.at}",and(${at}.eq."${c.at}",${id}.lt.${c.id})`
+}
 
 export const shareUrl = (id: string) => `https://budbuddy.hribal.site/community/post/${id}`
 
@@ -89,11 +165,9 @@ export function authorName(a: Author | null | undefined): string {
 
 // ── Reputation levels ──────────────────────────────────────────────
 
-export interface Level { key: 'seedling' | 'grower' | 'cultivator' | 'master', glyph: string, color: string }
-
-export function repLevel(rep: number): Level {
-  const { id, glyph, color } = growerLevel(rep)
-  return { key: id, glyph, color }
+export function repLevel(rep: number) {
+  const l = growerLevel(rep)
+  return { ...l, key: l.id }
 }
 
 // ── Ranking ────────────────────────────────────────────────────────
@@ -119,10 +193,12 @@ export function relTime(iso: string, now = Date.now()): string {
 
 // ── Errors ─────────────────────────────────────────────────────────
 
-export type ErrorKind = 'rate' | 'banned' | 'offline' | 'generic'
+export type ErrorKind = 'rate' | 'banned' | 'offline' | 'generic' | 'contact' | 'sale'
 
 export function errorKind(e: { message: string, code?: string } | Error | null | undefined, banned = false): ErrorKind {
   const msg = (e?.message ?? '').toLowerCase()
+  const blocked = msg.match(/content_blocked:\s*(contact|sale)/)
+  if (blocked) return blocked[1] as 'contact' | 'sale'
   if (msg.includes('rate limit')) return 'rate'
   if (banned || (e && 'code' in e && e.code === '42501') || msg.includes('row-level security')) return 'banned'
   if (msg.includes('failed to fetch') || msg.includes('network') || (typeof navigator !== 'undefined' && !navigator.onLine)) return 'offline'

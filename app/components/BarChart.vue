@@ -95,7 +95,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
             v-if="active === i"
             class="tip"
           >
-            <strong class="num">{{ b.value }}{{ unit }}</strong>
+            <strong class="num">{{ formatNumber(b.value, 2) }}{{ unit }}</strong>
             <span v-if="b.hint">{{ b.hint }}</span>
           </div>
         </div>

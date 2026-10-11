@@ -3,11 +3,15 @@ import type { Profile } from '~/composables/useAuth'
 import type { PublicPlant } from '~/utils/grower'
 import { POST_SELECT, type Post } from '~/utils/feed/feed'
 import { useFeedActions } from '~/utils/feed/actions'
+import { isMissingSchema } from '~/utils/dbErrors'
+import { badgeGlyph, badgeName, type BadgeDef } from '~/composables/useBadges'
 
 interface MiniProfile { id: string, username: string, display_name: string | null, avatar_url: string | null }
 interface TipRow { id: string, body: string, stage: string | null, helpful_count: number, is_hidden: boolean, created_at: string }
 
 type Tab = 'plants' | 'posts' | 'tips'
+const PROFILE_COLS = 'id, username, display_name, avatar_url, bio, experience, environments, media, favorite_strain, reputation, created_at'
+const PROFILE_COLS_X = `${PROFILE_COLS}, first_grow, light_type, space, pinned_badges`
 const PAGE = 20
 
 const route = useRoute()
@@ -30,6 +34,41 @@ const followBusy = ref(false)
 const mine = computed(() => !!user.value && user.value.id === profile.value?.id)
 const name = computed(() => profile.value?.display_name?.trim() || profile.value?.username || '')
 const level = computed(() => growerLevel(profile.value?.reputation ?? 0))
+const nextLevel = computed(() => (level.value.next == null ? null : growerLevel(level.value.next)))
+const perk = computed(() => {
+  const id = nextLevel.value?.id ?? level.value.id
+  return tOr(`feed.levelSheet.perks.${id}`, '')
+})
+const levelPct = computed(() => {
+  const cur = LEVELS[level.value.tier]?.min ?? 0
+  const next = level.value.next
+  if (next == null) return 1
+  return Math.min(1, Math.max(0, ((profile.value?.reputation ?? 0) - cur) / (next - cur)))
+})
+
+// ── Badges ────────────────────────────────────────────────────────
+const { loadCatalog, loadEarned } = useBadges()
+const badgeDefs = shallowRef<BadgeDef[]>([])
+const earnedAt = ref<Record<string, string>>({})
+const pinnedBadges = computed(() => (profile.value?.pinned_badges ?? [])
+  .map(id => badgeDefs.value.find(d => d.id === id && earnedAt.value[id]))
+  .filter((b): b is BadgeDef => !!b)
+  .slice(0, 3))
+
+async function loadBadges(uid: string) {
+  const [defs, earned] = await Promise.all([loadCatalog(), loadEarned(uid)])
+  if (profile.value?.id !== uid) return
+  badgeDefs.value = defs
+  earnedAt.value = Object.fromEntries(earned.map(e => [e.badge_id, e.earned_at]))
+  if (route.hash === '#badges') nextTick(() => document.getElementById('badges')?.scrollIntoView({ block: 'start' }))
+}
+function scrollToBadges() {
+  document.getElementById('badges')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+function onPinned(ids: string[]) {
+  if (profile.value) profile.value = { ...profile.value, pinned_badges: ids }
+  if (mine.value) useAuth().loadProfile()
+}
 const harvested = computed(() => plants.value.filter(p => p.harvest_dry_g != null && Number(p.harvest_dry_g) > 0))
 const totalDry = computed(() => Math.round(harvested.value.reduce((s, p) => s + Number(p.harvest_dry_g), 0)))
 const blocked = computed(() => !mine.value && isBlocked(profile.value?.id))
@@ -38,7 +77,9 @@ const setup = computed(() => {
   if (!p) return []
   return [
     ...p.environments.map(v => ({ key: `e-${v}`, label: tOr(`profile.env.${v}`, v), icon: v === 'outdoor' ? 'i-tabler-sun' : v === 'greenhouse' ? 'i-tabler-building-warehouse' : 'lamp' })),
-    ...p.media.map(v => ({ key: `m-${v}`, label: tOr(`profile.media.${v}`, v), icon: 'i-tabler-shovel' }))
+    ...p.media.map(v => ({ key: `m-${v}`, label: tOr(`profile.media.${v}`, v), icon: 'i-tabler-shovel' })),
+    ...(p.light_type ? [{ key: 'light', label: tOr(`profile.light.${p.light_type}`, p.light_type), icon: p.light_type === 'sun' ? 'i-tabler-sun' : 'lamp' }] : []),
+    ...(p.space ? [{ key: 'space', label: t('profile.space', { v: p.space }), icon: 'i-tabler-box' }] : [])
   ]
 })
 
@@ -47,7 +88,9 @@ useHead({ title: () => (name.value ? `${name.value} (@${profile.value?.username}
 async function load() {
   state.value = 'loading'
   loadBlocks()
-  const { data, error } = await sb.from('profiles').select('*').eq('username', username.value).maybeSingle()
+  const q = (cols: string) => sb.from('profiles').select(cols).eq('username', username.value).maybeSingle()
+  let { data, error } = await q(PROFILE_COLS_X)
+  if (isMissingSchema(error)) ({ data, error } = await q(PROFILE_COLS))
   if (error) {
     state.value = 'error'
     return
@@ -56,8 +99,11 @@ async function load() {
     state.value = 'missing'
     return
   }
-  profile.value = data as Profile
+  profile.value = data as unknown as Profile
   const id = profile.value.id
+  badgeDefs.value = []
+  earnedAt.value = {}
+  loadBadges(id)
   const head = { count: 'exact' as const, head: true }
   const [pl, po, fr, fg, me] = await Promise.all([
     sb.from('public_plants').select('id, owner_id, name, strain, plant_type, stage, environment, medium, start_date, cover_url, harvest_wet_g, harvest_dry_g, archived, updated_at').eq('owner_id', id).order('updated_at', { ascending: false }).limit(60),
@@ -240,7 +286,7 @@ const plantDay = (p: PublicPlant) => (p.start_date ? daysSince(p.start_date) : n
       class="page"
     >
       <EmptyState
-        :icon="state === 'missing' ? 'community' : 'i-tabler-plant-off'"
+        :icon="state === 'missing' ? 'community' : 'seedling'"
         :title="state === 'missing' ? t('profile.notFound') : t('profile.loadError')"
         :text="state === 'missing' ? t('profile.notFoundText') : undefined"
       >
@@ -288,10 +334,41 @@ const plantDay = (p: PublicPlant) => (p.start_date ? daysSince(p.start_date) : n
             <GrowIcon
               :name="level.glyph"
               class="text-[14px]"
-            />{{ t(`profile.levels.${level.id}`) }}
+            />{{ level.label }}
           </span>
           <span class="badge exp">{{ t(`profile.experience.${profile.experience}`) }}</span>
+          <span
+            v-if="profile.first_grow"
+            class="badge first"
+            :title="t('profile.firstGrowHint')"
+          >
+            <GrowIcon
+              name="seedling"
+              class="text-[14px]"
+            />{{ t('profile.firstGrow') }}
+          </span>
         </div>
+
+        <a
+          v-if="pinnedBadges.length"
+          href="#badges"
+          class="pinned"
+          :aria-label="`${t('profile.badges.pinned')}: ${pinnedBadges.map(b => badgeName(b)).join(', ')}`"
+          @click.prevent="scrollToBadges"
+        >
+          <span
+            v-for="b in pinnedBadges"
+            :key="b.id"
+            class="pinned-item"
+          >
+            <CommunityBadgeMedal
+              :glyph="badgeGlyph(b)"
+              :tier="b.tier"
+              :size="40"
+            />
+            <span class="pinned-name">{{ badgeName(b) }}</span>
+          </span>
+        </a>
 
         <div
           v-if="setup.length"
@@ -397,6 +474,66 @@ const plantDay = (p: PublicPlant) => (p.start_date ? daysSince(p.start_date) : n
             <span class="stat-label">{{ t('profile.stats.reputation') }}</span>
           </div>
         </section>
+
+        <section
+          class="level card"
+          :style="{ '--lc': level.color }"
+          aria-labelledby="h-level"
+        >
+          <div class="level-head">
+            <span class="level-glyph"><GrowIcon
+              :name="level.glyph"
+              glow
+            /></span>
+            <div class="level-text">
+              <h2
+                id="h-level"
+                class="level-name"
+              >
+                {{ level.label }}
+              </h2>
+              <span class="level-rep num">{{ t('profile.level.rep', { n: profile.reputation }) }}</span>
+            </div>
+            <span
+              v-if="nextLevel"
+              class="level-next num"
+            >{{ t('profile.level.toNext', { n: (level.next ?? 0) - profile.reputation, next: nextLevel.label }) }}</span>
+            <span
+              v-else
+              class="level-next"
+            >{{ t('profile.level.top') }}</span>
+          </div>
+          <div
+            class="progress"
+            role="progressbar"
+            :aria-valuenow="Math.round(levelPct * 100)"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :aria-label="t('profile.level.title')"
+          >
+            <div :style="{ width: `${Math.round(levelPct * 100)}%` }" />
+          </div>
+          <p class="level-perk">
+            <strong>{{ nextLevel ? t('profile.level.nextUnlocks', { next: nextLevel.label }) : t('profile.level.now') }}:</strong>
+            {{ perk }}
+          </p>
+          <p
+            v-if="mine"
+            class="level-how"
+          >
+            {{ t('profile.level.how') }}
+          </p>
+        </section>
+
+        <CommunityBadgeGrid
+          v-if="badgeDefs.length && !blocked"
+          :defs="badgeDefs"
+          :earned="earnedAt"
+          :pinned="profile.pinned_badges ?? []"
+          :owner="mine"
+          :user-id="profile.id"
+          @pinned="onPinned"
+        />
 
         <p
           v-if="blocked"
@@ -751,6 +888,109 @@ h1 {
   color: var(--text-2);
 }
 
+.badge.first {
+  color: #c8f08f;
+}
+
+.badges {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pinned {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 4px;
+}
+
+.pinned-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 72px;
+}
+
+.pinned-name {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* ── Level ── */
+.level {
+  padding: 14px 16px 16px;
+}
+
+.level-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.level-glyph {
+  font-size: 26px;
+  color: var(--lc);
+  display: inline-flex;
+}
+
+.level-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.level-name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--lc);
+}
+
+.level-rep {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.level-next {
+  max-width: 48%;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+  color: var(--text-2);
+}
+
+.level .progress > div {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--lc) 55%, #0b0d10), var(--lc));
+}
+
+.level-perk {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.level-perk strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.level-how {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+
 .setup {
   display: flex;
   flex-wrap: wrap;
@@ -970,8 +1210,7 @@ h1 {
   position: absolute;
   left: 8px;
   bottom: 8px;
-  background: color-mix(in srgb, currentColor 14%, rgba(7, 8, 10, 0.72));
-  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, currentColor 14%, color-mix(in srgb, var(--bg) 88%, transparent));
 }
 
 .plant-meta {

@@ -22,6 +22,7 @@ const { t } = useI18n()
 const authorName = computed(() => props.tip.author?.display_name || props.tip.author?.username || '?')
 const stage = computed(() => (isStageId(props.tip.stage) ? stageInfo(props.tip.stage) : null))
 const burst = ref(0)
+const share = computed(() => helpfulShare(props.tip.helpful_count, props.tip.unhelpful_count))
 
 function onVote(v: 1 | -1) {
   if (v === 1 && props.vote !== 1) burst.value++
@@ -50,6 +51,20 @@ function onVote(v: 1 | -1) {
 
     <p class="tip-body">
       {{ tip.body }}
+    </p>
+
+    <p
+      class="share"
+      :class="{ strong: share && share.n >= 5 && share.pct >= 75 }"
+    >
+      <template v-if="share">
+        <span
+          class="meter"
+          aria-hidden="true"
+        ><i :style="{ transform: `scaleX(${share.pct / 100})` }" /></span>
+        <span class="num">{{ t('tips.helpfulTo', { pct: share.pct, n: share.n }) }}</span>
+      </template>
+      <span v-else>{{ t('tips.notRated') }}</span>
     </p>
 
     <div class="tip-tags">
@@ -141,6 +156,37 @@ function onVote(v: 1 | -1) {
   line-height: 1.5;
   white-space: pre-line;
   overflow-wrap: anywhere;
+}
+
+.share {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.share.strong {
+  color: var(--text-2);
+}
+
+.meter {
+  flex-shrink: 0;
+  width: 36px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+
+.meter i {
+  display: block;
+  height: 100%;
+  background: var(--leaf);
+  transform-origin: left;
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 .tip-tags {

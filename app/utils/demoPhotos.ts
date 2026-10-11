@@ -1,28 +1,15 @@
 import type { GrowData } from '../types/grow'
-import credits from '../assets/demo/credits.json'
 import { photoStore } from './photoStore'
 
-export interface PhotoCredit {
-  file: string
-  title: string
-  author: string
-  license: string
-  licenseUrl: string | null
-  sourceUrl: string
-}
-
-/** Wikimedia Commons attributions for the bundled demo photos. */
-export const DEMO_PHOTO_CREDITS: PhotoCredit[] = credits
-
-export type DemoPhoto = 'seedling-led' | 'seedling-sprout' | 'veg-coco' | 'veg-tent' | 'canopy-scrog'
-  | 'flower-plant' | 'flower-cola' | 'trichomes' | 'drying' | 'jar'
-
-export const demoPhotoId = (slug: DemoPhoto) => `demo-${slug}`
+// loaded lazily: the photo URLs must stay out of the entry chunk (they become <link rel=prefetch>)
+export { DEMO_PHOTO_CREDITS, demoPhotoId, type DemoPhoto, type PhotoCredit } from './demoCredits'
 
 const assets = import.meta.glob<string>('../assets/demo/*.jpg', { eager: true, query: '?url', import: 'default' })
 const urls: Record<string, string> = Object.fromEntries(
   Object.entries(assets).map(([path, url]) => [`demo-${path.split('/').pop()!.replace(/\.jpg$/, '')}`, url])
 )
+
+export const demoPhotoUrl = (id: string): string | undefined => urls[id]
 
 /** Puts the bundled demo photos into the photo store; references to photos that fail to load are removed. */
 export async function seedDemoPhotos(data: GrowData): Promise<void> {

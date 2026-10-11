@@ -59,9 +59,20 @@ defineProps<{ photo?: boolean }>()
 }
 
 .sk {
+  position: relative;
   display: block;
+  overflow: hidden;
   border-radius: 6px;
-  background: linear-gradient(110deg, #1b1f24 30%, #252a30 50%, #1b1f24 70%) 0 0 / 300% 100%;
+  background: #1b1f24;
+}
+
+/* compositor-only shimmer */
+.sk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.045) 50%, transparent 80%);
+  transform: translateX(-100%);
   animation: shimmer 1.4s linear infinite;
 }
 
@@ -90,12 +101,12 @@ defineProps<{ photo?: boolean }>()
 
 @keyframes shimmer {
   to {
-    background-position: -300% 0;
+    transform: translateX(100%);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sk {
+  .sk::after {
     animation: none;
   }
 }

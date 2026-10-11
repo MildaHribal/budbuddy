@@ -9,10 +9,24 @@ const { state } = useGrow()
 type Tool = 'nutrients' | 'vpd' | 'dli' | 'convert'
 const tools = computed(() => (['nutrients', 'vpd', 'dli', 'convert'] as Tool[]).map(id => ({ id, label: t(`tools.tabs.${id}`) })))
 const route = useRoute()
-const tool = ref<Tool>((route.query.t as Tool) || 'nutrients')
+const TOOL_IDS: Tool[] = ['nutrients', 'vpd', 'dli', 'convert']
+const queryTool = route.query.t as Tool
+const tool = ref<Tool>(TOOL_IDS.includes(queryTool) ? queryTool : 'nutrients')
 watch(tool, v => navigateTo({ query: { t: v } }, { replace: true }))
 
 const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
+const pos = (v: unknown) => Math.max(0, n(v))
+
+// The explainer starts open only on the first visit to each tool, so the calculator stays above the fold.
+const seenTools = useLocalStorage<string[]>('budbuddy:tools-seen', [])
+const aboutOpen = ref(false)
+watch(tool, (v) => {
+  aboutOpen.value = !seenTools.value.includes(v)
+  if (aboutOpen.value) seenTools.value = [...seenTools.value, v]
+}, { immediate: true })
+function onAboutToggle(e: Event) {
+  aboutOpen.value = (e.target as HTMLDetailsElement).open
+}
 
 // ── Nutrients ─────────────────────────────────────────────────────
 // The recipe is a per-device convenience, so localStorage is fine here.
@@ -25,7 +39,7 @@ const EXAMPLE: NutrientLine[] = [
 ]
 const lines = useLocalStorage<NutrientLine[]>('budbuddy:mix-lines', EXAMPLE.map(l => ({ ...l })))
 
-const mix = computed(() => nutrientMix(lines.value.map((l: NutrientLine) => ({ name: l.name, dose: n(l.dose) })), n(litres.value), n(strength.value)))
+const mix = computed(() => nutrientMix(lines.value.map((l: NutrientLine) => ({ name: l.name, dose: pos(l.dose) })), pos(litres.value), pos(strength.value)))
 const mixTotal = computed(() => round(mix.value.reduce((s, m) => s + m.total, 0), 1))
 const strengthLevels = [25, 50, 75, 100]
 
@@ -43,7 +57,7 @@ const logPlant = ref<string>('')
 const logOpen = ref(false)
 const growingPlants = computed(() => state.plants.filter(p => !p.archived))
 const prefill = computed(() => ({
-  nutrients: mix.value.map(m => `${m.name} ${m.dosePerLitre} ml/L`).join(', ')
+  nutrients: mix.value.map(m => `${m.name} ${formatNumber(m.dosePerLitre, 2)} ml/L`).join(', ')
 }))
 
 function logMix() {
@@ -77,8 +91,9 @@ const vpdPos = computed(() => Math.min(100, Math.max(0, (vpdValue.value / VPD_MA
 const ppfd = useLocalStorage('budbuddy:dli-ppfd', 600)
 const hours = useLocalStorage('budbuddy:dli-hours', 18)
 const targetDli = useLocalStorage('budbuddy:dli-target', 40)
-const dliValue = computed(() => dli(n(ppfd.value), Math.min(24, n(hours.value))))
-const neededPpfd = computed(() => ppfdForDli(n(targetDli.value), Math.min(24, n(hours.value))))
+const dliValue = computed(() => dli(pos(ppfd.value), Math.min(24, pos(hours.value))))
+// null when there is no light period to spread the target over
+const neededPpfd = computed(() => (pos(hours.value) > 0 ? ppfdForDli(pos(targetDli.value), Math.min(24, pos(hours.value))) : null))
 const lightPresets = [
   { key: 'seedling', ppfd: 250, hours: 18 },
   { key: 'veg', ppfd: 550, hours: 18 },
@@ -132,20 +147,24 @@ function fromC() {
 
       <div class="tool">
         <!-- What is this for? -->
-        <div
+        <details
           :key="tool"
-          class="card pad about"
+          class="card about"
+          :open="aboutOpen"
+          @toggle="onAboutToggle"
         >
-          <p class="about-text">
+          <summary class="about-summary">
             <UIcon
               name="i-tabler-bulb"
               class="about-icon size-4"
               aria-hidden="true"
             />
-            <span><span class="sr-only">{{ t('tools.whatFor') }} </span>{{ t(`tools.${aboutNs[tool]}.what`) }}</span>
-          </p>
-          <details class="learn">
-            <summary>{{ t('tools.learnMore') }}</summary>
+            <span>{{ t('tools.whatFor') }}</span>
+          </summary>
+          <div class="about-body">
+            <p class="about-text">
+              {{ t(`tools.${aboutNs[tool]}.what`) }}
+            </p>
             <ul>
               <li
                 v-for="k in learnKeys[tool]"
@@ -154,8 +173,8 @@ function fromC() {
                 {{ t(`tools.${aboutNs[tool]}.learn.${k}`) }}
               </li>
             </ul>
-          </details>
-        </div>
+          </div>
+        </details>
 
         <!-- Nutrients -->
         <section
@@ -345,13 +364,13 @@ function fromC() {
                 >
                   <span class="mix-name">
                     {{ m.name }}
-                    <small class="num">{{ t('tools.mix.perLitre', { d: m.dosePerLitre }) }}</small>
+                    <small class="num">{{ t('tools.mix.perLitre', { d: formatNumber(m.dosePerLitre, 2) }) }}</small>
                   </span>
-                  <strong class="num">{{ m.total }}<small>ml</small></strong>
+                  <strong class="num">{{ formatNumber(m.total) }}<small>ml</small></strong>
                 </li>
                 <li class="mix-total">
                   <span class="mix-name">{{ t('tools.mix.total') }}</span>
-                  <strong class="num">{{ mixTotal }}<small>ml</small></strong>
+                  <strong class="num">{{ formatNumber(mixTotal) }}<small>ml</small></strong>
                 </li>
               </ul>
               <div class="how">
@@ -426,7 +445,7 @@ function fromC() {
                 <output
                   class="range-value num"
                   for="vpd-t"
-                >{{ temp }} °C</output>
+                >{{ formatNumber(n(temp)) }} °C</output>
               </div>
               <input
                 id="vpd-t"
@@ -469,7 +488,7 @@ function fromC() {
                 <output
                   class="range-value num"
                   for="vpd-leaf"
-                >{{ leafOffset }} °C</output>
+                >{{ formatNumber(n(leafOffset)) }} °C</output>
               </div>
               <input
                 id="vpd-leaf"
@@ -506,7 +525,7 @@ function fromC() {
             <div
               class="band"
               role="img"
-              :aria-label="t('tools.vpd.aria', { value: round(vpdValue, 2), zone: zone.label })"
+              :aria-label="t('tools.vpd.aria', { value: formatNumber(vpdValue, 2), zone: zone.label })"
             >
               <div class="band-track">
                 <span
@@ -533,7 +552,7 @@ function fromC() {
             </div>
 
             <p class="vpd-number">
-              <strong class="mid-value num">{{ round(vpdValue, 2) }}<small>kPa</small></strong>
+              <strong class="mid-value num">{{ formatNumber(vpdValue, 2, true) }}<small>kPa</small></strong>
               <span>VPD · {{ zone.label }}</span>
             </p>
           </div>
@@ -546,17 +565,17 @@ function fromC() {
               <tbody>
                 <tr>
                   <td>{{ t('tools.vpd.clones') }}</td><td class="num">
-                    0.4 – 0.8 kPa
+                    {{ formatNumber(0.4) }} – {{ formatNumber(0.8) }} kPa
                   </td>
                 </tr>
                 <tr>
                   <td>{{ t('tools.vpd.veg') }}</td><td class="num">
-                    0.8 – 1.2 kPa
+                    {{ formatNumber(0.8) }} – {{ formatNumber(1.2) }} kPa
                   </td>
                 </tr>
                 <tr>
                   <td>{{ t('tools.vpd.flower') }}</td><td class="num">
-                    1.2 – 1.6 kPa
+                    {{ formatNumber(1.2) }} – {{ formatNumber(1.6) }} kPa
                   </td>
                 </tr>
               </tbody>
@@ -633,7 +652,7 @@ function fromC() {
           >
             <div class="readout">
               <span class="readout-label">{{ t('tools.dli.label') }}</span>
-              <strong class="big-value lamp num">{{ round(dliValue, 1) }}<small>{{ t('tools.dli.unit') }}</small></strong>
+              <strong class="big-value lamp num">{{ formatNumber(dliValue, 1) }}<small>{{ t('tools.dli.unit') }}</small></strong>
             </div>
             <p class="advice">
               {{ dliAdvice(dliValue) }}
@@ -652,7 +671,7 @@ function fromC() {
                 <output
                   class="range-value num"
                   for="dli-t"
-                >{{ targetDli }} mol</output>
+                >{{ formatNumber(n(targetDli)) }} mol</output>
               </div>
               <input
                 id="dli-t"
@@ -665,7 +684,7 @@ function fromC() {
               >
             </div>
             <div class="reverse">
-              <strong class="num">{{ Math.round(neededPpfd) }}<small>µmol/m²/s</small></strong>
+              <strong class="num">{{ neededPpfd == null ? '–' : formatNumber(neededPpfd, 0) }}<small>µmol/m²/s</small></strong>
               <span>{{ t('tools.dli.needed', { h: hours }) }}</span>
             </div>
           </div>
@@ -783,9 +802,9 @@ function fromC() {
                   :key="g"
                 >
                   <td class="num">
-                    {{ g }} gal
+                    {{ formatNumber(g) }} gal
                   </td><td class="num">
-                    {{ round(gallonsToLitres(g), 1) }} {{ t('tools.convert.litre') }}
+                    {{ formatNumber(gallonsToLitres(g), 1) }} {{ t('tools.convert.litre') }}
                   </td>
                 </tr>
               </tbody>
@@ -833,70 +852,67 @@ function fromC() {
   margin-bottom: 14px;
 }
 
-/* Beginner framing: what + learn more */
+/* Beginner framing: one line, opens to the explainer */
 .about {
+  padding: 0 16px;
+}
+
+.about-summary {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: linear-gradient(180deg, var(--lamp-soft), transparent 70%), var(--panel);
-}
-
-.about-text {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--text);
-}
-
-.about-icon {
-  flex-shrink: 0;
-  margin-top: 3px;
-  color: var(--lamp);
-}
-
-.learn summary {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 44px;
+  gap: 8px;
+  min-height: 48px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--leaf);
+  color: var(--text-2);
   cursor: pointer;
   list-style: none;
 }
 
-.learn summary::-webkit-details-marker {
+.about-summary::-webkit-details-marker {
   display: none;
 }
 
-.learn summary::after {
+.about-summary::after {
   content: '';
   width: 7px;
   height: 7px;
-  margin-top: -3px;
+  margin: -3px 4px 0 auto;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
   transition: transform var(--dur) var(--ease-out);
 }
 
-.learn[open] summary::after {
+.about[open] .about-summary::after {
   margin-top: 3px;
   transform: rotate(-135deg);
 }
 
-.learn summary:focus-visible {
+.about-summary:focus-visible {
   outline: 2px solid var(--leaf);
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline-offset: -2px;
+  border-radius: 10px;
 }
 
-.learn ul {
-  margin: 0 0 4px;
+.about-icon {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.about-body {
+  padding: 0 0 16px;
+}
+
+.about-text {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.about-body ul {
+  margin: 0;
   padding-left: 18px;
   display: flex;
   flex-direction: column;
@@ -1470,7 +1486,7 @@ function fromC() {
 
 @media (prefers-reduced-motion: reduce) {
   .band-glide,
-  .learn summary::after {
+  .about-summary::after {
     transition: none;
   }
 }

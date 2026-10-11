@@ -1,93 +1,331 @@
 <script setup lang="ts">
-import { chapterLessons, getChapter, type Lesson } from '~/guide'
+import { chapterLessons, getChapter, loadChapter, type Chapter, type Lesson, type LessonMeta } from '~/guide'
+import { lessonActions, type GuideAction } from '~/guide/actions'
+import type { EntryType } from '~/types/grow'
+import { todayISO } from '~/utils/date'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const { chapters, tr, environment, medium, isDone, setDone, chapterProgress } = useGuide()
+const { state } = useGrow()
 
-const chapter = computed(() => getChapter(String(route.params.chapter)))
-useHead({ title: () => (chapter.value ? tr(chapter.value.title) : t('guide.chapter.notFound')) })
+const meta = computed(() => getChapter(String(route.params.chapter)))
+useHead({ title: () => (meta.value ? tr(meta.value.title) : t('guide.chapter.notFound')) })
 
 const showAll = ref(false)
-const filtered = computed(() => (chapter.value ? chapterLessons(chapter.value, environment.value, medium.value) : []))
-const lessons = computed<Lesson[]>(() => (chapter.value ? (showAll.value ? chapter.value.lessons : filtered.value) : []))
-const hiddenCount = computed(() => (chapter.value ? chapter.value.lessons.length - filtered.value.length : 0))
-const progress = computed(() => (chapter.value ? chapterProgress(chapter.value) : { done: 0, total: 0, minutesLeft: 0, complete: false }))
+const filtered = computed(() => (meta.value ? chapterLessons(meta.value, environment.value, medium.value) : []))
+const lessons = computed<LessonMeta[]>(() => (meta.value ? (showAll.value ? meta.value.lessons : filtered.value) : []))
+const hiddenCount = computed(() => (meta.value ? meta.value.lessons.length - filtered.value.length : 0))
+const progress = computed(() => (meta.value ? chapterProgress(meta.value) : { done: 0, total: 0, minutesLeft: 0, complete: false }))
 const totalMinutes = computed(() => lessons.value.reduce((s, l) => s + l.minutes, 0))
 
-const position = computed(() => chapters.findIndex(c => c.id === chapter.value?.id))
+const position = computed(() => chapters.findIndex(c => c.id === meta.value?.id))
 const prevChapter = computed(() => (position.value > 0 ? chapters[position.value - 1] : undefined))
 const nextChapter = computed(() => (position.value >= 0 ? chapters[position.value + 1] : undefined))
 
-const celebrateKey = ref(0)
-const finale = ref<HTMLElement | null>(null)
+// ── Content: one chunk per chapter, loaded on demand ─────────────
+const content = shallowRef<Chapter | null>(null)
+const loadFailed = ref(false)
+const bodies = computed(() => new Map<string, Lesson>(content.value?.lessons.map(l => [l.id, l]) ?? []))
 
+async function load() {
+  const id = meta.value?.id
+  content.value = null
+  loadFailed.value = false
+  if (!id) return
+  try {
+    const c = await loadChapter(id)
+    if (meta.value?.id !== id) return
+    content.value = c ?? null
+    loadFailed.value = !c
+  } catch {
+    loadFailed.value = true
+  }
+}
+
+// ── Lazy lessons: render a lesson body only when it comes near the viewport ──
+const rendered = ref(new Set<string>())
+const scrollRoot = ref<HTMLElement | null>(null)
+const pageEl = ref<HTMLElement | null>(null)
+let nearObserver: IntersectionObserver | null = null
+let endObserver: IntersectionObserver | null = null
+
+function render(...ids: string[]) {
+  const next = new Set(rendered.value)
+  let changed = false
+  for (const id of ids) {
+    if (!next.has(id)) {
+      next.add(id)
+      changed = true
+    }
+  }
+  if (changed) rendered.value = next
+}
+
+const isRendered = (id: string) => rendered.value.has(id) && bodies.value.has(id)
+
+function observeAll() {
+  const root = pageEl.value
+  if (!root) return
+  root.querySelectorAll<HTMLElement>('.lesson-pending').forEach(el => nearObserver?.observe(el))
+  root.querySelectorAll<HTMLElement>('.lesson-end').forEach(el => endObserver?.observe(el))
+  measure()
+}
+
+// ── Auto-complete: reaching the end of a lesson after reading it for a while ──
+const firstSeen = new Map<string, number>()
+const endVisible = new Set<string>()
+const timers = new Map<string, ReturnType<typeof setTimeout>>()
+const justDone = ref<string | null>(null)
+const celebrateKey = ref(0)
+
+const dwellMs = (l: LessonMeta) => Math.min(40_000, Math.max(15_000, l.minutes * 8_000))
+
+function complete(id: string) {
+  if (isDone(id)) return
+  const wasComplete = progress.value.complete
+  setDone(id, true)
+  justDone.value = id
+  if (!wasComplete && progress.value.complete) celebrateKey.value++
+}
+
+function tryAutoComplete(id: string) {
+  const lesson = lessons.value.find(l => l.id === id)
+  if (!lesson || lesson.quiz || isDone(id) || !endVisible.has(id)) return
+  const seen = firstSeen.get(id)
+  if (seen == null) return
+  const wait = dwellMs(lesson) - (Date.now() - seen)
+  if (wait <= 0) {
+    complete(id)
+    return
+  }
+  if (!timers.has(id)) {
+    timers.set(id, setTimeout(() => {
+      timers.delete(id)
+      tryAutoComplete(id)
+    }, wait + 50))
+  }
+}
+
+function onQuizFinished(lesson: LessonMeta, score: number, total: number) {
+  if (total && score / total >= 0.6) complete(lesson.id)
+}
+
+function toggleDone(lesson: LessonMeta) {
+  if (isDone(lesson.id)) {
+    setDone(lesson.id, false)
+    if (justDone.value === lesson.id) justDone.value = null
+  } else {
+    complete(lesson.id)
+  }
+}
+
+// ── Where the reader is ──────────────────────────────────────────
+const current = ref<number>(-1)
+let raf = 0
+
+function measure() {
+  raf = 0
+  const root = scrollRoot.value
+  const page = pageEl.value
+  if (!root || !page) return
+  const top = root.getBoundingClientRect().top
+  const bottom = top + root.clientHeight
+  const line = top + root.clientHeight * 0.35
+  const now = Date.now()
+  let idx = -1
+  page.querySelectorAll<HTMLElement>('.lesson').forEach((el, i) => {
+    const r = el.getBoundingClientRect()
+    if (r.top <= line) idx = i
+    if (r.top < bottom && r.bottom > top && !firstSeen.has(el.id) && isRendered(el.id)) firstSeen.set(el.id, now)
+  })
+  current.value = idx
+}
+
+const onScroll = () => {
+  if (!raf) raf = requestAnimationFrame(measure)
+}
+
+const subtitle = computed(() => {
+  if (!meta.value) return undefined
+  const lesson = lessons.value[current.value]
+  if (lesson) return t('guide.chapter.reading', { n: current.value + 1, total: lessons.value.length, title: tr(lesson.title) })
+  return t('guide.chapter.progress', { done: progress.value.done, total: progress.value.total })
+})
+
+// ── Navigation ───────────────────────────────────────────────────
 const reduceMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 function scrollToId(id: string, smooth = true) {
-  const el = document.getElementById(id)
-  el?.scrollIntoView({ behavior: smooth && !reduceMotion() ? 'smooth' : 'auto', block: 'start' })
+  document.getElementById(id)?.scrollIntoView({ behavior: smooth && !reduceMotion() ? 'smooth' : 'auto', block: 'start' })
 }
 
 function revealHash(smooth: boolean) {
   const id = decodeURIComponent(route.hash.replace(/^#/, ''))
-  if (!id || !chapter.value) return
-  if (!lessons.value.some(l => l.id === id) && chapter.value.lessons.some(l => l.id === id)) showAll.value = true
-  nextTick(() => scrollToId(id, smooth))
+  if (!id || !meta.value) return
+  if (!lessons.value.some(l => l.id === id) && meta.value.lessons.some(l => l.id === id)) showAll.value = true
+  render(id)
+  nextTick(() => requestAnimationFrame(() => scrollToId(id, smooth)))
 }
 
-watch(() => route.params.chapter, () => {
-  showAll.value = false
-  celebrateKey.value = 0
-})
-onMounted(() => setTimeout(() => revealHash(false), 60))
-watch(() => route.hash, () => revealHash(true))
+function goTo(id: string) {
+  render(id)
+  router.replace({ hash: `#${id}` })
+  if (route.hash === `#${id}`) nextTick(() => scrollToId(id))
+}
 
-function nextInChapter(lesson: Lesson): Lesson | undefined {
+function nextInChapter(lesson: LessonMeta): LessonMeta | undefined {
   const i = lessons.value.findIndex(l => l.id === lesson.id)
   return i >= 0 ? lessons.value[i + 1] : undefined
 }
 
-function toggleDone(lesson: Lesson) {
-  const wasComplete = progress.value.complete
-  setDone(lesson.id, !isDone(lesson.id))
-  if (!wasComplete && progress.value.complete) {
-    celebrateKey.value++
-    nextTick(() => finale.value?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' }))
+function resetReader() {
+  showAll.value = false
+  celebrateKey.value = 0
+  justDone.value = null
+  current.value = -1
+  firstSeen.clear()
+  endVisible.clear()
+  timers.forEach(clearTimeout)
+  timers.clear()
+  const first = meta.value?.lessons[0]?.id
+  rendered.value = new Set(first ? [first] : [])
+}
+
+let mounted = false
+
+watch(() => meta.value?.id, async () => {
+  resetReader()
+  await load()
+  if (mounted) revealHash(false)
+}, { immediate: true })
+
+watch(() => route.hash, () => revealHash(true))
+watch(lessons, (list) => {
+  if (list[0]) render(list[0].id)
+})
+watch([rendered, content, lessons], () => nextTick(observeAll), { flush: 'post' })
+
+onMounted(() => {
+  mounted = true
+  scrollRoot.value = pageEl.value?.closest<HTMLElement>('.app-scroll') ?? null
+  const root = scrollRoot.value
+  nearObserver = new IntersectionObserver((entries) => {
+    const ids = entries.filter(e => e.isIntersecting).map(e => (e.target as HTMLElement).dataset.lesson!).filter(Boolean)
+    if (ids.length) render(...ids)
+  }, { root, rootMargin: '900px 0px' })
+  endObserver = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const id = (e.target as HTMLElement).dataset.end!
+      if (e.isIntersecting) {
+        endVisible.add(id)
+        tryAutoComplete(id)
+      } else {
+        endVisible.delete(id)
+      }
+    }
+  }, { root })
+  root?.addEventListener('scroll', onScroll, { passive: true })
+  observeAll()
+  if (content.value) revealHash(false)
+})
+
+onBeforeUnmount(() => {
+  nearObserver?.disconnect()
+  endObserver?.disconnect()
+  scrollRoot.value?.removeEventListener('scroll', onScroll)
+  timers.forEach(clearTimeout)
+  if (raf) cancelAnimationFrame(raf)
+})
+
+// ── Guide ↔ journal ──────────────────────────────────────────────
+const activePlants = computed(() => state.plants.filter(p => !p.archived))
+const pickOpen = ref(false)
+const pending = ref<GuideAction | null>(null)
+const logPlant = ref('')
+const logType = ref<EntryType>('note')
+const logOpen = ref(false)
+
+const actionLabel = (a: GuideAction) => t(`guide.chapter.actions.${a.kind === 'tool' ? a.tool : a.kind === 'log' ? a.entry : a.kind}`)
+const actionGlyph = (a: GuideAction) => {
+  if (a.kind === 'tool') return a.tool === 'vpd' ? 'i-tabler-droplet-half-2' : a.tool === 'nutrients' ? 'feed' : a.tool === 'dli' ? 'lamp' : 'measure'
+  if (a.kind === 'log') return entryInfo(a.entry).glyph
+  return a.kind === 'plant' ? 'plants' : 'stage'
+}
+
+function runFor(a: GuideAction, plantId: string) {
+  if (a.kind === 'log') {
+    logPlant.value = plantId
+    logType.value = a.entry
+    nextTick(() => (logOpen.value = true))
+  } else if (a.kind === 'stage') {
+    navigateTo(`/plants/${plantId}`)
   }
 }
 
-function goTo(id: string) {
-  router.replace({ hash: `#${id}` })
-  if (route.hash === `#${id}`) scrollToId(id)
+function runAction(a: GuideAction) {
+  if (!activePlants.value.length) {
+    navigateTo('/plants/new')
+    return
+  }
+  if (activePlants.value.length === 1) {
+    runFor(a, activePlants.value[0]!.id)
+    return
+  }
+  pending.value = a
+  pickOpen.value = true
 }
+
+function pickPlant(id: string) {
+  pickOpen.value = false
+  if (pending.value) runFor(pending.value, id)
+  pending.value = null
+}
+
+// Finale blooms when it scrolls into view, not offscreen.
+const finale = ref<HTMLElement | null>(null)
+const finaleSeen = ref(false)
+let finaleObserver: IntersectionObserver | null = null
+watch(finale, (el) => {
+  finaleObserver?.disconnect()
+  finaleSeen.value = false
+  if (!el) return
+  finaleObserver = new IntersectionObserver(([e]) => {
+    if (e?.isIntersecting) {
+      finaleSeen.value = true
+      finaleObserver?.disconnect()
+    }
+  }, { root: scrollRoot.value, threshold: 0.4 })
+  finaleObserver.observe(el)
+})
+onBeforeUnmount(() => finaleObserver?.disconnect())
 </script>
 
 <template>
-  <div>
+  <div ref="pageEl">
     <AppHeader
-      :title="chapter ? tr(chapter.title) : t('guide.chapter.notFound')"
-      :subtitle="chapter ? t('guide.chapter.progress', { done: progress.done, total: progress.total }) : undefined"
+      :title="meta ? tr(meta.title) : t('guide.chapter.notFound')"
+      :subtitle="subtitle"
       back
     >
       <template
-        v-if="chapter && progress.total"
+        v-if="meta && progress.total"
         #actions
       >
         <GuideProgressRing
-          :value="progress.total ? progress.done / progress.total : 0"
+          :value="progress.done / progress.total"
           :size="44"
-          :stroke="10"
+          :stroke="9"
           :label="t('guide.chapter.progress', { done: progress.done, total: progress.total })"
         >
-          <span class="mini num">{{ progress.done }}</span>
+          <span class="mini num">{{ progress.done }}<span>/{{ progress.total }}</span></span>
         </GuideProgressRing>
       </template>
     </AppHeader>
 
     <div
-      v-if="!chapter"
+      v-if="!meta"
       class="page"
     >
       <EmptyState
@@ -107,7 +345,7 @@ function goTo(id: string) {
     <div
       v-else
       class="page"
-      :style="{ '--c': chapter.color }"
+      :style="{ '--c': meta.color }"
     >
       <header class="intro rise">
         <span
@@ -115,14 +353,14 @@ function goTo(id: string) {
           aria-hidden="true"
         >
           <GrowIcon
-            :name="chapter.glyph"
+            :name="meta.glyph"
             draw
             glow
             :stroke-width="1.3"
           />
         </span>
         <p class="intro-summary">
-          {{ tr(chapter.summary) }}
+          {{ tr(meta.summary) }}
         </p>
         <p class="intro-meta num">
           {{ t('guide.hub.chapterMeta', { done: progress.done, total: progress.total, min: totalMinutes }) }}
@@ -150,7 +388,7 @@ function goTo(id: string) {
             <a
               :href="`#${lesson.id}`"
               class="toc-item"
-              :class="{ done: isDone(lesson.id) }"
+              :class="{ done: isDone(lesson.id), here: current === i }"
               @click.prevent="goTo(lesson.id)"
             >
               <span
@@ -187,6 +425,22 @@ function goTo(id: string) {
         </p>
       </nav>
 
+      <div
+        v-if="loadFailed"
+        class="load-error"
+        role="alert"
+      >
+        <p>{{ t('guide.chapter.loadError') }}</p>
+        <button
+          type="button"
+          class="btn btn-soft"
+          @click="load"
+        >
+          <UIcon name="i-tabler-refresh" />
+          {{ t('guide.chapter.retry') }}
+        </button>
+      </div>
+
       <article
         v-for="(lesson, i) in lessons"
         :id="lesson.id"
@@ -205,43 +459,143 @@ function goTo(id: string) {
             {{ tr(lesson.title) }}
           </h2>
         </header>
-        <div class="blocks">
-          <GuideBlock
-            v-for="(block, j) in lesson.blocks"
-            :key="j"
-            :block="block"
-            :lesson-id="lesson.id"
-          />
+
+        <template v-if="isRendered(lesson.id)">
+          <div class="blocks">
+            <GuideBlock
+              v-for="(block, j) in bodies.get(lesson.id)!.blocks"
+              :key="j"
+              :block="block"
+              :lesson-id="lesson.id"
+              @quiz-finished="(score, total) => onQuizFinished(lesson, score, total)"
+            />
+          </div>
+
+          <footer class="lesson-foot">
+            <section
+              v-if="lessonActions(lesson.id).length"
+              class="use"
+              :aria-label="t('guide.chapter.putToUse')"
+            >
+              <h3 class="use-title">
+                {{ t('guide.chapter.putToUse') }}
+              </h3>
+              <template
+                v-for="(a, k) in lessonActions(lesson.id)"
+                :key="k"
+              >
+                <NuxtLink
+                  v-if="a.kind === 'tool' || a.kind === 'plant'"
+                  :to="a.kind === 'tool' ? { path: '/tools', query: { t: a.tool } } : '/plants/new'"
+                  class="use-item"
+                >
+                  <GrowIcon :name="actionGlyph(a)" />
+                  <span>{{ actionLabel(a) }}</span>
+                  <UIcon
+                    name="i-tabler-chevron-right"
+                    class="use-chev"
+                  />
+                </NuxtLink>
+                <button
+                  v-else
+                  type="button"
+                  class="use-item"
+                  @click="runAction(a)"
+                >
+                  <GrowIcon :name="actionGlyph(a)" />
+                  <span>{{ actionLabel(a) }}</span>
+                  <UIcon
+                    name="i-tabler-chevron-right"
+                    class="use-chev"
+                  />
+                </button>
+              </template>
+            </section>
+
+            <div
+              class="lesson-end"
+              :data-end="lesson.id"
+            >
+              <button
+                type="button"
+                class="done-toggle"
+                :class="{ on: isDone(lesson.id), fresh: justDone === lesson.id }"
+                :aria-pressed="isDone(lesson.id)"
+                :title="isDone(lesson.id) ? t('guide.chapter.undo') : undefined"
+                @click="toggleDone(lesson)"
+              >
+                <span
+                  class="done-mark"
+                  aria-hidden="true"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                    />
+                    <path d="M7.5 12.5l3 3 6-6.5" />
+                  </svg>
+                </span>
+                {{ isDone(lesson.id) ? t('guide.chapter.done') : t('guide.chapter.markRead') }}
+              </button>
+              <p
+                v-if="lesson.quiz && !isDone(lesson.id)"
+                class="end-hint"
+              >
+                {{ t('guide.chapter.quizToFinish') }}
+              </p>
+              <p
+                class="sr-only"
+                aria-live="polite"
+              >
+                {{ justDone === lesson.id ? t('guide.chapter.justDone') : '' }}
+              </p>
+            </div>
+
+            <button
+              v-if="nextInChapter(lesson)"
+              type="button"
+              class="btn btn-block next-btn"
+              :class="isDone(lesson.id) ? 'btn-primary' : 'btn-ghost'"
+              @click="goTo(nextInChapter(lesson)!.id)"
+            >
+              <span class="next-label">{{ t('guide.chapter.nextLesson', { title: tr(nextInChapter(lesson)!.title) }) }}</span>
+              <UIcon name="i-tabler-arrow-down" />
+            </button>
+            <NuxtLink
+              v-else-if="nextChapter && !progress.complete"
+              :to="`/guide/${nextChapter.id}`"
+              class="btn btn-block next-btn"
+              :class="isDone(lesson.id) ? 'btn-primary' : 'btn-ghost'"
+            >
+              <span class="next-label">{{ t('guide.chapter.nextChapter', { title: tr(nextChapter.title) }) }}</span>
+              <UIcon name="i-tabler-arrow-right" />
+            </NuxtLink>
+          </footer>
+        </template>
+
+        <div
+          v-else
+          class="lesson-pending"
+          :class="{ shimmer: !content && !loadFailed && i === 0 }"
+          :data-lesson="lesson.id"
+          :style="{ minHeight: `${lesson.minutes * 280}px` }"
+          :aria-busy="!content"
+        >
+          <span
+            v-if="!content && !loadFailed && i === 0"
+            class="sr-only"
+          >{{ t('guide.chapter.loading') }}</span>
         </div>
-        <footer class="lesson-foot">
-          <button
-            type="button"
-            class="btn btn-block"
-            :class="isDone(lesson.id) ? 'btn-soft is-done' : 'btn-primary'"
-            :aria-pressed="isDone(lesson.id)"
-            @click="toggleDone(lesson)"
-          >
-            <UIcon :name="isDone(lesson.id) ? 'i-tabler-circle-check' : 'i-tabler-check'" />
-            {{ isDone(lesson.id) ? t('guide.chapter.done') : t('guide.chapter.markDone') }}
-          </button>
-          <button
-            v-if="isDone(lesson.id) && nextInChapter(lesson)"
-            type="button"
-            class="btn btn-ghost btn-block next-lesson"
-            @click="goTo(nextInChapter(lesson)!.id)"
-          >
-            <span class="next-label">{{ t('guide.chapter.nextLesson', { title: tr(nextInChapter(lesson)!.title) }) }}</span>
-            <UIcon name="i-tabler-arrow-down" />
-          </button>
-        </footer>
       </article>
 
       <section
-        v-if="progress.complete"
+        v-if="progress.complete && content"
         ref="finale"
         :key="celebrateKey"
         class="finale"
-        :class="{ fresh: celebrateKey > 0 }"
+        :class="{ fresh: celebrateKey > 0 && finaleSeen }"
         aria-live="polite"
       >
         <span
@@ -250,7 +604,7 @@ function goTo(id: string) {
         >
           <span class="halo" />
           <GrowIcon
-            :name="chapter.glyph"
+            :name="meta.glyph"
             draw
             glow
             :stroke-width="1.2"
@@ -278,6 +632,7 @@ function goTo(id: string) {
       </section>
 
       <nav
+        v-if="prevChapter"
         class="pager"
         :aria-label="t('guide.title')"
       >
@@ -292,19 +647,45 @@ function goTo(id: string) {
             <span class="pager-title">{{ tr(prevChapter.title) }}</span>
           </span>
         </NuxtLink>
-        <NuxtLink
-          v-if="nextChapter"
-          :to="`/guide/${nextChapter.id}`"
-          class="pager-link next"
-        >
-          <span>
-            <span class="pager-lead">{{ t('guide.chapter.next') }}</span>
-            <span class="pager-title">{{ tr(nextChapter.title) }}</span>
-          </span>
-          <UIcon name="i-tabler-chevron-right" />
-        </NuxtLink>
       </nav>
     </div>
+
+    <BottomSheet
+      v-model:open="pickOpen"
+      :title="t('guide.chapter.pickPlant')"
+    >
+      <div class="pick-list">
+        <button
+          v-for="p in activePlants"
+          :key="p.id"
+          type="button"
+          class="pick-item"
+          @click="pickPlant(p.id)"
+        >
+          <GrowIcon
+            :name="stageInfo(p.stage).glyph"
+            :style="{ color: stageInfo(p.stage).color }"
+            class="pick-glyph"
+          />
+          <span class="pick-text">
+            <span class="pick-name">{{ p.name }}</span>
+            <span class="pick-meta">{{ [p.strain, stageInfo(p.stage).label].filter(Boolean).join(' · ') }}</span>
+          </span>
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="use-chev"
+          />
+        </button>
+      </div>
+    </BottomSheet>
+
+    <EntrySheet
+      v-if="logPlant"
+      v-model:open="logOpen"
+      :plant-id="logPlant"
+      :type="logType"
+      :date="todayISO()"
+    />
   </div>
 </template>
 
@@ -312,6 +693,11 @@ function goTo(id: string) {
 .mini {
   font-size: 13px;
   font-weight: 500;
+}
+
+.mini span {
+  font-size: 11px;
+  color: var(--text-3);
 }
 
 .intro {
@@ -386,6 +772,12 @@ function goTo(id: string) {
   box-shadow: inset 0 0 0 1px var(--line-strong);
   font-size: 12px;
   color: var(--text-3);
+  transition: background var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+
+.toc-item.here .toc-mark {
+  box-shadow: inset 0 0 0 1.5px var(--leaf);
+  color: var(--text);
 }
 
 .toc-item.done .toc-mark {
@@ -427,6 +819,22 @@ function goTo(id: string) {
   min-height: 44px;
 }
 
+.load-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.load-error p {
+  margin: 0;
+}
+
 .lesson {
   scroll-margin-top: calc(84px + var(--safe-top));
   padding-top: 8px;
@@ -452,21 +860,207 @@ function goTo(id: string) {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* skip layout/paint of offscreen lessons; padding keeps card shadows unclipped */
+  margin: -16px -20px;
+  padding: 16px 20px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1200px;
+}
+
+.lesson-pending.shimmer {
+  border-radius: var(--radius);
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.035), transparent) 0 0 / 60% 100% no-repeat,
+    repeating-linear-gradient(180deg, var(--surface) 0 14px, transparent 14px 30px) 0 0 / 100% 210px no-repeat;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -60% 0, 0 0;
+  }
+
+  to {
+    background-position: 160% 0, 0 0;
+  }
 }
 
 .lesson-foot {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 24px;
+  gap: 12px;
+  margin-top: 28px;
 }
 
-.is-done {
+.use {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--panel-shadow);
+  overflow: hidden;
+}
+
+.use-title {
+  margin: 0;
+  padding: 14px 16px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.use-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 16px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.use-title + .use-item {
+  border-top: 0;
+}
+
+.use-item:active {
+  background: var(--surface-2);
+}
+
+.use-item > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.use-item .grow-icon,
+.use-item > .iconify:first-child {
+  flex: none;
+  font-size: 20px;
   color: var(--leaf);
 }
 
-.next-lesson {
+.use-chev {
+  flex: none;
+  font-size: 18px;
+  color: var(--text-3);
+}
+
+.lesson-end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.done-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 14px 6px 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color var(--dur) var(--ease-out), background var(--dur) var(--ease-out);
+}
+
+.done-toggle:active {
+  background: var(--surface);
+}
+
+.done-toggle.on {
+  color: var(--leaf);
+}
+
+.done-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+}
+
+.done-mark svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.done-mark circle {
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+  transition: stroke var(--dur) var(--ease-out), fill var(--dur) var(--ease-out);
+}
+
+.done-mark path {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  transition: stroke-dashoffset var(--dur-slow) var(--ease-out);
+}
+
+.on .done-mark circle {
+  stroke: var(--accent-line);
+  fill: var(--accent-soft);
+}
+
+.on .done-mark path {
+  stroke-dashoffset: 0;
+}
+
+.fresh .done-mark {
+  animation: done-pop 620ms var(--ease-out);
+}
+
+.fresh .done-mark svg {
+  animation: done-glow 1.4s var(--ease-out);
+}
+
+@keyframes done-pop {
+  0% {
+    transform: scale(0.7);
+  }
+
+  55% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes done-glow {
+  30% {
+    filter: drop-shadow(0 0 8px rgba(155, 227, 107, 0.7));
+  }
+}
+
+.end-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+
+.next-btn {
   justify-content: space-between;
+  transition: background var(--dur) var(--ease-out), color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
 }
 
 .next-label {
@@ -572,12 +1166,6 @@ function goTo(id: string) {
   font-size: 13px;
 }
 
-.pager-link.next {
-  grid-column: 2;
-  justify-content: flex-end;
-  text-align: right;
-}
-
 .pager-link > span {
   display: flex;
   flex-direction: column;
@@ -602,9 +1190,62 @@ function goTo(id: string) {
   color: var(--text-3);
 }
 
+.pick-list {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+}
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 10px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.pick-item:last-child {
+  border-bottom: 0;
+}
+
+.pick-glyph {
+  flex: none;
+  font-size: 26px;
+}
+
+.pick-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pick-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pick-meta {
+  font-size: 13px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fresh .halo,
-  .fresh .finale-glyph .grow-icon {
+  .fresh .finale-glyph .grow-icon,
+  .fresh .done-mark,
+  .fresh .done-mark svg,
+  .lesson-pending.shimmer {
     animation: none;
   }
 }

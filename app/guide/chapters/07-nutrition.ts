@@ -24,6 +24,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'nutrition-healthy-leaf.webp',
+          caption: { en: 'A healthy fan leaf: evenly deep green from the stem to the tips. That is what balanced feeding looks like.', cs: 'Zdravý list: rovnoměrně sytě zelený od řapíku až po špičky. Takhle vypadá vyvážené hnojení.' },
+          credit: 'Lode Van de Velde · CC0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'table',
           head: [
             { en: 'Nutrient', cs: 'Živina' },
@@ -69,6 +75,12 @@ export default {
             en: '**pH** decides whether roots can actually take up the food you give. Outside the range some nutrients get locked out, even if they are in the pot. **EC** (electrical conductivity) tells you how strong the solution is, meaning how much dissolved fertilizer is in it.',
             cs: '**pH** rozhoduje, jestli kořeny dokážou živiny, které jim dáváš, vůbec přijmout. Mimo rozmezí se část živin zablokuje, i když v květináči jsou. **EC** (elektrická vodivost) říká, jak silný je roztok, tedy kolik rozpuštěného hnojiva v něm je.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'nutrition-ph-ec-pens.webp',
+          caption: { en: 'A pH pen and an EC pen. Two cheap tools that save most grows.', cs: 'pH pero a EC pero. Dva levné přístroje, které zachrání většinu pěstování.' },
+          credit: 'Rotkaeppchen68 · CC0 (Wikimedia Commons), resized'
         },
         {
           type: 'table',
@@ -138,6 +150,12 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'nutrition-checking-leaves.webp',
+          caption: { en: 'Your plant is the real feeding chart: look at the leaves before you raise the dose.', cs: 'Skutečný hnojicí plán je tvoje rostlina: než zvýšíš dávku, prohlédni si listy.' },
+          credit: 'Daniel Oberhaus · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'table',
           head: [
             { en: 'Stage', cs: 'Fáze' },
@@ -184,6 +202,12 @@ export default {
             en: 'CalMag is a supplement with calcium and magnesium (often plus a little iron). Base nutrients contain some, but in a few situations it is not enough:',
             cs: 'CalMag je doplněk s vápníkem a hořčíkem (často i trochou železa). Základní hnojiva ho nějaký obsahují, ale v některých situacích to nestačí:'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'nutrition-magnesium-leaf.webp',
+          caption: { en: 'Magnesium running short: yellow between the veins while the veins stay green, with rusty spots creeping in.', cs: 'Dochází hořčík: listy žloutnou mezi žilkami, žilky zůstávají zelené a přidávají se rezavé skvrny.' },
+          credit: 'plant-test-01 (Roboflow Universe user) · Public domain (Roboflow Universe), resized'
         },
         {
           type: 'steps',
@@ -249,6 +273,12 @@ export default {
           caption: { en: 'Nutrient burn: yellow-brown, crispy tips that slowly creep inward.', cs: 'Spálení hnojivem: žlutohnědé, křupavé špičky, které se pomalu šíří dovnitř.' }
         },
         {
+          type: 'figure',
+          photo: 'nutrition-ammonium-burn.webp',
+          caption: { en: 'Too much ammonium nitrogen in a research trial: leaves claw, twist and burn from the edges.', cs: 'Přehnojení amonným dusíkem ve výzkumném pokusu: listy se stáčejí do drápů, kroutí se a od okrajů usychají.' },
+          credit: 'Saloner & Bernstein (Front. Plant Sci. 2022) · CC BY 4.0 (PubMed Central), resized'
+        },
+        {
           type: 'steps',
           items: [
             {
@@ -295,6 +325,12 @@ export default {
             en: 'Runoff is the water that drips out the bottom after watering. Measuring it tells you what is happening in the root zone, which you cannot see from above.',
             cs: 'Výtok je voda, která po zálivce vyteče spodem květináče. Když ji změříš, dozvíš se, co se děje u kořenů, což shora nevidíš.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'nutrition-ec-pen.webp',
+          caption: { en: 'An EC pen. Dip it into the runoff cup and compare the reading with your feed.', cs: 'EC pero. Ponoř ho do kelímku s výtokem a porovnej hodnotu se zálivkou.' },
+          credit: 'J C D · CC BY-SA 3.0 (Wikimedia Commons), resized'
         },
         {
           type: 'steps',
@@ -348,6 +384,12 @@ export default {
             en: '"Flushing" means giving only plain water (or a very weak solution) for the last 1–2 weeks of flower. Growers have argued about it for decades, so here is the honest version.',
             cs: '„Proplach“ (flush) znamená dávat poslední 1–2 týdny kvetení jen čistou vodu (nebo velmi slabý roztok). Pěstitelé se o něj přou desítky let, tak tady je poctivá verze.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'nutrition-late-fade.webp',
+          caption: { en: 'Fan leaves fading to yellow in the last weeks of flower is normal: the plant is using up its reserves.', cs: 'Žloutnutí velkých listů v posledních týdnech kvetení je normální: rostlina spotřebovává zásoby.' },
+          credit: 'eggrole · CC BY 2.0 (Flickr), resized'
         },
         {
           type: 'compare',

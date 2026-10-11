@@ -22,27 +22,38 @@ function returnPath(): string {
   return to && to.startsWith('/') && !to.startsWith('//') && !to.startsWith('/auth') ? to : '/community'
 }
 
-onMounted(async () => {
-  if (Capacitor.isNativePlatform()) Browser.close().catch(() => {})
+let handled: string | null = null
+
+// native deep links can land on this page while it is already mounted, so react to every new code
+async function exchange() {
   const q = route.query
   const code = typeof q.code === 'string' ? q.code : null
-  const err = typeof q.error_description === 'string' ? q.error_description : typeof q.error === 'string' ? q.error : null
+  const err = typeof q.error_description === 'string' || typeof q.error === 'string'
+  if (Capacitor.isNativePlatform()) Browser.close().catch(() => {})
   if (!code) {
-    failed.value = err ?? t('auth.callback.noCode')
+    failed.value = t(err ? 'auth.callback.denied' : 'auth.callback.noCode')
     return
   }
+  if (code === handled) return
+  handled = code
+  failed.value = null
   const { data, error } = await useSupabase().auth.exchangeCodeForSession(code)
   if (error) {
     // a reload of the callback URL after success re-uses a spent code
     if (session.value) return navigateTo(returnPath(), { replace: true })
-    failed.value = error.message
+    console.warn('[BudBuddy] sign-in failed', error)
+    failed.value = t('auth.callback.exchangeFailed')
     return
   }
   session.value = data.session
   await loadProfile()
   // the first-sign-in sheet opens itself when terms are not accepted yet
   navigateTo(returnPath(), { replace: true })
-})
+}
+
+watch(() => route.query.code, () => {
+  exchange()
+}, { immediate: true })
 </script>
 
 <template>

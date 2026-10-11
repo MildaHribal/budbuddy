@@ -6,6 +6,8 @@ import { locale } from './locale'
 export interface StageInfo {
   id: StageId
   label: string
+  /** compact label for tight rails/steppers; the same word family as label */
+  short: string
   icon: string
   glyph: GlyphName
   color: string
@@ -21,6 +23,7 @@ export const STAGES: StageInfo[] = [
   {
     id: 'germination',
     label: 'Germination',
+    short: 'Germ.',
     icon: 'i-tabler-seeding',
     glyph: 'germination',
     color: '#e9d68f',
@@ -33,6 +36,7 @@ export const STAGES: StageInfo[] = [
   {
     id: 'seedling',
     label: 'Seedling',
+    short: 'Seedling',
     icon: 'i-tabler-plant',
     glyph: 'seedling',
     color: '#c8f08f',
@@ -45,6 +49,7 @@ export const STAGES: StageInfo[] = [
   {
     id: 'vegetative',
     label: 'Vegetative',
+    short: 'Veg',
     icon: 'i-tabler-trees',
     glyph: 'vegetative',
     color: '#9be36b',
@@ -57,6 +62,7 @@ export const STAGES: StageInfo[] = [
   {
     id: 'flowering',
     label: 'Flowering',
+    short: 'Flower',
     icon: 'i-tabler-flower',
     glyph: 'flowering',
     color: '#c9a2ff',
@@ -69,6 +75,7 @@ export const STAGES: StageInfo[] = [
   {
     id: 'drying',
     label: 'Drying',
+    short: 'Drying',
     icon: 'i-tabler-wind',
     glyph: 'drying',
     color: '#d9a76a',
@@ -81,6 +88,7 @@ export const STAGES: StageInfo[] = [
   {
     id: 'curing',
     label: 'Curing',
+    short: 'Curing',
     icon: 'i-tabler-bottle',
     glyph: 'curing',
     color: '#f0b95e',
@@ -92,11 +100,12 @@ export const STAGES: StageInfo[] = [
   }
 ]
 
-type StageText = Pick<StageInfo, 'label' | 'range' | 'light' | 'description' | 'tips'>
+type StageText = Pick<StageInfo, 'label' | 'short' | 'range' | 'light' | 'description' | 'tips'>
 
 const STAGES_CS: Record<StageId, StageText> = {
   germination: {
     label: 'Klíčení',
+    short: 'Klíčení',
     range: '3–10 dní',
     light: '18/6 nebo 24/0, slabé světlo',
     description: 'Semínko praskne, vystrčí kořínek a první kulaté lístky.',
@@ -104,6 +113,7 @@ const STAGES_CS: Record<StageId, StageText> = {
   },
   seedling: {
     label: 'Sazenice',
+    short: 'Sazenice',
     range: '2–3 týdny',
     light: '18/6, jemné světlo',
     description: 'Objevují se první pravé zubaté listy a zakořeňuje se.',
@@ -111,6 +121,7 @@ const STAGES_CS: Record<StageId, StageText> = {
   },
   vegetative: {
     label: 'Vegetace',
+    short: 'Vegetace',
     range: '3–16 týdnů',
     light: '18/6',
     description: 'Rychle přibývají stonky i listy. Nejlepší čas na tvarování.',
@@ -118,6 +129,7 @@ const STAGES_CS: Record<StageId, StageText> = {
   },
   flowering: {
     label: 'Kvetení',
+    short: 'Kvetení',
     range: '7–11 týdnů',
     light: '12/12 (fotoperioda)',
     description: 'Tvoří se a nabírají palice. Hlídej vlhkost a trichomy.',
@@ -125,6 +137,7 @@ const STAGES_CS: Record<StageId, StageText> = {
   },
   drying: {
     label: 'Sušení',
+    short: 'Sušení',
     range: '7–14 dní',
     light: 'Tma',
     description: 'Sklizené větve visí v temné místnosti, dokud tenké stonky nepraskají.',
@@ -132,6 +145,7 @@ const STAGES_CS: Record<StageId, StageText> = {
   },
   curing: {
     label: 'Zrání',
+    short: 'Zrání',
     range: '2–8 týdnů',
     light: 'Tma',
     description: 'Palice odpočívají v uzavřených sklenicích a získávají chuť i jemnost.',

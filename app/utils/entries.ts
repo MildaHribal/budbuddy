@@ -1,6 +1,6 @@
 import type { GlyphName } from './glyphs'
 import type { EntryType, JournalEntry, TrainingMethod } from '../types/grow'
-import { locale } from './locale'
+import { formatNumber, locale } from './locale'
 
 export interface EntryTypeInfo {
   type: EntryType
@@ -76,7 +76,7 @@ export function trainingLabel(m: TrainingMethod | null): string {
   return trainingMethods().find(t => t.value === m)?.label ?? ''
 }
 
-const decimal = (n: number) => (locale.value === 'cs' ? String(n).replace('.', ',') : String(n))
+const decimal = (n: number) => formatNumber(n, 2)
 
 export function formatVolume(ml: number | null): string {
   if (ml == null) return ''

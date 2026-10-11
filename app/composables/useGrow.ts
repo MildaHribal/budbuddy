@@ -3,12 +3,11 @@ import { reactive, readonly, ref, watch } from 'vue'
 import type { GrowData, Harvest, JournalEntry, Plant, StageId, Task } from '~/types/grow'
 import { addDays, daysBetween, todayISO } from '~/utils/date'
 import { buildDemoData } from '~/utils/demo'
-import { seedDemoPhotos } from '~/utils/demoPhotos'
 import { blankEntry } from '~/utils/entries'
 import { createId } from '~/utils/id'
 import { blobToDataUrl, compressImage, dataUrlToBlob } from '~/utils/image'
 import { photoStore, type StoredPhoto } from '~/utils/photoStore'
-import { resetPhotoUrls } from './useUi'
+import { resetPhotoUrls, THUMB_SUFFIX } from './useUi'
 import { emptyData, migrateLegacy, normalizeData, normalizePlant, type LegacyInput } from '~/utils/schema'
 
 const STORAGE_KEY = 'budbuddy:data'
@@ -90,6 +89,7 @@ async function collectGarbagePhotos() {
   const used = new Set<string>(pendingPhotos)
   for (const p of state.plants) if (p.photoId) used.add(p.photoId)
   for (const e of state.entries) e.photoIds.forEach(id => used.add(id))
+  for (const id of [...used]) used.add(id + THUMB_SUFFIX)
   const all = await photoStore.all()
   await Promise.all(all.filter(p => !used.has(p.id)).map(p => photoStore.delete(p.id)))
 }
@@ -123,14 +123,16 @@ async function load() {
     return
   }
 
-  replaceState(await demoWithPhotos())
+  replaceState(buildDemoData())
   await writeNow()
+  seedDemoInBackground()
 }
 
-async function demoWithPhotos() {
-  const demo = buildDemoData()
-  await seedDemoPhotos(demo)
-  return demo
+/** Copies the bundled demo photos into the store without blocking boot; until then photoUrl() serves the bundled files. */
+function seedDemoInBackground() {
+  import('~/utils/demoPhotos')
+    .then(m => m.seedDemoPhotos(state))
+    .catch(e => console.warn('[BudBuddy] demo photos not seeded', e))
 }
 
 export function initGrow() {
@@ -208,8 +210,7 @@ function harvestPlant(id: string, harvest: Harvest) {
   const plant = getPlant(id)
   if (!plant) return
   plant.harvest = harvest
-  const note = harvest.wetWeight != null ? `Wet weight ${harvest.wetWeight} g` : ''
-  addEntry({ plantId: id, type: 'harvest', date: harvest.date, note: [note, harvest.notes].filter(Boolean).join('. ') })
+  addEntry({ plantId: id, type: 'harvest', date: harvest.date, note: harvest.notes ?? '' })
   setStage(id, 'drying', harvest.date)
   touch(plant)
 }
@@ -341,7 +342,7 @@ async function exportBackup(write: (chunk: string) => Promise<void>): Promise<{ 
   const data = JSON.parse(JSON.stringify(state)) as GrowData
   const head = JSON.stringify({ app: 'budbuddy', exportedAt: new Date().toISOString(), ...data })
   await write(`${head.slice(0, -1)},"photos":[`)
-  const photos = await photoStore.all()
+  const photos = (await photoStore.all()).filter(p => !p.id.endsWith(THUMB_SUFFIX))
   for (const [i, p] of photos.entries()) {
     const item = JSON.stringify({ id: p.id, createdAt: p.createdAt, dataUrl: await blobToDataUrl(p.blob) })
     await write(i ? `,${item}` : item)
@@ -350,10 +351,17 @@ async function exportBackup(write: (chunk: string) => Promise<void>): Promise<{ 
   return { photos: photos.length }
 }
 
-async function importBackup(json: string): Promise<{ plants: number, entries: number, photos: number }> {
+export class NotBackupError extends Error {
+  constructor() {
+    super('This file is not a BudBuddy backup.')
+    this.name = 'NotBackupError'
+  }
+}
+
+async function importBackup(json: string): Promise<{ plants: number, entries: number, photos: number, skipped: number }> {
   const raw = JSON.parse(json)
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.plants)) {
-    throw new Error('This file is not a BudBuddy backup.')
+    throw new NotBackupError()
   }
   const data = normalizeData(raw)
   data.settings.initialized = true
@@ -361,14 +369,19 @@ async function importBackup(json: string): Promise<{ plants: number, entries: nu
 
   // Decode everything first – the current photos are only replaced once the backup is known to be good.
   const photos: StoredPhoto[] = []
+  let skipped = 0
   for (const p of list) {
     if (typeof p?.id !== 'string' || typeof p.dataUrl !== 'string' || !p.dataUrl.startsWith('data:image')) continue
-    photos.push({ id: p.id, blob: await dataUrlToBlob(p.dataUrl), createdAt: typeof p.createdAt === 'string' ? p.createdAt : new Date().toISOString() })
+    try {
+      photos.push({ id: p.id, blob: await dataUrlToBlob(p.dataUrl), createdAt: typeof p.createdAt === 'string' ? p.createdAt : new Date().toISOString() })
+    } catch {
+      skipped++
+    }
   }
   await photoStore.replaceAll(photos)
   replaceState(data)
   await writeNow()
-  return { plants: data.plants.length, entries: data.entries.length, photos: photos.length }
+  return { plants: data.plants.length, entries: data.entries.length, photos: photos.length, skipped }
 }
 
 async function eraseAll() {
@@ -381,10 +394,11 @@ async function eraseAll() {
 
 async function loadDemo() {
   await photoStore.clear()
-  const demo = await demoWithPhotos()
+  const demo = buildDemoData()
   demo.guide = JSON.parse(JSON.stringify(state.guide))
   replaceState(demo)
   await writeNow()
+  seedDemoInBackground()
 }
 
 export function useGrow() {

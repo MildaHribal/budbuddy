@@ -22,6 +22,23 @@ export function intlLocale(): string {
   return locale.value === 'cs' ? 'cs-CZ' : 'en-GB'
 }
 
+const formatters = new Map<string, Intl.NumberFormat>()
+
+/**
+ * Formats a number in the APP language (cs: decimal comma, en: dot), not the browser locale.
+ * `digits` = max fraction digits; `fixed` also pads to that many (6 → "6,0").
+ */
+export function formatNumber(n: number | null | undefined, digits = 1, fixed = false): string {
+  if (n == null || !Number.isFinite(n)) return '–'
+  const key = `${locale.value}|${digits}|${fixed}`
+  let f = formatters.get(key)
+  if (!f) {
+    f = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: digits, minimumFractionDigits: fixed ? digits : 0 })
+    formatters.set(key, f)
+  }
+  return f.format(n)
+}
+
 export type Plural = { one: string, few?: string, other: string }
 
 export function plural(forms: Plural, n: number): string {
@@ -41,7 +58,8 @@ export function czechVocative(name: string): string {
   const w = first
   const lower = w.toLowerCase()
   const keep = (s: string) => [s, ...rest].join(' ')
-  if (!w || /[eiíouyůú]$/.test(lower)) return name.trim()
+  // only decline ordinary names: "Karel", not "QA", "MC" or "dj"
+  if (!w || w.length < 3 || !/^\p{Lu}\p{Ll}+$/u.test(w) || /[eiíouyůú]$/.test(lower)) return name.trim()
   if (lower.endsWith('a')) return keep(w.slice(0, -1) + 'o')
   if (lower.endsWith('ek')) return keep(w.slice(0, -2) + 'ku')
   if (/[^aeiouyáéíóúý]el$/.test(lower)) return keep(w.slice(0, -2) + 'le')

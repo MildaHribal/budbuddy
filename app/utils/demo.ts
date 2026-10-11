@@ -1,7 +1,7 @@
 import type { GrowData, JournalEntry, Plant, StageId } from '../types/grow'
 import { addDays, daysBetween, todayISO } from './date'
 import { blankEntry } from './entries'
-import { demoPhotoId as pid } from './demoPhotos'
+import { demoPhotoId as pid } from './demoCredits'
 import { createId } from './id'
 import { locale } from './locale'
 import { emptyData } from './schema'

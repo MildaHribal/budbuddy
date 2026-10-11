@@ -33,6 +33,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'training-flat-canopy.webp',
+          caption: {
+            en: 'Plants trained flat in a tent: many tops at the same height, all close to the light.',
+            cs: 'Rostliny vytvarované naplocho ve stanu: hodně vršků ve stejné výšce, všechny blízko světla.'
+          },
+          credit: 'Plantlady223 · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'text',
           md: {
             en: '**When:** from about the 4th–5th node until the first 2–3 weeks of flower, while stems are still flexible.',
@@ -114,6 +123,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'training-topped-plant.webp',
+          caption: {
+            en: 'A freshly topped plant: the main tip is gone and the two shoots at the node below take over.',
+            cs: 'Čerstvě zaštípnutá rostlina: hlavní vrchol chybí a vedení přebírají dva výhony z uzlu pod ním.'
+          },
+          credit: 'Da.WheezeGenetics · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'text',
           md: {
             en: '**When:** once the plant has 4–6 healthy nodes (about 3–5 weeks from seed). Stop topping about a week or two before the flip.',
@@ -179,6 +197,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'training-shoot-tip.webp',
+          caption: {
+            en: 'The newest growth in the centre of the top – this small cluster is what you pinch when you FIM.',
+            cs: 'Nejmladší výhon uprostřed vrcholu – právě tenhle malý shluk při FIM odštípneš.'
+          },
+          credit: 'M. Whitson · CC BY 4.0 (iNaturalist), resized'
+        },
+        {
           type: 'steps',
           items: [
             {
@@ -235,6 +262,15 @@ export default {
             en: 'Branches tucked under the net fill every square before the flip.',
             cs: 'Větve zastrkané pod síť zaplní každé okénko ještě před přepnutím na květ.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'training-scrog-canopy.webp',
+          caption: {
+            en: 'An outdoor SCROG in flower: a long, even wall of colas instead of one tall main top.',
+            cs: 'Venkovní SCROG v květu: dlouhá vyrovnaná stěna palic místo jednoho vysokého vrcholu.'
+          },
+          credit: 'Cannabis Pictures · CC BY 2.0 (Wikimedia Commons), resized'
         },
         {
           type: 'steps',
@@ -302,6 +338,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'training-removed-fan-leaves.webp',
+          caption: {
+            en: 'Fan leaves removed during defoliation. Take only the ones that shade bud sites, never all at once.',
+            cs: 'Velké listy odstraněné při defoliaci. Ber jen ty, které stíní místa pro palice, nikdy všechno najednou.'
+          },
+          credit: 'Beeblebrox · CC BY-SA 4.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'text',
           md: {
             en: '**When:** a light pass in late veg, a bigger one right before or at the flip, and often a second around day 21 of flower. Avoid heavy defoliation after week 4 of flower.',
@@ -367,6 +412,15 @@ export default {
           }
         },
         {
+          type: 'figure',
+          photo: 'training-bare-lower-stem.webp',
+          caption: {
+            en: 'A cleaned-up lower stem: no small shoots at the bottom, all the energy goes to the tops up in the light.',
+            cs: 'Vyčištěný spodek stonku: dole žádné drobné výhony, všechna energie jde do vršků na světle.'
+          },
+          credit: 'Cannabis Training University · CC BY-SA 3.0 (Wikimedia Commons), resized'
+        },
+        {
           type: 'steps',
           items: [
             {
@@ -423,6 +477,15 @@ export default {
             en: 'Soften, bend, heal – the knuckle carries more weight later.',
             cs: 'Změkčit, ohnout, zahojit – kloub pak unese víc váhy.'
           }
+        },
+        {
+          type: 'figure',
+          photo: 'training-high-stress-branches.webp',
+          caption: {
+            en: 'A high-stress-trained plant in flower: bent branches spread the colas sideways instead of up.',
+            cs: 'Rostlina po tvarování s vysokým stresem v květu: ohnuté větve rozkládají palice do stran místo nahoru.'
+          },
+          credit: 'Kabelo bokaba · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'text',

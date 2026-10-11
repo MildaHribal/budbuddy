@@ -49,7 +49,8 @@ export default {
     save: 'Save',
     saved: 'Saved',
     logIt: 'Log it',
-    logged: 'Logged'
+    logged: 'Logged',
+    harvest: { wet: 'Wet', dry: 'Dry' }
   },
   cs: {
     types: {
@@ -101,6 +102,7 @@ export default {
     save: 'Uložit',
     saved: 'Uloženo',
     logIt: 'Zapsat',
-    logged: 'Zapsáno'
+    logged: 'Zapsáno',
+    harvest: { wet: 'Mokrá', dry: 'Suchá' }
   }
 }

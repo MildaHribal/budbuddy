@@ -12,14 +12,17 @@ interface ReportRow {
   difficulty: number | null
   rating: number | null
   notes: string | null
+  medium?: string | null
+  tags?: string[] | null
   created_at: string
   user: Author | null
   plant: { id: string, name: string } | null
 }
-interface PlantRow { id: string, owner_id: string, name: string, stage: string, cover_url: string | null, owner: Author | null }
+interface PlantRow { id: string, owner_id: string, name: string, stage: string, cover_url: string | null, updated_at: string, owner: Author | null }
+interface MyPlant { id: string, name: string, stage: string, cover_url: string | null, strain_id: string | null }
 
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { user, requireAuth } = useAuth()
 const { isBlocked, load: loadBlocks } = useBlocks()
 const { notify } = useNotify()
@@ -35,11 +38,12 @@ const state = ref<'loading' | 'ready' | 'missing' | 'offline' | 'error'>('loadin
 
 useHead({ title: () => strain.value?.name ?? t('strains.title') })
 
-const REPORT_SELECT = 'id, user_id, plant_id, flowering_days, yield_g, difficulty, rating, notes, created_at, user:profiles!strain_reports_user_id_fkey(username, display_name, avatar_url, reputation), plant:public_plants!strain_reports_plant_id_fkey(id, name)'
+const REPORT_BASE = 'id, user_id, plant_id, flowering_days, yield_g, difficulty, rating, notes, created_at, user:profiles!strain_reports_user_id_fkey(username, display_name, avatar_url, reputation), plant:public_plants!strain_reports_plant_id_fkey(id, name)'
+const hasReportExtras = ref(true)
 
 async function load() {
   state.value = 'loading'
-  const { data, error } = await sb.from('strains').select(STRAIN_COLUMNS).eq('slug', slug.value).maybeSingle()
+  const { data, error } = await withStrainColumns(cols => sb.from('strains').select(cols).eq('slug', slug.value).maybeSingle())
   if (error) {
     state.value = navigator.onLine ? 'error' : 'offline'
     return
@@ -48,7 +52,7 @@ async function load() {
     state.value = 'missing'
     return
   }
-  strain.value = data as Strain
+  strain.value = data as unknown as Strain
   state.value = 'ready'
   await Promise.all([loadStats(), loadReports(), loadPlants()])
 }
@@ -61,14 +65,20 @@ async function loadStats() {
 
 async function loadReports() {
   if (!strain.value) return
-  const { data } = await sb.from('strain_reports').select(REPORT_SELECT).eq('strain_id', strain.value.id).order('created_at', { ascending: false }).limit(50)
-  reports.value = (data ?? []) as unknown as ReportRow[]
+  const id = strain.value.id
+  const run = (cols: string) => sb.from('strain_reports').select(cols).eq('strain_id', id).order('created_at', { ascending: false }).limit(50)
+  let res = hasReportExtras.value ? await run(`${REPORT_BASE}, medium, tags`) : await run(REPORT_BASE)
+  if (isMissingSchema(res.error)) {
+    hasReportExtras.value = false
+    res = await run(REPORT_BASE)
+  }
+  reports.value = (res.data ?? []) as unknown as ReportRow[]
 }
 
 async function loadPlants() {
   if (!strain.value) return
   const { data } = await sb.from('public_plants')
-    .select('id, owner_id, name, stage, cover_url, owner:profiles!public_plants_owner_id_fkey(username, display_name, avatar_url)')
+    .select('id, owner_id, name, stage, cover_url, updated_at, owner:profiles!public_plants_owner_id_fkey(username, display_name, avatar_url)')
     .eq('strain_id', strain.value.id)
     .order('updated_at', { ascending: false })
     .limit(12)
@@ -83,6 +93,21 @@ watch(slug, load)
 
 const shownReports = computed(() => reports.value.filter(r => !isBlocked(r.user_id)))
 const shownPlants = computed(() => plants.value.filter(p => !isBlocked(p.owner_id)))
+const growerCount = computed(() => new Set(shownPlants.value.map(p => p.owner_id)).size)
+
+const description = computed(() => (strain.value ? strainDescription(strain.value) : null))
+const descInEnglish = computed(() => locale.value === 'cs' && !!description.value && !strain.value?.description_cs?.trim())
+const breederLabel = computed(() => (isVariousBreeder(strain.value?.breeder) ? t('strains.various') : strain.value?.breeder || null))
+
+const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
+const byMedium = computed(() => STRAIN_MEDIA.map((m) => {
+  const rs = shownReports.value.filter(r => r.medium === m)
+  const days = avg(rs.flatMap(r => (r.flowering_days ? [r.flowering_days] : [])))
+  const grams = avg(rs.flatMap(r => (r.yield_g != null ? [Number(r.yield_g)] : [])))
+  const rating = avg(rs.flatMap(r => (r.rating ? [r.rating] : [])))
+  return { medium: m, n: rs.length, days: days && Math.round(days), grams: grams != null ? Math.round(grams) : null, rating: rating && Math.round(rating * 10) / 10 }
+}).filter(x => x.n > 0))
+const fmt1 = (n: number) => new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 1 }).format(n)
 
 const weeks = computed(() => {
   const s = strain.value
@@ -96,7 +121,7 @@ const weeks = computed(() => {
 const typeLabel = computed(() => {
   const s = strain.value
   if (!s) return ''
-  return [s.dominance && t(`strains.dominance.${s.dominance}`), s.flowering && t(`strains.flowering.${s.flowering}`)].filter(Boolean).join(' · ')
+  return [s.dominance && t(`strains.dominance.${s.dominance}`), s.flowering && t(`strains.flowering.${s.flowering}`).toLocaleLowerCase(intlLocale())].filter(Boolean).join(' · ')
 })
 
 const heroLoaded = ref(false)
@@ -111,7 +136,9 @@ const draft = reactive({
   difficulty: null as number | null,
   rating: null as number | null,
   notes: '',
-  plant_id: null as string | null
+  plant_id: null as string | null,
+  medium: null as string | null,
+  tags: [] as string[]
 })
 const myPlants = ref<{ id: string, name: string }[]>([])
 const saving = ref(false)
@@ -130,7 +157,9 @@ async function openReport(r?: ReportRow) {
     difficulty: r?.difficulty ?? null,
     rating: r?.rating ?? null,
     notes: r?.notes ?? '',
-    plant_id: r?.plant_id ?? null
+    plant_id: r?.plant_id ?? null,
+    medium: r?.medium ?? null,
+    tags: [...(r?.tags ?? [])]
   })
   sheetOpen.value = true
   const { data } = await sb.from('public_plants').select('id, name').eq('owner_id', user.value.id).order('updated_at', { ascending: false }).limit(30)
@@ -146,19 +175,63 @@ async function saveReport() {
     difficulty: draft.difficulty,
     rating: draft.rating,
     notes: draft.notes.trim() || null,
-    plant_id: draft.plant_id
+    plant_id: draft.plant_id,
+    ...(hasReportExtras.value ? { medium: draft.medium, tags: draft.tags.slice(0, 6) } : {})
   }
   const res = editing.value
     ? await sb.from('strain_reports').update(fields).eq('id', editing.value.id)
     : await sb.from('strain_reports').insert({ ...fields, strain_id: strain.value.id, user_id: user.value.id })
   saving.value = false
   if (res.error) {
-    notify(res.error.code === 'P0001' ? t('strains.rateLimited') : t('strains.failed'), { tone: 'error' })
+    const blocked = contentBlockedKey(res.error)
+    notify(blocked ? t(`strains.blocked.${blocked}`) : res.error.code === '23505' ? t('strains.reportExists') : res.error.code === 'P0001' ? t('strains.rateLimited') : t('strains.failed'), { tone: 'error' })
     return
   }
   sheetOpen.value = false
   notify(t('strains.reportSaved'))
   await Promise.all([loadReports(), loadStats()])
+}
+
+function toggleTag(tag: string) {
+  const i = draft.tags.indexOf(tag)
+  if (i >= 0) draft.tags.splice(i, 1)
+  else if (draft.tags.length < 6) draft.tags.push(tag)
+}
+
+// ── "I'm growing this": sets strain_id on one of my public plants ──
+const growOpen = ref(false)
+const growPlants = ref<MyPlant[] | null>(null)
+const growBusy = ref<string | null>(null)
+
+async function openGrowing() {
+  if (!requireAuth() || !user.value) return
+  growPlants.value = null
+  growOpen.value = true
+  const { data } = await sb.from('public_plants').select('id, name, stage, cover_url, strain_id')
+    .eq('owner_id', user.value.id).eq('archived', false).order('updated_at', { ascending: false }).limit(30)
+  growPlants.value = (data ?? []) as MyPlant[]
+}
+
+const otherStrainNames = ref(new Map<string, string>())
+watch(growPlants, async (list) => {
+  const ids = [...new Set((list ?? []).map(p => p.strain_id).filter((x): x is string => !!x && x !== strain.value?.id))]
+  if (!ids.length) return
+  const { data } = await sb.from('strains').select('id, name').in('id', ids)
+  otherStrainNames.value = new Map((data ?? []).map(x => [x.id as string, x.name as string]))
+})
+
+async function setGrowing(p: MyPlant, link: boolean) {
+  if (!user.value || !strain.value || growBusy.value) return
+  growBusy.value = p.id
+  const strainId = link ? strain.value.id : null
+  const { error } = await sb.from('public_plants').update({ strain_id: strainId }).eq('id', p.id).eq('owner_id', user.value.id)
+  growBusy.value = null
+  if (error) return notify(t('strains.failed'), { tone: 'error' })
+  p.strain_id = strainId
+  haptic('select')
+  notify(link ? t('strains.growingLinked', { name: p.name }) : t('strains.growingUnlinked'))
+  if (link) growOpen.value = false
+  loadPlants()
 }
 
 async function deleteReport(r: ReportRow) {
@@ -173,10 +246,10 @@ async function deleteReport(r: ReportRow) {
 const statTiles = computed(() => {
   const s = stats.value
   return [
-    { key: 'avgFlowering', value: s?.avg_flowering_days != null ? t('strains.daysShort', { n: s.avg_flowering_days }) : '–', icon: 'flowering', color: '#c9a2ff' },
+    { key: 'avgFlowering', value: s?.avg_flowering_days != null ? t('strains.daysShort', { n: s.avg_flowering_days }) : '–', icon: 'flowering', color: stageInfo('flowering').color },
     { key: 'avgYield', value: s?.avg_yield_g != null ? t('strains.gramsShort', { n: s.avg_yield_g }) : '–', icon: 'harvest', color: 'var(--lamp)' },
-    { key: 'avgDifficulty', value: s?.avg_difficulty != null ? `${s.avg_difficulty}` : '–', suffix: t('strains.ofFive'), icon: 'train', color: 'var(--text-2)' },
-    { key: 'avgRating', value: s?.avg_rating != null ? `${s.avg_rating}` : '–', suffix: t('strains.ofFive'), icon: 'spark', color: 'var(--leaf)' }
+    { key: 'avgDifficulty', value: s?.avg_difficulty != null ? fmt1(Number(s.avg_difficulty)) : '–', suffix: t('strains.ofFive'), icon: 'train', color: 'var(--text-2)' },
+    { key: 'avgRating', value: s?.avg_rating != null ? fmt1(Number(s.avg_rating)) : '–', suffix: t('strains.ofFive'), icon: 'spark', color: 'var(--leaf)' }
   ]
 })
 </script>
@@ -185,7 +258,7 @@ const statTiles = computed(() => {
   <div>
     <AppHeader
       :title="strain?.name ?? t('strains.title')"
-      :subtitle="strain?.breeder ?? undefined"
+      :subtitle="breederLabel ?? undefined"
       back
     >
       <template
@@ -246,7 +319,6 @@ const statTiles = computed(() => {
         <div
           class="hero"
           :class="{ loaded: !strain.image_url || heroLoaded, empty: !strain.image_url }"
-          :style="{ color: dominanceColor(strain.dominance) }"
         >
           <img
             v-if="strain.image_url"
@@ -292,14 +364,16 @@ const statTiles = computed(() => {
         <dl class="card facts">
           <div>
             <dt>{{ t('strains.breeder') }}</dt>
-            <dd>{{ strain.breeder || '–' }}</dd>
+            <dd>{{ breederLabel || '–' }}</dd>
           </div>
           <div>
             <dt>{{ t('strains.type') }}</dt>
             <dd>
-              <i
-                class="dot"
-                :style="{ background: dominanceColor(strain.dominance) }"
+              <UIcon
+                v-if="strain.dominance"
+                :name="dominanceIcon(strain.dominance)"
+                class="dom-icon"
+                :title="t(`strains.dominanceHint.${strain.dominance}`)"
               />{{ typeLabel || '–' }}
             </dd>
           </div>
@@ -311,10 +385,16 @@ const statTiles = computed(() => {
           </div>
         </dl>
         <p
-          v-if="strain.description"
+          v-if="description"
           class="about"
+          :lang="descInEnglish || locale === 'en' ? 'en' : 'cs'"
         >
-          {{ strain.description }}
+          {{ description }}
+          <span
+            v-if="descInEnglish"
+            class="badge lang-badge"
+            :title="t('strains.descEnglish')"
+          >EN</span>
         </p>
       </section>
 
@@ -343,13 +423,56 @@ const statTiles = computed(() => {
             <span class="stat-label">{{ t(`strains.${s.key}`) }}</span>
           </div>
         </div>
-        <button
-          type="button"
-          class="btn btn-soft btn-block add-report"
-          @click="openReport()"
+        <div
+          v-if="byMedium.length"
+          class="card by-medium"
         >
-          <UIcon name="i-tabler-plus" />{{ t('strains.addReport') }}
-        </button>
+          <p class="by-medium-title">
+            {{ t('strains.byMedium') }}
+          </p>
+          <dl>
+            <div
+              v-for="m in byMedium"
+              :key="m.medium"
+              class="medium-row"
+            >
+              <dt>
+                {{ t(`strains.mediums.${m.medium}`) }}
+                <span class="num">{{ t('strains.mediumRow', { n: m.n }) }}</span>
+              </dt>
+              <dd class="num">
+                <span v-if="m.days"><GrowIcon
+                  name="flowering"
+                  :style="{ color: stageInfo('flowering').color }"
+                />{{ t('strains.daysShort', { n: m.days }) }}</span>
+                <span v-if="m.grams != null"><GrowIcon
+                  name="harvest"
+                  class="lamp"
+                />{{ t('strains.gramsShort', { n: m.grams }) }}</span>
+                <span v-if="m.rating"><UIcon
+                  name="i-tabler-star-filled"
+                  class="lamp"
+                />{{ fmt1(m.rating) }}</span>
+              </dd>
+            </div>
+          </dl>
+        </div>
+        <div class="cta-row">
+          <button
+            type="button"
+            class="btn btn-soft"
+            @click="openReport()"
+          >
+            <UIcon name="i-tabler-plus" />{{ t('strains.addReport') }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost"
+            @click="openGrowing"
+          >
+            <GrowIcon name="plants" />{{ t('strains.growing') }}
+          </button>
+        </div>
       </section>
 
       <section aria-labelledby="reports-title">
@@ -408,7 +531,7 @@ const statTiles = computed(() => {
               <span
                 v-if="r.flowering_days"
                 class="badge"
-                style="color: #c9a2ff"
+                :style="{ color: stageInfo('flowering').color }"
               >
                 <GrowIcon name="flowering" />{{ t('strains.daysShort', { n: r.flowering_days }) }}
               </span>
@@ -423,6 +546,15 @@ const statTiles = computed(() => {
                 v-if="r.difficulty"
                 class="badge tag"
               >{{ t(`strains.difficulty.${r.difficulty}`) }}</span>
+              <span
+                v-if="r.medium"
+                class="badge tag"
+              >{{ t(`strains.mediums.${r.medium}`) }}</span>
+              <span
+                v-for="tag in r.tags ?? []"
+                :key="tag"
+                class="badge tag"
+              >{{ t(`strains.tags.${tag}`) }}</span>
             </div>
             <p
               v-if="r.notes"
@@ -442,19 +574,39 @@ const statTiles = computed(() => {
         </ul>
       </section>
 
-      <section
-        v-if="shownPlants.length"
-        aria-labelledby="plants-title"
-      >
+      <section aria-labelledby="plants-title">
         <div class="section-head">
           <h2
             id="plants-title"
             class="section-title"
           >
-            <GrowIcon name="plants" />{{ t('strains.plants') }}
+            <GrowIcon name="plants" />{{ t('strains.diaries') }}
           </h2>
+          <span
+            v-if="growerCount"
+            class="section-meta num"
+          >{{ t('strains.diariesMeta', { n: growerCount }) }}</span>
         </div>
-        <ul class="plants">
+        <button
+          v-if="!shownPlants.length"
+          type="button"
+          class="card diaries-empty"
+          @click="openGrowing"
+        >
+          <GrowIcon
+            name="seedling"
+            class="diaries-glyph"
+          />
+          <span>{{ t('strains.diariesEmpty') }}</span>
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="chev"
+          />
+        </button>
+        <ul
+          v-else
+          class="plants"
+        >
           <li
             v-for="p in shownPlants"
             :key="p.id"
@@ -481,7 +633,8 @@ const statTiles = computed(() => {
               </span>
               <span class="plant-meta">
                 <strong>{{ p.name }}</strong>
-                <span>{{ stageInfo(p.stage).label }}<template v-if="p.owner"> · {{ authorName(p.owner) }}</template></span>
+                <span>{{ stageInfo(p.stage).label }} · {{ communityAgo(p.updated_at) }}</span>
+                <span v-if="p.owner">{{ authorName(p.owner) }}</span>
               </span>
             </NuxtLink>
           </li>
@@ -507,11 +660,18 @@ const statTiles = computed(() => {
               v-model.number="draft.flowering_days"
               class="input"
               :class="{ invalid: !daysOk }"
+              :aria-invalid="!daysOk"
+              aria-describedby="days-err"
               type="number"
               inputmode="numeric"
               min="20"
               max="200"
             >
+            <span
+              v-if="!daysOk"
+              id="days-err"
+              class="field-error"
+            >{{ t('strains.daysInvalid') }}</span>
           </label>
           <label class="field">
             <span class="field-label">{{ t('strains.reportYield') }}</span>
@@ -519,12 +679,44 @@ const statTiles = computed(() => {
               v-model.number="draft.yield_g"
               class="input"
               :class="{ invalid: !yieldOk }"
+              :aria-invalid="!yieldOk"
+              aria-describedby="yield-err"
               type="number"
               inputmode="decimal"
               min="0"
               step="any"
             >
+            <span
+              v-if="!yieldOk"
+              id="yield-err"
+              class="field-error"
+            >{{ t('strains.yieldInvalid') }}</span>
           </label>
+        </div>
+
+        <div
+          v-if="hasReportExtras"
+          class="field"
+        >
+          <span class="field-label">{{ t('strains.reportMedium') }}</span>
+          <div class="segmented">
+            <button
+              type="button"
+              :aria-pressed="draft.medium === null"
+              @click="draft.medium = null"
+            >
+              {{ t('strains.any') }}
+            </button>
+            <button
+              v-for="m in STRAIN_MEDIA"
+              :key="m"
+              type="button"
+              :aria-pressed="draft.medium === m"
+              @click="draft.medium = m"
+            >
+              {{ t(`strains.mediums.${m}`) }}
+            </button>
+          </div>
         </div>
 
         <div class="field">
@@ -561,6 +753,25 @@ const statTiles = computed(() => {
               @click="draft.rating = draft.rating === i ? null : i"
             >
               <UIcon :name="(draft.rating ?? 0) >= i ? 'i-tabler-star-filled' : 'i-tabler-star'" />
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-if="hasReportExtras"
+          class="field"
+        >
+          <span class="field-label">{{ t('strains.reportTags') }}</span>
+          <div class="chips wrap">
+            <button
+              v-for="tag in STRAIN_TAGS"
+              :key="tag"
+              type="button"
+              class="chip"
+              :aria-pressed="draft.tags.includes(tag)"
+              @click="toggleTag(tag)"
+            >
+              {{ t(`strains.tags.${tag}`) }}
             </button>
           </div>
         </div>
@@ -626,6 +837,81 @@ const statTiles = computed(() => {
         </button>
       </template>
     </BottomSheet>
+
+    <BottomSheet
+      v-model:open="growOpen"
+      :title="t('strains.growingTitle')"
+      icon="plants"
+      icon-color="var(--leaf)"
+    >
+      <div class="form-stack">
+        <p class="muted grow-intro">
+          {{ t('strains.growingText') }}
+        </p>
+        <div
+          v-if="!growPlants"
+          class="sk-block"
+          aria-busy="true"
+        />
+        <EmptyState
+          v-else-if="!growPlants.length"
+          icon="plants"
+          :title="t('strains.growingNone')"
+        />
+        <ul
+          v-else
+          class="grow-list"
+        >
+          <li
+            v-for="p in growPlants"
+            :key="p.id"
+            class="grow-item"
+            :class="{ busy: growBusy === p.id }"
+          >
+            <span
+              class="grow-img"
+              :style="{ color: stageInfo(p.stage).color }"
+            >
+              <img
+                v-if="p.cover_url"
+                :src="p.cover_url"
+                alt=""
+                loading="lazy"
+              >
+              <GrowIcon
+                v-else
+                :name="stageInfo(p.stage).glyph"
+              />
+            </span>
+            <span class="grow-meta">
+              <strong>{{ p.name }}</strong>
+              <span v-if="p.strain_id === strain?.id">{{ t('strains.linkedHere') }}</span>
+              <span v-else-if="p.strain_id && otherStrainNames.get(p.strain_id)">{{ t('strains.growingOther', { strain: otherStrainNames.get(p.strain_id)! }) }}</span>
+              <span v-else>{{ stageInfo(p.stage).label }}</span>
+            </span>
+            <button
+              v-if="p.strain_id === strain?.id"
+              type="button"
+              class="btn btn-ghost"
+              :disabled="!!growBusy"
+              @click="setGrowing(p, false)"
+            >
+              {{ t('strains.unlink') }}
+            </button>
+            <button
+              v-else
+              type="button"
+              class="btn btn-soft"
+              :disabled="!!growBusy"
+              :aria-label="`${t('strains.growing')}: ${p.name}`"
+              @click="setGrowing(p, true)"
+            >
+              <UIcon name="i-tabler-link" />
+            </button>
+          </li>
+        </ul>
+      </div>
+    </BottomSheet>
   </div>
 </template>
 
@@ -640,8 +926,9 @@ const statTiles = computed(() => {
   place-items: center;
   aspect-ratio: 4 / 3;
   overflow: hidden;
+  color: var(--text-3);
   background:
-    radial-gradient(70% 60% at 50% 10%, color-mix(in srgb, currentColor 16%, transparent), transparent 72%),
+    radial-gradient(70% 60% at 50% 10%, rgba(233, 243, 228, 0.07), transparent 72%),
     #0b0d10;
 }
 
@@ -737,12 +1024,190 @@ const statTiles = computed(() => {
   color: var(--lamp);
 }
 
-.dot {
+.dom-icon {
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  margin-top: 5px;
-  border-radius: 50%;
+  margin-top: 1px;
+  color: var(--text-3);
+  font-size: 16px;
+}
+
+.lang-badge {
+  margin-left: 4px;
+  padding: 0 6px;
+  min-height: 0;
+  vertical-align: 1px;
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.by-medium {
+  margin-top: 10px;
+  padding: 12px 14px 6px;
+}
+
+.by-medium-title {
+  margin: 0 0 4px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.by-medium dl {
+  margin: 0;
+}
+
+.medium-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.medium-row + .medium-row {
+  border-top: 1px solid var(--line);
+}
+
+.medium-row dt {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.medium-row dt .num {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.medium-row dd {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.medium-row dd > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lamp {
+  color: var(--lamp);
+}
+
+.cta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.cta-row .btn {
+  width: 100%;
+}
+
+.diaries-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 14px;
+  text-align: left;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.diaries-glyph {
+  flex-shrink: 0;
+  font-size: 28px;
+  color: var(--leaf);
+}
+
+.diaries-empty .chev {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--text-3);
+}
+
+.grow-intro {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.grow-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grow-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 0;
+  transition: opacity var(--dur) ease;
+}
+
+.grow-item + .grow-item {
+  border-top: 1px solid var(--line);
+}
+
+.grow-item.busy {
+  opacity: 0.55;
+}
+
+.grow-img {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0b0d10;
+  font-size: 22px;
+}
+
+.grow-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grow-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.grow-meta strong {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grow-meta span {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.grow-item .btn {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
 }
 
 .about {
@@ -785,10 +1250,6 @@ const statTiles = computed(() => {
 .stat-label {
   color: var(--text-3);
   font-size: 12px;
-}
-
-.add-report {
-  margin-top: 12px;
 }
 
 .reports,

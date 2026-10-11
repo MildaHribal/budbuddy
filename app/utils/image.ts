@@ -1,6 +1,6 @@
 /**
- * Downscales a picked photo so the journal does not fill the device.
- * A 12 MP phone photo (~4 MB) becomes a ~200–400 kB JPEG.
+ * Downscales and re-encodes a photo. Always returns the re-encoded JPEG so EXIF
+ * (GPS location!) never survives, even when the original was smaller.
  */
 export async function compressImage(file: Blob, maxSize = 1600, quality = 0.82): Promise<Blob> {
   const bitmap = await loadBitmap(file)
@@ -12,13 +12,13 @@ export async function compressImage(file: Blob, maxSize = 1600, quality = 0.82):
   canvas.width = width
   canvas.height = height
   const ctx = canvas.getContext('2d')
-  if (!ctx) return file
+  if (!ctx) throw new Error('canvas unavailable')
   ctx.drawImage(bitmap, 0, 0, width, height)
   if ('close' in bitmap) bitmap.close()
 
   const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', quality))
-  // Keep the original if re-encoding somehow made it bigger.
-  return blob && blob.size < file.size ? blob : file
+  if (!blob) throw new Error('image encoding failed')
+  return blob
 }
 
 async function loadBitmap(file: Blob): Promise<ImageBitmap | HTMLImageElement> {

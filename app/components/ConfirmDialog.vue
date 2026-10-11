@@ -72,9 +72,7 @@ watch(open, async (v) => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(3, 4, 5, 0.62);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(3, 4, 5, 0.74);
 }
 
 .confirm {

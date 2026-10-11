@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { challengePhase, dayBoundary, defaultChallengeDates, localDateISO, slugify, type Challenge } from '~/utils/challenge'
+import { challengePhase, challengeTitle, dayBoundary, defaultChallengeDates, localDateISO, slugify, type Challenge } from '~/utils/challenge'
 
 const { t } = useI18n()
 const { notify } = useNotify()
@@ -9,6 +9,8 @@ const sb = useSupabase()
 const items = ref<(Challenge & { entries: number })[]>([])
 const loading = ref(true)
 const failed = ref(false)
+/** title_cs/description_cs exist once the wave-2 migration is live */
+const hasCs = computed(() => items.value.some(c => 'title_cs' in c))
 
 async function load() {
   loading.value = true
@@ -27,7 +29,7 @@ onMounted(load)
 
 const open = ref(false)
 const editing = ref<Challenge | null>(null)
-const form = reactive({ slug: '', title: '', description: '', cover: null as string | null, starts: '', ends: '', votingEnds: '' })
+const form = reactive({ slug: '', title: '', description: '', titleCs: '', descriptionCs: '', cover: null as string | null, starts: '', ends: '', votingEnds: '' })
 const slugTouched = ref(false)
 const coverFile = shallowRef<File | null>(null)
 const coverPreview = ref<string | null>(null)
@@ -44,7 +46,7 @@ onBeforeUnmount(() => setCoverFile(null))
 function startNew() {
   const d = defaultChallengeDates()
   editing.value = null
-  Object.assign(form, { slug: '', title: '', description: '', cover: null, starts: d.starts, ends: d.ends, votingEnds: d.votingEnds })
+  Object.assign(form, { slug: '', title: '', description: '', titleCs: '', descriptionCs: '', cover: null, starts: d.starts, ends: d.ends, votingEnds: d.votingEnds })
   slugTouched.value = false
   setCoverFile(null)
   err.value = null
@@ -57,6 +59,8 @@ function startEdit(c: Challenge) {
     slug: c.slug,
     title: c.title,
     description: c.description,
+    titleCs: c.title_cs ?? '',
+    descriptionCs: c.description_cs ?? '',
     cover: c.cover_url,
     starts: localDateISO(new Date(c.starts_at)),
     ends: localDateISO(new Date(c.ends_at)),
@@ -98,7 +102,8 @@ async function save() {
   saving.value = true
   try {
     const cover_url = coverFile.value ? await uploadChallengeImage(coverFile.value, 'cover-') : form.cover
-    const row = { slug, title: form.title.trim(), description: form.description.trim(), cover_url, starts_at: starts, ends_at: ends, voting_ends_at: votingEnds }
+    const cs: Record<string, string | null> = hasCs.value ? { title_cs: form.titleCs.trim() || null, description_cs: form.descriptionCs.trim() || null } : {}
+    const row: Record<string, string | null> = { slug, title: form.title.trim(), description: form.description.trim(), ...cs, cover_url, starts_at: starts, ends_at: ends, voting_ends_at: votingEnds }
     const { error } = editing.value
       ? await sb.from('challenges').update(row).eq('id', editing.value.id)
       : await sb.from('challenges').insert(row)
@@ -123,6 +128,17 @@ async function remove(c: Challenge) {
   items.value = items.value.filter(x => x.id !== c.id)
   open.value = false
   notify(t('admin.challenges.deleted'), { tone: 'info' })
+}
+
+const finalizing = ref(false)
+async function finalize(c: Challenge) {
+  if (!(await confirm({ title: t('admin.challenges.finalizeConfirm'), message: t('admin.challenges.finalizeConfirmText'), confirmLabel: t('admin.challenges.finalize') }))) return
+  finalizing.value = true
+  const { error } = await sb.rpc('finalize_challenge', { challenge: c.id })
+  finalizing.value = false
+  if (!error) return notify(t('admin.challenges.finalized'))
+  if (isMissingSchema(error)) return notify(t('admin.challenges.finalizeUnavailable'), { tone: 'error' })
+  notify(/not (yet )?(ended|finished)|still open|voting/i.test(error.message) ? t('admin.challenges.finalizeTooEarly') : t('admin.failed'), { tone: 'error' })
 }
 
 const range = (c: Challenge) => {
@@ -194,7 +210,7 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
               <ChallengePhaseBadge :phase="challengePhase(c)" />
               <span class="section-meta">{{ t('admin.challenges.entries', { n: c.entries }) }}</span>
             </span>
-            <span class="row-title">{{ c.title }}</span>
+            <span class="row-title">{{ challengeTitle(c) }}</span>
             <span class="row-meta num">/{{ c.slug }} · {{ range(c) }}</span>
           </span>
           <UIcon
@@ -248,6 +264,27 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
             lang="en"
           />
         </label>
+        <template v-if="hasCs">
+          <label class="field">
+            <span class="field-label">{{ t('admin.challenges.titleCs') }}</span>
+            <input
+              v-model="form.titleCs"
+              class="input"
+              maxlength="80"
+              lang="cs"
+            >
+          </label>
+          <label class="field">
+            <span class="field-label">{{ t('admin.challenges.descriptionCs') }}</span>
+            <textarea
+              v-model="form.descriptionCs"
+              class="input"
+              maxlength="1000"
+              rows="3"
+              lang="cs"
+            />
+          </label>
+        </template>
         <div class="field">
           <span class="field-label">{{ t('admin.challenges.cover') }}</span>
           <div class="cover-row">
@@ -320,6 +357,22 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
         >
           {{ t('common.save') }}
         </button>
+        <div
+          v-if="editing && challengePhase(editing) === 'finished'"
+          class="finalize"
+        >
+          <button
+            type="button"
+            class="btn btn-lamp btn-block"
+            :disabled="finalizing"
+            @click="finalize(editing)"
+          >
+            <UIcon name="i-tabler-trophy" />{{ t('admin.challenges.finalize') }}
+          </button>
+          <p class="field-hint">
+            {{ t('admin.challenges.finalizeText') }}
+          </p>
+        </div>
         <button
           v-if="editing"
           type="button"
@@ -335,6 +388,13 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
 </template>
 
 <style scoped>
+.finalize {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
 .row {
   flex-direction: row;
   align-items: center;

@@ -25,12 +25,20 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
         v-if="!ready"
         class="sk"
       />
-      <EmptyState
+      <div
         v-else-if="!isAdmin"
-        icon="community"
-        :title="t('admin.notAllowed')"
-        :text="t('admin.notAllowedText')"
+        class="locked"
       >
+        <UIcon
+          name="i-tabler-lock"
+          class="locked-icon"
+        />
+        <p class="locked-title">
+          {{ t('admin.notAllowed') }}
+        </p>
+        <p class="locked-text">
+          {{ t('admin.notAllowedText') }}
+        </p>
         <button
           v-if="!signedIn"
           type="button"
@@ -39,7 +47,7 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
         >
           {{ t('admin.signIn') }}
         </button>
-      </EmptyState>
+      </div>
       <template v-else>
         <div
           class="chips tabs"
@@ -73,6 +81,37 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
 </template>
 
 <style scoped>
+.locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 20px 30px;
+  text-align: center;
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.locked-icon {
+  margin-bottom: 8px;
+  font-size: 48px;
+  color: var(--text-3);
+}
+
+.locked-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.locked-text {
+  margin: 0 0 10px;
+  max-width: 30ch;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .tabs {
   margin: 0 -20px;
   padding: 0 20px 2px;

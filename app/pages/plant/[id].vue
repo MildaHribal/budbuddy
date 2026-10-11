@@ -1,26 +1,38 @@
 <script setup lang="ts">
 import type { LightboxItem } from '~/components/PhotoLightbox.vue'
 import type { PublicPlant, PublicTimelineEntry } from '~/utils/grower'
+import type { TrainingMethod } from '~/types/grow'
+import { isMissingSchema } from '~/utils/dbErrors'
+import { completedWeek, updateStreak, type JournalSummary } from '~/utils/weeklyUpdate'
 
 interface Owner { id: string, username: string, display_name: string | null, avatar_url: string | null, reputation: number }
+interface StrainRef { slug: string, name: string }
+interface UpdateRow { id: string, week_no: number, body: string | null, images: string[] | null, journal_summary: Partial<JournalSummary> | null, created_at: string }
 interface PostRow { id: string, title: string | null, body: string, images: string[], likes_count: number, comments_count: number, created_at: string }
 
 const route = useRoute()
 const { t } = useI18n()
 const { $goBack } = useNuxtApp()
 const { isBlocked, load: loadBlocks } = useBlocks()
-const { user } = useAuth()
+const { user, requireAuth } = useAuth()
+const { notify } = useNotify()
 const sb = useSupabase()
 
 const id = computed(() => String(route.params.id))
 const plant = ref<PublicPlant | null>(null)
 const owner = ref<Owner | null>(null)
 const posts = ref<PostRow[]>([])
+const strainRef = ref<StrainRef | null>(null)
+const updates = ref<UpdateRow[]>([])
+const updatesLive = ref(true)
+const following = ref(false)
+const followBusy = ref(false)
 const state = ref<'loading' | 'ready' | 'missing' | 'error'>('loading')
 
 useHead({ title: () => plant.value?.name ?? t('profile.plant.title') })
 
 async function load() {
+  const want = id.value
   state.value = 'loading'
   loadBlocks()
   if (!/^[0-9a-f-]{36}$/i.test(id.value)) {
@@ -28,8 +40,9 @@ async function load() {
     return
   }
   const { data, error } = await sb.from('public_plants')
-    .select('*, owner:profiles!public_plants_owner_id_fkey(id, username, display_name, avatar_url, reputation)')
+    .select('*, owner:profiles!public_plants_owner_id_fkey(id, username, display_name, avatar_url, reputation), strain_ref:strains!public_plants_strain_id_fkey(slug, name)')
     .eq('id', id.value).maybeSingle()
+  if (want !== id.value) return
   if (error) {
     state.value = 'error'
     return
@@ -38,13 +51,47 @@ async function load() {
     state.value = 'missing'
     return
   }
-  const { owner: o, ...rest } = data as PublicPlant & { owner: Owner | null }
+  const { owner: o, strain_ref: sr, ...rest } = data as PublicPlant & { owner: Owner | null, strain_ref: StrainRef | null }
   plant.value = rest
   owner.value = o
+  strainRef.value = sr
+  updates.value = []
+  following.value = false
   state.value = 'ready'
-  const res = await sb.from('posts').select('id, title, body, images, likes_count, comments_count, created_at')
-    .eq('plant_id', id.value).order('created_at', { ascending: false }).limit(20)
+  const me = user.value?.id
+  const [res, ups, fol] = await Promise.all([
+    sb.from('posts').select('id, title, body, images, likes_count, comments_count, created_at')
+      .eq('plant_id', want).order('created_at', { ascending: false }).limit(20),
+    sb.from('plant_updates').select('id, week_no, body, images, journal_summary, created_at')
+      .eq('plant_id', want).order('week_no', { ascending: false }).limit(60),
+    me && o && o.id !== me
+      ? sb.from('follows').select('follower_id').eq('follower_id', me).eq('following_id', o.id).maybeSingle()
+      : Promise.resolve({ data: null })
+  ])
+  if (want !== id.value) return
   posts.value = (res.data ?? []) as PostRow[]
+  updatesLive.value = !isMissingSchema(ups.error)
+  updates.value = (ups.data ?? []) as UpdateRow[]
+  following.value = !!fol.data
+}
+
+const ownerLevel = computed(() => growerLevel(owner.value?.reputation ?? 0))
+const isOwner = computed(() => !!owner.value && owner.value.id === user.value?.id)
+
+async function toggleFollow() {
+  const o = owner.value
+  if (!o || followBusy.value || !requireAuth() || !user.value || isOwner.value) return
+  const next = !following.value
+  following.value = next
+  followBusy.value = true
+  const { error } = next
+    ? await sb.from('follows').insert({ follower_id: user.value.id, following_id: o.id })
+    : await sb.from('follows').delete().eq('follower_id', user.value.id).eq('following_id', o.id)
+  followBusy.value = false
+  if (error && error.code !== '23505') {
+    following.value = !next
+    notify(t('profile.followError'), { tone: 'error' })
+  }
 }
 watch(id, load, { immediate: true })
 
@@ -86,6 +133,66 @@ const weeks = computed(() => {
   return groups
 })
 
+// ── Weekly updates ────────────────────────────────────────────────
+const weeksSoFar = computed(() => {
+  const max = Math.max(0, ...updates.value.map(u => u.week_no))
+  if (!startDate.value || plant.value?.archived) return max
+  return Math.max(max, completedWeek({ startDate: startDate.value }, todayISO()))
+})
+const consistency = computed(() => updateStreak(updates.value, weeksSoFar.value + 1))
+const weekCells = computed(() => {
+  const s = consistency.value
+  if (!s) return []
+  const first = Math.min(...updates.value.map(u => u.week_no))
+  const have = new Set(updates.value.map(u => u.week_no))
+  return Array.from({ length: Math.min(s.weeks, 24) }, (_, i) => ({ n: first + i, on: have.has(first + i) }))
+})
+
+// "Week {n}" / "{n}. týden" split around the big number; an ordinal dot stays on the number
+const weekParts = computed(() => {
+  const [pre = '', post = ''] = t('profile.plant.weekOf', { n: '\u0000' }).split('\u0000')
+  const dot = post.startsWith('.')
+  return [pre.trim(), (dot ? post.slice(1) : post).trim(), dot ? '.' : ''] as const
+})
+
+interface Chip { key: string, glyph: string, color: string, label: string }
+function summaryChips(sum: Partial<JournalSummary> | null): Chip[] {
+  if (!sum || typeof sum !== 'object') return []
+  const out: Chip[] = []
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+  const e = (type: 'water' | 'feed' | 'train' | 'pest' | 'measure') => entryInfo(type)
+  const w = num(sum.waterings)
+  if (w) out.push({ key: 'w', glyph: e('water').glyph, color: e('water').color, label: t('profile.plant.sum.water', { n: w }) })
+  const f = num(sum.feeds)
+  if (f) out.push({ key: 'f', glyph: e('feed').glyph, color: e('feed').color, label: t('profile.plant.sum.feed', { n: f }) })
+  if (Array.isArray(sum.trainings)) {
+    for (const m of sum.trainings.slice(0, 3)) {
+      const label = typeof m === 'string' ? trainingLabel(m as TrainingMethod) : ''
+      if (label) out.push({ key: `t-${m}`, glyph: e('train').glyph, color: e('train').color, label })
+    }
+  }
+  const pe = num(sum.pests)
+  if (pe) out.push({ key: 'p', glyph: e('pest').glyph, color: e('pest').color, label: t('profile.plant.sum.pest', { n: pe }) })
+  const ph = num(sum.ph)
+  if (ph != null) out.push({ key: 'ph', glyph: e('measure').glyph, color: e('measure').color, label: t('profile.plant.sum.ph', { v: ph }) })
+  const ec = num(sum.ec)
+  if (ec != null) out.push({ key: 'ec', glyph: e('measure').glyph, color: e('measure').color, label: t('profile.plant.sum.ec', { v: ec }) })
+  const h = num(sum.heightCm)
+  if (h != null) out.push({ key: 'h', glyph: e('measure').glyph, color: e('measure').color, label: t('profile.plant.sum.height', { v: h }) })
+  return out
+}
+const updateCards = computed(() => updates.value.map((u) => {
+  const sum = u.journal_summary && typeof u.journal_summary === 'object' ? u.journal_summary : null
+  const stageId = typeof sum?.stage === 'string' ? sum.stage : null
+  return {
+    ...u,
+    images: (u.images ?? []).filter(x => /^https?:/.test(x)).slice(0, 4),
+    day: typeof sum?.day === 'number' ? sum.day : null,
+    stage: stageId ? stageInfo(stageId) : null,
+    chips: summaryChips(sum)
+  }
+}))
+
 const harvest = computed(() => {
   const p = plant.value
   if (!p || (p.harvest_wet_g == null && p.harvest_dry_g == null)) return null
@@ -108,6 +215,11 @@ const facts = computed(() => {
 // ── Lightbox ──────────────────────────────────────────────────────
 const photoItems = computed<LightboxItem[]>(() => {
   const list: LightboxItem[] = []
+  for (const u of updateCards.value) {
+    for (const url of u.images) {
+      list.push({ photoId: url, title: t('profile.plant.weekOf', { n: u.week_no }), subtitle: formatDate(u.created_at.slice(0, 10)) })
+    }
+  }
   for (const it of items.value) {
     if (!it.photoUrl) continue
     list.push({
@@ -157,7 +269,7 @@ const excerpt = (s: string, n = 100) => (s.length > n ? `${s.slice(0, n).trimEnd
         <UIcon name="i-tabler-chevron-left" />
       </button>
       <EmptyState
-        icon="i-tabler-plant-off"
+        icon="seedling"
         :title="state === 'error' ? t('profile.loadError') : t('profile.plant.notFound')"
         :text="state === 'error' ? undefined : t('profile.plant.notFoundText')"
       >
@@ -259,7 +371,14 @@ const excerpt = (s: string, n = 100) => (s.length > n ? `${s.slice(0, n).trimEnd
           </div>
           <h1>{{ plant.name }}</h1>
           <p class="hero-strain">
-            {{ plant.strain || t('profile.plant.unknownStrain') }}<template v-if="age != null">
+            <NuxtLink
+              v-if="strainRef"
+              :to="`/strains/${strainRef.slug}`"
+              class="strain-link"
+            >{{ plant.strain || strainRef.name }}</NuxtLink>
+            <template v-else>
+              {{ plant.strain || t('profile.plant.unknownStrain') }}
+            </template><template v-if="age != null">
               <span aria-hidden="true"> · </span><span class="num">{{ t('profile.day', { n: age }) }}</span>
             </template>
           </p>
@@ -283,14 +402,37 @@ const excerpt = (s: string, n = 100) => (s.length > n ? `${s.slice(0, n).trimEnd
           </span>
           <span
             class="badge"
-            :style="{ color: growerLevel(owner.reputation).color }"
+            :style="{ color: ownerLevel.color }"
           >
             <GrowIcon
-              :name="growerLevel(owner.reputation).glyph"
+              :name="ownerLevel.glyph"
               class="text-[13px]"
-            />{{ t(`profile.levels.${growerLevel(owner.reputation).id}`) }}
+            />{{ ownerLevel.label }}
           </span>
         </NuxtLink>
+
+        <div
+          v-if="owner && !isOwner && !blocked"
+          class="follow-cta"
+        >
+          <button
+            type="button"
+            class="btn btn-block"
+            :class="following ? 'btn-soft is-following' : 'btn-primary'"
+            :aria-pressed="following"
+            :disabled="followBusy"
+            @click="toggleFollow"
+          >
+            <UIcon :name="following ? 'i-tabler-check' : 'i-tabler-bookmark-plus'" />
+            {{ following ? t('profile.plant.followingDiary') : t('profile.plant.followDiary') }}
+          </button>
+          <p
+            v-if="!following"
+            class="follow-hint"
+          >
+            {{ t('profile.plant.followHint', { name: ownerName }) }}
+          </p>
+        </div>
 
         <p
           v-if="blocked"
@@ -353,6 +495,146 @@ const excerpt = (s: string, n = 100) => (s.length > n ? `${s.slice(0, n).trimEnd
                 />{{ f.label }}
               </li>
             </ul>
+            <NuxtLink
+              v-if="strainRef"
+              :to="`/strains/${strainRef.slug}`"
+              class="strain-row"
+            >
+              <GrowIcon name="flowering" />
+              <span>{{ t('profile.plant.strainLink', { strain: strainRef.name }) }}</span>
+              <UIcon
+                name="i-tabler-chevron-right"
+                class="strain-go"
+              />
+            </NuxtLink>
+          </section>
+
+          <section
+            v-if="updatesLive"
+            aria-labelledby="h-updates"
+          >
+            <div class="section-head">
+              <h2
+                id="h-updates"
+                class="section-title"
+              >
+                <GrowIcon name="photo" /> {{ t('profile.plant.updates') }}
+              </h2>
+              <span
+                v-if="consistency"
+                class="section-meta num"
+              >{{ t('profile.plant.consistency', { n: consistency.updated, total: consistency.weeks }) }}</span>
+            </div>
+
+            <div
+              v-if="consistency"
+              class="consistency"
+              :class="{ good: consistency.consistent }"
+            >
+              <ol
+                class="week-cells"
+                aria-hidden="true"
+              >
+                <li
+                  v-for="c in weekCells"
+                  :key="c.n"
+                  :class="{ on: c.on }"
+                />
+              </ol>
+              <span
+                v-if="consistency.consistent"
+                class="consistent-tag"
+              >
+                <GrowIcon name="lamp" /> {{ t('profile.plant.consistent') }}
+              </span>
+            </div>
+
+            <EmptyState
+              v-if="!updateCards.length"
+              icon="photo"
+              :title="t('profile.plant.noUpdates')"
+              :text="t('profile.plant.noUpdatesText')"
+            />
+            <ol
+              v-else
+              class="updates rise"
+            >
+              <li
+                v-for="u in updateCards"
+                :key="u.id"
+                class="update card"
+              >
+                <header class="update-head">
+                  <span class="update-week">
+                    <span
+                      v-if="weekParts[0]"
+                      class="update-wlabel"
+                      aria-hidden="true"
+                    >{{ weekParts[0] }}</span>
+                    <span
+                      class="update-n num"
+                      aria-hidden="true"
+                    >{{ u.week_no }}{{ weekParts[2] }}</span>
+                    <span
+                      v-if="weekParts[1]"
+                      class="update-wlabel"
+                      aria-hidden="true"
+                    >{{ weekParts[1] }}</span>
+                    <span class="sr-only">{{ t('profile.plant.weekOf', { n: u.week_no }) }}</span>
+                  </span>
+                  <span class="update-meta num">
+                    <span
+                      v-if="u.stage"
+                      class="update-stage"
+                      :style="{ color: u.stage.color }"
+                    ><GrowIcon :name="u.stage.glyph" /> {{ u.stage.label }}</span>
+                    <span v-if="u.day != null">{{ t('profile.plant.dayN', { n: u.day }) }}</span>
+                    <span>{{ formatDate(u.created_at.slice(0, 10), { day: 'numeric', month: 'short' }) }}</span>
+                  </span>
+                </header>
+                <div
+                  v-if="u.images.length"
+                  class="update-photos"
+                  :class="`n${u.images.length}`"
+                >
+                  <button
+                    v-for="(img, k) in u.images"
+                    :key="img"
+                    type="button"
+                    class="update-photo"
+                    :aria-label="t('profile.plant.updatePhoto', { n: u.week_no })"
+                    @click="openPhoto(img, $event)"
+                  >
+                    <img
+                      :src="img"
+                      alt=""
+                      :loading="k === 0 ? 'eager' : 'lazy'"
+                      decoding="async"
+                    >
+                  </button>
+                </div>
+                <p
+                  v-if="u.body"
+                  class="update-body"
+                  lang="en"
+                >
+                  {{ u.body }}
+                </p>
+                <ul
+                  v-if="u.chips.length"
+                  class="update-chips"
+                >
+                  <li
+                    v-for="c in u.chips"
+                    :key="c.key"
+                    class="sum-chip num"
+                    :style="{ '--c': c.color }"
+                  >
+                    <GrowIcon :name="c.glyph" />{{ c.label }}
+                  </li>
+                </ul>
+              </li>
+            </ol>
           </section>
 
           <section
@@ -390,7 +672,7 @@ const excerpt = (s: string, n = 100) => (s.length > n ? `${s.slice(0, n).trimEnd
           <section>
             <div class="section-head">
               <h2 class="section-title">
-                <GrowIcon name="stage" /> {{ t('profile.plant.timeline') }}
+                <GrowIcon name="stage" /> {{ t('profile.plant.journal') }}
               </h2>
               <span
                 v-if="items.length"
@@ -649,13 +931,12 @@ const excerpt = (s: string, n = 100) => (s.length > n ? `${s.slice(0, n).trimEnd
 }
 
 .stage-badge {
-  background: color-mix(in srgb, currentColor 14%, rgba(7, 8, 10, 0.72));
-  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, currentColor 14%, color-mix(in srgb, var(--bg) 88%, transparent));
 }
 
 .muted-badge {
   color: var(--text-2);
-  background: rgba(7, 8, 10, 0.72);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
 }
 
 h1 {
@@ -839,6 +1120,231 @@ h1 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
+}
+
+.strain-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(201, 162, 255, 0.5);
+  text-underline-offset: 3px;
+}
+
+.strain-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.strain-row .grow-icon {
+  color: #c9a2ff;
+  font-size: 18px;
+}
+
+.strain-go {
+  margin-left: auto;
+  color: var(--text-3);
+}
+
+/* ── Follow ── */
+.follow-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: -6px;
+}
+
+.follow-cta .is-following {
+  color: var(--leaf);
+}
+
+.follow-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* ── Weekly updates ── */
+.consistency {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -2px 0 12px;
+}
+
+.week-cells {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-cells li {
+  flex: 1;
+  max-width: 22px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-3);
+}
+
+.week-cells li.on {
+  background: var(--leaf);
+  box-shadow: 0 0 6px rgba(155, 227, 107, 0.4);
+}
+
+.consistent-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lamp);
+  white-space: nowrap;
+}
+
+.updates {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.update {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.update-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.update-week {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.update-n {
+  font-size: 34px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--lamp);
+}
+
+.update-wlabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.update-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.update-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.update-photos {
+  display: grid;
+  gap: 4px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.update-photos.n2,
+.update-photos.n4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.update-photos.n3 {
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.update-photos.n3 .update-photo:first-child {
+  grid-row: span 2;
+}
+
+.update-photo {
+  padding: 0;
+  border: 0;
+  background: var(--surface);
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.update-photos.n1 .update-photo {
+  aspect-ratio: 4 / 3;
+}
+
+.update-photos.n3 .update-photo:first-child {
+  aspect-ratio: auto;
+}
+
+.update-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.update-body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.update-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sum-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sum-chip .grow-icon {
+  color: var(--c);
 }
 
 .facts {

@@ -115,7 +115,7 @@ export default {
   },
   cs: {
     title: 'Nástroje',
-    subtitle: 'Kalkulačky pro growroom',
+    subtitle: 'Kalkulačky pro pěstírnu',
     tabs: { nutrients: 'Živiny', vpd: 'Vzduch', dli: 'Světlo', convert: 'Převody' },
     whatFor: 'K čemu to je?',
     learnMore: 'Víc informací',
@@ -168,7 +168,7 @@ export default {
         c: 'Mladé rostliny chtějí vlhčí vzduch, kvetoucí o něco sušší.',
         d: 'Číslo se jmenuje VPD (deficit tlaku par) a měří se v kPa.'
       },
-      inputsTitle: 'Tvůj growroom teď',
+      inputsTitle: 'Tvoje pěstírna teď',
       airTemp: 'Teplota',
       rh: 'Vlhkost',
       rhHint: 'Obě hodnoty odečti z teploměru s vlhkoměrem ve výšce rostlin.',
@@ -186,7 +186,7 @@ export default {
       },
       targets: 'Co které fázi sedí',
       clones: 'Řízky a sazenice',
-      veg: 'Růst (vegetace)',
+      veg: 'Vegetace',
       flower: 'Kvetení'
     },
     dli: {
@@ -194,11 +194,11 @@ export default {
       learn: {
         a: 'PPFD je, jak silně svítí světlo na vršky rostlin v jednu chvíli.',
         b: 'DLI to sečte za všechny hodiny, kdy lampa svítí. Je to denní „světelná porce“ rostliny.',
-        c: 'PPFD změříš PAR metrem nebo appkou v telefonu, případně ho najdeš v tabulce výrobce lampy pro danou výšku.',
+        c: 'PPFD změříš PAR metrem nebo aplikací v telefonu, případně ho najdeš v tabulce výrobce lampy pro danou výšku.',
         d: 'Víc světla pomůže jen tehdy, když stíhá voda, živiny a teplota.'
       },
       presetsTitle: 'Nevíš? Vyber fázi',
-      presets: { seedling: 'Sazenice', veg: 'Vegetace', flower: 'Kvetení', auto: 'Automatka' },
+      presets: { seedling: 'Sazenice', veg: 'Vegetace', flower: 'Kvetení', auto: 'Samonakvétací' },
       ppfd: 'Síla světla (PPFD)',
       ppfdSr: ' v µmol na m² za sekundu',
       ppfdHint: 'Měřeno u vršků rostlin.',

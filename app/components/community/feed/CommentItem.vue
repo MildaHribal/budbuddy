@@ -8,6 +8,8 @@ const props = defineProps<{
   /** viewer owns the question and may pick the best answer */
   canAccept?: boolean
   reply?: boolean
+  /** draw attention to the accept control (?solve=1) */
+  nudge?: boolean
 }>()
 const emit = defineEmits<{ like: [], reply: [], delete: [], accept: [], save: [body: string] }>()
 
@@ -61,10 +63,10 @@ function saveEdit() {
           v-if="comment.is_ai"
           class="badge ai-badge"
         >{{ t('feed.detail.aiBadge') }}</span>
-        <CommunityFeedRepBadge
-          v-else-if="comment.author"
-          :rep="comment.author.reputation"
-        />
+        <template v-else-if="comment.author">
+          <CommunityFeedRepBadge :rep="comment.author.reputation" />
+          <CommunityFeedFirstGrowChip v-if="comment.author.first_grow" />
+        </template>
         <time
           class="time num"
           :datetime="comment.created_at"
@@ -130,13 +132,14 @@ function saveEdit() {
           class="act"
           :class="{ on: liked }"
           :aria-pressed="liked"
-          :aria-label="liked ? t('feed.unlike') : t('feed.like')"
+          :aria-label="t('feed.react.count', { label: t('feed.like'), n: comment.likes_count })"
           @click="emit('like')"
         >
           <UIcon :name="liked ? 'i-tabler-heart-filled' : 'i-tabler-heart'" />
           <span
             v-if="comment.likes_count"
             class="num"
+            aria-hidden="true"
           >{{ comment.likes_count }}</span>
         </button>
         <button
@@ -150,7 +153,7 @@ function saveEdit() {
           v-if="canAccept"
           type="button"
           class="act accept"
-          :class="{ on: accepted }"
+          :class="{ on: accepted, nudge: nudge && !accepted }"
           :aria-pressed="accepted"
           @click="emit('accept')"
         >
@@ -178,9 +181,17 @@ function saveEdit() {
 }
 
 .avatar-link {
+  position: relative;
   display: inline-flex;
   align-self: flex-start;
   border-radius: 50%;
+}
+
+/* 44px hit area around the small avatar */
+.avatar-link::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
 }
 
 .ai-avatar {
@@ -211,7 +222,7 @@ function saveEdit() {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 34px;
+  min-height: 44px;
   margin: -6px -8px 0 0;
 }
 
@@ -273,7 +284,7 @@ function saveEdit() {
 }
 
 .edit-actions .btn {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   font-size: 13px;
 }
@@ -289,7 +300,7 @@ function saveEdit() {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 40px;
+  min-height: 44px;
   min-width: 44px;
   padding: 0 10px;
   border: 0;
@@ -312,5 +323,23 @@ function saveEdit() {
 
 .act.on {
   color: var(--leaf);
+}
+
+.act.nudge {
+  color: var(--leaf);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+  animation: nudge 1.6s var(--ease-out) 3;
+}
+
+@keyframes nudge {
+  0%, 100% { box-shadow: inset 0 0 0 1px var(--accent-line), 0 0 0 0 rgba(155, 227, 107, 0.4); }
+  50% { box-shadow: inset 0 0 0 1px var(--accent-line), 0 0 0 6px rgba(155, 227, 107, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .act.nudge {
+    animation: none;
+  }
 }
 </style>

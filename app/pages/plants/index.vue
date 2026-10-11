@@ -179,7 +179,7 @@ function rowStyle(plant: Plant, index: number) {
 
       <EmptyState
         v-if="!list.length"
-        :icon="query || stageFilter ? 'i-tabler-search-off' : view === 'archive' ? 'i-tabler-archive' : 'i-tabler-plant-off'"
+        :icon="query || stageFilter ? 'plants' : view === 'archive' ? 'curing' : 'seedling'"
         :title="t(query || stageFilter ? 'plants.list.noMatchTitle' : view === 'archive' ? 'plants.list.archiveEmptyTitle' : 'plants.list.emptyTitle')"
         :text="t(query || stageFilter ? 'plants.list.noMatchText' : view === 'archive' ? 'plants.list.archiveEmptyText' : 'plants.list.emptyText')"
       >
@@ -238,7 +238,7 @@ function rowStyle(plant: Plant, index: number) {
                   class="stage-glyph"
                 />
                 <span class="stage-label">{{ stageInfo(p.stage).label }}</span>
-                <span class="stage-day num">{{ t('plants.list.stageDay', { day: stageProgress(p).dayInStage, total: stageProgress(p).stageDays }) }}</span>
+                <span class="stage-day num">{{ t('plants.list.totalAge', { n: stageProgress(p).age }) }}</span>
               </div>
               <div
                 class="progress tube"
@@ -262,8 +262,8 @@ function rowStyle(plant: Plant, index: number) {
               </span>
             </div>
             <div class="row-age">
-              <span class="age num">{{ stageProgress(p).age }}</span>
-              <span class="age-unit">{{ t('plants.list.days', { n: stageProgress(p).age }) }}</span>
+              <span class="age num">{{ stageProgress(p).dayInStage }}</span>
+              <span class="age-unit">{{ t('plants.list.dayOf', { stage: stageInfo(p.stage).label.toLowerCase() }) }}</span>
             </div>
           </NuxtLink>
         </li>
@@ -412,7 +412,8 @@ function rowStyle(plant: Plant, index: number) {
 }
 
 .sort {
-  width: 118px;
+  width: 132px;
+  padding-right: 30px;
   flex-shrink: 0;
 }
 
@@ -526,7 +527,11 @@ h2 {
 }
 
 .stage-day {
+  min-width: 0;
   margin-left: auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--text-3);
 }
 
@@ -576,8 +581,11 @@ h2 {
 }
 
 .age-unit {
+  max-width: 76px;
   margin-top: 4px;
   font-size: 11px;
+  line-height: 1.25;
+  text-align: right;
   color: var(--text-3);
 }
 
