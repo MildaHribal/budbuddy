@@ -68,6 +68,7 @@ useHead({
       </NuxtLayout>
       <AppToaster />
       <ConfirmDialog />
+      <CommunitySignInSheet v-if="ready" />
     </div>
   </div>
 </template>

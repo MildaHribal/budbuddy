@@ -357,6 +357,31 @@ async function removePlant() {
   navigateTo('/plants', { replace: true })
 }
 
+// ── Public sharing ────────────────────────────────────────────────
+const sharing = usePlantSharing()
+const { requireAuth } = useAuth()
+const isShared = computed(() => !!plant.value?.sharing)
+const publicBusy = computed(() => sharing.isBusy(plantId.value))
+
+async function togglePublic() {
+  const p = plant.value
+  moreSheet.value = false
+  if (!p || publicBusy.value || !requireAuth()) return
+  const going = !p.sharing
+  const ok = await confirm(going
+    ? { title: t('auth.share.publicTitle'), message: t('auth.share.publicMessage'), confirmLabel: t('auth.share.makePublic') }
+    : { title: t('auth.share.privateTitle'), message: t('auth.share.privateMessage'), confirmLabel: t('auth.share.makePrivate') })
+  if (!ok) return
+  try {
+    if (going) await sharing.share(p.id)
+    else await sharing.unshare(p.id)
+    notify(t(going ? 'auth.share.nowPublic' : 'auth.share.nowPrivate'), { icon: going ? 'i-tabler-world' : 'i-tabler-lock' })
+  } catch (e) {
+    console.error(e)
+    notify(t('auth.share.failed'), { tone: 'error' })
+  }
+}
+
 // ── Share card ────────────────────────────────────────────────────
 const shareSheet = ref(false)
 const isNative = Capacitor.isNativePlatform()
@@ -557,6 +582,21 @@ function duplicate() {
                 class="size-3.5"
               /> {{ healthInfo(plant.health).label }}
             </span>
+            <button
+              type="button"
+              class="badge public-chip"
+              :class="{ on: isShared }"
+              :aria-pressed="isShared"
+              :disabled="publicBusy"
+              :aria-label="isShared ? t('auth.share.chipPublicAria') : t('auth.share.chipPrivateAria')"
+              @click="togglePublic"
+            >
+              <UIcon
+                :name="publicBusy ? 'i-tabler-loader-2' : isShared ? 'i-tabler-world' : 'i-tabler-lock'"
+                class="size-3.5"
+                :class="{ 'animate-spin': publicBusy }"
+              /> {{ isShared ? t('auth.share.public') : t('auth.share.private') }}
+            </button>
             <span
               v-if="plant.archived"
               class="badge archived"
@@ -1293,6 +1333,24 @@ function duplicate() {
         <button
           type="button"
           class="menu-item"
+          role="switch"
+          :aria-checked="isShared"
+          :disabled="publicBusy"
+          @click="togglePublic"
+        >
+          <UIcon
+            :name="isShared ? 'i-tabler-world' : 'i-tabler-world-off'"
+            class="size-5"
+          />
+          <span class="menu-grow">{{ t('auth.share.toggle') }}</span>
+          <span
+            class="menu-state"
+            :class="{ on: isShared }"
+          >{{ isShared ? t('auth.share.on') : t('auth.share.off') }}</span>
+        </button>
+        <button
+          type="button"
+          class="menu-item"
           @click="openShareCard"
         >
           <UIcon
@@ -1535,6 +1593,42 @@ function duplicate() {
 
 .badge.archived {
   color: var(--text-2);
+}
+
+.public-chip {
+  position: relative;
+  color: var(--text-2);
+  background: rgba(7, 8, 10, 0.72);
+  transition: color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
+}
+
+/* 44px tap target around the small chip */
+.public-chip::after {
+  content: "";
+  position: absolute;
+  inset: -12px -4px;
+}
+
+.public-chip.on {
+  color: var(--leaf);
+}
+
+.public-chip:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.menu-grow {
+  flex: 1;
+}
+
+.menu-state {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.menu-state.on {
+  color: var(--leaf);
 }
 
 h1 {

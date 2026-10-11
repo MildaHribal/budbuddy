@@ -7,10 +7,15 @@ const items = [
   { to: '/plants', label: 'plants', icon: 'plants' },
   { to: '/ai-assistant', label: 'ai', icon: 'spark', center: true },
   { to: '/guide', label: 'guide', icon: 'guide' },
-  { to: '/tools', label: 'tools', icon: 'tools' }
+  { to: '/community', label: 'community', icon: 'community' }
 ]
 
-const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
+const COMMUNITY = ['/community', '/u/', '/plant/', '/strains', '/challenges']
+const isActive = (to: string) => {
+  if (to === '/') return route.path === '/'
+  if (to === '/community') return COMMUNITY.some(p => route.path.startsWith(p))
+  return route.path.startsWith(to)
+}
 </script>
 
 <template>

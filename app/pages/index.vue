@@ -224,6 +224,13 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           <h1>{{ greeting }}</h1>
         </div>
         <NuxtLink
+          to="/tools"
+          class="avatar dash-tools"
+          :aria-label="t('common.nav.tools')"
+        >
+          <GrowIcon name="tools" />
+        </NuxtLink>
+        <NuxtLink
           to="/settings"
           class="avatar"
           :aria-label="t('home.settings')"
@@ -551,6 +558,8 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
       </section>
 
+      <CommunityTopTips />
+
       <NuxtLink
         to="/stats"
         class="card week"
@@ -785,7 +794,13 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 }
 
 .dash-hello {
+  flex: 1;
   min-width: 0;
+}
+
+.avatar.dash-tools {
+  color: var(--text-2);
+  font-size: 20px;
 }
 
 .dash-date {

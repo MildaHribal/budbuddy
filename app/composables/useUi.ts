@@ -113,6 +113,8 @@ export function resetPhotoUrls() {
 }
 
 export function photoUrl(id: string): Promise<string | null> {
+  // remote (community) photos are already URLs
+  if (/^(https?:|blob:|data:)/.test(id)) return Promise.resolve(id)
   let p = urlCache.get(id)
   if (!p) {
     p = photoStore.get(id)

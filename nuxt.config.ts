@@ -29,7 +29,10 @@ export default defineNuxtConfig({
       // Absolute so the APK reaches it too; override with NUXT_PUBLIC_AI_PROXY_URL.
       aiProxyUrl: 'https://budbuddy-demo.netlify.app/api/chat',
       // Optional, must match BUDBUDDY_APP_TOKEN on the server (NUXT_PUBLIC_AI_APP_TOKEN at build time).
-      aiAppToken: ''
+      aiAppToken: '',
+      // Public by design (RLS protects the data); override with NUXT_PUBLIC_SUPABASE_*.
+      supabaseUrl: 'https://mlvpmiwvuxgwjssrtxsq.supabase.co',
+      supabaseKey: 'sb_publishable_6oTNsmVMqUCQg4BSYXROYQ_vK8kfUo1'
     }
   },
 

@@ -11,6 +11,7 @@ import type {
   Location,
   Medium,
   Plant,
+  PlantSharing,
   PlantType,
   StageChange,
   StageId,
@@ -130,8 +131,17 @@ export function normalizePlant(raw: Record<string, unknown>): Plant {
     harvest,
     archived: raw.archived === true,
     createdAt: str(raw.createdAt, now),
-    updatedAt: str(raw.updatedAt, now)
+    updatedAt: str(raw.updatedAt, now),
+    ...withSharing(raw.sharing)
   }
+}
+
+// only shared plants carry the key
+function withSharing(v: unknown): { sharing?: PlantSharing } {
+  if (!v || typeof v !== 'object') return {}
+  const r = v as Record<string, unknown>
+  const publicId = str(r.publicId)
+  return publicId ? { sharing: { publicId, syncedAt: str(r.syncedAt) } } : {}
 }
 
 export function normalizeEntry(raw: Record<string, unknown>): JournalEntry {

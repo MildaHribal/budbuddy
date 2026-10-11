@@ -6,7 +6,7 @@ import { blobToDataUrl, compressImage } from '~/utils/image'
 import { parseISODate } from '~/utils/date'
 import { WidgetBridge } from '~/utils/widgetBridge'
 
-const DEEP_LINK = /^budbuddy:\/\/app(\/[^?#]*)?/
+const DEEP_LINK = /^budbuddy:\/\/app(\/[^#]*)?/
 
 interface LatestPhoto { photoId: string, plant: string, date: string }
 

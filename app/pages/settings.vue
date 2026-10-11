@@ -212,6 +212,7 @@ async function erase() {
       back
     />
     <div class="page rise">
+      <CommunityAccountSection />
       <section aria-labelledby="h-you">
         <div class="section-head">
           <h2

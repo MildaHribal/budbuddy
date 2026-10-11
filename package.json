@@ -18,6 +18,7 @@
   "dependencies": {
     "@capacitor/android": "^7.4.4",
     "@capacitor/app": "7.1.0",
+    "@capacitor/browser": "^7.0.5",
     "@capacitor/core": "^7.4.4",
     "@capacitor/filesystem": "^7.1.9",
     "@capacitor/haptics": "^7.0.5",
@@ -28,6 +29,7 @@
     "@huggingface/tokenizers": "0.2.0",
     "@iconify-json/tabler": "^1.2.23",
     "@nuxt/ui": "^4.1.0",
+    "@supabase/supabase-js": "^2.117.3",
     "@vueuse/nuxt": "^14.0.0",
     "nuxt": "^4.2.1",
     "onnxruntime-web": "1.30.0",

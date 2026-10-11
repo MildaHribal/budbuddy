@@ -1,6 +1,8 @@
 <script setup lang="ts">
 export interface LightboxItem {
   photoId: string
+  /** remote image; used instead of the local photo store */
+  url?: string
   title?: string
   subtitle?: string
   to?: string
@@ -10,13 +12,16 @@ const props = defineProps<{
   items: LightboxItem[]
   /** screen rect of the tapped thumbnail; the photo zooms out of it on open */
   origin?: DOMRect | null
+  /** hide the delete button (read-only photos) */
+  readonly?: boolean
 }>()
 const index = defineModel<number | null>('index', { default: null })
 const emit = defineEmits<{ delete: [item: LightboxItem] }>()
 
 const open = computed(() => index.value !== null && !!props.items[index.value])
 const current = computed(() => (index.value === null ? null : props.items[index.value] ?? null))
-const url = usePhotoUrl(computed(() => current.value?.photoId))
+const localUrl = usePhotoUrl(computed(() => (current.value?.url ? null : current.value?.photoId)))
+const url = computed(() => current.value?.url ?? localUrl.value)
 const img = ref<HTMLImageElement | null>(null)
 const { t } = useI18n()
 
@@ -144,6 +149,7 @@ function onImgLoad() {
             >{{ current.subtitle }}</span>
           </div>
           <button
+            v-if="!readonly"
             type="button"
             class="icon-btn lb-btn"
             :aria-label="t('gallery.deletePhoto')"

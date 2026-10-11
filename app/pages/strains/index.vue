@@ -1,0 +1,540 @@
+<script setup lang="ts">
+import type { Strain, StrainStats } from '~/utils/strains'
+
+const { t } = useI18n()
+useHead({ title: () => t('strains.title') })
+
+const { requireAuth } = useAuth()
+
+const PAGE = 20
+const DOMS = ['indica', 'sativa', 'hybrid'] as const
+
+const query = ref('')
+const debounced = ref('')
+let timer: ReturnType<typeof setTimeout> | undefined
+watch(query, (v) => {
+  clearTimeout(timer)
+  timer = setTimeout(() => (debounced.value = v.trim()), 250)
+})
+const dom = ref<string | null>(null)
+const flow = ref<'auto' | 'photo' | null>(null)
+
+const strains = ref<Strain[]>([])
+const stats = reactive(new Map<string, StrainStats>())
+const loading = ref(false)
+const done = ref(false)
+const error = ref<'offline' | 'error' | null>(null)
+let seq = 0
+
+async function loadPage(reset = false) {
+  if (loading.value && !reset) return
+  if (reset) {
+    strains.value = []
+    done.value = false
+  }
+  if (done.value) return
+  const my = ++seq
+  loading.value = true
+  error.value = null
+  const sb = useSupabase()
+  let q = sb.from('strains').select(STRAIN_COLUMNS).eq('approved', true)
+  const term = debounced.value.replace(/[%*,()\\]/g, ' ').trim()
+  if (term) q = q.or(`name.ilike.%${term}%,breeder.ilike.%${term}%`)
+  if (dom.value) q = q.eq('dominance', dom.value)
+  if (flow.value) q = q.eq('flowering', flow.value)
+  const from = strains.value.length
+  const { data, error: err } = await q.order('name').range(from, from + PAGE - 1)
+  if (my !== seq) return
+  loading.value = false
+  if (err) {
+    error.value = navigator.onLine ? 'error' : 'offline'
+    return
+  }
+  const rows = (data ?? []) as Strain[]
+  strains.value = [...strains.value, ...rows]
+  if (rows.length < PAGE) done.value = true
+  if (rows.length) {
+    const { data: st } = await sb.from('strain_stats').select('*').in('strain_id', rows.map(r => r.id))
+    for (const s of (st ?? []) as StrainStats[]) stats.set(s.strain_id, s)
+  }
+}
+
+watch([debounced, dom, flow], () => loadPage(true))
+
+const sentinel = ref<HTMLElement | null>(null)
+let io: IntersectionObserver | null = null
+onMounted(() => {
+  loadPage(true)
+  io = new IntersectionObserver((e) => {
+    if (e[0]?.isIntersecting && !loading.value && !done.value && !error.value && strains.value.length) loadPage()
+  }, { rootMargin: '400px' })
+  if (sentinel.value) io.observe(sentinel.value)
+})
+onBeforeUnmount(() => {
+  io?.disconnect()
+  clearTimeout(timer)
+})
+
+function weeks(s: Strain): string | null {
+  const a = s.flowering_weeks_min
+  const b = s.flowering_weeks_max
+  if (a && b && a !== b) return t('strains.weeks', { min: a, max: b })
+  if (a || b) return t('strains.weeksOne', { n: (a ?? b)! })
+  return null
+}
+
+const suggestOpen = ref(false)
+function suggest() {
+  if (requireAuth()) suggestOpen.value = true
+}
+
+const loaded = reactive(new Set<string>())
+</script>
+
+<template>
+  <div>
+    <AppHeader
+      :title="t('strains.title')"
+      :subtitle="t('strains.subtitle')"
+      back
+    >
+      <template #actions>
+        <button
+          type="button"
+          class="icon-btn"
+          :aria-label="t('strains.suggest')"
+          @click="suggest"
+        >
+          <UIcon name="i-tabler-plus" />
+        </button>
+      </template>
+    </AppHeader>
+
+    <div class="page">
+      <div class="controls">
+        <label class="search">
+          <UIcon
+            name="i-tabler-search"
+            class="search-icon"
+          />
+          <input
+            v-model="query"
+            class="input"
+            type="search"
+            enterkeyhint="search"
+            autocomplete="off"
+            :placeholder="t('strains.search')"
+            :aria-label="t('strains.search')"
+          >
+        </label>
+        <div class="chips filter-row">
+          <button
+            type="button"
+            class="chip"
+            :aria-pressed="!dom && !flow"
+            @click="dom = null; flow = null"
+          >
+            {{ t('strains.all') }}
+          </button>
+          <button
+            v-for="d in DOMS"
+            :key="d"
+            type="button"
+            class="chip"
+            :aria-pressed="dom === d"
+            @click="dom = dom === d ? null : d"
+          >
+            <i
+              class="dot"
+              :style="{ background: dominanceColor(d) }"
+            />{{ t(`strains.dominance.${d}`) }}
+          </button>
+          <span
+            class="divider"
+            aria-hidden="true"
+          />
+          <button
+            type="button"
+            class="chip"
+            :aria-pressed="flow === 'auto'"
+            @click="flow = flow === 'auto' ? null : 'auto'"
+          >
+            {{ t('strains.flowering.auto') }}
+          </button>
+          <button
+            type="button"
+            class="chip"
+            :aria-pressed="flow === 'photo'"
+            @click="flow = flow === 'photo' ? null : 'photo'"
+          >
+            {{ t('strains.flowering.photo') }}
+          </button>
+        </div>
+      </div>
+
+      <EmptyState
+        v-if="error && !strains.length"
+        icon="pest"
+        :title="t('strains.errorTitle')"
+        :text="error === 'offline' ? t('strains.offline') : t('strains.failed')"
+      >
+        <button
+          type="button"
+          class="btn btn-soft"
+          @click="loadPage(true)"
+        >
+          <UIcon name="i-tabler-refresh" /> {{ t('strains.retry') }}
+        </button>
+      </EmptyState>
+
+      <EmptyState
+        v-else-if="done && !strains.length"
+        icon="flowering"
+        :title="t('strains.emptyTitle')"
+        :text="t('strains.emptyText')"
+      >
+        <button
+          type="button"
+          class="btn btn-soft"
+          @click="suggest"
+        >
+          <UIcon name="i-tabler-plus" /> {{ t('strains.suggest') }}
+        </button>
+      </EmptyState>
+
+      <div
+        v-else
+        class="grid-wrap"
+      >
+        <ul class="grid rise">
+          <li
+            v-for="s in strains"
+            :key="s.id"
+          >
+            <NuxtLink
+              :to="`/strains/${s.slug}`"
+              class="card strain"
+            >
+              <span
+                class="thumb"
+                :class="{ loaded: !s.image_url || loaded.has(s.id) }"
+                :style="{ color: dominanceColor(s.dominance) }"
+              >
+                <img
+                  v-if="s.image_url"
+                  :src="strainThumb(s.image_url)!"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                  @load="loaded.add(s.id)"
+                  @error="loaded.add(s.id)"
+                >
+                <GrowIcon
+                  v-else
+                  :name="s.flowering === 'auto' ? 'seedling' : 'flowering'"
+                  class="placeholder"
+                />
+                <span
+                  v-if="s.flowering === 'auto'"
+                  class="badge auto"
+                >{{ t('strains.flowering.auto') }}</span>
+              </span>
+              <span class="meta">
+                <strong class="name">{{ s.name }}</strong>
+                <span class="breeder">{{ s.breeder || '–' }}</span>
+                <span class="facts">
+                  <span
+                    v-if="s.dominance"
+                    class="fact"
+                    :style="{ color: dominanceColor(s.dominance) }"
+                  >{{ t(`strains.dominance.${s.dominance}`) }}</span>
+                  <span
+                    v-if="weeks(s)"
+                    class="fact lamp num"
+                  >{{ weeks(s) }}</span>
+                </span>
+                <span
+                  v-if="stats.get(s.id)?.reports"
+                  class="rating num"
+                >
+                  <UIcon name="i-tabler-star-filled" />{{ stats.get(s.id)!.avg_rating ?? '–' }}
+                  <template v-if="stats.get(s.id)!.avg_yield_g">
+                    · {{ t('strains.gramsShort', { n: stats.get(s.id)!.avg_yield_g! }) }}
+                  </template>
+                </span>
+                <span
+                  v-else
+                  class="rating none"
+                >{{ t('strains.noRating') }}</span>
+              </span>
+            </NuxtLink>
+          </li>
+        </ul>
+
+        <ul
+          v-if="loading"
+          class="grid"
+          aria-hidden="true"
+        >
+          <li
+            v-for="i in strains.length ? 2 : 6"
+            :key="i"
+            class="card strain sk-card"
+          >
+            <span class="thumb sk" />
+            <span class="meta">
+              <span class="sk sk-line" />
+              <span class="sk sk-line short" />
+            </span>
+          </li>
+        </ul>
+
+        <button
+          v-else-if="error"
+          type="button"
+          class="btn btn-ghost"
+          @click="loadPage()"
+        >
+          <UIcon name="i-tabler-refresh" /> {{ t('strains.retry') }}
+        </button>
+
+        <div
+          v-else-if="done"
+          class="end"
+        >
+          <p>{{ t('strains.suggestText') }}</p>
+          <button
+            type="button"
+            class="btn btn-soft"
+            @click="suggest"
+          >
+            <UIcon name="i-tabler-plus" /> {{ t('strains.suggest') }}
+          </button>
+        </div>
+      </div>
+      <div
+        ref="sentinel"
+        aria-hidden="true"
+      />
+    </div>
+
+    <CommunityStrainSuggestSheet
+      v-model:open="suggestOpen"
+      :initial-name="query"
+    />
+  </div>
+</template>
+
+<style scoped>
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: -12px;
+}
+
+.search {
+  position: relative;
+  display: block;
+}
+
+.search .input {
+  padding-left: 42px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.filter-row {
+  margin: 0 -20px;
+  padding: 0 20px 2px;
+}
+
+.filter-row .chip {
+  min-height: 44px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.divider {
+  flex-shrink: 0;
+  width: 1px;
+  margin: 8px 4px;
+  background: var(--line-strong);
+}
+
+.grid-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.strain {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  color: var(--text);
+  text-decoration: none;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.strain:active {
+  transform: scale(0.98);
+}
+
+.thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background:
+    radial-gradient(80% 70% at 50% 0%, color-mix(in srgb, currentColor 14%, transparent), transparent 70%),
+    #0b0d10;
+}
+
+.thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-out);
+}
+
+.thumb.loaded img {
+  opacity: 1;
+}
+
+.placeholder {
+  font-size: 44px;
+  opacity: 0.85;
+}
+
+.auto {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  color: var(--lamp);
+  background: color-mix(in srgb, var(--lamp) 14%, rgba(7, 8, 10, 0.72));
+  backdrop-filter: blur(6px);
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  padding: 10px 12px 12px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breeder {
+  color: var(--text-3);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fact.lamp {
+  color: var(--lamp);
+}
+
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.rating .iconify {
+  color: var(--lamp);
+}
+
+.rating.none {
+  color: var(--text-3);
+}
+
+.sk {
+  display: block;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.sk-line {
+  height: 12px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.sk-line.short {
+  width: 60%;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px 0;
+  text-align: center;
+}
+
+.end p {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 13px;
+}
+</style>

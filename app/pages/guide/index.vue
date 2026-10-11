@@ -248,6 +248,15 @@ const TOOL_LINKS = [
             <GrowIcon name="tools" />
             {{ t('guide.hub.tools') }}
           </h2>
+          <NuxtLink
+            to="/tools"
+            class="link"
+          >
+            {{ t('common.viewAll') }} <UIcon
+              name="i-tabler-chevron-right"
+              class="size-4"
+            />
+          </NuxtLink>
         </div>
         <div class="chips">
           <NuxtLink

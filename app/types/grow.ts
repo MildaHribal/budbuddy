@@ -51,6 +51,14 @@ export interface Plant {
   archived: boolean
   createdAt: string
   updatedAt: string
+  /** set while the plant is shared to the community */
+  sharing?: PlantSharing | null
+}
+
+export interface PlantSharing {
+  /** public_plants.id */
+  publicId: string
+  syncedAt: string
 }
 
 export type EntryType
