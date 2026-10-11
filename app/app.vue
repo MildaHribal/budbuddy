@@ -15,7 +15,10 @@ useHead({
     { property: 'og:description', content: 'Track every plant from seed to jar.' },
     { property: 'og:type', content: 'website' }
   ],
-  link: [{ rel: 'icon', type: 'image/webp', href: '/icon.webp' }]
+  link: [
+    { rel: 'icon', type: 'image/webp', href: '/icon.webp' },
+    { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }
+  ]
 })
 </script>
 
@@ -42,11 +45,13 @@ useHead({
           role="status"
           :aria-label="t('common.loading')"
         >
-          <GrowIcon
-            name="vegetative"
-            draw
-            class="splash-leaf"
-          />
+          <img
+            src="/icon.webp"
+            alt=""
+            width="104"
+            height="104"
+            class="splash-logo"
+          >
           <span>BudBuddy</span>
         </div>
       </Transition>
@@ -166,9 +171,9 @@ useHead({
   letter-spacing: -0.02em;
 }
 
-.splash-leaf {
-  font-size: 72px;
-  color: var(--leaf);
+.splash-logo {
+  border-radius: 26px;
+  box-shadow: 0 0 60px rgba(255, 210, 138, 0.18);
 }
 
 .load-error {
