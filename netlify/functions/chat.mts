@@ -1,6 +1,6 @@
 // AI proxy: validates the app's Gemini request and streams the answer back.
 // The key comes only from the GEMINI_API_KEY env var.
-import { AI_GENERATION, isAllowedModel } from '../../shared/aiModels'
+import { AI_GENERATION, AI_MODEL, isAllowedModel } from '../../shared/aiModels'
 
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models'
 const MAX_BODY_BYTES = 6_000_000
@@ -54,7 +54,8 @@ export interface GeminiBody {
 export function validateChatRequest(raw: unknown): { model: string, body: GeminiBody } | { error: string } {
   if (!raw || typeof raw !== 'object') return { error: 'Body must be a JSON object.' }
   const r = raw as Record<string, unknown>
-  if (!isAllowedModel(r.model)) return { error: 'Model is not allowed.' }
+  // older app builds still ask for the previous model; serve them with the current one
+  if (!isAllowedModel(r.model) && r.model !== 'gemini-3.8-flash') return { error: 'Model is not allowed.' }
 
   if (!Array.isArray(r.contents) || !r.contents.length || r.contents.length > MAX_CONTENTS) return { error: 'Invalid contents.' }
   let images = 0
@@ -92,7 +93,7 @@ export function validateChatRequest(raw: unknown): { model: string, body: Gemini
   body.generationConfig.maxOutputTokens = clamp(gen.maxOutputTokens, 64, AI_GENERATION.maxOutputTokens, AI_GENERATION.defaultOutputTokens)
   if (typeof gen.temperature === 'number' && gen.temperature >= 0 && gen.temperature <= 2) body.generationConfig.temperature = gen.temperature
 
-  return { model: r.model, body }
+  return { model: AI_MODEL, body }
 }
 
 interface UpstreamError {
