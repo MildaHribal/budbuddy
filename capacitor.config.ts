@@ -10,9 +10,9 @@ const config: CapacitorConfig = {
     adjustMarginsForEdgeToEdge: 'force'
   },
   plugins: {
-    // we lift the UI ourselves via --kb (see plugins/keyboard.client.ts)
+    // Android shrinks the WebView above the keyboard, so pages need no layout tricks
     Keyboard: {
-      resize: 'none'
+      resizeOnFullScreen: true
     },
     LocalNotifications: {
       smallIcon: 'ic_stat_budbuddy',

@@ -1,5 +1,4 @@
 import { Capacitor } from '@capacitor/core'
-import { Keyboard } from '@capacitor/keyboard'
 
 // Exposes the on-screen keyboard as --kb (px) and .kb-open on <html>.
 export default defineNuxtPlugin(() => {
@@ -10,12 +9,9 @@ export default defineNuxtPlugin(() => {
     root.classList.toggle('kb-open', px > 80)
   }
 
-  if (Capacitor.isNativePlatform()) {
-    Keyboard.addListener('keyboardWillShow', e => set(e.keyboardHeight))
-    Keyboard.addListener('keyboardDidShow', e => set(e.keyboardHeight))
-    Keyboard.addListener('keyboardWillHide', () => set(0))
-    return
-  }
+  // Android resizes the WebView natively (resizeOnFullScreen); restyling the page while the
+  // keyboard opens made the WebView drop focus and close it again, so do nothing there.
+  if (Capacitor.isNativePlatform()) return
 
   // Web: the visual viewport shrinks when a mobile keyboard opens.
   const vv = window.visualViewport
