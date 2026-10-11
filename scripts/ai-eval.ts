@@ -100,7 +100,7 @@ const CASES: Case[] = [
 const only = process.env.EVAL_ONLY?.split(',')
 const provider = createProxyProvider({ url: ENDPOINT })
 const answers = new Map<string, HistoryTurn[]>()
-const out: string[] = [`# AI eval ${new Date().toISOString()} · upstream ${LIVE ? `live ${LIVE}` : MODEL ?? 'gemini-3.8-flash'} · KB ${kbReady ? 'on' : 'off'}`, '']
+const out: string[] = [`# AI eval ${new Date().toISOString()} · upstream ${LIVE ? `live ${LIVE}` : MODEL ?? 'gemini-3.5-flash'} · KB ${kbReady ? 'on' : 'off'}`, '']
 const rows: string[] = []
 
 for (const c of CASES) {

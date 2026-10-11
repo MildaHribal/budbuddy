@@ -1,5 +1,5 @@
 // The one model the app uses; the Netlify proxy accepts nothing else.
-export const AI_MODEL = 'gemini-3.8-flash'
+export const AI_MODEL = 'gemini-3.5-flash'
 
 // Enforced by the proxy. No thinking: ~2.5 s instead of ~9 s (low) for a short answer.
 export const AI_GENERATION = {

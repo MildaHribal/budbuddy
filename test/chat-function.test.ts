@@ -3,7 +3,7 @@ import handler, { validateChatRequest } from '../netlify/functions/chat.mts'
 
 const URL = 'https://example.netlify.app/api/chat'
 const valid = {
-  model: 'gemini-3.8-flash',
+  model: 'gemini-3.5-flash',
   systemInstruction: { parts: [{ text: 'sys' }] },
   contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/jpeg', data: 'AAAA' } }, { text: 'Ahoj' }] }],
   generationConfig: { maxOutputTokens: 999_999, temperature: 0.5 }
@@ -80,7 +80,7 @@ describe('chat function', () => {
     expect(res.headers.get('content-type')).toContain('text/event-stream')
     expect(await res.text()).toContain('"Ahoj"')
     const [url, init] = fetchMock.mock.calls[0]!
-    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent?alt=sse')
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse')
     expect(init.headers['x-goog-api-key']).toBe('test-key')
     expect(url).not.toContain('test-key')
   })

@@ -170,15 +170,26 @@ export default async (req: Request): Promise<Response> => {
   let first: Uint8Array | null = null
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
   try {
-    const upstream = await fetch(`${GEMINI}/${checked.model}:streamGenerateContent?alt=sse`, {
+    const call = (body: GeminiBody) => fetch(`${GEMINI}/${checked.model}:streamGenerateContent?alt=sse`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify(checked.body),
+      body: JSON.stringify(body),
       signal
     })
+    let upstream = await call(checked.body)
+    let data: UpstreamError | null = null
+    if (upstream.status === 400) {
+      data = await upstream.json().catch(() => null) as UpstreamError | null
+      // models that can't switch thinking off reject the config; retry with the model's default
+      if (/thinking/i.test(data?.error?.message ?? '')) {
+        const { thinkingConfig: _, ...generationConfig } = checked.body.generationConfig
+        upstream = await call({ ...checked.body, generationConfig } as GeminiBody)
+        data = null
+      }
+    }
     console.log(`[chat] upstream ${upstream.status} after ${Date.now() - started} ms`)
     if (!upstream.ok || !upstream.body) {
-      const data = await upstream.json().catch(() => null) as UpstreamError | null
+      data ??= await upstream.json().catch(() => null) as UpstreamError | null
       first = event(upstreamError(upstream.status, data))
     } else {
       reader = upstream.body.getReader()

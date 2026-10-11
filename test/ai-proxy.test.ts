@@ -52,14 +52,14 @@ describe('proxy provider', () => {
   it('explains the daily free quota with the local reset time', () => {
     const daily = proxyError(429, { error: { reason: 'quota', daily: true, limit: 20 } }, 'm')
     expect(daily.code).toBe('quota')
-    expect(daily.message).toMatch(/^Denní limit bezplatné AI \(20 dotazů\) je vyčerpaný, obnoví se (dnes|zítra) kolem \d{1,2}:00\.$/)
+    expect(daily.message).toMatch(/^Denní limit AI \(20 dotazů\) je vyčerpaný, obnoví se (dnes|zítra) kolem \d{1,2}:00\.$/)
     // 07:00 UTC is 00:00 PDT -> the reset is 24 h later; 06:00 UTC is 23:00 PDT -> one hour later
     const tz = (d: Date) => `${String(d.getHours())}:00`
     expect(quotaResetLabel(new Date(Date.UTC(2026, 9, 11, 6, 0)))).toContain(tz(new Date(Date.UTC(2026, 9, 11, 7, 0))))
   })
 
   it('turns a late in-stream quota error into the daily-limit message', () => {
-    expect(() => applyChunk({ text: '' }, { budbuddy: { error: { reason: 'quota', message: '', daily: true, limit: 20 } } })).toThrow(/Denní limit bezplatné AI \(20 dotazů\)/)
+    expect(() => applyChunk({ text: '' }, { budbuddy: { error: { reason: 'quota', message: '', daily: true, limit: 20 } } })).toThrow(/Denní limit AI \(20 dotazů\)/)
   })
 
   it('shows why an answer came back empty', () => {
