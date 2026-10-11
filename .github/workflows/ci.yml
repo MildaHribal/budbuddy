@@ -95,15 +95,22 @@ jobs:
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
 
+      - name: Name the installable APK
+        run: |
+          mkdir -p dist-release
+          if [ -n "$KEYSTORE_PATH" ] && [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk "dist-release/BudBuddy-v${{ steps.package_version.outputs.VERSION }}.apk"
+          else
+            echo "::warning::No signing key – publishing the debug APK instead."
+            cp android/app/build/outputs/apk/debug/app-debug.apk "dist-release/BudBuddy-v${{ steps.package_version.outputs.VERSION }}-debug.apk"
+          fi
+
       - uses: softprops/action-gh-release@v2
         with:
-          files: |
-            android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+          files: dist-release/*.apk
           tag_name: build-v${{ steps.package_version.outputs.VERSION }}-${{ github.run_number }}
           body: |
-            📱 **BudBuddy ${{ steps.package_version.outputs.VERSION }}** — automated Android build.
+            📱 **BudBuddy ${{ steps.package_version.outputs.VERSION }}**
 
-            Install `app-debug.apk` below on your Android device (`app-release.apk` is signed only when the keystore secrets are set).
+            Download the `.apk` below and open it on your Android phone to install.
             Commit: ${{ github.sha }}
