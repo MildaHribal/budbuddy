@@ -14,6 +14,10 @@ describe('parseAnswer', () => {
     expect(parseAnswer('a < b').text).toBe('a < b')
   })
 
+  it('allows > inside a reply', () => {
+    expect(parseAnswer('Otázka?\n<<reply: nízké pH | vysoké pH (>7)>>')).toEqual({ text: 'Otázka?', replies: ['nízké pH', 'vysoké pH (>7)'], photo: false })
+  })
+
   it('leaves ordinary text alone', () => {
     expect(parseAnswer('pH 6,2–6,8 [1].')).toEqual({ text: 'pH 6,2–6,8 [1].', replies: [], photo: false })
   })

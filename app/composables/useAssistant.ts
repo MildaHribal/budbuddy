@@ -7,7 +7,8 @@ import type { KbHit } from '~/ai/kb'
 import { LlmError, type LlmErrorCode } from '~/ai/llm'
 import { translate } from '~/composables/useI18n'
 import { parseAnswer } from '~/ai/markers'
-import { buildKbQuery, buildTurnText, isSmallTalk, prepareHistory, selectPassages, summarizePlant, systemInstruction, type HistoryTurn } from '~/ai/prompt'
+import { buildKbQuery, buildTurnText, isSmallTalk, prepareHistory, selectPassages, summarizePlant, systemInstruction, wantsLongAnswer, type HistoryTurn } from '~/ai/prompt'
+import { AI_GENERATION } from '../../shared/aiModels'
 import { createId } from '~/utils/id'
 import { locale } from '~/utils/locale'
 import { blobToDataUrl, compressImage } from '~/utils/image'
@@ -176,7 +177,7 @@ async function ask({ threadKey, question, file = null }: AskInput) {
     let prepared: Blob | null = null
     if (file) {
       try {
-        prepared = await compressImage(file, 1024, 0.85)
+        prepared = await compressImage(file, 768, 0.85)
         const thumb = await compressImage(file, 320, 0.7)
         userMsg.thumb = await blobToDataUrl(thumb)
         const dataUrl = await blobToDataUrl(prepared)
@@ -232,6 +233,7 @@ async function ask({ threadKey, question, file = null }: AskInput) {
         kbAvailable: kbState.value === 'ready'
       }),
       image,
+      maxOutputTokens: wantsLongAnswer(question) ? AI_GENERATION.maxOutputTokens : undefined,
       signal,
       onText: (text) => {
         reply.text = parseAnswer(text).text

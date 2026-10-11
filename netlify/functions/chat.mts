@@ -47,7 +47,7 @@ interface Part {
 export interface GeminiBody {
   systemInstruction?: { parts: { text: string }[] }
   contents: { role: 'user' | 'model', parts: Part[] }[]
-  generationConfig: { maxOutputTokens: number, temperature?: number, thinkingConfig: { thinkingBudget: number } }
+  generationConfig: { maxOutputTokens: number, temperature?: number, thinkingConfig: { thinkingBudget: number }, mediaResolution?: string }
 }
 
 /** Rebuilds the request from allowed fields only. */
@@ -92,6 +92,7 @@ export function validateChatRequest(raw: unknown): { model: string, body: Gemini
   const gen = (r.generationConfig ?? {}) as Record<string, unknown>
   body.generationConfig.maxOutputTokens = clamp(gen.maxOutputTokens, 64, AI_GENERATION.maxOutputTokens, AI_GENERATION.defaultOutputTokens)
   if (typeof gen.temperature === 'number' && gen.temperature >= 0 && gen.temperature <= 2) body.generationConfig.temperature = gen.temperature
+  if (images) body.generationConfig.mediaResolution = AI_GENERATION.mediaResolution
 
   return { model: AI_MODEL, body }
 }

@@ -18,6 +18,8 @@ export interface LlmRequest {
   /** includes plant context, diagnosis and numbered passages */
   userText: string
   image?: LlmImage | null
+  /** default is the server's short limit */
+  maxOutputTokens?: number
   signal?: AbortSignal
   onText?: (text: string) => void
 }

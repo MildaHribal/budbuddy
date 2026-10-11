@@ -166,7 +166,8 @@ export function createProxyProvider(endpoint: ProxyEndpoint): LlmProvider {
         body: JSON.stringify({
           model: AI_MODEL,
           systemInstruction: { parts: [{ text: req.system }] },
-          contents: toGeminiContents(req.history, req.userText, req.image)
+          contents: toGeminiContents(req.history, req.userText, req.image),
+          ...(req.maxOutputTokens ? { generationConfig: { maxOutputTokens: req.maxOutputTokens } } : {})
         }),
         signal: req.signal
       })

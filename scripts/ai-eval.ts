@@ -1,7 +1,7 @@
 // Runs eval prompts through the real assistant pipeline: on-device KB search, prompt builder,
 // client provider and the Netlify proxy handler (called in-process, not deployed).
-// Usage: GEMINI_API_KEY=… [EVAL_MODEL=gemini-2.5-flash] [EVAL_ONLY=id,id] [EVAL_OUT=file.md] [EVAL_ENDPOINT=https://…/api/chat] \
-//   npx vite-node --config vitest.config.ts scripts/ai-eval.ts
+// Usage: GEMINI_API_KEY=… [EVAL_MODEL=…] [EVAL_ONLY=id,id] [EVAL_OUT=file.md] [EVAL_ENDPOINT=https://…/api/chat]
+//   [EVAL_PHOTOS=dir with <name>.jpg] [EVAL_MEDIA=MEDIA_RESOLUTION_LOW] npx vite-node --config vitest.config.ts scripts/ai-eval.ts
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import handler from '../netlify/functions/chat.mts'
@@ -15,11 +15,14 @@ import type { JournalEntry, Plant } from '~/types/grow'
 import { addDays, todayISO } from '~/utils/date'
 import { blankEntry } from '~/utils/entries'
 import { locale, type Locale } from '~/utils/locale'
+import type { DiagResult } from '~/ai/diagnose'
 
 const ENDPOINT = 'https://eval.local/api/chat'
 const MODEL = process.env.EVAL_MODEL
 const LIVE = process.env.EVAL_ENDPOINT
 const root = process.cwd()
+let usage: Record<string, unknown> = {}
+let usageDone: Promise<void> = Promise.resolve()
 
 // Route the provider to the in-process handler; optionally swap the upstream model (quota-friendly testing).
 const realFetch = globalThis.fetch
@@ -31,10 +34,26 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     return realFetch(LIVE, { ...init, body: JSON.stringify(body), headers: { ...init?.headers as Record<string, string>, Origin: 'https://localhost' } })
   }
   if (url === ENDPOINT) return handler(new Request(url, { ...init, headers: { ...init?.headers as Record<string, string>, Origin: 'https://localhost' } }))
-  if (MODEL && url.startsWith('https://generativelanguage.googleapis.com/')) {
+  if (url.startsWith('https://generativelanguage.googleapis.com/')) {
     const body = JSON.parse(String(init?.body))
-    if (MODEL.includes('lite')) delete body.generationConfig.thinkingConfig
-    return realFetch(url.replace(/models\/[^:]+:/, `models/${MODEL}:`), { ...init, body: JSON.stringify(body) })
+    if (MODEL?.includes('lite')) delete body.generationConfig.thinkingConfig
+    if (process.env.EVAL_MEDIA) body.generationConfig.mediaResolution = process.env.EVAL_MEDIA
+    const res = await realFetch(MODEL ? url.replace(/models\/[^:]+:/, `models/${MODEL}:`) : url, { ...init, body: JSON.stringify(body) })
+    if (!res.ok || !res.body) return res
+    // Tee the SSE stream to read usageMetadata from the last chunk.
+    const [mine, theirs] = res.body.tee()
+    usageDone = new Response(theirs).text().then((raw) => {
+      for (const line of raw.split('\n')) {
+        if (!line.startsWith('data:')) continue
+        try {
+          const chunk = JSON.parse(line.slice(5))
+          if (chunk.usageMetadata) usage = chunk.usageMetadata
+        } catch {
+          // partial line
+        }
+      }
+    })
+    return new Response(mine, { status: res.status, headers: res.headers })
   }
   return realFetch(input, init)
 }) as typeof fetch
@@ -73,10 +92,27 @@ const entries = [
   entry(2, { type: 'measure', tempC: 25, humidity: 55, heightCm: 70 })
 ]
 
-interface Case { id: string, q: string, lang?: Locale, plant?: boolean, after?: string }
+interface Case { id: string, q: string, lang?: Locale, plant?: boolean, after?: string, photo?: string, diag?: DiagResult, history?: HistoryTurn[] }
+const diagMg: DiagResult = {
+  diag: [{ cls: 'mg_def', label: 'Nedostatek hořčíku (Mg)', p: 0.68, evidence: 'tested' }, { cls: 'fe_def', label: 'Nedostatek železa (Fe)', p: 0.2, evidence: 'weak' }, { cls: 'mn_def', label: 'Nedostatek manganu (Mn)', p: 0.11, evidence: 'tested' }],
+  stage: [{ cls: 'veg', label: 'Vegetativní růst', p: 0.7 }],
+  unsupported: ['Stres z chladu', 'Spálení živinami (přehnojení)'],
+  modelVersion: 'diag-1'
+}
+const diagMites: DiagResult = { ...diagMg, diag: [{ cls: 'spider_mites', label: 'Svilušky', p: 0.99, evidence: 'tested' }, { cls: 'mealybugs', label: 'Červci (vlnatky)', p: 0.004, evidence: 'tested' }, { cls: 'underwater', label: 'Nedostatečná zálivka (sucho)', p: 0.002, evidence: 'weak' }] }
+// Four earlier exchanges as they are stored (markers stripped, citations kept).
+const longHistory: HistoryTurn[] = [
+  ['jaké pH držet v hlíně?', 'V hlíně drž pH zálivky 6,2–6,8 [1].\n\n- pH upravuj až po přidání hnojiv [2].\n- V organické hlíně stačí měřit vodu a 1–2× za cyklus udělat test substrátu [3].\n- Vyhni se prudkým korekcím, rostlinu stresují [5].\n- pH pod 6,0 vede k nedostatku vápníku a hořčíku [1].'],
+  ['a jakou EC?', 'Ve 4. týdnu květu u autoflower v hlíně stačí EC zálivky kolem 1,2–1,6 mS/cm [2].\n\n- Tvoje poslední hodnota 1,4 je v pořádku.\n- Měř i EC výtoku: když je o víc než 0,5 vyšší než vstup, hromadí se soli [4].\n- Organická hnojiva ukazují nižší EC, než odpovídá živinám v substrátu [3].\n- Ke konci květu EC postupně snižuj [6].'],
+  ['jak často zalévat?', 'Zalévej podle substrátu, ne podle kalendáře [1].\n\n- Zalij, až je horních 2–3 cm suchých a květináč znatelně zlehkne [1].\n- Dávej tolik, aby odteklo 10–20 % [3].\n- V 11 L květináči v květu to bývá každé 2–3 dny.\n- Přelévání škodí víc než mírné proschnutí [2].'],
+  ['co teplota v noci?', 'V noci drž 18–22 °C, maximálně o 5–8 °C méně než ve dne [2].\n\n- Větší rozdíl v pozdním květu může zvýraznit fialové zbarvení, ale zpomaluje růst [3].\n- Pod 15 °C hrozí stres z chladu [1].\n- Při zhasnutí stoupne vlhkost – větrej, ať nekondenzuje voda na palicích [4].']
+].flatMap(([q, a]) => [{ role: 'user' as const, text: q! }, { role: 'assistant' as const, text: a! }])
+
 const CASES: Case[] = [
+  { id: 'greeting', q: 'ahoj' },
   { id: 'vague-yellow', q: 'co znamená, když má rostlina žluté listy?', plant: true },
   { id: 'followup', q: 'jen špičky, hlavně staré listy dole', plant: true, after: 'vague-yellow' },
+  { id: 'history-followup', q: 'a kdy mám začít splachovat?', plant: true, history: longHistory },
   { id: 'vague-spots', q: 'listy mají hnědé skvrny', plant: true },
   { id: 'ph-soil', q: 'jaké pH držet v hlíně?' },
   { id: 'rh-week6', q: 'jaká má být vlhkost vzduchu v 6. týdnu květu?' },
@@ -85,7 +121,9 @@ const CASES: Case[] = [
   { id: 'chart-unknown', q: 'kolik hnojiva Plagron Terra Bloom v 5. týdnu květu?' },
   { id: 'legal', q: 'kolik rostlin můžu legálně pěstovat?' },
   { id: 'harvest', q: 'jak poznám, kdy sklízet?', plant: true },
-  { id: 'greeting', q: 'ahoj' },
+  { id: 'photo-mg', q: 'co je s tímhle listem?', plant: true, photo: 'mg', diag: diagMg },
+  { id: 'photo-mites', q: 'co to je za tečky?', plant: true, photo: 'mites', diag: diagMites },
+  { id: 'photo-n', q: '', plant: true, photo: 'n' },
   { id: 'thanks', q: 'díky moc!' },
   { id: 'how-are-you', q: 'jak se máš?' },
   { id: 'math', q: 'kolik je 2+2?' },
@@ -104,12 +142,13 @@ const out: string[] = [`# AI eval ${new Date().toISOString()} · upstream ${LIVE
 const rows: string[] = []
 
 for (const c of CASES) {
-  if (only && !only.includes(c.id) && !only.includes(c.after ?? '')) continue
+  if (only && !only.includes(c.id)) continue
   locale.value = c.lang ?? 'cs'
-  const history = c.after ? answers.get(c.after) ?? [] : []
-  let passages: KbHit[] | null = isSmallTalk(c.q) ? null : []
-  if (passages && kbReady) passages = selectPassages(await searchKb(buildKbQuery(c.q), 12))
-  const userText = buildTurnText({ question: c.q, plantContext: c.plant ? summarizePlant({ plant, entries, light: { lightsOn: '06:00', lightHours: 12 } }) : null, passages, kbAvailable: kbReady })
+  const history = c.history ?? (c.after ? answers.get(c.after) ?? [] : [])
+  let passages: KbHit[] | null = !c.photo && isSmallTalk(c.q) ? null : []
+  if (passages && kbReady) passages = selectPassages(await searchKb(buildKbQuery(c.q, c.diag), 12))
+  const userText = buildTurnText({ question: c.q, plantContext: c.plant ? summarizePlant({ plant, entries, light: { lightsOn: '06:00', lightHours: 12 } }) : null, diagnosis: c.diag, photoWithoutClassifier: !!c.photo && !c.diag, passages, kbAvailable: kbReady })
+  const image = c.photo && process.env.EVAL_PHOTOS ? { mimeType: 'image/jpeg', base64: (await readFile(resolve(process.env.EVAL_PHOTOS, `${c.photo}.jpg`))).toString('base64') } : null
   let t0 = performance.now()
   let ttft = 0
   let text = ''
@@ -123,6 +162,7 @@ for (const c of CASES) {
         system: systemInstruction(),
         history: prepareHistory(history),
         userText,
+        image,
         onText: () => {
           ttft ||= performance.now() - t0
         }
@@ -137,16 +177,20 @@ for (const c of CASES) {
     }
   }
   const total = performance.now() - t0
+  await usageDone
+  const u = usage as { promptTokenCount?: number, candidatesTokenCount?: number, cachedContentTokenCount?: number, thoughtsTokenCount?: number, promptTokensDetails?: { modality: string, tokenCount: number }[] }
+  const imageTokens = u.promptTokensDetails?.find(d => d.modality === 'IMAGE')?.tokenCount ?? 0
+  usage = {}
   const parsed = parseAnswer(text)
   answers.set(c.id, [...history, { role: 'user', text: c.q }, { role: 'assistant', text: parsed.text }])
   const cites = citedNumbers(parsed.text)
   const words = parsed.text.split(/\s+/).filter(Boolean).length
-  rows.push(`| ${c.id} | ${(ttft / 1000).toFixed(1)} | ${(total / 1000).toFixed(1)} | ${userText.length} | ${words} | ${cites.join(',') || '–'} | ${parsed.replies.length} | ${parsed.photo ? 'yes' : ''} | ${error ? 'ERROR' : ''} |`)
-  out.push(`## ${c.id} (${locale.value}${c.plant ? ', plant' : ''}${c.after ? `, after ${c.after}` : ''})`, `**Q:** ${c.q}`, '')
+  rows.push(`| ${c.id} | ${(ttft / 1000).toFixed(1)} | ${(total / 1000).toFixed(1)} | ${u.promptTokenCount ?? '–'} | ${imageTokens || ''} | ${u.cachedContentTokenCount ?? ''} | ${u.candidatesTokenCount ?? '–'} | ${u.thoughtsTokenCount ?? ''} | ${words} | ${cites.join(',') || '–'} | ${parsed.replies.length} | ${parsed.photo ? 'yes' : ''} | ${error ? 'ERROR' : ''} |`)
+  out.push(`## ${c.id} (${locale.value}${c.plant ? ', plant' : ''}${c.after ? `, after ${c.after}` : ''}${c.photo ? `, photo ${c.photo}` : ''})`, `**Q:** ${c.q}`, '')
   out.push(error ? `**ERROR:** ${error}` : parsed.text, '')
   if (parsed.replies.length || parsed.photo) out.push(`_replies:_ ${parsed.replies.join(' | ')}${parsed.photo ? ' · photo requested' : ''}`, '')
   console.log(rows[rows.length - 1])
 }
 
-out.splice(2, 0, '| case | ttft s | total s | input chars | words | cites | replies | photo | err |', '|---|---|---|---|---|---|---|---|---|', ...rows, '')
+out.splice(2, 0, '| case | ttft s | total s | in tok | img tok | cached | out tok | think | words | cites | replies | photo | err |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|', ...rows, '')
 if (process.env.EVAL_OUT) await writeFile(process.env.EVAL_OUT, out.join('\n'))

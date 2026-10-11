@@ -19,14 +19,16 @@ describe('validateChatRequest', () => {
     const r = validateChatRequest({ ...valid, tools: [{ googleSearch: {} }] })
     expect('error' in r).toBe(false)
     if ('error' in r) return
-    expect(r.body.generationConfig).toEqual({ maxOutputTokens: 2048, temperature: 0.5, thinkingConfig: { thinkingBudget: 0 } })
+    expect(r.body.generationConfig).toEqual({ maxOutputTokens: 2048, temperature: 0.5, thinkingConfig: { thinkingBudget: 0 }, mediaResolution: 'MEDIA_RESOLUTION_MEDIUM' })
+    const text = validateChatRequest({ ...valid, contents: [{ role: 'user', parts: [{ text: 'ahoj' }] }], generationConfig: undefined })
+    expect('error' in text ? null : text.body.generationConfig).toEqual({ maxOutputTokens: 900, thinkingConfig: { thinkingBudget: 0 } })
     expect(r.body).not.toHaveProperty('tools')
   })
 
   it('rejects unknown models and malformed contents', () => {
     expect(validateChatRequest({ ...valid, model: 'gemini-flash-latest' })).toEqual({ error: 'Model is not allowed.' })
     const thinking = validateChatRequest({ ...valid, generationConfig: { thinkingConfig: { thinkingBudget: 2048 } } })
-    expect('error' in thinking ? null : thinking.body.generationConfig).toEqual({ maxOutputTokens: 1536, thinkingConfig: { thinkingBudget: 0 } })
+    expect('error' in thinking ? null : thinking.body.generationConfig).toEqual({ maxOutputTokens: 900, thinkingConfig: { thinkingBudget: 0 }, mediaResolution: 'MEDIA_RESOLUTION_MEDIUM' })
     expect(validateChatRequest({ ...valid, contents: [] })).toHaveProperty('error')
     expect(validateChatRequest({ ...valid, contents: [{ role: 'system', parts: [{ text: 'x' }] }] })).toHaveProperty('error')
     expect(validateChatRequest({ ...valid, contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'text/html', data: 'AAAA' } }] }] })).toHaveProperty('error')

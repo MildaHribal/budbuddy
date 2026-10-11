@@ -6,7 +6,7 @@ export interface ParsedAnswer {
   photo: boolean
 }
 
-const REPLY = /<<\s*reply\s*:([^<>]*)>>/gi
+const REPLY = /<<\s*reply\s*:([\s\S]*?)>>/gi
 const PHOTO = /<<\s*photo\s*>>/gi
 const MAX_REPLIES = 4
 const MAX_REPLY_LENGTH = 60
