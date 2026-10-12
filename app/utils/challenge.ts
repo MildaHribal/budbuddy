@@ -12,6 +12,7 @@ export interface Challenge {
   starts_at: string
   ends_at: string
   voting_ends_at: string
+  finalized_at?: string | null
   created_at?: string
 }
 

@@ -7,6 +7,8 @@ import { blankEntry } from '~/utils/entries'
 import { createId } from '~/utils/id'
 import { blobToDataUrl, compressImage, dataUrlToBlob } from '~/utils/image'
 import { photoStore, type StoredPhoto } from '~/utils/photoStore'
+import { wateringBase } from '~/utils/reminders'
+import { isGrowing } from '~/utils/stages'
 import { resetPhotoUrls, THUMB_SUFFIX } from './useUi'
 import { emptyData, migrateLegacy, normalizeData, normalizePlant, type LegacyInput } from '~/utils/schema'
 
@@ -38,7 +40,13 @@ function scheduleSave() {
   }, 250)
 }
 
+let dataEpoch = 0
+let demoSeed: Promise<void> | null = null
+let demoSeedDue = false
+
 function replaceState(data: GrowData) {
+  dataEpoch++
+  demoSeedDue = false
   resetPhotoUrls()
   state.plants = data.plants
   state.entries = data.entries
@@ -128,11 +136,26 @@ async function load() {
   seedDemoInBackground()
 }
 
-/** Copies the bundled demo photos into the store without blocking boot; until then photoUrl() serves the bundled files. */
-function seedDemoInBackground() {
-  import('~/utils/demoPhotos')
-    .then(m => m.seedDemoPhotos(state))
+function seedDemoNow(): Promise<void> {
+  demoSeedDue = false
+  const epoch = dataEpoch
+  demoSeed ??= import('~/utils/demoPhotos')
+    .then(m => m.seedDemoPhotos(state, () => epoch === dataEpoch))
     .catch(e => console.warn('[BudBuddy] demo photos not seeded', e))
+    .finally(() => (demoSeed = null))
+  return demoSeed
+}
+
+/**
+ * Copies the bundled demo photos into the store once the app is idle; until then photoUrl() serves the bundled files.
+ * On first run ~750 KB of photos would otherwise compete with the boot on a slow connection.
+ */
+function seedDemoInBackground(delay = 4000) {
+  demoSeedDue = true
+  const run = () => {
+    if (demoSeedDue) seedDemoNow()
+  }
+  setTimeout(() => ('requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 5000 }) : run()), delay)
 }
 
 export function initGrow() {
@@ -285,9 +308,10 @@ export interface WateringStatus {
 }
 
 function wateringStatus(plant: Plant, today = todayISO()): WateringStatus | null {
-  if (!plant.wateringInterval || plant.wateringInterval <= 0 || plant.archived) return null
+  // harvested plants (drying, curing) are not watered any more
+  if (!plant.wateringInterval || plant.wateringInterval <= 0 || !isGrowing(plant)) return null
   const last = lastEntryOf(plant.id, ['water', 'feed'])
-  const from = last?.date ?? plant.startDate
+  const from = wateringBase(plant.startDate, plant.createdAt, last?.date)
   const nextDate = addDays(from, plant.wateringInterval)
   return { lastDate: last?.date ?? null, nextDate, dueIn: daysBetween(today, nextDate) }
 }
@@ -338,6 +362,7 @@ function cleanupPhotos() {
  * in memory as one giant string (important in the Android WebView).
  */
 async function exportBackup(write: (chunk: string) => Promise<void>): Promise<{ photos: number }> {
+  if (demoSeedDue || demoSeed) await seedDemoNow()
   await collectGarbagePhotos()
   const data = JSON.parse(JSON.stringify(state)) as GrowData
   const head = JSON.stringify({ app: 'budbuddy', exportedAt: new Date().toISOString(), ...data })
@@ -398,7 +423,7 @@ async function loadDemo() {
   demo.guide = JSON.parse(JSON.stringify(state.guide))
   replaceState(demo)
   await writeNow()
-  seedDemoInBackground()
+  seedDemoInBackground(0)
 }
 
 export function useGrow() {

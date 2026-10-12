@@ -3,6 +3,7 @@
 
 <script setup lang="ts">
 import type { EntryType, JournalEntry, Plant, StageId, Task } from '~/types/grow'
+import { loadNamespaces } from '~/composables/useI18n'
 
 let settledOnce = false
 
@@ -15,11 +16,22 @@ const { state } = grow
 const { notify } = useNotify()
 
 const today = useToday()
+// community tips need the network; skipping them offline also avoids a failed chunk load
+const online = useOnline()
+// community tips sit below the fold and pull in supabase-js: load them only when scrolled near
+const tipsAnchor = ref<HTMLElement | null>(null)
+const tipsReady = ref(false)
+const { stop: stopTips } = useIntersectionObserver(tipsAnchor, ([e]) => {
+  if (!e?.isIntersecting) return
+  stopTips()
+  loadNamespaces(['tips', 'feed', 'report', 'profile']).then(() => (tipsReady.value = true), () => {})
+}, { rootMargin: '200px 0px' })
 
 const greeting = computed(() => {
   const h = new Date().getHours()
   const part = t(`home.greeting.${h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'}`)
-  const raw = state.settings.growerName.trim()
+  // greet by first name only; a full name wrapped the header over three lines
+  const raw = state.settings.growerName.trim().split(/\s+/)[0] ?? ''
   const name = raw ? (locale.value === 'cs' ? czechVocative(raw) : raw) : t('home.greeting.defaultName')
   return name ? t('home.greeting.line', { part, name }) : part
 })
@@ -241,6 +253,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </NuxtLink>
         <NuxtLink
           to="/settings"
+          prefetch-on="interaction"
           class="icon-btn dash-me"
           :aria-label="t('home.settings')"
         >
@@ -567,7 +580,12 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
       </section>
 
-      <LazyCommunityTopTips />
+      <div
+        ref="tipsAnchor"
+        class="tips-anchor"
+      >
+        <LazyCommunityTopTips v-if="online && tipsReady" />
+      </div>
 
       <NuxtLink
         to="/stats"
@@ -592,11 +610,13 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           <strong class="num">{{ entriesThisWeek }}</strong>
           <span>{{ t('home.stats.logs') }}</span>
         </span>
-        <span class="week-go">
-          {{ t('home.stats.go') }}
+        <span
+          class="week-go"
+          aria-hidden="true"
+        >
           <UIcon
             name="i-tabler-chevron-right"
-            class="size-4"
+            class="size-5"
           />
         </span>
       </NuxtLink>
@@ -1238,6 +1258,12 @@ h1 {
   text-decoration: none;
 }
 
+/* zero-size until the tips load, without adding a page gap */
+.tips-anchor:empty {
+  height: 0;
+  margin-top: -28px;
+}
+
 /* Week strip */
 .week {
   display: flex;
@@ -1261,12 +1287,6 @@ h1 {
   padding: 0 14px;
 }
 
-.week-health strong {
-  font-size: 17px;
-  white-space: normal;
-  line-height: 1.15;
-}
-
 .week-cell + .week-cell {
   border-left: 1px solid var(--line);
 }
@@ -1283,10 +1303,16 @@ h1 {
   text-overflow: ellipsis;
 }
 
-.week-cell:nth-child(2) strong {
+.week-health {
+  flex: 1.4;
+}
+
+.week-cell.week-health strong {
   font-size: 15px;
   font-weight: 500;
+  line-height: 1.15;
   min-height: 29px;
+  white-space: normal;
 }
 
 .health-dot {
@@ -1305,10 +1331,7 @@ h1 {
 .week-go {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding-left: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 0 6px 0 2px;
   color: var(--leaf);
 }
 

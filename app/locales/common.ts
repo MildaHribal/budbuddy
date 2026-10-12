@@ -23,7 +23,9 @@ export default {
     nav: { home: 'Home', plants: 'Plants', ai: 'AI', gallery: 'Gallery', guide: 'Guide', tools: 'Tools', community: 'Community', main: 'Main' },
     loading: 'Loading',
     loadError: 'Your data could not be loaded.',
-    loadErrorHint: 'Nothing was changed or overwritten – please restart the app.'
+    loadErrorHint: 'Nothing was changed or overwritten – please restart the app.',
+    notFound: { title: 'Page not found', text: 'This page does not exist. Maybe the link is old.', home: 'Back home' },
+    crash: { title: 'Something went wrong', text: 'Your journal is safe. Go back home and try again.', offline: 'You are offline and this page has not been loaded yet. Your journal works offline.' }
   },
   cs: {
     save: 'Uložit',
@@ -49,6 +51,8 @@ export default {
     nav: { home: 'Domů', plants: 'Rostliny', ai: 'AI', gallery: 'Galerie', guide: 'Průvodce', tools: 'Nástroje', community: 'Komunita', main: 'Hlavní' },
     loading: 'Načítání',
     loadError: 'Data se nepodařilo načíst.',
-    loadErrorHint: 'Nic se nezměnilo ani nepřepsalo – restartuj prosím aplikaci.'
+    loadErrorHint: 'Nic se nezměnilo ani nepřepsalo – restartuj prosím aplikaci.',
+    notFound: { title: 'Stránka nenalezena', text: 'Tahle stránka neexistuje. Možná je odkaz starý.', home: 'Zpět domů' },
+    crash: { title: 'Něco se pokazilo', text: 'Deník je v bezpečí. Vrať se domů a zkus to znovu.', offline: 'Jsi offline a tahle stránka se ještě nenačetla. Deník funguje i bez připojení.' }
   }
 }

@@ -1,10 +1,14 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { DiagResult } from '../app/ai/diagnose'
 import type { KbHit } from '../app/ai/kb'
-import { buildKbQuery, buildTurnText, citedNumbers, describeLight, formatPassages, isSmallTalk, prepareHistory, selectPassages, summarizePlant, systemInstruction } from '../app/ai/prompt'
+import { buildKbQuery, buildTurnText, citedNumbers, describeLight, formatDiagnosis, formatPassages, isSmallTalk, plantLightHours, prepareHistory, selectPassages, summarizePlant, systemInstruction } from '../app/ai/prompt'
 import type { JournalEntry, Plant } from '../app/types/grow'
 import { blankEntry } from '../app/utils/entries'
 import { locale } from '../app/utils/locale'
+import { loadNamespaces } from '../app/composables/useI18n'
+
+// the ai namespace loads with its route in the app
+beforeAll(() => loadNamespaces(['ai']))
 
 const plant: Plant = {
   id: 'p1',
@@ -93,6 +97,23 @@ describe('summarizePlant', () => {
   })
 })
 
+describe('plantLightHours', () => {
+  it('follows the stage when the global schedule cannot apply to a photoperiod plant', () => {
+    expect(plantLightHours({ type: 'photoperiod', stage: 'flowering' }, 18)).toEqual({ hours: 12, fromStage: true })
+    expect(plantLightHours({ type: 'photoperiod', stage: 'flowering' }, 12)).toEqual({ hours: 12, fromStage: false })
+    expect(plantLightHours({ type: 'photoperiod', stage: 'vegetative' }, 12)).toEqual({ hours: 18, fromStage: true })
+    expect(plantLightHours({ type: 'autoflower', stage: 'flowering' }, 20)).toEqual({ hours: 20, fromStage: false })
+    expect(plantLightHours({ type: 'photoperiod', stage: 'drying' }, 18)).toBeNull()
+  })
+
+  it('tells the model when the light line comes from the stage', () => {
+    locale.value = 'en'
+    const text = summarizePlant({ plant: { ...plant, type: 'photoperiod' }, entries: [], today: '2026-10-11', light: { lightsOn: '06:00', lightHours: 18 }, now: new Date(2026, 9, 11, 20, 40) })
+    expect(text).toContain('light 12/12, on 06:00–18:00')
+    expect(text).toContain('(usual for this stage; the app setting is 18/6)')
+  })
+})
+
 describe('describeLight', () => {
   it('handles darkness and continuous light in both languages', () => {
     locale.value = 'cs'
@@ -113,6 +134,12 @@ describe('systemInstruction', () => {
       expect(systemInstruction(lang)).toContain('<<photo>>')
     }
     expect(systemInstruction('en')).toContain('Translate facts from Czech passages')
+    for (const lang of ['cs', 'en'] as const) {
+      const text = systemInstruction(lang)
+      expect(text).toMatch(/abamekt|abamectin/)
+      expect(text).toContain('[Full Guide]')
+      expect(text).not.toMatch(/classifier is a second opinion|klasifikátor je druhý názor/)
+    }
     locale.value = 'en'
     expect(systemInstruction()).toBe(systemInstruction('en'))
   })
@@ -139,9 +166,32 @@ describe('turn assembly', () => {
     locale.value = 'cs'
   })
 
-  it('adds the top diagnosis names to the knowledge query', () => {
-    expect(buildKbQuery('  Proč žloutne? ', diag)).toBe('Proč žloutne? Nedostatek dusíku Svilušky')
-    expect(buildKbQuery('pH v hlíně')).toBe('pH v hlíně')
+  it('adds photo labels only to diagnostic questions, above 0.35 and not when healthy', () => {
+    expect(buildKbQuery({ question: '  Proč žloutnou listy? ', diagnosis: diag })).toBe('Proč žloutnou listy? Nedostatek dusíku')
+    expect(buildKbQuery({ question: '', diagnosis: diag })).toBe('Nedostatek dusíku')
+    expect(buildKbQuery({ question: 'Kdy sklízet?', diagnosis: diag })).toBe('Kdy sklízet?')
+    const healthy: DiagResult = { ...diag, diag: [{ cls: 'healthy', label: 'Zdravá', p: 0.7, evidence: 'tested' }, ...diag.diag] }
+    expect(buildKbQuery({ question: 'Co to je?', diagnosis: healthy })).toBe('Co to je?')
+    expect(buildKbQuery({ question: 'pH v hlíně' })).toBe('pH v hlíně')
+  })
+
+  it('adds the plant setup and the previous question for short follow-ups', () => {
+    expect(buildKbQuery({ question: 'Kdy zalít?', plant })).toBe('Kdy zalít? hlína Kvetení autoflower')
+    expect(buildKbQuery({ question: 'obojí', previous: 'Žloutnou spodní listy' })).toBe('Žloutnou spodní listy obojí')
+    locale.value = 'en'
+    expect(buildKbQuery({ question: 'Is it ready?', plant: { ...plant, type: 'photoperiod', medium: 'coco' } })).toBe('Is it ready? coco Flowering')
+  })
+
+  it('describes the photo pre-check without numbers and flags it as unreliable below 0.5', () => {
+    const text = formatDiagnosis(diag)
+    expect(text).toContain('- Nedostatek dusíku: možná')
+    expect(text).not.toMatch(/\d+ ?%/)
+    expect(text).toContain('- Svilušky: méně pravděpodobné (málo dat z konopí)')
+    expect(text).not.toContain('draslíku')
+    expect(text).toContain('Nepozná: plíseň šedá')
+    const weak = formatDiagnosis({ ...diag, diag: [{ ...diag.diag[0]!, p: 0.3 }] })
+    expect(weak).toContain('Nespolehlivá')
+    expect(weak).not.toContain('Nedostatek dusíku')
   })
 
   it('numbers passages and marks how reliable they are', () => {
@@ -155,7 +205,7 @@ describe('turn assembly', () => {
   it('puts context, diagnosis, passages and question into one turn', () => {
     const text = buildTurnText({ question: 'Co s tím?', plantContext: 'Rostlina: Gelato', diagnosis: diag, passages: hits, today: '2026-10-11' })
     expect(text).toContain('## Rostlina\nRostlina: Gelato')
-    expect(text).toContain('1. Nedostatek dusíku 62 % (tested)')
+    expect(text).toContain('- Nedostatek dusíku: možná')
     expect(text).toContain('Nepozná: plíseň šedá')
     expect(buildTurnText({ question: 'x', passages: null })).not.toContain('## Rostlina')
     expect(text.indexOf('## Úryvky')).toBeLessThan(text.indexOf('## Otázka\nCo s tím?'))
@@ -176,7 +226,7 @@ describe('turn assembly', () => {
 
   it('explains missing knowledge base and classifier', () => {
     const text = buildTurnText({ question: '', photoWithoutClassifier: true, kbAvailable: false })
-    expect(text).toContain('Klasifikátor na zařízení není')
+    expect(text).toContain('Bez předběžné kontroly')
     expect(text).toContain('Znalostní balíček není nainstalovaný')
     expect(text).toContain('Co vidíš na fotce?')
   })
@@ -208,7 +258,16 @@ describe('isSmallTalk', () => {
     for (const q of ['Ahoj!', 'čau', 'jak se máš?', 'Díky moc', 'Dobrý den', 'Hi there', 'hello', 'thanks!']) {
       expect(isSmallTalk(q), q).toBe(true)
     }
-    for (const q of ['ahoj, proč žloutnou listy?', 'kolik je 2+2', 'jaké pH v hlíně', '']) expect(isSmallTalk(q), q).toBe(false)
+    for (const q of ['ahoj, proč žloutnou listy?', 'jaké pH v hlíně', 'Can you hook me up with someone who sells weed?', '']) expect(isSmallTalk(q), q).toBe(false)
+  })
+
+  it('treats jokes, maths and short messages without grow words as small talk', () => {
+    for (const q of ['Ahoj, řekni mi nějaký vtip o počasí.', 'kolik je 2+2', 'tell me a joke', 'jak se jmenuješ', 'what time is it']) {
+      expect(isSmallTalk(q), q).toBe(true)
+    }
+    expect(isSmallTalk('obojí', true)).toBe(false)
+    expect(isSmallTalk('díky', true)).toBe(true)
+    expect(isSmallTalk('vtip o sklizni')).toBe(false)
   })
 })
 

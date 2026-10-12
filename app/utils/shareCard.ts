@@ -270,7 +270,13 @@ export async function renderRecapCard(data: RecapCardData): Promise<Blob> {
   const col = (CARD_W - pad * 2) / Math.max(1, stats.length)
   stats.forEach((s, i) => {
     const x = pad + i * col
-    ctx.font = `300 92px ${FONT}`
+    // shrink long numbers (e.g. 112.5) before resorting to an ellipsis
+    let size = 92
+    ctx.font = `300 ${size}px ${FONT}`
+    while (size > 52 && ctx.measureText(s.value).width > col - 24) {
+      size -= 4
+      ctx.font = `300 ${size}px ${FONT}`
+    }
     ctx.fillStyle = s.warm ? '#ffd28a' : '#e9f3e4'
     ctx.fillText(fitText(ctx, s.value, col - 24), x, y + 118)
     ctx.font = `500 28px ${FONT}`

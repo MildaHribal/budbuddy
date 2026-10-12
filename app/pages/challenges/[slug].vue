@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import { canVote, challengeDescription, challengePhase, challengeTitle, isVoteIneligible, rankEntries, type Challenge, type ChallengeEntry } from '~/utils/challenge'
 
 const route = useRoute()
@@ -202,6 +203,7 @@ async function saveCaption() {
   e.caption = caption
   editOpen.value = false
 }
+useOnlineRetry(() => failed.value, load)
 </script>
 
 <template>

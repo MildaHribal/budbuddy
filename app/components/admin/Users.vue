@@ -81,7 +81,7 @@ async function toggleBan(u: UserRow) {
   }
 }
 
-const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { month: 'short', year: 'numeric' }).format(new Date(iso))
+const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso))
 </script>
 
 <template>

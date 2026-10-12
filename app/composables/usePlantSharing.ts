@@ -471,10 +471,25 @@ export function usePlantSharing() {
     saveMeta()
   }
 
+  /** Deletes one of my public copies by id, also one left behind by another phone or a reinstall. */
+  async function removePublic(publicId: string): Promise<void> {
+    const local = grow.state.plants.find(p => p.sharing?.publicId === publicId)
+    if (local && isOwned(local.id)) return unshare(local.id)
+    const uid = user.value?.id
+    if (!uid) throw new Error('not signed in')
+    const { data, error } = await useSupabase().from('public_plants').select('local_id').eq('id', publicId).eq('owner_id', uid).maybeSingle()
+    if (error) throw error
+    if (!data) return
+    const localId = (data as { local_id: string }).local_id
+    await deleteRow(uid, publicId, localId)
+    await removeFolder(uid, `${uid}/plants/${localId}/updates`)
+    await removeFolder(uid, `${uid}/plants/${localId}`)
+  }
+
   /** Paths of the public copy's media folder for this plant (weekly update uploads go here). */
   const updatesFolder = (plantId: string) => (user.value ? `${user.value.id}/plants/${plantId}/updates` : null)
 
-  return { busy, isPublic, isBusy, isUnlinked, share, unshare, detach, forgetAll, startAutoSync, updatesFolder }
+  return { busy, isPublic, isBusy, isUnlinked, share, unshare, removePublic, detach, forgetAll, startAutoSync, updatesFolder }
 }
 
 /** True when something needs the sync engine at start (shared plants or pending deletes). */

@@ -34,7 +34,7 @@ const withSlash = (u: string) => (u.endsWith('/') ? u : `${u}/`)
  * Resolves false if a file is missing or the model fails to load. ORT's wasm path is global,
  * so pass the same `ortPath` as the knowledge search uses.
  */
-export function initClassifier(baseUrl: string, ortPath?: string): Promise<boolean> {
+export function initClassifier(baseUrl: string, ortPath?: ort.Env.WasmPrefixOrFilePaths, fetchImpl: typeof fetch = (...a) => globalThis.fetch(...a)): Promise<boolean> {
   if (session && meta) return Promise.resolve(true)
   if (loading) return loading
   const base = withSlash(baseUrl)
@@ -43,10 +43,10 @@ export function initClassifier(baseUrl: string, ortPath?: string): Promise<boole
       ort.env.wasm.wasmPaths = ortPath ?? `${base}../ort/`
       // Threads need cross-origin isolation, which the Capacitor WebView does not have.
       ort.env.wasm.numThreads = (globalThis as { crossOriginIsolated?: boolean }).crossOriginIsolated === true ? 2 : 1
-      const metaRes = await fetch(`${base}meta.json`)
+      const metaRes = await fetchImpl(`${base}meta.json`)
       if (!metaRes.ok) return false
       const m = (await metaRes.json()) as ClassifierMeta
-      const modelRes = await fetch(`${base}diag.onnx`)
+      const modelRes = await fetchImpl(`${base}diag.onnx`)
       if (!modelRes.ok) return false
       await initFromBytes(new Uint8Array(await modelRes.arrayBuffer()), m)
       return true

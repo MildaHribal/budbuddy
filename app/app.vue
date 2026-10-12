@@ -1,21 +1,51 @@
 <script setup lang="ts">
+import { COMMUNITY_NAMESPACES, loadNamespaces } from '~/composables/useI18n'
+import { authUiWanted } from '~/utils/authUi'
+
 const { ready, loadError, state } = useGrow()
 const { t } = useI18n()
+
+// First run: the onboarding covers the page, so mount the page (and its photos) a moment later
+// instead of competing with the onboarding's first paint.
+const pageWarm = ref(false)
+watch(ready, (v) => {
+  if (!v || pageWarm.value) return
+  if (state.settings.onboarded) pageWarm.value = true
+  else setTimeout(() => (pageWarm.value = true), 1500)
+}, { immediate: true })
+watch(() => state.settings.onboarded, (v) => {
+  if (v) pageWarm.value = true
+})
 
 // Lights-on boot: the lamp flickers on, then light falls down the tent.
 const lit = ref(false)
 onMounted(() => requestAnimationFrame(() => (lit.value = true)))
 
-// supabase-js lives in the sign-in sheet's chunk: mount it on community routes or once the app is idle
+// supabase-js lives in the sign-in sheet's chunk: mount it only where sign-in can be asked for
+// (community, settings, on request) or at idle when a session is stored (badge toasts, sync).
 const route = useRoute()
 const authUi = ref(false)
-const COMMUNITY = /^\/(community|u|plant|strains|challenges|auth|auth-callback|admin)(\/|$)/
+const AUTH_ROUTES = /^\/(community|u|plant|strains|challenges|auth|auth-callback|admin|settings)(\/|$)/
 watch(() => route.path, (p) => {
-  if (COMMUNITY.test(p)) authUi.value = true
+  if (AUTH_ROUTES.test(p)) authUi.value = true
 }, { immediate: true })
+// other pages ask for it right before they need sign-in (e.g. sharing a plant)
+watch(authUiWanted, (v) => {
+  if (v) authUi.value = true
+})
+
+function hasSession(): boolean {
+  try {
+    return Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+  } catch {
+    return false
+  }
+}
+
 watch(ready, (v) => {
-  if (!v || authUi.value) return
-  const show = () => (authUi.value = true)
+  if (!v || authUi.value || !hasSession()) return
+  // sign-in sheet and badge toasts need the community texts first
+  const show = () => loadNamespaces([...COMMUNITY_NAMESPACES]).then(() => (authUi.value = true), () => {})
   if ('requestIdleCallback' in window) requestIdleCallback(show, { timeout: 4000 })
   else setTimeout(show, 2500)
 }, { immediate: true })
@@ -77,7 +107,7 @@ useHead({
         <strong>{{ t('common.loadError') }}</strong>
         {{ t('common.loadErrorHint') }} ({{ loadError }})
       </div>
-      <NuxtLayout v-if="ready">
+      <NuxtLayout v-if="ready && pageWarm">
         <NuxtPage />
       </NuxtLayout>
       <AppToaster />

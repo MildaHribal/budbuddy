@@ -48,6 +48,30 @@ function toPreview(type: ModTarget, r: Record<string, unknown>): ModPreview {
 
 export interface ModAuthor { id: string, username: string, display_name: string | null, avatar_url: string | null, is_banned: boolean, is_admin: boolean }
 
+const MEDIA_COLS: Partial<Record<ModTarget, string>> = {
+  post: 'images',
+  plant: 'cover_url, timeline',
+  entry: 'image_url'
+}
+
+/** Storage paths of media URLs found in a row (post images, plant cover + timeline photos, entry image). */
+export function mediaPaths(row: Record<string, unknown> | null): string[] {
+  if (!row) return []
+  const urls: unknown[] = []
+  for (const v of Object.values(row)) {
+    if (Array.isArray(v)) for (const x of v) urls.push(typeof x === 'object' && x ? (x as { photoUrl?: unknown }).photoUrl : x)
+    else urls.push(v)
+  }
+  const out = new Set<string>()
+  for (const u of urls) {
+    if (typeof u !== 'string') continue
+    const i = u.indexOf(MEDIA_MARK)
+    if (i >= 0) out.add(decodeURIComponent(u.slice(i + MEDIA_MARK.length).split('?')[0]!))
+  }
+  return [...out]
+}
+const MEDIA_MARK = '/object/public/media/'
+
 export function useModeration() {
   const sb = useSupabase()
 
@@ -85,10 +109,15 @@ export function useModeration() {
     if (error) throw error
   }
 
+  /** Deletes the content and, best effort, the photos it uploaded. */
   async function deleteTarget(type: ModTarget, id: string) {
     if (type === 'profile') return
+    const cols = MEDIA_COLS[type]
+    const { data } = cols ? await sb.from(MOD_TARGETS[type].table).select(cols).eq('id', id).maybeSingle() : { data: null }
     const { error } = await sb.from(MOD_TARGETS[type].table).delete().eq('id', id)
     if (error) throw error
+    const paths = mediaPaths(data as Record<string, unknown> | null)
+    if (paths.length) await sb.storage.from('media').remove(paths).catch(() => {})
   }
 
   async function setBanned(userId: string, banned: boolean) {

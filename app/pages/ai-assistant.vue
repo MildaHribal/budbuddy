@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import type { DiagHit } from '~/ai/diagnose'
 import { renderMarkdown } from '~/ai/markdown'
-import { evidenceLabel, kbKindLabel } from '~/ai/prompt'
+import { DIAG_RELIABLE, evidenceLabel, kbKindLabel } from '~/ai/prompt'
+import { AI_REPORT_REASONS, sendAiReport, type AiReportReason } from '~/ai/report'
+import type { GuideLink } from '~/ai/guideLinks'
+import { getLesson } from '~/guide'
 import { GENERAL_THREAD, type AssistantMessage } from '~/composables/useAssistant'
+import { locale } from '~/utils/locale'
 import type { Plant } from '~/types/grow'
 
 const route = useRoute()
@@ -229,6 +233,60 @@ const EVIDENCE_TONE: Record<DiagHit['evidence'], string> = {
   'transfer-only': 'var(--text-3)'
 }
 
+const guideChip = (g: GuideLink) => {
+  const ref = getLesson(g.lesson)
+  return ref ? { to: `/guide/${ref.chapter.id}#${ref.lesson.id}`, label: ref.lesson.title[locale.value] || ref.lesson.title.en } : null
+}
+const guideChips = (m: AssistantMessage) => (m.guide ?? []).map(guideChip).filter(x => !!x)
+const lowConfidence = (m: AssistantMessage) => (m.diag?.[0]?.p ?? 0) < DIAG_RELIABLE
+
+// ── Report an answer ──────────────────────────────────────────────
+const reportFor = ref<AssistantMessage | null>(null)
+const reportOpen = computed({
+  get: () => !!reportFor.value,
+  set: (v) => {
+    if (!v) reportFor.value = null
+  }
+})
+const reportReason = ref<AiReportReason | null>(null)
+const reportNote = ref('')
+const reportBusy = ref(false)
+
+function openReport(m: AssistantMessage) {
+  reportReason.value = null
+  reportNote.value = ''
+  reportFor.value = m
+}
+
+async function submitReport() {
+  const m = reportFor.value
+  if (!m || !reportReason.value || reportBusy.value) return
+  const list = messages.value
+  const i = list.indexOf(m)
+  const asked = list.slice(0, i).findLast(x => x.role === 'user')
+  reportBusy.value = true
+  try {
+    const result = await sendAiReport({
+      messageId: m.id,
+      reason: reportReason.value,
+      note: reportNote.value,
+      question: asked?.text ?? '',
+      answer: m.text,
+      model: m.model,
+      lang: locale.value,
+      hadPhoto: !!asked?.thumb,
+      appVersion: String(config.public.version ?? '')
+    }, { chatUrl: String(config.public.aiProxyUrl), token: config.public.aiAppToken ? String(config.public.aiAppToken) : undefined })
+    assistant.markReported(threadKey.value, m.id)
+    reportFor.value = null
+    notify(t(result === 'already' ? 'ai.report.already' : 'ai.report.sent'), { tone: 'success' })
+  } catch {
+    notify(t('ai.report.failed'), { tone: 'error' })
+  } finally {
+    reportBusy.value = false
+  }
+}
+
 // ── Status notices ────────────────────────────────────────────────
 const offlineNotice = computed(() => {
   const settled = (s: string) => s === 'ready' || s === 'missing'
@@ -441,6 +499,12 @@ onMounted(async () => {
                   >{{ t(`ai.evidenceShort.${d.evidence}`) }}</span>
                 </div>
                 <p
+                  v-if="lowConfidence(m)"
+                  class="diag-note"
+                >
+                  {{ t('ai.page.diagUnsure') }}
+                </p>
+                <p
                   v-if="m.unsupported?.length"
                   class="diag-note"
                 >
@@ -498,7 +562,34 @@ onMounted(async () => {
               </div>
 
               <div
-                v-if="m.sources?.length && !m.pending"
+                v-if="m.fallback?.length"
+                class="fallback"
+              >
+                <div class="fallback-head">
+                  <UIcon
+                    name="i-tabler-books"
+                    class="size-4"
+                  />
+                  {{ t('ai.page.fallbackTitle') }}
+                </div>
+                <p
+                  v-if="m.fallback.some(f => f.lang !== locale)"
+                  class="fallback-note"
+                >
+                  {{ t('ai.page.fallbackLang') }}
+                </p>
+                <article
+                  v-for="(f, i) in m.fallback"
+                  :key="i"
+                  class="fallback-card"
+                >
+                  <strong>{{ f.title }}</strong>
+                  <p>{{ f.text }}</p>
+                </article>
+              </div>
+
+              <div
+                v-if="m.sources?.length && !m.pending && !m.fallback?.length"
                 class="sources"
               >
                 <button
@@ -560,6 +651,25 @@ onMounted(async () => {
                 </ol>
               </div>
 
+              <nav
+                v-if="!m.pending && guideChips(m).length"
+                class="guide-chips"
+                :aria-label="t('ai.page.guideLinks')"
+              >
+                <NuxtLink
+                  v-for="g in guideChips(m)"
+                  :key="g!.to"
+                  :to="g!.to"
+                  class="chip guide-chip"
+                >
+                  <GrowIcon
+                    name="guide"
+                    class="chip-glyph"
+                  />
+                  {{ g!.label }}
+                </NuxtLink>
+              </nav>
+
               <div
                 v-if="isLast(m) && !m.pending && (m.replies?.length || m.askPhoto)"
                 class="reply-chips"
@@ -602,6 +712,19 @@ onMounted(async () => {
                 >
                   <UIcon
                     name="i-tabler-copy"
+                    class="size-4"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="meta-btn"
+                  :aria-label="m.reported ? t('ai.report.done') : t('ai.report.action')"
+                  :title="m.reported ? t('ai.report.done') : t('ai.report.action')"
+                  :disabled="m.reported"
+                  @click="openReport(m)"
+                >
+                  <UIcon
+                    :name="m.reported ? 'i-tabler-flag-check' : 'i-tabler-flag'"
                     class="size-4"
                   />
                 </button>
@@ -722,6 +845,56 @@ onMounted(async () => {
         </button>
       </div>
     </div>
+    <BottomSheet
+      v-model:open="reportOpen"
+      :title="t('ai.report.title')"
+    >
+      <form
+        class="form-stack"
+        @submit.prevent="submitReport"
+      >
+        <p class="muted">
+          {{ t('ai.report.why') }}
+        </p>
+        <div
+          class="report-reasons"
+          role="radiogroup"
+          :aria-label="t('ai.report.why')"
+        >
+          <button
+            v-for="r in AI_REPORT_REASONS"
+            :key="r"
+            type="button"
+            role="radio"
+            class="chip"
+            :aria-checked="reportReason === r"
+            :class="{ active: reportReason === r }"
+            @click="reportReason = r"
+          >
+            {{ t(`ai.report.reasons.${r}`) }}
+          </button>
+        </div>
+        <label class="field">
+          <span class="field-label">{{ t('ai.report.note') }}</span>
+          <textarea
+            v-model="reportNote"
+            class="input"
+            maxlength="500"
+            rows="3"
+          />
+        </label>
+        <p class="field-hint">
+          {{ t('ai.report.privacy') }}
+        </p>
+        <button
+          type="submit"
+          class="btn btn-danger btn-block"
+          :disabled="!reportReason || reportBusy"
+        >
+          {{ t('ai.report.send') }}
+        </button>
+      </form>
+    </BottomSheet>
   </div>
 </template>
 
@@ -1622,5 +1795,71 @@ html.kb-open .messages {
   .avatar.thinking .grow-icon {
     animation: none;
   }
+}
+.report-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.guide-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.guide-chip {
+  min-height: 36px;
+  max-width: 100%;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.guide-chip .chip-glyph {
+  color: var(--accent);
+}
+
+.fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.fallback-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.fallback-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.fallback-card {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.fallback-card strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.fallback-card p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-line;
 }
 </style>

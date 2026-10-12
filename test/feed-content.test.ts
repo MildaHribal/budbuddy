@@ -21,4 +21,12 @@ describe('contentIssue', () => {
     expect(contentIssue('prodám semínka')).toBe('sale')
     expect(contentIssue('10 € per gram')).toBe('sale')
   })
+  it('flags trading and giving away, not swapping gear', () => {
+    expect(contentIssue('happy to swap clones')).toBe('sale')
+    expect(contentIssue('trade you some clones for seeds')).toBe('sale')
+    expect(contentIssue('free seeds to whoever wants them')).toBe('sale')
+    expect(contentIssue('vyměním řízky za semínka')).toBe('sale')
+    expect(contentIssue('Trading my HPS for LED made the buds frostier')).toBeNull()
+    expect(contentIssue('Výměna substrátu, semínka vyklíčila')).toBeNull()
+  })
 })

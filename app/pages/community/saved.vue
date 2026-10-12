@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import { useFeedActions } from '~/utils/feed/actions'
 import { ensureSchema, keysetOr, PAGE, POST_SELECT, type Cursor, type Post } from '~/utils/feed/feed'
 import { useInfinite } from '~/utils/feed/infinite'
@@ -90,6 +91,7 @@ function onSaved(p: Post) {
 function onDeleted(p: Post) {
   posts.value = posts.value.filter(x => x.id !== p.id)
 }
+useOnlineRetry(() => error.value, reset)
 </script>
 
 <template>

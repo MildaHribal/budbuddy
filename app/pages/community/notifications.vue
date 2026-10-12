@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import { isMissingSchema } from '~/utils/dbErrors'
 import { badgeDesc, badgeGlyph, badgeName } from '~/composables/useBadges'
 
@@ -192,6 +193,10 @@ function line(i: Item): string {
     }
     case 'solve_ping':
       return r.actor ? t('notifications.types.solve_ping', { name }) : t('notifications.types.solvePingAny')
+    case 'challenge': {
+      const rank = meta(r, 'rank')
+      return rank ? t('notifications.types.challengeRank', { rank }) : t('notifications.types.challenge')
+    }
     case 'update': {
       const week = meta(r, 'week_no') || meta(r, 'week')
       const plant = meta(r, 'plant_name') || meta(r, 'plant')
@@ -210,8 +215,10 @@ function link(i: Item): string | null {
       return i.actors.length > 1 && profile.value ? `/u/${profile.value.username}` : r.actor ? `/u/${r.actor.username}` : null
     case 'tip_vote':
       return profile.value ? `/u/${profile.value.username}?tab=tips` : null
-    case 'challenge':
-      return '/challenges'
+    case 'challenge': {
+      const slug = meta(r, 'slug')
+      return slug ? `/challenges/${slug}` : '/challenges'
+    }
     case 'badge':
       return profile.value ? `/u/${profile.value.username}#badges` : null
     case 'update': {
@@ -221,7 +228,7 @@ function link(i: Item): string | null {
     case 'solve_ping':
       return r.post_id ? `/community/post/${r.post_id}?solve=1` : null
     case 'moderation':
-      return r.post_id ? `/community/post/${r.post_id}` : null
+      return r.post_id ? `/community/post/${r.post_id}${r.comment_id ? `#c-${r.comment_id}` : ''}` : null
     default:
       return r.post_id ? `/community/post/${r.post_id}${r.comment_id ? `#c-${r.comment_id}` : ''}` : null
   }
@@ -245,6 +252,7 @@ watch(sentinel, (el, old) => {
   if (el) io?.observe(el)
 })
 onBeforeUnmount(() => io?.disconnect())
+useOnlineRetry(() => error.value, loadMore)
 </script>
 
 <template>

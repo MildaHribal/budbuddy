@@ -1,6 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { locale } from '../app/utils/locale'
 import { applyChunk, finishAnswer, parseSse, proxyError, quotaResetLabel, toGeminiContents } from '../app/ai/providers/proxy'
+import { loadNamespaces } from '../app/composables/useI18n'
+
+// the ai namespace loads with its route in the app
+beforeAll(() => loadNamespaces(['ai']))
 
 describe('proxy provider', () => {
   beforeEach(() => {

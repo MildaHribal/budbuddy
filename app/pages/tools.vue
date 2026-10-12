@@ -55,7 +55,7 @@ function removeLine(i: number) {
 
 const logPlant = ref<string>('')
 const logOpen = ref(false)
-const growingPlants = computed(() => state.plants.filter(p => !p.archived))
+const growingPlants = computed(() => state.plants.filter(isGrowing))
 const prefill = computed(() => ({
   nutrients: mix.value.map(m => `${m.name} ${formatNumber(m.dosePerLitre, 2)} ml/L`).join(', ')
 }))

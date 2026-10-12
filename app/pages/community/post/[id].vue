@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import { useFeedActions } from '~/utils/feed/actions'
 import { authorName, COMMENT_SELECT, ensureSchema, isHelp, POST_SELECT, type Comment, type Post } from '~/utils/feed/feed'
 import { haptic } from '~/utils/haptics'
@@ -83,7 +84,7 @@ const byId = computed(() => new Map(comments.value.map(c => [c.id, c])))
 
 function rootOf(c: Comment): string {
   let cur = c
-  for (let i = 0; i < 10 && cur.parent_id; i++) {
+  for (let i = 0; i < 500 && cur.parent_id; i++) {
     const parent = byId.value.get(cur.parent_id)
     if (!parent) break
     cur = parent
@@ -171,7 +172,16 @@ async function removeComment(c: Comment) {
     return
   }
   // replies cascade in the DB
-  const gone = new Set([c.id, ...comments.value.filter(x => x.parent_id && rootOf(x) === c.id).map(x => x.id)])
+  const gone = new Set([c.id])
+  for (let grew = true; grew;) {
+    grew = false
+    for (const x of comments.value) {
+      if (x.parent_id && gone.has(x.parent_id) && !gone.has(x.id)) {
+        gone.add(x.id)
+        grew = true
+      }
+    }
+  }
   comments.value = comments.value.filter(x => !gone.has(x.id))
   if (post.value) {
     post.value.comments_count = Math.max(0, post.value.comments_count - gone.size)
@@ -222,7 +232,8 @@ async function send() {
     sending.value = false
     return
   }
-  const parent = replyTo.value ? rootOf(replyTo.value) : null
+  // the real parent, so its author gets the reply notification; threads still group by root
+  const parent = replyTo.value?.id ?? null
   const { data, error } = await useSupabase().from('comments')
     .insert({ post_id: p.id, author_id: user.value.id, parent_id: parent, body })
     .select(COMMENT_SELECT).single()
@@ -250,6 +261,7 @@ function onDeleted() {
   if (window.history.state?.back) router.back()
   else router.replace('/community')
 }
+useOnlineRetry(() => status.value === 'error', load)
 </script>
 
 <template>

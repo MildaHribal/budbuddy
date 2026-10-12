@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import type { Profile } from '~/composables/useAuth'
 import type { PublicPlant } from '~/utils/grower'
 import { POST_SELECT, type Post } from '~/utils/feed/feed'
@@ -238,6 +239,7 @@ watch(() => user.value?.id, (uid, prev) => {
 })
 
 const plantDay = (p: PublicPlant) => (p.start_date ? daysSince(p.start_date) : null)
+useOnlineRetry(() => state.value === 'error', load)
 </script>
 
 <template>
@@ -403,7 +405,7 @@ const plantDay = (p: PublicPlant) => (p.start_date ? daysSince(p.start_date) : n
           <span>{{ t('profile.favorite') }}:</span> <strong>{{ profile.favorite_strain }}</strong>
         </p>
         <p class="since">
-          {{ t('profile.memberSince', { date: formatDate(profile.created_at.slice(0, 10), { month: 'long', year: 'numeric' }) }) }}
+          {{ t('profile.memberSince', { date: formatDate(profile.created_at.slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' }) }) }}
         </p>
 
         <NuxtLink

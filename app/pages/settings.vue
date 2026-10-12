@@ -5,6 +5,7 @@ import { Share } from '@capacitor/share'
 import { NotBackupError } from '~/composables/useGrow'
 import { DEMO_PHOTO_CREDITS } from '~/utils/demoCredits'
 import { LOCALES, type Locale } from '~/utils/locale'
+import AiPackRow from '~/ai/AiPackRow.vue'
 
 const { t } = useI18n()
 useHead({ title: () => t('settings.title') })
@@ -40,6 +41,7 @@ watch(hoursValue, (v) => {
 function syncLight() {
   lightsOn.value = state.settings.lightsOn
   lightHours.value = state.settings.lightHours
+  reminderTime.value = state.settings.reminderTime
 }
 
 const remindersNative = remindersSupported()
@@ -441,6 +443,7 @@ async function erase() {
             />
             {{ testResult.text }}
           </p>
+          <AiPackRow />
         </div>
         <p class="note">
           {{ t('ai.settings.privacy') }}

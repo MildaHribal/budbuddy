@@ -74,6 +74,7 @@ jobs:
             echo "::warning::KEYSTORE_BASE64 secret not set – the release APK will be unsigned."
           fi
 
+      # -PnoAi: the offline AI pack is never part of the store build (see store/AI_PACK.md)
       - name: Build APKs and AAB
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -85,6 +86,7 @@ jobs:
           ./gradlew assembleDebug assembleRelease bundleRelease \
             -PversionCode=${{ env.VERSION_CODE }} \
             -PversionName=${{ steps.package_version.outputs.VERSION }} \
+            -PnoAi \
             --no-daemon --build-cache
 
       - uses: actions/upload-artifact@v4
@@ -93,7 +95,22 @@ jobs:
           path: |
             android/app/build/outputs/apk/debug/*.apk
             android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+
+      # Upload-key signed bundle for Google Play (Play App Signing re-signs it)
+      - name: Check the Play bundle
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          test -f "$AAB"
+          SIZE=$(stat -c %s "$AAB")
+          echo "AAB size: $((SIZE / 1024 / 1024)) MB, versionCode ${{ env.VERSION_CODE }}" >> $GITHUB_STEP_SUMMARY
+          if unzip -l "$AAB" | grep -q 'assets/public/ai/'; then echo "::error::AI pack leaked into the AAB"; exit 1; fi
+          if [ -z "$KEYSTORE_PATH" ]; then echo "::warning::AAB is unsigned – Play Console will reject it."; fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: play-bundle-${{ steps.package_version.outputs.VERSION }}-${{ env.VERSION_CODE }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
 
       - name: Name the installable APK
         run: |

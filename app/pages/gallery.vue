@@ -216,6 +216,7 @@ async function deletePhoto(item: LightboxItem) {
   align-items: baseline;
   justify-content: space-between;
   margin: 0;
+  text-transform: capitalize;
   padding: 10px 20px 10px;
   background: linear-gradient(180deg, var(--bg) 70%, rgba(7, 8, 10, 0.88));
   font-size: 15px;

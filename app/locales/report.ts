@@ -12,6 +12,8 @@ export default {
     send: 'Send report',
     sent: 'Thanks – a moderator will look at it',
     already: 'You already reported this',
+    failed: 'Couldn’t send the report – try again',
+    blockFailed: 'Couldn’t update the block – try again',
     blocked: '{name} is blocked – you won’t see their content',
     unblocked: '{name} is unblocked',
     reasons: {
@@ -36,9 +38,11 @@ export default {
     details: 'Podrobnosti (nepovinné)',
     send: 'Odeslat nahlášení',
     sent: 'Díky – moderátor se na to podívá',
-    already: 'Tohle už jsi nahlásil',
-    blocked: '{name} je zablokovaný – jeho obsah neuvidíš',
-    unblocked: '{name} je odblokovaný',
+    already: 'Tohle už máš nahlášené',
+    failed: 'Nahlášení se nepodařilo odeslat – zkus to znovu',
+    blockFailed: 'Blokování se nepodařilo změnit – zkus to znovu',
+    blocked: '{name}: zablokováno – obsah od tohoto účtu neuvidíš',
+    unblocked: '{name}: odblokováno',
     reasons: {
       spam: 'Spam nebo reklama',
       sale: 'Prodej nebo výměna',

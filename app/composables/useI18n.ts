@@ -7,11 +7,14 @@ type LocaleModule = { default: Record<Locale, Dict> }
 
 // Every app/locales/<ns>.ts exports { en, cs }; keys resolve as "<ns>.<path>".
 // Heavy namespaces used only on a few routes load on demand (see middleware/i18n.global.ts).
-export const LAZY_NAMESPACES = ['guide', 'guideWidgets', 'guideArt'] as const
+// Community, AI and single-page texts load with their routes (middleware/i18n.global.ts) to keep the entry chunk small.
+export const COMMUNITY_NAMESPACES = ['feed', 'profile', 'auth', 'strains', 'admin', 'challenge', 'notifications', 'report', 'tips'] as const
+export const LAZY_NAMESPACES = ['guide', 'guideWidgets', 'guideArt', 'ai', 'plant', 'tools', 'stats', 'settings', ...COMMUNITY_NAMESPACES] as const
 export type LazyNamespace = typeof LAZY_NAMESPACES[number]
 
-const eager = import.meta.glob<LocaleModule>(['../locales/*.ts', '!../locales/{guide,guideWidgets,guideArt}.ts'], { eager: true })
-const lazy = import.meta.glob<LocaleModule>('../locales/{guide,guideWidgets,guideArt}.ts')
+// glob patterns must be literals, so the list is repeated here
+const eager = import.meta.glob<LocaleModule>(['../locales/*.ts', '!../locales/{guide,guideWidgets,guideArt,ai,plant,tools,stats,settings,feed,profile,auth,strains,admin,challenge,notifications,report,tips}.ts'], { eager: true })
+const lazy = import.meta.glob<LocaleModule>('../locales/{guide,guideWidgets,guideArt,ai,plant,tools,stats,settings,feed,profile,auth,strains,admin,challenge,notifications,report,tips}.ts')
 const dicts: Record<Locale, Dict> = { en: {}, cs: {} }
 const nsOf = (path: string) => path.split('/').pop()!.replace(/\.ts$/, '')
 
@@ -34,6 +37,7 @@ export function loadNamespaces(names: readonly LazyNamespace[]): Promise<void> {
       p = lazy[path]!().then(mod => register(path, mod)).catch((e) => {
         pending.delete(ns)
         console.error('[i18n] could not load', ns, e)
+        throw e
       })
       pending.set(ns, p)
     }

@@ -1,5 +1,13 @@
 import { addDays, daysBetween, toISODate } from './date'
 
+/** Day the watering countdown runs from: the last water/feed, else when the plant was added (a back-dated start is not "overdue"). */
+export function wateringBase(startDate: string, createdAt: string, lastDate: string | null | undefined): string {
+  if (lastDate) return lastDate
+  const added = new Date(createdAt)
+  const addedDay = Number.isNaN(added.getTime()) ? startDate : toISODate(added)
+  return addedDay > startDate ? addedDay : startDate
+}
+
 export interface ReminderInput {
   plants: { id: string, name: string, nextWater: string | null, interval: number | null }[]
   tasks: { title: string, date: string, done: boolean }[]

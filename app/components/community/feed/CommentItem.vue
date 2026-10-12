@@ -65,7 +65,10 @@ function saveEdit() {
         >{{ t('feed.detail.aiBadge') }}</span>
         <template v-else-if="comment.author">
           <CommunityFeedRepBadge :rep="comment.author.reputation" />
-          <CommunityFeedFirstGrowChip v-if="comment.author.first_grow" />
+          <CommunityFeedFirstGrowChip
+            v-if="comment.author.first_grow"
+            compact
+          />
         </template>
         <time
           class="time num"
@@ -81,6 +84,15 @@ function saveEdit() {
           @delete="emit('delete')"
         />
       </div>
+
+      <p
+        v-if="comment.is_hidden"
+        class="removed"
+        role="note"
+      >
+        <UIcon name="i-tabler-eye-off" />
+        {{ t('feed.detail.hiddenComment') }} · {{ t('feed.removedOnlyYou') }}
+      </p>
 
       <p
         v-if="accepted"
@@ -232,7 +244,7 @@ function saveEdit() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
+  min-width: 6ch;
 }
 
 .ai-badge {
@@ -247,6 +259,16 @@ function saveEdit() {
 
 .grow {
   flex: 1;
+}
+
+.removed {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffb4bb;
 }
 
 .best {

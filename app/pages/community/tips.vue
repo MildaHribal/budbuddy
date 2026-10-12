@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import type { TipRow } from '~/components/community/TipCard.vue'
 import { TIP_GROUPS, TIP_SYMPTOMS, parseTipGroup, symptomFilter, tipGroupOf, type TipGroupId } from '~/utils/tips'
 
@@ -256,6 +257,7 @@ async function remove(tip: TipRow) {
 }
 
 const stageList = computed(() => stages())
+useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
 </script>
 
 <template>

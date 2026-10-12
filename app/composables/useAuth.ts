@@ -107,8 +107,12 @@ export function useAuth() {
   /** signed in and finished the first sign-in gate (18+, terms) */
   const accepted = computed(() => !!session.value && !!profile.value?.accepted_terms_at)
 
-  /** True when signed in and terms are accepted; otherwise opens the sign-in / terms sheet. */
+  /** True when signed in, terms accepted and not banned; otherwise opens the sign-in / terms sheet or explains the ban. */
   function requireAuth(): boolean {
+    if (accepted.value && profile.value?.is_banned) {
+      useNotify().notify(translate('feed.err.banned'), { tone: 'error' })
+      return false
+    }
     if (accepted.value) return true
     if (session.value && !profile.value) {
       // signed in but the profile could not load (offline); retry instead of a dead sign-in prompt
@@ -120,8 +124,9 @@ export function useAuth() {
     return false
   }
 
-  async function signOut() {
-    await useSupabase().auth.signOut().catch(() => {})
+  /** local: only this device (the account may already be gone server-side) */
+  async function signOut(local = false) {
+    await useSupabase().auth.signOut(local ? { scope: 'local' } : undefined).catch(() => {})
     profileSeq++
     clearTimeout(retryTimer)
     session.value = null

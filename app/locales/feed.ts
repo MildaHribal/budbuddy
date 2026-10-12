@@ -53,13 +53,13 @@ export default {
     },
     blocked: {
       contact: 'Not sent: phone numbers, emails and messenger handles aren’t allowed here.',
-      sale: 'Not sent: buying or selling seeds, clones or buds isn’t allowed here.'
+      sale: 'Not sent: buying, selling, trading or giving away seeds, clones or buds isn’t allowed here.'
     },
     precheck: {
       contactTitle: 'Contact details spotted',
       contactText: 'Phone numbers, emails and messenger handles get blocked. Edit the text, or send it anyway if this is a false alarm.',
       saleTitle: 'This reads like a deal',
-      saleText: 'Buying or selling seeds, clones or buds gets blocked. Edit the text, or send it anyway if it isn’t about a deal.',
+      saleText: 'Buying, selling, trading or giving away seeds, clones or buds gets blocked. Edit the text, or send it anyway if it isn’t about a deal.',
       sendAnyway: 'Send anyway'
     },
     home: {
@@ -157,6 +157,7 @@ export default {
     retry: 'Try again',
     removed: 'Removed by moderation',
     removedText: 'Only you can see this post.',
+    removedOnlyYou: 'only you can see it',
     err: {
       rate: 'Slow down a little – try again in a while',
       banned: 'Your account can’t post right now',
@@ -291,7 +292,7 @@ export default {
     },
     firstGrow: 'Pěstuje poprvé',
     firstGrowHint: 'Tenhle pěstitel pěstuje poprvé',
-    beKind: 'Buď laskavý – pěstuje poprvé.',
+    beKind: 'Odpovídej vlídně – pěstuje poprvé.',
     levelSheet: {
       title: 'Úrovně pěstitelů',
       open: '{level}, reputace {n}. Co znamenají úrovně',
@@ -311,13 +312,13 @@ export default {
     },
     blocked: {
       contact: 'Neodesláno: telefonní čísla, e-maily ani kontakty na messengery sem nepatří.',
-      sale: 'Neodesláno: nákup ani prodej semínek, řízků nebo palic tu není povolený.'
+      sale: 'Neodesláno: nákup, prodej, výměna ani darování semínek, řízků nebo palic tu nejsou povolené.'
     },
     precheck: {
       contactTitle: 'Vypadá to na kontakt',
       contactText: 'Telefonní čísla, e-maily a kontakty na messengery se blokují. Uprav text, nebo ho pošli i tak, pokud jde o planý poplach.',
       saleTitle: 'Zní to jako obchod',
-      saleText: 'Nákup a prodej semínek, řízků nebo palic se blokuje. Uprav text, nebo ho pošli i tak, pokud nejde o obchod.',
+      saleText: 'Nákup, prodej, výměna i darování semínek, řízků nebo palic se blokuje. Uprav text, nebo ho pošli i tak, pokud nejde o obchod.',
       sendAnyway: 'Poslat i tak'
     },
     home: {
@@ -357,7 +358,7 @@ export default {
     },
     unanswered: {
       title: 'Nikdo nečeká',
-      text: 'Každý dotaz má aspoň jednu odpověď. Zasekl ses? Zeptej se a přilož kontext rostliny.'
+      text: 'Každý dotaz má aspoň jednu odpověď. Nevíš si rady? Zeptej se a přilož kontext rostliny.'
     },
     tabs: { forYou: 'Pro tebe', following: 'Sledovaní', new: 'Nové', popular: 'Populární', unanswered: 'Bez odpovědi' },
     cats: {
@@ -415,6 +416,7 @@ export default {
     retry: 'Zkusit znovu',
     removed: 'Odstraněno moderací',
     removedText: 'Tento příspěvek vidíš jen ty.',
+    removedOnlyYou: 'vidíš ho jen ty',
     err: {
       rate: 'Zpomal trochu – zkus to za chvíli',
       banned: 'Tvůj účet teď nemůže přispívat',
@@ -440,14 +442,14 @@ export default {
         light: 'Celá rostlina pod bílým světlem, ne fialovým',
         context: 'Přiložený kontext rostliny (fáze, pH, EC, hnojení)'
       },
-      autoPhotos: { one: 'Přidal jsem poslední fotku rostliny {name}', few: 'Přidal jsem {n} poslední fotky rostliny {name}', other: 'Přidal jsem {n} posledních fotek rostliny {name}' },
+      autoPhotos: { one: 'Přidána poslední fotka rostliny {name}', few: 'Přidány {n} poslední fotky rostliny {name}', other: 'Přidáno {n} posledních fotek rostliny {name}' },
       privacy: 'Zkontroluj, že na fotkách nejsou obličeje, adresy ani nic, podle čeho by šlo poznat, kde bydlíš.',
       problemPh: 'např. Rezavé skvrny na spodních listech, 4. týden vegetace',
       titlePh: 'Co chceš ukázat nebo se zeptat?',
       questionPh: 'např. Žluté špičky ve 3. týdnu kvetení?',
       bodyLabel: 'Text',
-      bodyPh: 'Popiš to – odrůda, setup, co jsi dělal…',
-      questionBodyPh: 'Popiš, co vidíš a co už jsi zkoušel…',
+      bodyPh: 'Popiš to – odrůda, setup, postup…',
+      questionBodyPh: 'Popiš, co vidíš a co už máš vyzkoušené…',
       photos: 'Fotky',
       addPhoto: 'Přidat fotku',
       uploading: 'Nahrávám',
@@ -486,7 +488,7 @@ export default {
       notFound: 'Příspěvek nenalezen',
       notFoundText: 'Možná byl smazán nebo odstraněn moderací.',
       back: 'Zpět do komunity',
-      blocked: 'Tohoto pěstitele jsi zablokoval',
+      blocked: 'Tenhle účet máš zablokovaný',
       blockedText: 'Odblokuj ho na jeho profilu a uvidíš jeho příspěvky.',
       comments: 'Komentáře',
       noComments: 'Zatím žádné komentáře. Poděl se o to, co víš.',

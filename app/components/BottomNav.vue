@@ -2,12 +2,13 @@
 const route = useRoute()
 const { t } = useI18n()
 
+// heavy routes (AI runtime, supabase-js) prefetch on interaction only, not as soon as the nav is visible
 const items = [
   { to: '/', label: 'home', icon: 'home' },
   { to: '/plants', label: 'plants', icon: 'plants' },
-  { to: '/ai-assistant', label: 'ai', icon: 'spark', center: true },
+  { to: '/ai-assistant', label: 'ai', icon: 'spark', center: true, heavy: true },
   { to: '/guide', label: 'guide', icon: 'guide' },
-  { to: '/community', label: 'community', icon: 'community' }
+  { to: '/community', label: 'community', icon: 'community', heavy: true }
 ]
 
 const COMMUNITY = ['/community', '/u/', '/plant/', '/strains', '/challenges']
@@ -28,6 +29,7 @@ const isActive = (to: string) => {
         v-for="item in items"
         :key="item.to"
         :to="item.to"
+        :prefetch-on="item.heavy ? 'interaction' : 'visibility'"
         class="nav-item"
         :class="{ active: isActive(item.to), center: item.center }"
         :aria-current="isActive(item.to) ? 'page' : undefined"

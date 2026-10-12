@@ -11,6 +11,8 @@ export function buildDemoData(today = todayISO()): GrowData {
   const data = emptyData()
   data.settings.initialized = true
   data.settings.demo = true
+  // the hero plant (Northern Lights, photoperiod) is flowering, so the main tent runs 12/12
+  data.settings.lightHours = 12
   const now = new Date().toISOString()
   const ago = (d: number) => addDays(today, -d)
   const cs = locale.value === 'cs'

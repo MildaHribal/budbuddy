@@ -1,5 +1,13 @@
 apply plugin: 'com.android.application'
 
+static int localVersionCode() {
+    def now = Calendar.getInstance()
+    def yy = now.get(Calendar.YEAR) % 100
+    def day = now.get(Calendar.DAY_OF_YEAR)
+    def slot = now.get(Calendar.HOUR_OF_DAY) * 4 + now.get(Calendar.MINUTE).intdiv(15)
+    return (yy * 1000 + day) * 100 + slot
+}
+
 android {
     namespace "eu.budbuddy.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,14 +15,17 @@ android {
         applicationId "eu.budbuddy.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // CI passes -PversionCode / -PversionName, local builds fall back to package.json
-        versionCode project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : 1
+        // CI passes -PversionCode (yyDDDnn, nn = run number). Local builds use the same
+        // yyDDD prefix with nn = quarter-hour of the day, so they never fall back to 1.
+        versionCode project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : localVersionCode()
         versionName project.hasProperty('versionName') ? project.property('versionName') : new groovy.json.JsonSlurper().parse(file('../../package.json')).version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            // -PnoAi drops the offline AI pack (public/ai, 180+ MB) and the onnxruntime wasm Vite
+            // copies into _nuxt (unused: the pack ships its own under ai/ort/), keeping the Play bundle small
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~' + (project.hasProperty('noAi') ? ':<dir>ai:<file>ort-wasm-*' : '')
         }
     }
     androidResources {

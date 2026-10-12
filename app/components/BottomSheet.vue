@@ -25,6 +25,10 @@ useBackHandler(open, () => {
   open.value = false
 })
 
+// declared before the immediate open watcher below uses it
+const drag = ref(0)
+const dragging = ref(false)
+
 // Modal: everything outside the sheet is inert while it is open; focus returns to the trigger on close.
 const root = ref<HTMLElement | null>(null)
 let trigger: HTMLElement | null = null
@@ -100,8 +104,6 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 // Drag down on the grip (handle + header) to dismiss.
-const drag = ref(0)
-const dragging = ref(false)
 let startY = 0
 let lastY = 0
 let lastT = 0

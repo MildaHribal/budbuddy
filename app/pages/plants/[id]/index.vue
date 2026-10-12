@@ -4,6 +4,7 @@ import { Directory, Filesystem } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
 import type { EntryType, JournalEntry, StageId } from '~/types/grow'
 import type { LightboxItem } from '~/components/PhotoLightbox.vue'
+import { authUiWanted } from '~/utils/authUi'
 import { isMissingSchema } from '~/utils/dbErrors'
 import { completedWeek, dueWeek, updateStreak, type UpdateRow } from '~/utils/weeklyUpdate'
 
@@ -361,16 +362,52 @@ async function removePlant() {
 }
 
 // ── Public sharing ────────────────────────────────────────────────
-const sharing = usePlantSharing()
-const { requireAuth, accepted } = useAuth()
-const unlinked = computed(() => sharing.isUnlinked(plantId.value))
+// Loaded on demand: they pull in supabase-js, which the daily path (open plant, log water) never needs.
+type SharingApi = ReturnType<typeof import('~/composables/usePlantSharing')['usePlantSharing']>
+type AuthApi = ReturnType<typeof import('~/composables/useAuth')['useAuth']>
+const sharingApi = shallowRef<SharingApi | null>(null)
+const authApi = shallowRef<AuthApi | null>(null)
+let communityLoad: Promise<void> | null = null
+function loadCommunity(): Promise<void> {
+  communityLoad ??= Promise.all([import('~/composables/usePlantSharing'), import('~/composables/useAuth')])
+    .then(([s, a]) => {
+      sharingApi.value = s.usePlantSharing()
+      authApi.value = a.useAuth()
+    })
+    .catch((e) => {
+      communityLoad = null
+      throw e
+    })
+  return communityLoad
+}
+const hasSession = () => {
+  try {
+    return Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+  } catch {
+    return false
+  }
+}
+// a shared plant or a signed-in grower needs the real state right away
+if (plant.value?.sharing || hasSession()) loadCommunity().catch(() => {})
+
+const accepted = computed(() => authApi.value?.accepted.value ?? false)
+const unlinked = computed(() => sharingApi.value?.isUnlinked(plantId.value) ?? false)
 const isShared = computed(() => !!plant.value?.sharing && !unlinked.value)
-const publicBusy = computed(() => sharing.isBusy(plantId.value))
+const publicBusy = computed(() => sharingApi.value?.isBusy(plantId.value) ?? false)
 
 async function togglePublic() {
   const p = plant.value
   moreSheet.value = false
-  if (!p || publicBusy.value || !requireAuth()) return
+  if (!p || publicBusy.value) return
+  try {
+    await loadCommunity()
+  } catch {
+    notify(t('auth.share.failed'), { tone: 'error' })
+    return
+  }
+  const sharing = sharingApi.value!
+  authUiWanted.value = true
+  if (!authApi.value!.requireAuth()) return
   if (unlinked.value) return relinkPublic()
   const going = !p.sharing
   const ok = await confirm(going
@@ -390,7 +427,8 @@ async function togglePublic() {
 // shared from another account on this phone: publish under this one, or just stop showing it as public here
 async function relinkPublic() {
   const p = plant.value
-  if (!p) return
+  const sharing = sharingApi.value
+  if (!p || !sharing) return
   const ok = await confirm({ title: t('auth.share.otherTitle'), message: t('auth.share.otherMessage'), confirmLabel: t('auth.share.unlinkedPublish') })
   if (!ok) return
   try {
@@ -415,12 +453,16 @@ function askCommunity() {
 const updates = ref<UpdateRow[]>([])
 const updatesReady = ref(false)
 const weeklySheet = ref(false)
+const weeklyUsed = ref(false)
+watch(weeklySheet, v => v && (weeklyUsed.value = true))
 const publicId = computed(() => (isShared.value ? plant.value?.sharing?.publicId ?? null : null))
 
 async function loadUpdates() {
   const id = publicId.value
   updatesReady.value = false
   if (!id || !accepted.value) return (updates.value = [])
+  const { useSupabase } = await import('~/composables/useSupabase')
+  if (id !== publicId.value) return
   const { data, error } = await useSupabase().from('plant_updates').select('week_no, created_at').eq('plant_id', id)
   if (id !== publicId.value) return
   if (error) {
@@ -445,6 +487,9 @@ function onUpdatePosted(row: UpdateRow) {
 
 // ── Harvest recap ─────────────────────────────────────────────────
 const recapSheet = ref(false)
+// community sheets mount on first use and stay for their close animation
+const recapUsed = ref(false)
+watch(recapSheet, v => v && (recapUsed.value = true))
 
 function offerRecap() {
   notify(t('plant.recap.offer'), {
@@ -515,7 +560,7 @@ async function shareCard() {
   const p = plant.value
   const blob = shareBlob.value
   if (!p || !blob) return
-  const filename = `budbuddy-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'plant'}.png`
+  const filename = `budbuddy-${p.name.normalize('NFD').replace(/[\u0300-\u036F]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'plant'}.png`
   shareBusy.value = true
   try {
     if (Capacitor.isNativePlatform()) {
@@ -1583,16 +1628,16 @@ function duplicate() {
       </template>
     </BottomSheet>
 
-    <CommunityWeeklyUpdateSheet
-      v-if="publicId"
+    <LazyCommunityWeeklyUpdateSheet
+      v-if="publicId && weeklyUsed"
       v-model:open="weeklySheet"
       :plant="plant"
       :public-id="publicId"
       :week="weekDue ?? Math.max(1, completedWeek(plant, today))"
       @posted="onUpdatePosted"
     />
-    <CommunityHarvestRecapSheet
-      v-if="plant.harvest"
+    <LazyCommunityHarvestRecapSheet
+      v-if="plant.harvest && recapUsed"
       v-model:open="recapSheet"
       :plant="plant"
     />

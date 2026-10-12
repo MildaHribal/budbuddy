@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import type { PublicAuthor } from '~/types/community'
 import type { Strain, StrainStats } from '~/utils/strains'
 
@@ -252,6 +253,7 @@ const statTiles = computed(() => {
     { key: 'avgRating', value: s?.avg_rating != null ? fmt1(Number(s.avg_rating)) : '–', suffix: t('strains.ofFive'), icon: 'spark', color: 'var(--leaf)' }
   ]
 })
+useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 </script>
 
 <template>

@@ -16,11 +16,13 @@ const SYSTEM_INSTRUCTIONS: Record<Locale, string> = {
 
 Styl: stručně, nejdřív co udělat, pak krátce proč; obvykle 3–6 odrážek, do 120 slov. Delší jen na výslovné přání. Bez úvodů, opakování otázky a shrnutí.
 
-Doptávání: konkrétní otázku zodpověz rovnou. U nejasného příznaku bez fotky (žluté listy, skvrny…) nevypisuj vše: začni „Nejspíš X, nebo Y.“ a polož 2–4 krátké otázky, které to rozliší (špičky/celé listy, staré dole/nové nahoře, skvrny, kroucení, žilky, pH/EC výtoku). Na nic z kontextu rostliny se neptej. Když by rozhodla fotka, přidej <<photo>>. Jen když se ptáš, dej na poslední řádek <<reply: a | b | c>> (2–4 odpovědi uživatele, max 4 slova, ne „mám fotku“). Po jeho odpovědi raď konkrétně.
+Doptávání: když otázka popisuje příznak dost konkrétně (kde na rostlině, jak vypadá, substrát či fáze), odpověz rovnou: nejpravděpodobnější příčina, první krok a 1–2 kontroly, které ji potvrdí. Doptej se jen u opravdu vágního popisu (třeba jen „žloutnou listy“): začni „Nejspíš X, nebo Y.“ a polož 2–3 krátké otázky, které to rozliší. Na nic z kontextu rostliny se neptej. Když by rozhodla fotka, přidej <<photo>>. Jen když se ptáš, dej na poslední řádek <<reply: a | b | c>> (2–4 odpovědi uživatele, max 4 slova, ne „mám fotku“).
 
-Zdroje: opírej se o úryvky a cituj [n] za tvrzením; nepoužité necituj. Kurátorované znalosti a tabulky jsou spolehlivé, fóra s rezervou; rozpory zmiň. Bez úryvků odpověz z obecných znalostí bez [n]. Dávky hnojiv jen z tabulek či úryvků (s citací) nebo z deníku, jinak odkaž na etiketu a nižší dávku.
+Zdroje: opírej se o úryvky a cituj [n] hned za tvrzením; nepoužité necituj. Kurátorované znalosti jsou spolehlivé, fóra s rezervou; rozpory zmiň. Bez úryvků odpověz z obecných znalostí úplně bez značek. Nikdy nepiš jiné hranaté značky ani názvy odkazů (např. [obecné znalosti], [Full Guide]). Krmná tabulka značky platí jen pro tu řadu hnojiv, není to obecný cíl pro fázi: obecné rozsahy ber z kurátorovaných znalostí. Dávky hnojiv jen z tabulek či úryvků (s citací) nebo z deníku, jinak odkaž na etiketu a nižší dávku.
 
-Fotka: klasifikátor je druhý názor – spoj ho s tím, co vidíš, a s kontextem; řekni jistotu a co ověřit. Zmiň slabé důkazy (weak, transfer-only) a co klasifikátor nepozná. Jeho slabiny: zdravý rub listu občas bere jako svilušky; plete Mn s P/Mg/K, N s Mg a fusarium se žloutnutím; vidí jen střed fotky, takže drobné škůdce u okraje mine – v nejistotě chtěj detail. Není-li na fotce konopí nebo je nečitelná, řekni to.
+Fotka: posuď ji sám. Může přijít „předběžná kontrola fotky“ – je to jen interní nápověda a často se mýlí. Nikdy ji nezmiňuj, ani klasifikátor, model či procenta. Ber ji v potaz, jen když sedí s tím, co vidíš, a s kontextem; „nespolehlivá“ znamená ignoruj ji. Drobní škůdci u okraje fotky snadno uniknou – v nejistotě chtěj detail. Není-li na fotce konopí nebo je nečitelná, řekni to.
+
+Bezpečnost: nikdy nedoporučuj syntetické akaricidy ani insekticidy (abamektin/Vertimec, imidakloprid, myklobutanil, pyrethroidy, systémové přípravky) – na kouřenou úrodu nepatří. V květu se na palice nestříká nic, ani bio přípravky; v květu jen dravci, mechanicky, klima nebo dřívější sklizeň.
 
 Mimo téma: na pozdrav či díky odpověz přátelsky 1–2 větami a nabídni pomoc; jinou otázku (počty, vtip, počasí – živá data nemáš) zodpověz krátce a vrať se k pěstování. Nikdy neodpovídej prázdně.
 
@@ -29,11 +31,13 @@ Právo jen podle úryvků s citací, jinak řekni, že to nemáš ověřené. S 
 
 Style: concise, what to do first, then briefly why; usually 3–6 bullets, under 120 words. Longer only when explicitly asked. No intros, no restating the question, no summary.
 
-Asking back: answer a specific question directly. For a vague symptom without a photo (yellow leaves, spots…) do not list everything: start with "Most likely X or Y." and ask 2–4 short questions that tell them apart (tips/whole leaves, old lower/new upper, spots, curling, veins, runoff pH/EC). Never ask about anything in the plant context. When a photo would decide it, add <<photo>>. Only when you ask, put <<reply: a | b | c>> on the last line (2–4 user answers, max 4 words, not "I have a photo"). Once the user answers, give concrete advice.
+Asking back: when the question describes the symptom in enough detail (where on the plant, what it looks like, medium or stage), answer directly: the most likely cause, the first step, and 1–2 checks that confirm it. Ask back only when it is genuinely vague (e.g. just "yellow leaves"): start with "Most likely X or Y." and ask 2–3 short questions that tell them apart. Never ask about anything in the plant context. When a photo would decide it, add <<photo>>. Only when you ask, put <<reply: a | b | c>> on the last line (2–4 user answers, max 4 words, not "I have a photo").
 
-Sources: rely on the passages and cite [n] after the claim; do not cite unused ones. Curated knowledge and charts are reliable, forums less so; mention conflicts. Without passages answer from general knowledge without [n]. Nutrient doses only from charts or passages (cited) or the journal; otherwise point to the label and a lower dose.
+Sources: rely on the passages and cite [n] right after the claim; do not cite unused ones. Curated knowledge is reliable, forums less so; mention conflicts. Without passages answer from general knowledge with no tags at all. Never write any other bracketed tags or link labels (e.g. [general knowledge], [Full Guide]). A brand's feeding chart applies to that nutrient line only, it is not a general target for a stage: take general ranges from curated knowledge. Nutrient doses only from charts or passages (cited) or the journal; otherwise point to the label and a lower dose.
 
-Photo: the classifier is a second opinion – combine it with what you see and the context; say how sure you are and what to check. Mention weak evidence (weak, transfer-only) and what the classifier cannot recognise. Its weaknesses: it sometimes reads a healthy leaf underside as spider mites; confuses Mn with P/Mg/K, N with Mg, and fusarium with yellowing; it only sees the photo centre, so it misses small pests near the edges – ask for a close-up when unsure. If the photo is not cannabis or is unreadable, say so.
+Photo: judge it yourself. A "photo pre-check" may follow; it is only an internal hint and often wrong. Never mention it, a classifier, a model or percentages. Use it only when it fits what you see and the context; "unreliable" means ignore it. Small pests near the photo edges are easy to miss – ask for a close-up when unsure. If the photo is not cannabis or is unreadable, say so.
+
+Safety: never recommend synthetic acaricides or insecticides (abamectin/Vertimec, imidacloprid, myclobutanil, pyrethroids, systemic products) – they do not belong on a smoked crop. Nothing is sprayed on buds in flower, not even organic products; in flower use predators, mechanical removal, climate or an earlier harvest.
 
 Off topic: reply to greetings or thanks in a friendly way in 1–2 sentences and offer help; answer other questions (maths, a joke, weather – you have no live data) briefly and steer back to growing. Never reply with nothing.
 
@@ -49,7 +53,6 @@ const clip = (text: string, max: number) => {
 
 const t = (key: string, params?: Params) => translate(`ai.${key}`, params)
 const c = (key: string, params?: Params) => t(`ctx.${key}`, params)
-const pct = (p: number) => `${Math.round(p * 100)} %`
 const date = (iso: string) => formatDate(iso, { day: 'numeric', month: 'short' }) || iso
 const stageLabel = (stage: StageId) => stageInfo(stage).label
 
@@ -94,6 +97,19 @@ export function describeLight(lightsOn: string, lightHours: number, now = new Da
   return c('light', { on: hours, off: 24 - hours, onAt: s.onLabel, offAt: s.offLabel, state })
 }
 
+/**
+ * The app has one global light schedule. A photoperiod plant follows its stage instead when the global
+ * value cannot apply to it (e.g. 18/6 for a flowering plant in another tent). null = no light line.
+ */
+export function plantLightHours(plant: Pick<Plant, 'type' | 'stage'>, globalHours: number): { hours: number, fromStage: boolean } | null {
+  if (plant.stage === 'drying' || plant.stage === 'curing') return null
+  if (plant.type === 'photoperiod') {
+    if (plant.stage === 'flowering' && globalHours > 13) return { hours: 12, fromStage: true }
+    if (plant.stage !== 'flowering' && globalHours <= 13) return { hours: 18, fromStage: true }
+  }
+  return { hours: globalHours, fromStage: false }
+}
+
 export function summarizePlant({ plant, entries, tasks = [], light = null, now = new Date(), today = todayISO(), detailDays = 14, maxDetailLines = 12 }: PlantContextInput): string {
   const lines: string[] = []
   const progress = stageProgress(plant, today)
@@ -108,7 +124,12 @@ export function summarizePlant({ plant, entries, tasks = [], light = null, now =
     lines.push(c('stageHistory', { history }))
   }
   const setup = [c('growing', { medium: t(`medium.${plant.medium}`), pot: plant.potSize ? c('pot', { pot: plant.potSize }) : '', location: t(`location.${plant.location}`) })]
-  if (light && plant.location !== 'outdoor') setup.push(describeLight(light.lightsOn, light.lightHours, now))
+  const lit = light && plant.location !== 'outdoor' ? plantLightHours(plant, light.lightHours) : null
+  if (light && lit) {
+    const line = describeLight(light.lightsOn, lit.hours, now)
+    const global = Math.max(0, Math.min(24, Math.round(light.lightHours)))
+    setup.push(lit.fromStage ? `${line} ${c('lightStage', { on: global, off: 24 - global })}` : line)
+  }
   if (plant.wateringInterval) setup.push(c('watering', { n: plant.wateringInterval }))
   setup.push(c('health', { health: plant.health }))
   lines.push(setup.join(' · '))
@@ -166,12 +187,22 @@ export function summarizePlant({ plant, entries, tasks = [], light = null, now =
   return lines.join('\n')
 }
 
+/** Below this the top class is no better than a guess. */
+export const DIAG_RELIABLE = 0.5
+
+export const diagReliable = (result: DiagResult | null | undefined) => (result?.diag[0]?.p ?? 0) >= DIAG_RELIABLE
+
+/** Qualitative hint for the model: no numbers, so none end up in the answer. */
 export function formatDiagnosis(result: DiagResult): string {
   const lines = [c('diagTitle')]
-  result.diag.forEach((d, i) => lines.push(c('diagLine', { i: i + 1, label: d.label, p: pct(d.p), evidence: d.evidence })))
-  if (!result.diag.length) lines.push(c('diagNone'))
-  const stage = result.stage[0]
-  if (stage) lines.push(c('diagStage', { stages: `${stage.label} ${pct(stage.p)}` }))
+  if (!diagReliable(result)) {
+    lines.push(c('diagUnreliable'))
+  } else {
+    for (const d of result.diag.filter(d => d.p >= 0.15)) {
+      const conf = c(d.p >= 0.8 ? 'diagLikely' : d.p >= DIAG_RELIABLE ? 'diagPossible' : 'diagLess')
+      lines.push(`- ${d.label}: ${conf}${d.evidence === 'tested' ? '' : c('diagWeak')}`)
+    }
+  }
   if (result.unsupported.length) lines.push(c('diagUnsupported', { list: result.unsupported.join(', ') }))
   return lines.join('\n')
 }
@@ -209,19 +240,58 @@ const SMALL_TALK = new Set(('ahoj cau caues cauky nazdar zdar zdravim zdravime c
   + 'super ok okay oki jasne fajn parada vyborne skvele pa nashle nashledanou mej mejte se jak mas mate je to vse dobry ty vy a co ty '
   + 'hi hello hey hiya there yo sup thanks thank you thx cheers good morning evening afternoon night great cool nice bye how are whats up doing fine too').split(' '))
 
+const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
+
+/** Anything about growing (folded, no diacritics). */
+const GROW = new RegExp(String.raw`\b(?:list|leaf|leaves|rostlin|plant|kvet|kvest|flower|bloom|bud|palic|zal[ie]|water|hnoj|feed|nutri|zivin|ph|ec|ppm|vpd|ppfd|dli|light|svetl|led|lamp|sklid|skliz|harvest|trich|sus|dry|drying|cur|hlin|soil|kokos|coco|hydro|seme|seed|klic|germ|vegeta|veg|top|lst|hst|scrog|defol|trim|plis|mou?ld|mildew|padli|svilus|mite|gnat|smutn|skud|pest|thrip|trasn|aphid|msic|koren|root|stonek|stem|kvetinac|pots?|stan|tent|vlhk|humid|tepl|temp|auto|strain|odrud|klon|clone|rizk|rizek|yield|urod|thc|cbd|weed|trav|konop|cannabis|grow|pest|stres|stress)\w*`)
+
+const JOKE = /\b(vtip\w*|joke\w*|funny|pocasi|weather|kolik je|what is \d|how much is \d|\d+\s*[-+*/x×]\s*\d+)/
+
+export const isGrowRelated = (question: string) => GROW.test(fold(question))
+
 /** The user explicitly asks for a long answer (detailed guide etc.). */
 export const wantsLongAnswer = (question: string) =>
   /podrobn|detailn|návod|krok za krokem|rozepiš|in detail|detailed|step by step|full guide/i.test(question)
 
-/** Greetings, thanks and similar – no knowledge search needed. */
-export function isSmallTalk(question: string): boolean {
-  const words = question.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^\p{L}\s]/gu, ' ').split(/\s+/).filter(Boolean)
-  return words.length > 0 && words.length <= 6 && words.every(w => SMALL_TALK.has(w))
+/**
+ * Greetings, thanks, jokes, maths and other short messages with nothing about growing: no knowledge search.
+ * With history a short message is a follow-up (an answer to the assistant's question), not small talk.
+ */
+export function isSmallTalk(question: string, hasHistory = false): boolean {
+  const folded = fold(question)
+  const words = folded.replace(/[^\p{L}\s]/gu, ' ').split(/\s+/).filter(Boolean)
+  if (!folded.trim()) return false
+  if (words.length > 0 && words.length <= 6 && words.every(w => SMALL_TALK.has(w))) return true
+  if (GROW.test(folded)) return false
+  if (JOKE.test(folded)) return true
+  return !hasHistory && words.length <= 4
 }
 
-export function buildKbQuery(question: string, diag?: DiagResult | null): string {
-  const names = (diag?.diag ?? []).filter(d => d.p >= 0.1).slice(0, 2).map(d => d.label)
-  return [question.trim(), ...names].filter(Boolean).join(' ')
+/** Symptom or "what is this" questions, where a photo diagnosis helps the search. */
+const DIAGNOSTIC = /zlout|zlut|hned|skvrn|teck|krout|vadn|svesen|bled|fial|spal|suche|plis|padli|skud|pavuc|co (se )?(to )?(je|deje)|co s tim|neni v poradku|yellow|brown|spot|curl|wilt|droop|pale|purple|burn|crisp|mou?ld|mildew|pest|bug|web|wrong|what (is|'s) (this|it|that)|sick|problem|deficien|nedostat/
+
+export interface KbQueryInput {
+  question: string
+  diagnosis?: DiagResult | null
+  plant?: Pick<Plant, 'medium' | 'stage' | 'type'> | null
+  /** the previous user question, used for short follow-ups */
+  previous?: string | null
+}
+
+export function buildKbQuery({ question, diagnosis, plant, previous }: KbQueryInput): string {
+  const q = question.trim()
+  const parts = [q]
+  const words = q.split(/\s+/).filter(Boolean).length
+  if (previous?.trim() && words <= 5) parts.unshift(previous.trim())
+  const top = diagnosis?.diag[0]
+  if (top && top.cls !== 'healthy' && top.p >= 0.35 && (!q || DIAGNOSTIC.test(fold(q)))) {
+    parts.push(...diagnosis!.diag.filter(d => d.p >= 0.35 && d.cls !== 'healthy').slice(0, 2).map(d => d.label))
+  }
+  if (plant) {
+    parts.push(t(`medium.${plant.medium}`), stageLabel(plant.stage))
+    if (plant.type === 'autoflower') parts.push('autoflower')
+  }
+  return parts.filter(Boolean).join(' ')
 }
 
 export interface TurnInput {

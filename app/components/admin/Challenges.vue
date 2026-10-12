@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mediaPaths } from '~/composables/useModeration'
 import { challengePhase, challengeTitle, dayBoundary, defaultChallengeDates, localDateISO, slugify, type Challenge } from '~/utils/challenge'
 
 const { t } = useI18n()
@@ -123,8 +124,12 @@ async function save() {
 
 async function remove(c: Challenge) {
   if (!(await confirm({ title: t('admin.challenges.deleteConfirm'), message: t('admin.challenges.deleteText'), confirmLabel: t('common.delete'), danger: true }))) return
+  const { data: entries } = await sb.from('challenge_entries').select('image_url').eq('challenge_id', c.id)
   const { error } = await sb.from('challenges').delete().eq('id', c.id)
   if (error) return notify(t('admin.failed'), { tone: 'error' })
+  // the cover and entry photos would be orphaned otherwise
+  const paths = mediaPaths({ cover: c.cover_url, images: (entries ?? []).map(e => e.image_url as string) })
+  if (paths.length) sb.storage.from('media').remove(paths).catch(() => {})
   items.value = items.value.filter(x => x.id !== c.id)
   open.value = false
   notify(t('admin.challenges.deleted'), { tone: 'info' })
@@ -136,7 +141,11 @@ async function finalize(c: Challenge) {
   finalizing.value = true
   const { error } = await sb.rpc('finalize_challenge', { challenge: c.id })
   finalizing.value = false
-  if (!error) return notify(t('admin.challenges.finalized'))
+  if (!error) {
+    c.finalized_at = new Date().toISOString()
+    load()
+    return notify(t('admin.challenges.finalized'))
+  }
   if (isMissingSchema(error)) return notify(t('admin.challenges.finalizeUnavailable'), { tone: 'error' })
   notify(/not (yet )?(ended|finished)|still open|voting/i.test(error.message) ? t('admin.challenges.finalizeTooEarly') : t('admin.failed'), { tone: 'error' })
 }
@@ -357,8 +366,14 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
         >
           {{ t('common.save') }}
         </button>
+        <p
+          v-if="editing?.finalized_at"
+          class="field-hint"
+        >
+          {{ t('admin.challenges.finalizedOn', { date: formatDate(editing.finalized_at.slice(0, 10)) }) }}
+        </p>
         <div
-          v-if="editing && challengePhase(editing) === 'finished'"
+          v-else-if="editing && challengePhase(editing) === 'finished'"
           class="finalize"
         >
           <button

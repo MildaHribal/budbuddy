@@ -21,7 +21,7 @@ const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-red
 const leafShown = ref(reduced)
 let leafTimer: ReturnType<typeof setTimeout> | undefined
 onMounted(() => {
-  if (!reduced) leafTimer = setTimeout(() => (leafShown.value = true), 750)
+  if (!reduced) leafTimer = setTimeout(() => (leafShown.value = true), 350)
 })
 onBeforeUnmount(() => clearTimeout(leafTimer))
 
@@ -71,6 +71,12 @@ const lightHint = computed(() => {
   const h = state.settings.lightHours
   return PRESETS.includes(h as typeof PRESETS[number]) ? t(`onboarding.light.hint.h${h}`) : ''
 })
+// the demo garden runs 12/12 (its hero plant flowers); an empty garden starts at 18/6 unless picked here
+const lightTouched = ref(false)
+function setHours(h: number) {
+  lightTouched.value = true
+  updateSettings({ lightHours: h })
+}
 function setLightsOn(e: Event) {
   const v = (e.target as HTMLInputElement).value
   if (/^\d{2}:\d{2}$/.test(v)) updateSettings({ lightsOn: v })
@@ -99,7 +105,7 @@ async function finish(mode: 'demo' | 'empty') {
     if (mode === 'empty') {
       // eraseAll resets settings too, so put the guide's choices back.
       const { growerName, language, lightsOn, lightHours, reminders, reminderTime } = state.settings
-      const keep: Partial<Settings> = { growerName, language, lightsOn, lightHours, reminders, reminderTime }
+      const keep: Partial<Settings> = { growerName, language, lightsOn, lightHours: lightTouched.value ? lightHours : 18, reminders, reminderTime }
       await eraseAll()
       updateSettings({ ...keep, initialized: true })
     }
@@ -312,7 +318,7 @@ async function finish(mode: 'demo' | 'empty') {
                 type="button"
                 class="num"
                 :aria-pressed="state.settings.lightHours === h"
-                @click="updateSettings({ lightHours: h })"
+                @click="setHours(h)"
               >
                 {{ h }}/{{ 24 - h }}
               </button>
@@ -615,7 +621,7 @@ async function finish(mode: 'demo' | 'empty') {
   font-weight: 600;
   letter-spacing: -0.035em;
   opacity: 0;
-  animation: g-rise var(--dur-slow) 1.2s var(--ease-out) forwards;
+  animation: g-rise var(--dur-slow) 0.55s var(--ease-out) forwards;
 }
 
 .tagline {
@@ -625,7 +631,7 @@ async function finish(mode: 'demo' | 'empty') {
   line-height: 1.45;
   color: var(--text-2);
   opacity: 0;
-  animation: g-rise var(--dur-slow) 1.35s var(--ease-out) forwards;
+  animation: g-rise var(--dur-slow) 0.65s var(--ease-out) forwards;
 }
 
 .values {
@@ -647,9 +653,9 @@ async function finish(mode: 'demo' | 'empty') {
   animation: g-rise var(--dur-slow) var(--ease-out) forwards;
 }
 
-.values li:nth-child(1) { animation-delay: 1.55s; }
-.values li:nth-child(2) { animation-delay: 1.65s; }
-.values li:nth-child(3) { animation-delay: 1.75s; }
+.values li:nth-child(1) { animation-delay: 0.8s; }
+.values li:nth-child(2) { animation-delay: 0.9s; }
+.values li:nth-child(3) { animation-delay: 1s; }
 
 .v-icon {
   flex: none;

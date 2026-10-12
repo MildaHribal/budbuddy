@@ -7,7 +7,11 @@ import type { KbHit } from '~/ai/kb'
 import { LlmError, type LlmErrorCode } from '~/ai/llm'
 import { translate } from '~/composables/useI18n'
 import { parseAnswer } from '~/ai/markers'
-import { buildKbQuery, buildTurnText, isSmallTalk, prepareHistory, selectPassages, summarizePlant, systemInstruction, wantsLongAnswer, type HistoryTurn } from '~/ai/prompt'
+import { buildKbQuery, buildTurnText, isSmallTalk, prepareHistory, summarizePlant, systemInstruction, wantsLongAnswer, type HistoryTurn } from '~/ai/prompt'
+import { pickGuideLinks, type GuideLink } from '~/ai/guideLinks'
+import { retrievePassages } from '~/ai/retrieve'
+import { AI_PACK_URL, deletePack as removeDownloadedPack, downloadPack, resolveAiSource, storedBytes, type AiSource } from '~/ai/pack'
+import { AiPack, assetPackAvailable, assetPackBase, type AssetPackState } from '~/ai/assetPack'
 import { AI_GENERATION } from '../../shared/aiModels'
 import { createId } from '~/utils/id'
 import { locale } from '~/utils/locale'
@@ -45,6 +49,11 @@ export interface AssistantMessage {
   model?: string
   pending?: boolean
   status?: string
+  /** guide lessons that cover the topic */
+  guide?: GuideLink[]
+  /** curated passages shown word for word when the AI server could not be reached */
+  fallback?: { title: string, text: string, lang: string }[]
+  reported?: boolean
 }
 
 export type ModuleState = 'idle' | 'loading' | 'ready' | 'missing'
@@ -54,6 +63,7 @@ const lastThread = ref<string | null>(null)
 const busy = ref(false)
 const classifierState = ref<ModuleState>('idle')
 const kbState = ref<ModuleState>('idle')
+const aiSource = shallowRef<AiSource | null>(null)
 const diagnoseMod = shallowRef<typeof import('~/ai/diagnose') | null>(null)
 const kbMod = shallowRef<typeof import('~/ai/kb') | null>(null)
 let loadPromise: Promise<void> | null = null
@@ -89,35 +99,166 @@ function loadChats(): Promise<void> {
   return loadPromise
 }
 
+let appBase = '/'
+let sourcePromise: Promise<AiSource | null> | null = null
+
+/** The downloaded pack is not reachable by URL, so ort-web gets blob: URLs for its runtime files. */
+async function ortPaths(source: AiSource): Promise<string | { wasm: string, mjs: string }> {
+  if (source.kind !== 'download' || !source.fetch) return `${source.base}ort/`
+  const blobUrl = async (file: string, type: string) => {
+    const res = await source.fetch!(`${source.base}ort/${file}`)
+    return URL.createObjectURL(new Blob([await res.arrayBuffer()], { type }))
+  }
+  const [wasm, mjs] = await Promise.all([blobUrl('ort-wasm-simd-threaded.wasm', 'application/wasm'), blobUrl('ort-wasm-simd-threaded.mjs', 'text/javascript')])
+  return { wasm, mjs }
+}
+
 function initOffline(baseURL: string) {
-  const base = baseURL.endsWith('/') ? baseURL : `${baseURL}/`
-  if (classifierState.value === 'idle') {
-    classifierState.value = 'loading'
-    import('~/ai/diagnose')
-      .then(async (mod) => {
-        const ok = await mod.initClassifier(`${base}ai/classifier/`, `${base}ai/ort/`)
-        diagnoseMod.value = ok ? mod : null
-        classifierState.value = ok ? 'ready' : 'missing'
-      })
-      .catch((e) => {
-        console.warn('[BudBuddy] photo classifier unavailable', e)
-        classifierState.value = 'missing'
-      })
+  appBase = baseURL.endsWith('/') ? baseURL : `${baseURL}/`
+  if (classifierState.value !== 'idle' && kbState.value !== 'idle') return
+  if (classifierState.value === 'idle') classifierState.value = 'loading'
+  if (kbState.value === 'idle') kbState.value = 'loading'
+  sourcePromise ??= resolveAiSource(appBase, assetPackBase)
+  sourcePromise.then(async (source) => {
+    aiSource.value = source
+    if (!source) {
+      classifierState.value = 'missing'
+      kbState.value = 'missing'
+      return
+    }
+    const ortPath = await ortPaths(source).catch(() => `${source.base}ort/`)
+    if (classifierState.value === 'loading') {
+      import('~/ai/diagnose')
+        .then(async (mod) => {
+          const ok = await mod.initClassifier(`${source.base}classifier/`, ortPath, source.fetch)
+          diagnoseMod.value = ok ? mod : null
+          classifierState.value = ok ? 'ready' : 'missing'
+        })
+        .catch((e) => {
+          console.warn('[BudBuddy] photo classifier unavailable', e)
+          classifierState.value = 'missing'
+        })
+    }
+    if (kbState.value === 'loading') {
+      import('~/ai/kb')
+        .then(async (mod) => {
+          mod.configureKb({ wasmPaths: ortPath, ...(source.fetch ? { fetch: source.fetch } : {}) })
+          const ok = await mod.initKb(`${source.base}kb/`)
+          kbMod.value = ok ? mod : null
+          kbState.value = ok ? 'ready' : 'missing'
+        })
+        .catch((e) => {
+          console.warn('[BudBuddy] knowledge base unavailable', e)
+          kbState.value = 'missing'
+        })
+    }
+  })
+}
+
+/** Looks for the files again, e.g. after a download finished. */
+function reloadOffline() {
+  sourcePromise = null
+  if (classifierState.value !== 'ready') classifierState.value = 'idle'
+  if (kbState.value !== 'ready') kbState.value = 'idle'
+  initOffline(appBase)
+}
+
+// ── Offline AI pack (download on demand) ──
+export type PackStatus = 'unavailable' | 'bundled' | 'none' | 'downloading' | 'paused' | 'failed' | 'installed' | 'needs_confirmation'
+const pack = reactive({ status: 'none' as PackStatus, done: 0, total: 0, error: '' })
+let packAbort: AbortController | null = null
+
+const packKind = () => (assetPackAvailable() ? 'asset-pack' as const : AI_PACK_URL ? 'download' as const : null)
+
+async function refreshPack(baseURL?: string) {
+  if (baseURL) appBase = baseURL.endsWith('/') ? baseURL : `${baseURL}/`
+  const source = await (sourcePromise ??= resolveAiSource(appBase, assetPackBase))
+  if (source?.kind === 'bundled') pack.status = 'bundled'
+  else if (source) pack.status = 'installed'
+  else if (!packKind()) pack.status = 'unavailable'
+  else if (pack.status !== 'downloading') {
+    pack.done = packKind() === 'download' ? await storedBytes() : 0
+    pack.status = pack.done > 0 ? 'paused' : 'none'
   }
-  if (kbState.value === 'idle') {
-    kbState.value = 'loading'
-    import('~/ai/kb')
-      .then(async (mod) => {
-        mod.configureKb({ wasmPaths: `${base}ai/ort/` })
-        const ok = await mod.initKb(`${base}ai/kb/`)
-        kbMod.value = ok ? mod : null
-        kbState.value = ok ? 'ready' : 'missing'
-      })
-      .catch((e) => {
-        console.warn('[BudBuddy] knowledge base unavailable', e)
-        kbState.value = 'missing'
-      })
+}
+
+function onPadState(s: AssetPackState) {
+  pack.done = s.bytes
+  pack.total = s.total
+  if (s.status === 'completed') {
+    pack.status = 'installed'
+    reloadOffline()
+  } else if (s.status === 'failed') {
+    pack.status = 'failed'
+  } else if (s.status === 'needs_confirmation' || s.status === 'waiting_wifi') {
+    pack.status = 'needs_confirmation'
+  } else if (s.status === 'canceled' || s.status === 'none') {
+    pack.status = 'paused'
+  } else {
+    pack.status = 'downloading'
   }
+}
+
+let padListening = false
+
+async function startPackDownload() {
+  if (pack.status === 'downloading') return
+  pack.error = ''
+  const kind = packKind()
+  if (kind === 'asset-pack') {
+    if (!padListening) {
+      padListening = true
+      await AiPack.addListener('progress', onPadState)
+    }
+    pack.status = 'downloading'
+    await AiPack.fetch().catch((e) => {
+      pack.status = 'failed'
+      pack.error = String((e as Error)?.message ?? e)
+    })
+    return
+  }
+  if (kind !== 'download') return
+  packAbort = new AbortController()
+  pack.status = 'downloading'
+  try {
+    await downloadPack(AI_PACK_URL, {
+      signal: packAbort.signal,
+      onProgress: (p) => {
+        pack.done = p.done
+        pack.total = p.total
+      }
+    })
+    pack.status = 'installed'
+    reloadOffline()
+  } catch (e) {
+    pack.status = packAbort?.signal.aborted ? 'paused' : 'failed'
+    if (!packAbort?.signal.aborted) pack.error = String((e as Error)?.message ?? e)
+  } finally {
+    packAbort = null
+  }
+}
+
+function cancelPackDownload() {
+  if (packKind() === 'asset-pack') AiPack.cancel().catch(() => {})
+  packAbort?.abort()
+}
+
+async function confirmPackDownload() {
+  await AiPack.confirm().catch(() => {})
+}
+
+async function removePack() {
+  cancelPackDownload()
+  if (packKind() === 'asset-pack') await AiPack.remove().catch(() => {})
+  await removeDownloadedPack()
+  diagnoseMod.value = null
+  kbMod.value = null
+  aiSource.value = null
+  classifierState.value = 'missing'
+  kbState.value = 'missing'
+  sourcePromise = null
+  pack.done = 0
+  pack.status = packKind() ? 'none' : 'unavailable'
 }
 
 function thread(key: string): AssistantMessage[] {
@@ -146,6 +287,17 @@ const toSources = (hits: KbHit[]): AssistantSource[] => hits.map((h, i) => ({
   snippet: h.text.replace(/\s+/g, ' ').trim().slice(0, 240)
 }))
 
+/** Top curated passages, shown word for word when there is no connection. */
+export function offlineCards(hits: readonly KbHit[], max = 3): NonNullable<AssistantMessage['fallback']> {
+  return hits.filter(h => h.kind !== 'corpus').slice(0, max).map((h) => {
+    const lines = h.text.replace(/^(Tip|Rada|Mýtus|Symptom):\s*/gm, '').trim().split('\n')
+    // the first line usually repeats the title
+    if (lines[0]?.trim() === h.title.trim()) lines.shift()
+    const text = lines.join('\n').trim()
+    return { title: h.title, text: text.length > 700 ? `${text.slice(0, 699)}…` : text, lang: h.lang }
+  })
+}
+
 export interface AskInput {
   threadKey: string
   question: string
@@ -170,6 +322,7 @@ async function ask({ threadKey, question, file = null }: AskInput) {
   list.push({ id: createId(), role: 'assistant', text: '', createdAt: new Date().toISOString(), pending: true, status: translate(file ? 'ai.status.photo' : 'ai.status.context') })
   // The array holds a reactive proxy – always mutate through it.
   const reply = list[list.length - 1]!
+  let found: KbHit[] = []
 
   try {
     let image: { mimeType: string, base64: string } | null = null
@@ -205,18 +358,24 @@ async function ask({ threadKey, question, file = null }: AskInput) {
       : null
 
     // null = no search for small talk; [] = searched (or no knowledge pack) and nothing found
-    let passages: KbHit[] | null = !file && isSmallTalk(question) ? null : []
+    let passages: KbHit[] | null = !file && isSmallTalk(question, history.length > 0) ? null : []
     const kb = kbMod.value
     if (kb && passages) {
       reply.status = translate('ai.status.kb')
       try {
-        passages = selectPassages(await kb.searchKb(buildKbQuery(question, diagnosis), 12))
+        const previous = file ? null : history.findLast(h => h.role === 'user')?.text ?? null
+        passages = await retrievePassages(kb, buildKbQuery({ question, diagnosis, plant, previous }), 12)
       } catch (e) {
         passages = []
         console.warn('[BudBuddy] knowledge search failed', e)
       }
     }
     reply.sources = toSources(passages ?? [])
+    found = passages ?? []
+    if (passages) {
+      const guide = pickGuideLinks(question, [...passages.filter(h => h.kind !== 'corpus').map(h => h.title), ...(diagnosis?.diag[0] && diagnosis.diag[0].p >= 0.5 ? [diagnosis.diag[0].label] : [])])
+      reply.guide = guide.length ? guide : undefined
+    }
     if (signal.aborted) throw new LlmError('aborted', translate('ai.errors.aborted'))
 
     const provider = ai.provider.value
@@ -256,6 +415,8 @@ async function ask({ threadKey, question, file = null }: AskInput) {
       reply.error = err.message
       reply.errorCode = err.code
       lastAttempt.set(threadKey, { question, file })
+      const cards = err.code === 'offline' ? offlineCards(found) : []
+      if (cards.length) reply.fallback = cards
     }
   } finally {
     reply.pending = false
@@ -309,7 +470,21 @@ export function useAssistant() {
     busy,
     classifierState,
     kbState,
+    aiSource,
     initOffline,
+    pack,
+    refreshPack,
+    startPackDownload,
+    cancelPackDownload,
+    confirmPackDownload,
+    removePack,
+    markReported: (threadKey: string, id: string) => {
+      const m = threads[threadKey]?.find(x => x.id === id)
+      if (m) {
+        m.reported = true
+        persist()
+      }
+    },
     ask,
     retry,
     canRetry: (key: string) => lastAttempt.has(key),

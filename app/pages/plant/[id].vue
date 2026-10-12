@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import type { LightboxItem } from '~/components/PhotoLightbox.vue'
 import type { PublicPlant, PublicTimelineEntry } from '~/utils/grower'
 import type { TrainingMethod } from '~/types/grow'
@@ -94,6 +95,22 @@ async function toggleFollow() {
   }
 }
 watch(id, load, { immediate: true })
+
+const { confirm } = useConfirm()
+async function removeShared() {
+  const p = plant.value
+  if (!p || !isOwner.value) return
+  const ok = await confirm({ title: t('auth.share.privateTitle'), message: t('auth.share.privateMessage'), confirmLabel: t('auth.share.makePrivate'), danger: true })
+  if (!ok) return
+  try {
+    await usePlantSharing().removePublic(p.id)
+    notify(t('auth.share.nowPrivate'), { icon: 'i-tabler-lock' })
+    $goBack()
+  } catch (e) {
+    console.error(e)
+    notify(t('auth.share.failed'), { tone: 'error' })
+  }
+}
 
 const ownerName = computed(() => owner.value?.display_name?.trim() || owner.value?.username || '')
 const blocked = computed(() => !!owner.value && owner.value.id !== user.value?.id && isBlocked(owner.value.id))
@@ -241,6 +258,7 @@ function openPhoto(url: string, e?: Event) {
 }
 
 const excerpt = (s: string, n = 100) => (s.length > n ? `${s.slice(0, n).trimEnd()}…` : s)
+useOnlineRetry(() => state.value === 'error', load)
 </script>
 
 <template>
@@ -340,12 +358,13 @@ const excerpt = (s: string, n = 100) => (s.length > n ? `${s.slice(0, n).trimEnd
             />
           </button>
           <CommunityReportMenu
-            v-if="owner?.id !== user?.id"
             class="bar-menu"
             target-type="plant"
             :target-id="plant.id"
             :author-id="owner?.id"
             :author-name="ownerName"
+            no-edit
+            @delete="removeShared"
           />
         </div>
         <div class="hero-info">

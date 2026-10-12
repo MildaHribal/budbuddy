@@ -499,10 +499,18 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 }
 
 .segmented.small button {
+  position: relative;
   white-space: nowrap;
   min-height: 34px;
   padding: 0 10px;
   font-size: 12px;
+}
+
+/* 44px tap area around the compact segments */
+.segmented.small button::after {
+  content: "";
+  position: absolute;
+  inset: -8px -2px;
 }
 
 /* Meters */

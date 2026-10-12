@@ -451,6 +451,19 @@ input[type="time"].input::-webkit-calendar-picker-indicator {
   transform: scale(0.96);
 }
 
+/* invisible hit area: chips and text links stay visually compact but take 44px taps */
+.chip,
+.link {
+  position: relative;
+}
+
+.chip::after,
+.link::after {
+  content: "";
+  position: absolute;
+  inset: min(0px, calc((100% - 44px) / 2)) min(0px, calc((100% - 44px) / 2));
+}
+
 .chip[aria-pressed="true"],
 .chip.active {
   background: var(--accent-soft);

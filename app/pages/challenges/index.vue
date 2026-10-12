@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import { challengeDescription, challengePhase, challengeTitle, rankEntries, type Challenge, type ChallengeEntry } from '~/utils/challenge'
 
 const { t } = useI18n()
@@ -78,6 +79,7 @@ useIntersectionObserver(sentinel, ([e]) => {
 const monthLabel = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { month: 'long', year: 'numeric' }).format(new Date(iso))
 const authorName = (e: ChallengeEntry) => e.author?.display_name || e.author?.username || '—'
 const crownDate = computed(() => (current.value ? new Intl.DateTimeFormat(intlLocale(), { day: 'numeric', month: intlLocale() === 'cs-CZ' ? 'numeric' : 'short' }).format(new Date(current.value.voting_ends_at)) : null))
+useOnlineRetry(() => failed.value, load)
 </script>
 
 <template>

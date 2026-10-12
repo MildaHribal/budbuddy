@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import { useFeedActions } from '~/utils/feed/actions'
 import type { GlyphName } from '~/utils/glyphs'
 import { authorName, CATEGORIES, ensureSchema, HELP_CATEGORIES, hotScore, keysetOr, PAGE, POST_SELECT, type Category, type ComposerPrefill, type Cursor, type Post } from '~/utils/feed/feed'
@@ -272,6 +273,7 @@ const emptyState = computed((): { icon: GlyphName, title: string, text: string, 
   if (category.value) return { icon: 'vegetative', title: t('feed.empty.title'), text: t('feed.empty.category'), action: 'post' as const }
   return { icon: 'seedling', title: t('feed.home.firstTitle'), text: t('feed.home.firstText'), action: 'post' as const }
 })
+useOnlineRetry(() => error.value, retry)
 </script>
 
 <template>

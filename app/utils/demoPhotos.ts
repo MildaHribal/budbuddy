@@ -12,7 +12,8 @@ const urls: Record<string, string> = Object.fromEntries(
 export const demoPhotoUrl = (id: string): string | undefined => urls[id]
 
 /** Puts the bundled demo photos into the photo store; references to photos that fail to load are removed. */
-export async function seedDemoPhotos(data: GrowData): Promise<void> {
+/** `isCurrent` turns false when the data was replaced meanwhile (restore, erase); then nothing is changed. */
+export async function seedDemoPhotos(data: GrowData, isCurrent: () => boolean = () => true): Promise<void> {
   const wanted = new Set<string>()
   for (const p of data.plants) if (p.photoId) wanted.add(p.photoId)
   for (const e of data.entries) e.photoIds.forEach(id => wanted.add(id))
@@ -20,7 +21,7 @@ export async function seedDemoPhotos(data: GrowData): Promise<void> {
   const loaded = new Set<string>()
   await Promise.all([...wanted].map(async (id) => {
     const url = urls[id]
-    if (!url) return
+    if (!url || !isCurrent()) return
     try {
       const res = await fetch(url)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -31,6 +32,7 @@ export async function seedDemoPhotos(data: GrowData): Promise<void> {
     }
   }))
 
+  if (!isCurrent()) return
   for (const p of data.plants) if (p.photoId && !loaded.has(p.photoId)) p.photoId = null
   for (const e of data.entries) e.photoIds = e.photoIds.filter(id => loaded.has(id))
   data.entries = data.entries.filter(e => e.type !== 'photo' || e.photoIds.length > 0)

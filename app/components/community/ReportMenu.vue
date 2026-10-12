@@ -7,6 +7,8 @@ const props = defineProps<{
   /** author of the content; enables Block and owner actions */
   authorId?: string | null
   authorName?: string | null
+  /** owner menu without Edit */
+  noEdit?: boolean
 }>()
 const emit = defineEmits<{ edit: [], delete: [] }>()
 
@@ -49,15 +51,23 @@ async function sendReport() {
     details: details.value.trim() || null
   })
   busy.value = false
+  if (error && error.code !== '23505') {
+    // keep the sheet open so the report can be retried
+    notify(t(/rate limit/i.test(error.message ?? '') ? 'feed.err.rate' : 'report.failed'), { tone: 'error' })
+    return
+  }
   reportOpen.value = false
-  notify(error?.code === '23505' ? t('report.already') : t('report.sent'), { tone: error && error.code !== '23505' ? 'error' : 'success' })
+  notify(error ? t('report.already') : t('report.sent'), { tone: 'success' })
 }
 
 async function toggleBlock() {
   menuOpen.value = false
   if (!props.authorId || !requireAuth()) return
   const on = !isBlocked(props.authorId)
-  await setBlocked(props.authorId, on)
+  if (!await setBlocked(props.authorId, on)) {
+    notify(t('report.blockFailed'), { tone: 'error' })
+    return
+  }
   notify(t(on ? 'report.blocked' : 'report.unblocked', { name: name.value }))
 }
 </script>
@@ -76,6 +86,7 @@ async function toggleBlock() {
     <div class="menu">
       <template v-if="mine">
         <button
+          v-if="!noEdit"
           type="button"
           class="menu-item"
           @click="menuOpen = false; emit('edit')"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOnlineRetry } from '~/utils/feed/online'
 import type { Strain, StrainStats } from '~/utils/strains'
 
 const { t } = useI18n()
@@ -91,6 +92,7 @@ function suggest() {
 }
 
 const loaded = reactive(new Set<string>())
+useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
 </script>
 
 <template>

@@ -224,7 +224,7 @@ async function deleteAccount() {
       return
     }
     usePlantSharing().forgetAll()
-    await signOut()
+    await signOut(true)
     notify(t('auth.account.deleted'), { tone: 'info' })
   } finally {
     deleting.value = false

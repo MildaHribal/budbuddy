@@ -280,7 +280,7 @@ export default {
       rendering: 'Kreslím kartu…',
       previewAlt: 'Karta rostliny {name}',
       share: 'Sdílet',
-      download: 'Stáhnout PNG',
+      download: 'Stáhnout',
       downloaded: 'Karta stažena',
       failed: 'Kartu se nepodařilo vytvořit',
       age: { one: 'Věk {n} den', few: 'Věk {n} dny', other: 'Věk {n} dní' },

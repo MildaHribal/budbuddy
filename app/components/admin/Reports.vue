@@ -37,7 +37,7 @@ async function load() {
   try {
     const { data, error } = await useSupabase().from('reports')
       .select('id, target_type, target_id, reason, details, created_at, reporter:profiles!reports_reporter_id_fkey(username)')
-      .eq('status', 'open').order('created_at', { ascending: false }).limit(300)
+      .eq('status', 'open').neq('target_type', 'ai').order('created_at', { ascending: false }).limit(300)
     if (error) throw error
     const map = new Map<string, Group>()
     for (const r of (data ?? []) as unknown as ReportRow[]) {

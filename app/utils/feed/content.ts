@@ -3,9 +3,9 @@
 const EMAIL = /[^\s@]+@[^\s@]+\.[a-z]{2,}/i
 const MESSENGER = /\b(?:t\.me|telegram|wa\.me|whats\s?app|signal\.me|wickr|threema|snap\s?chat|kik)\b/i
 const PHONE = /(?:\+\d{1,3}[\s.-]?)?(?<![\d.,])\d{3}[\s.-]?\d{3}[\s.-]?\d{3,4}(?![\d.,])/
-const SALE = String.raw`(?:\bsell(?:ing)?\b|\bfor sale\b|\bbuy\b|\bprice\b|\bpay\b|\bcash\b|\bship(?:ping)?\b|\bdelivery\b|prodám|prodam\b|koupím|koupim\b|\bcena\b|\bkč\b|\bczk\b|€|\$|\busd\b|\beur\b)`
-const PRODUCT = String.raw`(?:\bclones?\b|\bseeds?\b|\bweed\b|\bbuds?\b|\bgrams?\b|\boz\b|\bounces?\b|řízk|semín|semink|tráv|\bgram)`
-const SALE_NEAR = new RegExp(`${SALE}[\\s\\S]{0,30}${PRODUCT}|${PRODUCT}[\\s\\S]{0,30}${SALE}`, 'i')
+const SALE = String.raw`(?:\bsell(?:ing)?\b|\bfor sale\b|\bbuy\b|\bprice\b|\bpay\b|\bcash\b|\bship(?:ping)?\b|\bdelivery\b|\b(?:will|wanna|want to|willing to|happy to|can) (?:trade|swap)\b|\b(?:trade|swap) (?:you|ya)\b|\bfor (?:trade|swap)\b|\bgiv(?:e|ing) ?away\b|\bfor free\b|prodám|prodam\b|koupím|koupim\b|vyměním|výměnou za|daruj|zdarma|zadarmo|\bcena\b|\bkč\b|\bczk\b|€|\$|\busd\b|\beur\b)`
+const PRODUCT = String.raw`(?:\bclones?\b|\bcuttings?\b|\bseeds?\b|\bweed\b|\bbuds?\b|\bgrams?\b|\boz\b|\bounces?\b|řízk|semín|semink|tráv|\bgram)`
+const SALE_NEAR = new RegExp(`${SALE}[\\s\\S]{0,30}${PRODUCT}|${PRODUCT}[\\s\\S]{0,30}${SALE}|\\bfree (?:seeds?|clones?|cuttings?)\\b`, 'i')
 
 export type ContentIssue = 'contact' | 'sale'
 

@@ -19,6 +19,9 @@ describe('demo photos', () => {
   it('every referenced photo has a bundled asset and a credit', () => {
     const demo = buildDemoData('2026-10-11')
     expect(demo.settings.demo).toBe(true)
+    // flowering photoperiod hero plant → flowering light schedule
+    expect(demo.plants.some(p => p.stage === 'flowering' && p.type === 'photoperiod')).toBe(true)
+    expect(demo.settings.lightHours).toBe(12)
     expect(demo.plants.every(p => p.photoId)).toBe(true)
     const files = new Set(DEMO_PHOTO_CREDITS.map(c => `demo-${c.file.replace(/\.jpg$/, '')}`))
     for (const id of photoRefs(demo)) expect(files.has(id!)).toBe(true)
@@ -43,5 +46,15 @@ describe('demo photos', () => {
     expect(photoRefs(demo)).not.toContain(bad)
     expect(demo.plants.find(p => p.archived)!.photoId).toBeNull()
     expect(demo.entries.every(e => e.type !== 'photo' || e.photoIds.length)).toBe(true)
+  })
+
+  it('leaves replaced data alone', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 404 })))
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const demo = buildDemoData('2026-10-11')
+    const before = JSON.stringify(demo)
+    await seedDemoPhotos(demo, () => false)
+    expect(JSON.stringify(demo)).toBe(before)
+    expect(put).not.toHaveBeenCalled()
   })
 })

@@ -129,7 +129,7 @@ export default {
       fromPlant: 'Nebo použij některou ze svých veřejných rostlin',
       noPlants: 'Sdílej rostlinu veřejně a můžeš tu použít její titulní fotku.',
       caption: 'Popisek',
-      captionPlaceholder: 'Odrůda, týden, na co jsi hrdý…',
+      captionPlaceholder: 'Odrůda, týden, čím se chceš pochlubit…',
       english: 'Piš prosím anglicky, ať tomu rozumí všichni.',
       noSale: 'Žádný prodej ani výměna – takové příspěvky mažeme.',
       submit: 'Odeslat příspěvek',

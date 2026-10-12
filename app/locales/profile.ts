@@ -169,7 +169,7 @@ export default {
       how: 'Reputaci získáš: odpověď označená jako řešení +5, tip, který někomu pomohl +2, reakce na tvůj příspěvek +1.'
     },
     firstGrow: 'První pěstování',
-    firstGrowHint: 'Buď laskavý – pěstuje poprvé.',
+    firstGrowHint: 'Odpovídej vlídně – pěstuje poprvé.',
     light: { led: 'LED', hps: 'HPS (výbojka)', cfl: 'CFL (úsporka)', sun: 'Slunce', mixed: 'Kombinované světlo' },
     space: 'Prostor {v}',
     badges: {
@@ -254,7 +254,7 @@ export default {
       consistent: 'Pravidelný pěstitel',
       followDiary: 'Sledovat tento deník',
       followingDiary: 'Sleduješ tento deník',
-      followHint: 'Dáme ti vědět, až pěstitel {name} přidá nový týden.',
+      followHint: 'Dáme ti vědět, až {name} přidá nový týden.',
       strainLink: 'Víc o odrůdě {strain}',
       updatePhoto: 'Fotka z {n}. týdne',
       sum: {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { planReminders } from '../app/utils/reminders'
+import { planReminders, wateringBase } from '../app/utils/reminders'
 
 const now = new Date(2026, 9, 11, 10, 0)
 
@@ -27,5 +27,18 @@ describe('planReminders', () => {
     expect(days[0]!.date).toBe('2026-10-12')
     expect(days[0]!.tasks).toEqual(['Old task'])
     expect(days.map(d => d.date)).toEqual(['2026-10-12', '2026-10-14', '2026-10-16'])
+  })
+})
+
+describe('wateringBase', () => {
+  it('uses the last watering when there is one', () => {
+    expect(wateringBase('2026-09-01', '2026-10-10T12:00:00', '2026-10-05')).toBe('2026-10-05')
+  })
+  it('counts a back-dated new plant from the day it was added', () => {
+    expect(wateringBase('2026-09-01', '2026-10-10T12:00:00', null)).toBe('2026-10-10')
+  })
+  it('keeps the start date when it is later than creation', () => {
+    expect(wateringBase('2026-10-12', '2026-10-10T12:00:00', undefined)).toBe('2026-10-12')
+    expect(wateringBase('2026-10-12', 'garbage', null)).toBe('2026-10-12')
   })
 })
