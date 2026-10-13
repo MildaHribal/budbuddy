@@ -8,7 +8,14 @@ export default {
       time: 'Remind me at',
       test: 'Send a test',
       denied: 'Notifications are blocked – allow them in the phone settings.',
-      enabled: 'Reminders are on'
+      enabled: 'Reminders are on',
+      nag: 'Keep reminding until done',
+      nagHint: 'From lights-on every {h} h until you tick it off or log the watering.',
+      nagEvery: 'Repeat every',
+      hours: '{h} h',
+      quiet: 'Quiet at night',
+      quietHint: 'No repeats between 22:00 and 7:00.',
+      timeLater: 'Daily reminder for later days at'
     },
     title: 'Settings',
     you: 'You',
@@ -82,7 +89,14 @@ export default {
       time: 'Připomenout v',
       test: 'Poslat zkušební',
       denied: 'Notifikace jsou zablokované – povol je v nastavení telefonu.',
-      enabled: 'Připomínky jsou zapnuté'
+      enabled: 'Připomínky jsou zapnuté',
+      nag: 'Připomínat, dokud to neodškrtnu',
+      nagHint: 'Od rozsvícení světla každé {h} h, dokud úkol neodškrtneš nebo nezapíšeš zálivku.',
+      nagEvery: 'Opakovat každé',
+      hours: '{h} h',
+      quiet: 'V noci nerušit',
+      quietHint: 'Mezi 22:00 a 7:00 se nepřipomíná.',
+      timeLater: 'Denní připomínka na další dny v'
     },
     title: 'Nastavení',
     you: 'Ty',

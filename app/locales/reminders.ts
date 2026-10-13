@@ -6,7 +6,8 @@ export default {
     plantsList: 'Plants: {names}',
     testTitle: 'Reminders are on',
     testBody: 'This is how BudBuddy will remind you to water.',
-    channel: 'Watering & tasks'
+    channel: 'Watering & tasks',
+    nagHint: 'Reminding until it’s done'
   },
   cs: {
     water: { one: 'Čas zalít: {names}', few: 'Čas zalít {n} rostliny', other: 'Čas zalít {n} rostlin' },
@@ -15,6 +16,7 @@ export default {
     plantsList: 'Rostliny: {names}',
     testTitle: 'Připomínky jsou zapnuté',
     testBody: 'Takhle ti BudBuddy připomene zálivku.',
-    channel: 'Zálivka a úkoly'
+    channel: 'Zálivka a úkoly',
+    nagHint: 'Připomenu znovu, dokud to neodškrtneš'
   }
 }

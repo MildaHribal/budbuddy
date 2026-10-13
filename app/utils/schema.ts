@@ -62,7 +62,7 @@ export function emptyData(): GrowData {
     plants: [],
     entries: [],
     tasks: [],
-    settings: { growerName: '', initialized: false, lightsOn: '06:00', lightHours: 18, language: detectLocale(), reminders: false, reminderTime: '18:00', onboarded: false, demo: false },
+    settings: { growerName: '', initialized: false, lightsOn: '06:00', lightHours: 18, language: detectLocale(), reminders: false, reminderTime: '18:00', nag: true, nagEvery: 2, nagQuiet: true, onboarded: false, demo: false },
     guide: emptyGuide(),
     spaces: [],
     hunts: [],
@@ -229,6 +229,9 @@ export function normalizeData(raw: unknown): GrowData {
     language: isLocale(s.language) ? s.language : detectLocale(),
     reminders: s.reminders === true,
     reminderTime: isHHMM(s.reminderTime) ? s.reminderTime : '18:00',
+    nag: s.nag !== false,
+    nagEvery: [1, 2, 3, 4].includes(Number(s.nagEvery)) ? Number(s.nagEvery) : 2,
+    nagQuiet: s.nagQuiet !== false,
     // existing gardens skip the first-run guide
     onboarded: s.onboarded === true || (s.onboarded === undefined && data.plants.length > 0),
     demo: s.demo === true

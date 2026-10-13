@@ -148,6 +148,11 @@ export interface Settings {
   reminders: boolean
   /** HH:MM */
   reminderTime: string
+  /** repeat due reminders every few hours from lights-on until the item is done */
+  nag: boolean
+  nagEvery: number
+  /** no repeats between 22:00 and 07:00 */
+  nagQuiet: boolean
   /** first-run guide finished */
   onboarded: boolean
   /** data is the bundled demo garden */

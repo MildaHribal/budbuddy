@@ -404,6 +404,78 @@ async function erase() {
             />
           </button>
           <template v-if="remindersNative && state.settings.reminders">
+            <button
+              type="button"
+              role="switch"
+              class="row"
+              :aria-checked="state.settings.nag"
+              @click="grow.updateSettings({ nag: !state.settings.nag })"
+            >
+              <span class="row-tile">
+                <UIcon
+                  name="i-tabler-repeat"
+                  class="size-5"
+                />
+              </span>
+              <span class="row-text">
+                <strong>{{ t('settings.reminders.nag') }}</strong>
+                <span>{{ t('settings.reminders.nagHint', { h: state.settings.nagEvery }) }}</span>
+              </span>
+              <span
+                class="switch"
+                aria-hidden="true"
+              />
+            </button>
+            <template v-if="state.settings.nag">
+              <div class="row">
+                <span class="row-tile">
+                  <UIcon
+                    name="i-tabler-hourglass"
+                    class="size-5"
+                  />
+                </span>
+                <span class="row-text">
+                  <strong>{{ t('settings.reminders.nagEvery') }}</strong>
+                </span>
+                <div
+                  class="segmented nag-every"
+                  role="group"
+                  :aria-label="t('settings.reminders.nagEvery')"
+                >
+                  <button
+                    v-for="h in [1, 2, 3, 4]"
+                    :key="h"
+                    type="button"
+                    :aria-pressed="state.settings.nagEvery === h"
+                    @click="grow.updateSettings({ nagEvery: h })"
+                  >
+                    {{ t('settings.reminders.hours', { h }) }}
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                class="row"
+                :aria-checked="state.settings.nagQuiet"
+                @click="grow.updateSettings({ nagQuiet: !state.settings.nagQuiet })"
+              >
+                <span class="row-tile">
+                  <UIcon
+                    name="i-tabler-moon"
+                    class="size-5"
+                  />
+                </span>
+                <span class="row-text">
+                  <strong>{{ t('settings.reminders.quiet') }}</strong>
+                  <span>{{ t('settings.reminders.quietHint') }}</span>
+                </span>
+                <span
+                  class="switch"
+                  aria-hidden="true"
+                />
+              </button>
+            </template>
             <label
               class="row"
               for="s-reminder-time"
@@ -415,7 +487,7 @@ async function erase() {
                 />
               </span>
               <span class="row-text">
-                <strong>{{ t('settings.reminders.time') }}</strong>
+                <strong>{{ state.settings.nag ? t('settings.reminders.timeLater') : t('settings.reminders.time') }}</strong>
               </span>
               <input
                 id="s-reminder-time"
@@ -940,5 +1012,14 @@ async function erase() {
   background: var(--surface-2);
   border-color: var(--line-strong);
   color: var(--text);
+}
+
+.nag-every {
+  flex-shrink: 0;
+}
+
+.nag-every button {
+  min-width: 44px;
+  padding: 0 8px;
 }
 </style>
