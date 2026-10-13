@@ -439,6 +439,8 @@ async function erase() {
         </div>
       </section>
 
+      <KitLegalSettings />
+
       <section
         id="ai"
         ref="aiSection"

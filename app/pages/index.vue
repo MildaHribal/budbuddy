@@ -273,6 +273,8 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </NuxtLink>
       </header>
 
+      <KitLegalWatch />
+
       <section aria-labelledby="tasks-title">
         <div class="section-head">
           <h2
@@ -453,6 +455,8 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           </button>
         </div>
       </section>
+
+      <KitFeedingWeek />
 
       <button
         type="button"

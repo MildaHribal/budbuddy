@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { EntryType, JournalEntry, StageId, TrainingMethod } from '~/types/grow'
+import type { FeedLine } from '~/types/kit'
+import { feedLinesText } from '~/utils/feeding'
 
 const open = defineModel<boolean>('open', { default: false })
 const props = defineProps<{
@@ -11,11 +13,13 @@ const props = defineProps<{
   /** entry being edited (null = create) */
   entry?: JournalEntry | null
   /** values for a new entry, e.g. a mix from the nutrient calculator */
-  prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note' | 'method'>> | null
+  prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note' | 'method' | 'feedLines'>> | null
 }>()
 const emit = defineEmits<{ saved: [entry: JournalEntry] }>()
 
 const grow = useGrow()
+const feeding = useFeeding()
+const inventory = useInventory()
 const { notify } = useNotify()
 const { t } = useI18n()
 
@@ -32,6 +36,7 @@ interface Form {
   tempC: number | '' | null
   humidity: number | '' | null
   photoIds: string[]
+  feedLines: FeedLine[] | null
 }
 
 const form = reactive<Form>(emptyForm())
@@ -48,7 +53,7 @@ const loggable = computed(() => entryTypes().filter(x => x.loggable))
 const plant = computed(() => grow.getPlant(props.plantId))
 
 function emptyForm(): Form {
-  return { date: todayISO(), note: '', amountMl: null, ph: null, ec: null, nutrients: '', method: null, product: '', heightCm: null, tempC: null, humidity: null, photoIds: [] }
+  return { date: todayISO(), note: '', amountMl: null, ph: null, ec: null, nutrients: '', method: null, product: '', heightCm: null, tempC: null, humidity: null, photoIds: [], feedLines: null }
 }
 
 const blank = (v: unknown) => v === null || v === ''
@@ -66,6 +71,15 @@ function applyLast(type: EntryType) {
   if (type === 'pest' && !form.product) form.product = last.product
 }
 
+// this week's dose from the plant's feeding schedule wins over the last mix
+function applyPlan() {
+  const p = plant.value
+  const lines = p ? feeding.planLines(p, form.date) : []
+  if (!lines.length) return
+  form.feedLines = lines
+  form.nutrients = feedLinesText(lines)
+}
+
 watch(open, (v) => {
   clearTimeout(closeTimer)
   if (!v) return
@@ -78,13 +92,14 @@ watch(open, (v) => {
     Object.assign(form, {
       date: e.date, note: e.note, amountMl: e.amountMl, ph: e.ph, ec: e.ec, nutrients: e.nutrients,
       method: e.method, product: e.product, heightCm: e.heightCm, tempC: e.tempC, humidity: e.humidity,
-      photoIds: [...e.photoIds]
+      photoIds: [...e.photoIds], feedLines: e.feedLines ? e.feedLines.map(l => ({ ...l })) : null
     })
     return
   }
   form.date = props.date
   applyLast(props.type)
   if (props.prefill) Object.assign(form, props.prefill)
+  else if (props.type === 'feed') applyPlan()
 }, { immediate: true })
 
 onBeforeUnmount(() => clearTimeout(closeTimer))
@@ -94,6 +109,7 @@ function pick(t: EntryType) {
   picked.value = t
   submitted.value = false
   applyLast(t)
+  if (t === 'feed') applyPlan()
 }
 
 const has = (...types: EntryType[]) => types.includes(kind.value)
@@ -180,7 +196,9 @@ function save() {
     heightCm: has('measure') ? toNum(form.heightCm) : null,
     tempC: has('measure') ? toNum(form.tempC) : null,
     humidity: has('measure') ? toNum(form.humidity) : null,
-    photoIds: form.photoIds
+    photoIds: form.photoIds,
+    // structured lines only while the text still matches them
+    feedLines: has('feed') && form.feedLines?.length && feedLinesText(form.feedLines) === form.nutrients.trim() ? form.feedLines : undefined
   }
   let saved: JournalEntry
   if (props.entry) {
@@ -189,6 +207,7 @@ function save() {
   } else {
     saved = grow.addEntry({ ...data, plantId: props.plantId, type: kind.value })
   }
+  inventory.recordUsage(saved)
   notify(isEdit.value ? t('entry.updated') : t(`entry.types.${kind.value}.logged`), { icon: info.value.icon })
   emit('saved', saved)
   // show the "logged" state briefly before the sheet drops away
@@ -298,6 +317,13 @@ function save() {
           :placeholder="t('entry.nutrientsPlaceholder')"
         >
         <span class="field-hint">{{ t('entry.nutrientsHint') }}</span>
+        <KitFeedFill
+          v-model:lines="form.feedLines"
+          v-model:nutrients="form.nutrients"
+          :plant-id="plantId"
+          :date="form.date"
+          :amount-ml="toNum(form.amountMl)"
+        />
       </div>
 
       <div
