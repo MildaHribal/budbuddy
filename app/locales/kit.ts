@@ -84,7 +84,7 @@ export default {
     },
     legal: {
       settingsTitle: 'Legal limits',
-      settingsHint: 'Shows a warning when your plants or stored harvest reach the home-grow limit. Information only.',
+      settingsHint: 'Warns on the home screen when your plants or stored harvest go over the home-grow limit, or the harvest gets close to it. Information only.',
       details: 'Details',
       countries: { cz: 'Czechia', de: 'Germany', none: 'Off' },
       disclaimer: 'Information only, not legal advice. Rules checked on {date}; laws change, always check the official text.',
@@ -179,7 +179,7 @@ export default {
     },
     legal: {
       settingsTitle: 'Zákonné limity',
-      settingsHint: 'Upozorní, když počet rostlin nebo uskladněná sklizeň dosáhne limitu pro pěstování doma. Jen pro informaci.',
+      settingsHint: 'Na přehledu upozorní, když rostliny nebo uskladněná sklizeň překročí limit pro pěstování doma, nebo když se sklizeň k limitu blíží. Jen pro informaci.',
       details: 'Podrobnosti',
       countries: { cz: 'Česko', de: 'Německo', none: 'Vypnuto' },
       disclaimer: 'Jen pro informaci, nejde o právní radu. Pravidla ověřena {date}. Zákony se mění, vždy si ověř oficiální znění.',
