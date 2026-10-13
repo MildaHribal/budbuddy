@@ -49,7 +49,7 @@ describe('proxy provider', () => {
     expect(quota.code).toBe('quota')
     expect(quota.message).toContain('37 s')
     expect(proxyError(429, null, 'm').code).toBe('rate-limit')
-    expect(proxyError(404, null, 'm').message).toContain('/api/chat')
+    expect(proxyError(404, null, 'm').message).toContain('nenalezen')
     expect(proxyError(502, { error: { reason: 'model' } }, 'gemini-x').message).toContain('gemini-x')
   })
 

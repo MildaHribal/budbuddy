@@ -65,4 +65,8 @@ app/
   plugins/grow.client.ts   loads data, Android back button
 test/                      vitest unit tests
 android/                   Capacitor Android project
+
+
+v guide pouzijpro obrazky jednotlivych kapitol obrazky opravdovych rostlin konopi, ktere se k dannym kapitolam hodi, nechci tam mit generovane obrazky
+
 ```
