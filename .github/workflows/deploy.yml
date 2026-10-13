@@ -1,9 +1,7 @@
 name: Deploy to GitHub Pages
 
+# Fallback host; the site runs on Cloudflare (deploy-cloudflare.yml).
 on:
-  push:
-    branches:
-      - lazy-version # Change to master if your default branch is master
   workflow_dispatch:
 
 permissions:
@@ -32,8 +30,6 @@ jobs:
         run: npm ci
 
       - name: Build with Nuxt
-        # Point the AI assistant at the Netlify proxy (set the AI_PROXY_URL
-        # repository variable to e.g. https://<site>.netlify.app/api/chat).
         env:
           NUXT_PUBLIC_AI_PROXY_URL: ${{ vars.AI_PROXY_URL }}
         run: npm run generate

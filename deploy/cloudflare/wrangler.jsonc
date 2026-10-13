@@ -1,0 +1,8 @@
+// Static web build on Cloudflare Workers (assets only). Staged by deploy/cloudflare/stage.sh.
+{
+  "name": "budbuddy",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "assets": { "directory": "./site", "not_found_handling": "single-page-application" },
+  "routes": [{ "pattern": "budbuddy.hribal.site", "custom_domain": true }]
+}

@@ -44,3 +44,4 @@ keystore
 *.keystore
 *.p12
 .claude/worktrees/
+deploy/cloudflare/site/
