@@ -11,7 +11,7 @@ const props = defineProps<{
   /** entry being edited (null = create) */
   entry?: JournalEntry | null
   /** values for a new entry, e.g. a mix from the nutrient calculator */
-  prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note' | 'method'>> | null
+  prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note' | 'method' | 'product' | 'heightCm' | 'tempC' | 'humidity'>> | null
 }>()
 const emit = defineEmits<{ saved: [entry: JournalEntry] }>()
 
