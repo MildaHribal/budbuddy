@@ -16,7 +16,7 @@ export function addDemoKit(data: GrowData, p: DemoPlants, ago: (d: number) => st
   const eur = !cs
   const price = (czk: number) => (eur ? Math.round(czk / 25) : czk)
   const past = { id: createId(), name: 'White Widow', plantIds: [p.wh.id], createdAt: now }
-  const current = { id: createId(), name: t('Main tent', 'Hlavní stan'), plantIds: [p.nl.id, p.sd.id, p.gg.id], createdAt: now }
+  const current = { id: createId(), name: t('Current grow', 'Aktuální pěstování'), plantIds: [p.nl.id, p.sd.id, p.gg.id], createdAt: now }
   const expense = (title: string, category: 'seeds' | 'nutrients' | 'substrate' | 'gear', czk: number, daysAgo: number, runId: string | null) =>
     ({ id: createId(), title, category, amount: price(czk), date: ago(daysAgo), runId, createdAt: now })
   data.costs = {

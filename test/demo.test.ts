@@ -28,6 +28,16 @@ describe('demo photos', () => {
     expect(DEMO_PHOTO_CREDITS.every(c => c.author && c.license && c.sourceUrl.startsWith('https://commons.wikimedia.org/'))).toBe(true)
   })
 
+  it('puts every growing plant into a tent with a fitting light schedule', () => {
+    const demo = buildDemoData('2026-10-11')
+    const spaces = new Map((demo.spaces ?? []).map(s => [s.id, s]))
+    for (const p of demo.plants.filter(x => !x.archived)) {
+      const s = spaces.get(p.spaceId ?? '')
+      expect(s, p.name).toBeTruthy()
+      expect(s!.lightHours).toBe(p.stage === 'flowering' ? 12 : 18)
+    }
+  })
+
   it('stores all photos when fetching works', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(new Blob(['x'], { type: 'image/jpeg' }))))
     const demo = buildDemoData('2026-10-11')

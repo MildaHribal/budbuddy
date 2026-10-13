@@ -63,6 +63,16 @@ export function buildDemoData(today = todayISO()): GrowData {
   )
   data.plants = [nl, sd, gg, wh]
 
+  // two tents: the flowering hero under 12/12, the young plants under 18/6
+  const space = (name: string, size: string, light: string, lightHours: number) =>
+    ({ id: createId(), name, location: 'indoor' as const, size, light, lightsOn: '06:00', lightHours, notes: '', createdAt: now, updatedAt: now })
+  const flowerTent = space(t('Flower tent', 'Květový stan'), '80 × 80 × 160 cm', 'LED 240 W', 12)
+  const vegTent = space(t('Veg tent', 'Růstový stan'), '60 × 60 × 140 cm', 'LED 100 W', 18)
+  data.spaces = [flowerTent, vegTent]
+  nl.spaceId = flowerTent.id
+  sd.spaceId = vegTent.id
+  gg.spaceId = vegTent.id
+
   const entry = (plantId: string, daysAgo: number, e: Partial<JournalEntry> & Pick<JournalEntry, 'type'>): JournalEntry => {
     const date = ago(daysAgo)
     return { ...blankEntry(), id: createId(), plantId, date, createdAt: `${date}T${String(8 + (daysAgo % 10)).padStart(2, '0')}:15:00`, ...e }
@@ -82,9 +92,9 @@ export function buildDemoData(today = todayISO()): GrowData {
     entry(nl.id, 20, { type: 'measure', heightCm: 68, tempC: 24, humidity: 50 }),
     entry(nl.id, 12, { type: 'train', method: 'defoliation', note: t('Removed big fan leaves shading bud sites.', 'Odstraněny velké listy, které stínily květům.') }),
     entry(nl.id, 10, { type: 'measure', heightCm: 84, tempC: 24, humidity: 48 }),
-    entry(nl.id, 7, { type: 'feed', amountMl: 1500, nutrients: 'Bloom 3 ml/L, PK 1 ml/L', ph: 6.3, ec: 1.8 }),
+    entry(nl.id, 7, { type: 'feed', amountMl: 1500, nutrients: 'Bio-Bloom 3 ml/L, Top-Max 1 ml/L', ph: 6.3, ec: 1.8 }),
     entry(nl.id, 4, { type: 'water', amountMl: 1500, ph: 6.4 }),
-    entry(nl.id, 1, { type: 'feed', amountMl: 1500, nutrients: 'Bloom 3 ml/L', ph: 6.2, ec: 1.9 }),
+    entry(nl.id, 1, { type: 'feed', amountMl: 1500, nutrients: 'Bio-Bloom 3 ml/L', ph: 6.2, ec: 1.9 }),
     entry(nl.id, 0, { type: 'note', note: t('First amber trichomes? Not yet, all cloudy and clear.', 'První jantarové trichomy? Zatím ne, všechny mléčné a čiré.'), photoIds: [pid('trichomes')] }),
     entry(nl.id, 62, { type: 'photo', note: t('First true leaves.', 'První pravé lístky.'), photoIds: [pid('seedling-sprout')] }),
     entry(nl.id, 38, { type: 'photo', note: t('Week 5 – filling the tent.', '5. týden – zaplňuje stan.'), photoIds: [pid('veg-tent')] }),
@@ -93,13 +103,13 @@ export function buildDemoData(today = todayISO()): GrowData {
     entry(nl.id, 2, { type: 'photo', note: t('Top cola frosting up.', 'Vrcholová palice se pokrývá pryskyřicí.'), photoIds: [pid('flower-cola')] }),
 
     entry(sd.id, 20, { type: 'water', amountMl: 300, ph: 5.9 }),
-    entry(sd.id, 14, { type: 'feed', amountMl: 600, nutrients: 'Grow 2 ml/L, CalMag 1 ml/L', ph: 5.8, ec: 1.2 }),
+    entry(sd.id, 14, { type: 'feed', amountMl: 600, nutrients: 'CANNA Coco A 2 ml/L, CANNA Coco B 2 ml/L', ph: 5.8, ec: 1.2 }),
     entry(sd.id, 12, { type: 'measure', heightCm: 14 }),
     entry(sd.id, 8, { type: 'train', method: 'lst', note: t('Main stem bent and tied down.', 'Hlavní stonek ohnutý a přivázaný.') }),
     entry(sd.id, 5, { type: 'pest', product: t('Neem oil', 'Neemový olej'), note: t('A few fungus gnats, sprayed and added sticky traps.', 'Pár smutnic, postříkáno a přidány lepové pasti.') }),
     entry(sd.id, 4, { type: 'measure', heightCm: 26, tempC: 26, humidity: 62 }),
     entry(sd.id, 3, { type: 'photo', note: t('Bushing out after LST.', 'Po LST se pěkně rozvětvuje.'), photoIds: [pid('veg-coco')] }),
-    entry(sd.id, 2, { type: 'feed', amountMl: 800, nutrients: t('Grow 2.5 ml/L, CalMag 1 ml/L', 'Grow 2,5 ml/L, CalMag 1 ml/L'), ph: 5.8, ec: 1.4 }),
+    entry(sd.id, 2, { type: 'feed', amountMl: 800, nutrients: t('CANNA Coco A 2.5 ml/L, CANNA Coco B 2.5 ml/L', 'CANNA Coco A 2,5 ml/L, CANNA Coco B 2,5 ml/L'), ph: 5.8, ec: 1.4 }),
 
     entry(gg.id, 6, { type: 'note', note: t('Cotyledons open, moved under the light.', 'Děložní lístky otevřené, přesunuto pod světlo.'), photoIds: [pid('seedling-led')] }),
     entry(gg.id, 3, { type: 'water', amountMl: 150 }),
@@ -108,7 +118,7 @@ export function buildDemoData(today = todayISO()): GrowData {
     entry(wh.id, 30, { type: 'harvest', note: t('Chopped, wet weight 412 g.', 'Sklizeno, mokrá váha 412 g.') }),
     entry(wh.id, 27, { type: 'photo', note: t('Hanging whole branches, 18 °C / 55 %.', 'Visí celé větve, 18 °C / 55 %.'), photoIds: [pid('drying')] }),
     entry(wh.id, 15, { type: 'photo', note: t('Jarred, burping daily.', 'Ve sklenicích, denně větrám.'), photoIds: [pid('jar')] }),
-    entry(wh.id, 60, { type: 'feed', amountMl: 2000, nutrients: 'Bloom 3 ml/L', ph: 6.3, ec: 1.8 }),
+    entry(wh.id, 60, { type: 'feed', amountMl: 2000, nutrients: 'Bio-Bloom 3 ml/L', ph: 6.3, ec: 1.8 }),
     entry(wh.id, 40, { type: 'water', amountMl: 2000, note: t('Flush started.', 'Začal proplach.') })
   )
 
