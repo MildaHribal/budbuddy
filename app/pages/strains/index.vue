@@ -92,6 +92,7 @@ function suggest() {
 }
 
 const loaded = reactive(new Set<string>())
+const failed = reactive(new Set<string>())
 useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
 </script>
 
@@ -224,14 +225,14 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
                 :class="{ loaded: !s.image_url || loaded.has(s.id) }"
               >
                 <img
-                  v-if="s.image_url"
+                  v-if="s.image_url && !failed.has(s.id)"
                   :src="strainThumb(s.image_url)!"
                   alt=""
                   loading="lazy"
                   decoding="async"
                   referrerpolicy="no-referrer"
                   @load="loaded.add(s.id)"
-                  @error="loaded.add(s.id)"
+                  @error="failed.add(s.id)"
                 >
                 <GrowIcon
                   v-else

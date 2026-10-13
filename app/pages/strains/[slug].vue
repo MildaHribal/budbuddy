@@ -90,7 +90,11 @@ onMounted(() => {
   loadBlocks()
   load()
 })
-watch(slug, load)
+watch(slug, () => {
+  heroLoaded.value = false
+  heroFailed.value = false
+  load()
+})
 
 const shownReports = computed(() => reports.value.filter(r => !isBlocked(r.user_id)))
 const shownPlants = computed(() => plants.value.filter(p => !isBlocked(p.owner_id)))
@@ -126,6 +130,7 @@ const typeLabel = computed(() => {
 })
 
 const heroLoaded = ref(false)
+const heroFailed = ref(false)
 const authorName = (a: Author | null) => a?.display_name || a?.username || '?'
 
 // ── Report sheet ───────────────────────────────────────────────────
@@ -324,13 +329,13 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
           :class="{ loaded: !strain.image_url || heroLoaded, empty: !strain.image_url }"
         >
           <img
-            v-if="strain.image_url"
+            v-if="strain.image_url && !heroFailed"
             :src="strain.image_url"
             :alt="strain.name"
             decoding="async"
             referrerpolicy="no-referrer"
             @load="heroLoaded = true"
-            @error="heroLoaded = true"
+            @error="heroFailed = true"
           >
           <GrowIcon
             v-else
@@ -339,7 +344,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
           />
         </div>
         <figcaption
-          v-if="strain.image_credit"
+          v-if="strain.image_credit && !heroFailed"
           class="credit"
         >
           {{ t('strains.photoCredit', { credit: strain.image_credit }) }}
