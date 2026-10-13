@@ -164,14 +164,13 @@ export const GLYPHS = {
     fill: [{ d: 'M12 14C7 14 4 10.5 4 6c5 0 8 2.5 8 8z' }, { d: 'M12 12c4 0 7-3 8-7-5 0-8 2.5-8 7z' }],
     line: [{ d: 'M12 21v-9' }, { d: 'M12 14C7 14 4 10.5 4 6c5 0 8 2.5 8 8z' }, { d: 'M12 12c4 0 7-3 8-7-5 0-8 2.5-8 7z' }]
   },
-  // AI: loupe over a fan leaf
+  // AI: scanner frame around a fan leaf
   spark: {
-    fill: [{ d: 'M10.5 3a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15z' }],
+    fill: fanLeaf.map(p => ({ d: p.d, t: `translate(12 12) scale(.6) translate(-12 -10.6) ${p.t ?? ''}`.trim() })),
     line: [
-      { d: 'M10.5 3a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15z' },
-      { d: 'M16 16l5 5' },
-      ...fanLeaf.map(p => ({ d: p.d, t: `translate(10.5 12.6) scale(.5) translate(-12 -17) ${p.t ?? ''}`.trim() })),
-      { d: 'M12 17v3', t: 'translate(10.5 12.6) scale(.5) translate(-12 -17)' }
+      { d: 'M4 7.5V6a2 2 0 0 1 2-2h1.5M16.5 4H18a2 2 0 0 1 2 2v1.5M20 16.5V18a2 2 0 0 1-2 2h-1.5M7.5 20H6a2 2 0 0 1-2-2v-1.5' },
+      ...fanLeaf.map(p => ({ d: p.d, t: `translate(12 12) scale(.6) translate(-12 -10.6) ${p.t ?? ''}`.trim() })),
+      { d: 'M12 17v2.6', t: 'translate(12 12) scale(.6) translate(-12 -10.6)' }
     ]
   },
   gallery: {
