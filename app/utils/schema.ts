@@ -20,6 +20,7 @@ import type {
 } from '../types/grow'
 import { isValidISODate, toISODate, todayISO } from './date'
 import { blankEntry } from './entries'
+import { normalizeEnvironment } from './env/schema'
 import { createId } from './id'
 import { isStageId } from './stages'
 
@@ -207,6 +208,8 @@ export function normalizeData(raw: unknown): GrowData {
     demo: s.demo === true
   }
   data.guide = normalizeGuide(r.guide)
+  const env = normalizeEnvironment(r.environment, ids)
+  if (env) data.environment = env
   return data
 }
 

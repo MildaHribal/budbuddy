@@ -1,3 +1,5 @@
+import type { EnvironmentData } from './environment'
+
 export type StageId
   = | 'germination'
     | 'seedling'
@@ -153,4 +155,6 @@ export interface GrowData {
   tasks: Task[]
   settings: Settings
   guide: GuideProgress
+  /** Environment area (weather, sensors, light meter); absent in saves made before it existed */
+  environment?: EnvironmentData
 }
