@@ -2,6 +2,15 @@
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../node_modules/.pnpm/@capacitor+android@7.5.0_@capacitor+core@7.5.0/node_modules/@capacitor/android/capacitor')
 
+include ':capacitor-community-bluetooth-le'
+project(':capacitor-community-bluetooth-le').projectDir = new File('../node_modules/.pnpm/@capacitor-community+bluetooth-le@7.3.2_@capacitor+core@7.5.0/node_modules/@capacitor-community/bluetooth-le/android')
+
+include ':capacitor-mlkit-barcode-scanning'
+project(':capacitor-mlkit-barcode-scanning').projectDir = new File('../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.5.0_@capacitor+core@7.5.0/node_modules/@capacitor-mlkit/barcode-scanning/android')
+
+include ':capacitor-community-speech-recognition'
+project(':capacitor-community-speech-recognition').projectDir = new File('../node_modules/.pnpm/@capacitor-community+speech-recognition@7.0.1_@capacitor+core@7.5.0/node_modules/@capacitor-community/speech-recognition/android')
+
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/.pnpm/@capacitor+app@7.1.0_@capacitor+core@7.5.0/node_modules/@capacitor/app/android')
 
