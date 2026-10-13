@@ -1139,6 +1139,11 @@ function duplicate() {
         </div>
       </section>
 
+      <KitFeedPlanCard
+        :plant="plant"
+        @log="log('feed')"
+      />
+
       <section>
         <h2 class="section-title block-title">
           <GrowIcon name="stage" /> {{ t('plant.info.timeline') }}

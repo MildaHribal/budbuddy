@@ -2,6 +2,7 @@ import type { GrowData, JournalEntry, Plant, StageId } from '../types/grow'
 import { addDays, daysBetween, todayISO } from './date'
 import { blankEntry } from './entries'
 import { demoPhotoId as pid } from './demoCredits'
+import { addDemoKit } from './demoKit'
 import { createId } from './id'
 import { locale } from './locale'
 import { emptyData } from './schema'
@@ -117,5 +118,6 @@ export function buildDemoData(today = todayISO()): GrowData {
     { id: createId(), title: t('Burp White Widow jars', 'Vyvětrat sklenice s White Widow'), date: today, plantId: wh.id, done: false, createdAt: now }
   ]
 
+  addDemoKit(data, { nl, sd, gg, wh }, ago, cs)
   return data
 }

@@ -1,3 +1,5 @@
+import type { CostsData, FeedingData, FeedLine, InventoryData, LegalData } from './kit'
+
 export type StageId
   = | 'germination'
     | 'seedling'
@@ -106,6 +108,8 @@ export interface JournalEntry {
   /** stage entries only */
   stage: StageId | null
   createdAt: string
+  /** feed entries: products as poured (from a schedule or the mixer) */
+  feedLines?: FeedLine[]
 }
 
 export interface Task {
@@ -153,4 +157,8 @@ export interface GrowData {
   tasks: Task[]
   settings: Settings
   guide: GuideProgress
+  feeding?: FeedingData
+  costs?: CostsData
+  inventory?: InventoryData
+  legal?: LegalData
 }

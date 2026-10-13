@@ -22,6 +22,7 @@ import { isValidISODate, toISODate, todayISO } from './date'
 import { blankEntry } from './entries'
 import { createId } from './id'
 import { isStageId } from './stages'
+import { normalizeCosts, normalizeFeedLines, normalizeFeeding, normalizeInventory, normalizeLegal } from './kitSchema'
 
 const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback)
 
@@ -163,8 +164,14 @@ export function normalizeEntry(raw: Record<string, unknown>): JournalEntry {
     humidity: num(raw.humidity),
     photoIds: Array.isArray(raw.photoIds) ? raw.photoIds.filter((p): p is string => typeof p === 'string') : [],
     stage: isStageId(raw.stage) ? raw.stage : null,
-    createdAt: str(raw.createdAt, new Date().toISOString())
+    createdAt: str(raw.createdAt, new Date().toISOString()),
+    ...withFeedLines(raw.feedLines)
   }
+}
+
+function withFeedLines(v: unknown): Pick<JournalEntry, 'feedLines'> {
+  const feedLines = normalizeFeedLines(v)
+  return feedLines ? { feedLines } : {}
 }
 
 export function normalizeTask(raw: Record<string, unknown>): Task {
@@ -207,6 +214,11 @@ export function normalizeData(raw: unknown): GrowData {
     demo: s.demo === true
   }
   data.guide = normalizeGuide(r.guide)
+  // optional collections stay absent in saves that never used them
+  if (r.feeding) data.feeding = normalizeFeeding(r.feeding, ids)
+  if (r.costs) data.costs = normalizeCosts(r.costs, ids)
+  if (r.inventory) data.inventory = normalizeInventory(r.inventory)
+  if (r.legal) data.legal = normalizeLegal(r.legal)
   return data
 }
 

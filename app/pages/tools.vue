@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { NutrientLine } from '~/utils/calc'
+import { feedLinesText, matchStock } from '~/utils/feeding'
 
 const { t } = useI18n()
 
 const { state } = useGrow()
+const inventory = useInventory()
 
 type Tool = 'nutrients' | 'vpd' | 'dli' | 'convert'
 const TOOL_IDS: Tool[] = ['nutrients', 'vpd', 'dli', 'convert']
@@ -66,9 +68,10 @@ function removeLine(i: number) {
 const logPlant = ref<string>('')
 const logOpen = ref(false)
 const growingPlants = computed(() => state.plants.filter(isGrowing))
-const prefill = computed(() => ({
-  nutrients: mix.value.map(m => `${m.name} ${formatNumber(m.dosePerLitre, 2)} ml/L`).join(', ')
-}))
+const prefill = computed(() => {
+  const feedLines = mix.value.map(m => ({ name: m.name, dose: m.dosePerLitre, stockId: matchStock(m.name, inventory.inv.value.nutrients)?.id ?? null }))
+  return { nutrients: feedLinesText(feedLines), feedLines }
+})
 
 function logMix() {
   if (!logPlant.value && growingPlants.value[0]) logPlant.value = growingPlants.value[0].id
@@ -171,6 +174,7 @@ function fromC() {
           />
         </NuxtLink>
       </nav>
+      <KitManageLinks />
     </div>
 
     <div
