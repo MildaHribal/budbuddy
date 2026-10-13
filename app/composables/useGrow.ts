@@ -53,6 +53,10 @@ function replaceState(data: GrowData) {
   state.tasks = data.tasks
   state.settings = data.settings
   state.guide = data.guide
+  state.feeding = data.feeding
+  state.costs = data.costs
+  state.inventory = data.inventory
+  state.legal = data.legal
 }
 
 async function readLegacy(): Promise<LegacyInput | null> {
@@ -179,6 +183,11 @@ export function initGrow() {
       })
   }
   return initPromise
+}
+
+/** Writable state for feature composables (useFeeding, useCosts, useInventory, useLegal). */
+export function growStateForKit(): GrowData {
+  return state
 }
 
 // ── Plants ─────────────────────────────────────────────────────────
