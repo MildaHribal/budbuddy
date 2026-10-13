@@ -1,7 +1,15 @@
 export default {
   en: {
     title: 'Tools',
-    subtitle: 'Calculators for the grow room',
+    subtitle: 'Calculators and grow management',
+    groups: {
+      calc: 'Calculators',
+      care: 'Care',
+      overview: 'Overview',
+      spacesDesc: 'Light schedule and logging for a whole tent',
+      huntsDesc: 'Score seedlings and pick a keeper',
+      labelsDesc: 'Print plant labels to scan at the tent'
+    },
     tabs: { nutrients: 'Nutrients', vpd: 'Air', dli: 'Light', convert: 'Convert', curing: 'Drying & curing', treatment: 'Treatment plans' },
     desc: { nutrients: 'Millilitres per can from the bottle dose', vpd: 'Temperature and humidity check (VPD)', dli: 'Daily light from PPFD and hours', convert: 'Gallons, litres, °F and °C', curing: 'Daily drying checks and jar burping', treatment: 'Steps and a follow-up photo for a problem' },
     whatFor: 'What is this for?',
@@ -132,7 +140,15 @@ export default {
   },
   cs: {
     title: 'Nástroje',
-    subtitle: 'Kalkulačky pro pěstírnu',
+    subtitle: 'Kalkulačky a správa pěstování',
+    groups: {
+      calc: 'Kalkulačky',
+      care: 'Péče',
+      overview: 'Přehled',
+      spacesDesc: 'Světelný režim a zápis pro celý stan',
+      huntsDesc: 'Hodnocení semenáčků a výběr keepera',
+      labelsDesc: 'Štítky k rostlinám na skenování u stanu'
+    },
     tabs: { nutrients: 'Živiny', vpd: 'Vzduch', dli: 'Světlo', convert: 'Převody', curing: 'Sušení a zrání', treatment: 'Léčebné plány' },
     desc: { nutrients: 'Mililitry do konve podle dávky na lahvi', vpd: 'Kontrola teploty a vlhkosti (VPD)', dli: 'Denní dávka světla z PPFD a hodin', convert: 'Galony, litry, °F a °C', curing: 'Denní kontrola sušení a odvětrávání sklenic', treatment: 'Kroky a kontrolní fotka při problému' },
     whatFor: 'K čemu to je?',

@@ -18,7 +18,37 @@ const TOOL_META: Record<Tool, { icon: string, tone: string }> = {
   curing: { icon: 'curing', tone: 'var(--amber)' },
   treatment: { icon: 'pest', tone: '#f0905a' }
 }
-const tools = computed(() => TOOL_IDS.map(id => ({ id, ...TOOL_META[id], label: t(`tools.tabs.${id}`), desc: t(`tools.desc.${id}`) })))
+interface ToolRow { key: string, to: string | { path: string, query: Record<string, string> }, icon: string, tone: string, label: string, desc: string, badge?: string }
+const calcRow = (id: Tool): ToolRow => ({ key: id, to: { path: '/tools', query: { t: id } }, ...TOOL_META[id], label: t(`tools.tabs.${id}`), desc: t(`tools.desc.${id}`) })
+// Look back (timelapse, compare, Wrapped, export) is its own component between environment and care
+const groups = computed<{ id: string, title: string, rows: ToolRow[], link?: { to: string, label: string } }[]>(() => [
+  { id: 'calc', title: t('tools.groups.calc'), rows: (['nutrients', 'vpd', 'dli', 'convert'] as const).map(calcRow) },
+  {
+    id: 'manage',
+    title: t('kit.links.title'),
+    rows: [
+      { key: 'spaces', to: '/spaces', icon: 'i-tabler-tent', tone: 'var(--green)', label: t('organize.spaces.title'), desc: t('tools.groups.spacesDesc') },
+      { key: 'feeding', to: '/feeding', icon: 'feed', tone: '#b58cf5', label: t('kit.links.feeding.title'), desc: t('kit.links.feeding.desc') },
+      { key: 'inventory', to: '/inventory', icon: 'i-tabler-box', tone: 'var(--green)', label: t('kit.links.inventory.title'), desc: t('kit.links.inventory.desc'), badge: inventory.lowCount.value ? t('kit.links.low', { n: inventory.lowCount.value }) : undefined },
+      { key: 'costs', to: '/costs', icon: 'lamp', tone: 'var(--amber)', label: t('kit.links.costs.title'), desc: t('kit.links.costs.desc') },
+      { key: 'hunts', to: '/hunts', icon: 'i-tabler-dna-2', tone: '#b58cf5', label: t('organize.hunts'), desc: t('tools.groups.huntsDesc') },
+      { key: 'labels', to: '/labels', icon: 'i-tabler-qrcode', tone: 'var(--text-2)', label: t('organize.labels'), desc: t('tools.groups.labelsDesc') },
+      { key: 'legal', to: '/legal', icon: 'i-tabler-scale', tone: 'var(--blue)', label: t('kit.links.legal.title'), desc: t('kit.links.legal.desc') }
+    ]
+  },
+  {
+    id: 'env',
+    title: t('environment.open'),
+    link: { to: '/environment', label: t('tools.groups.overview') },
+    rows: [
+      { key: 'weather', to: '/environment/weather', icon: 'i-tabler-cloud', tone: 'var(--blue)', label: t('environment.hub.weather'), desc: t('environment.hub.weatherNoPlants') },
+      { key: 'sensors', to: '/environment/sensors', icon: 'i-tabler-temperature', tone: 'var(--blue)', label: t('environment.hub.sensors'), desc: t('environment.hub.sensorsEmpty') },
+      { key: 'light', to: '/environment/light', icon: 'lamp', tone: 'var(--amber)', label: t('environment.hub.light'), desc: t('environment.hub.lightEmpty') },
+      { key: 'ha', to: '/environment/home-assistant', icon: 'i-tabler-smart-home', tone: 'var(--text-2)', label: t('environment.hub.ha'), desc: t('environment.hub.haEmpty') }
+    ]
+  }
+])
+const careRows = computed(() => (['curing', 'treatment'] as const).map(calcRow))
 const route = useRoute()
 // the open tool lives in the URL so guide links and back navigation keep working
 const tool = computed<Tool | null>(() => {
@@ -146,60 +176,101 @@ function fromC() {
       :back="!!tool"
     />
 
-    <!-- Tool list -->
+    <!-- Tool list, grouped -->
     <div
       v-if="!tool"
       class="page rise"
     >
-      <nav
-        class="card tool-list"
-        :aria-label="t('tools.title')"
+      <section
+        v-for="g in groups"
+        :key="g.id"
+        :aria-labelledby="`tools-${g.id}`"
       >
-        <NuxtLink
-          v-for="tb in tools"
-          :key="tb.id"
-          :to="{ path: '/tools', query: { t: tb.id } }"
-          class="tool-row"
-        >
-          <span
-            class="tool-tile"
-            :style="{ color: tb.tone }"
+        <div class="section-head">
+          <h2
+            :id="`tools-${g.id}`"
+            class="section-title"
           >
-            <GrowIcon :name="tb.icon" />
-          </span>
-          <span class="tool-text">
-            <span class="tool-title">{{ tb.label }}</span>
-            <span class="tool-desc">{{ tb.desc }}</span>
-          </span>
-          <UIcon
-            name="i-tabler-chevron-right"
-            class="size-5 tool-go"
-          />
-        </NuxtLink>
-      </nav>
-      <KitManageLinks />
+            {{ g.title }}
+          </h2>
+          <NuxtLink
+            v-if="g.link"
+            :to="g.link.to"
+            class="link"
+          >
+            {{ g.link.label }}
+          </NuxtLink>
+        </div>
+        <nav
+          class="card tool-list"
+          :aria-labelledby="`tools-${g.id}`"
+        >
+          <NuxtLink
+            v-for="r in g.rows"
+            :key="r.key"
+            :to="r.to"
+            class="tool-row"
+          >
+            <span
+              class="tool-tile"
+              :style="{ color: r.tone }"
+            >
+              <GrowIcon :name="r.icon" />
+            </span>
+            <span class="tool-text">
+              <span class="tool-title">{{ r.label }}</span>
+              <span class="tool-desc">{{ r.desc }}</span>
+            </span>
+            <span
+              v-if="r.badge"
+              class="badge tool-badge"
+            >{{ r.badge }}</span>
+            <UIcon
+              name="i-tabler-chevron-right"
+              class="size-5 tool-go"
+            />
+          </NuxtLink>
+        </nav>
+      </section>
 
       <ReviewToolLinks />
 
-      <NuxtLink
-        to="/environment"
-        class="card tool-row"
-      >
-        <span
-          class="tool-tile"
-          style="color: var(--blue)"
+      <section aria-labelledby="tools-care">
+        <div class="section-head">
+          <h2
+            id="tools-care"
+            class="section-title"
+          >
+            {{ t('tools.groups.care') }}
+          </h2>
+        </div>
+        <nav
+          class="card tool-list"
+          aria-labelledby="tools-care"
         >
-          <UIcon name="i-tabler-temperature" />
-        </span>
-        <span class="tool-text">
-          <span class="tool-title">{{ t('environment.open') }}</span>
-          <span class="tool-desc">{{ t('environment.openDesc') }}</span>
-        </span>
-        <UIcon
-          name="i-tabler-chevron-right"
-          class="size-5 tool-go"
-        />
-      </NuxtLink>
+          <NuxtLink
+            v-for="r in careRows"
+            :key="r.key"
+            :to="r.to"
+            class="tool-row"
+          >
+            <span
+              class="tool-tile"
+              :style="{ color: r.tone }"
+            >
+              <GrowIcon :name="r.icon" />
+            </span>
+            <span class="tool-text">
+              <span class="tool-title">{{ r.label }}</span>
+              <span class="tool-desc">{{ r.desc }}</span>
+            </span>
+            <UIcon
+              name="i-tabler-chevron-right"
+              class="size-5 tool-go"
+            />
+          </NuxtLink>
+        </nav>
+      </section>
     </div>
 
     <div
@@ -970,6 +1041,11 @@ function fromC() {
 .tool-go {
   flex-shrink: 0;
   color: var(--text-3);
+}
+
+.tool-badge {
+  flex-shrink: 0;
+  color: var(--amber);
 }
 
 /* Explainer */
