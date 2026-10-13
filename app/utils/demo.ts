@@ -38,7 +38,7 @@ export function buildDemoData(today = todayISO()): GrowData {
   })
 
   const nl = plant(
-    { name: 'Northern Lights #1', strain: 'Northern Lights', stage: 'flowering', startDate: ago(68), health: 5, photoId: pid('nl-flower'), notes: t('Topped once at node 5, very even canopy.', 'Jeden topping nad 5. nodem, krásně vyrovnaný porost.') },
+    { name: 'Northern Lights #1', strain: 'Northern Lights', stage: 'flowering', startDate: ago(68), health: 5, photoId: pid('nl-tent'), notes: t('Topped once at node 5, very even canopy.', 'Jeden topping nad 5. nodem, krásně vyrovnaný porost.') },
     [['germination', 68], ['seedling', 63], ['vegetative', 45], ['flowering', 19]]
   )
   const sd = plant(

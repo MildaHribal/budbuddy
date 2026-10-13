@@ -1,27 +1,11 @@
 [
   {
-    "file": "seedling-led.jpg",
-    "title": "Cannabis LED seedling (17026483132).jpg",
-    "author": "Cannabis Pictures",
-    "license": "CC BY 2.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cannabis_LED_seedling_(17026483132).jpg"
-  },
-  {
     "file": "seedling-sprout.jpg",
     "title": "Cannabis Baby.jpg",
     "author": "Grower",
     "license": "Public domain",
     "licenseUrl": null,
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cannabis_Baby.jpg"
-  },
-  {
-    "file": "veg-coco.jpg",
-    "title": "Young cannabis plant in the vegetative stage 01.jpg",
-    "author": "Plantlady223",
-    "license": "CC BY-SA 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Young_cannabis_plant_in_the_vegetative_stage_01.jpg"
   },
   {
     "file": "canopy-scrog.jpg",
@@ -32,28 +16,12 @@
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Indoor_cannabis_plants.jpg"
   },
   {
-    "file": "flower-plant.jpg",
-    "title": "Freakshow Flowering Cola.jpg",
-    "author": "Node784",
-    "license": "CC0",
-    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Freakshow_Flowering_Cola.jpg"
-  },
-  {
     "file": "trichomes.jpg",
     "title": "Super silver haze trichomes.jpg",
     "author": "Rikva",
     "license": "Public domain",
     "licenseUrl": null,
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Super_silver_haze_trichomes.jpg"
-  },
-  {
-    "file": "drying.jpg",
-    "title": "Cannabis Drying the weed (16991199408).jpg",
-    "author": "Cannabis Pictures",
-    "license": "CC BY 2.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cannabis_Drying_the_weed_(16991199408).jpg"
   },
   {
     "file": "nl-veg.jpg",
@@ -94,5 +62,45 @@
     "license": "Public domain",
     "licenseUrl": null,
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:White_Widow.jpg"
+  },
+  {
+    "file": "seedling-led.jpg",
+    "title": "Freshly Planted Fabric Pots in a Grow Tent — Royal Queen Seeds",
+    "author": "Royal Queen Seeds",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/royal-queen-seeds-official/55426018630/"
+  },
+  {
+    "file": "veg-coco.jpg",
+    "title": "Young plants in a grow tent",
+    "author": "Cannabis Pictures",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "sourceUrl": "https://www.flickr.com/photos/132327282@N07/33593981171/"
+  },
+  {
+    "file": "flower-plant.jpg",
+    "title": "Sticky Broccoli Canopy in Reflective Grow Tent at Week 11 — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55505564489/"
+  },
+  {
+    "file": "drying.jpg",
+    "title": "Buds drying in a grow tent",
+    "author": "Cannabis Pictures",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "sourceUrl": "https://www.flickr.com/photos/132327282@N07/25152435509/"
+  },
+  {
+    "file": "nl-tent.jpg",
+    "title": "Purple Lemonade Cannabis Plant at Day 49 in a Grow Tent — Royal Queen Seeds",
+    "author": "Royal Queen Seeds",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/royal-queen-seeds-official/55473924001/"
   }
 ]

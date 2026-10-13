@@ -14,6 +14,6 @@ export const DEMO_PHOTO_CREDITS: PhotoCredit[] = credits
 
 // generic shots plus real photos of the demo strains (nl-*, ww-*) from the strain catalogue
 export type DemoPhoto = 'seedling-led' | 'seedling-sprout' | 'veg-coco' | 'canopy-scrog' | 'flower-plant' | 'trichomes' | 'drying'
-  | 'nl-veg' | 'nl-flower' | 'ww-bloom' | 'ww-flower' | 'ww-cured'
+  | 'nl-veg' | 'nl-flower' | 'nl-tent' | 'ww-bloom' | 'ww-flower' | 'ww-cured'
 
 export const demoPhotoId = (slug: DemoPhoto) => `demo-${slug}`
