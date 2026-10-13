@@ -63,7 +63,13 @@ export default {
       notFoundText: 'It may have been deleted.'
     },
     home: {
-      summary: '{name} · {on}/{off} · {from}–{to}'
+      summary: '{name} · {on}/{off} · {from}–{to}',
+      schedule: '{on}/{off} · {from}–{to}',
+      plants: { one: '{n} plant', other: '{n} plants' },
+      noPlants: 'No plants yet',
+      climate: '{temp} °C · {rh} %',
+      vpd: 'VPD {v}',
+      open: 'Open {name}'
     },
     plant: {
       space: 'Tent',
@@ -217,7 +223,13 @@ export default {
       notFoundText: 'Možná byl smazán.'
     },
     home: {
-      summary: '{name} · {on}/{off} · {from}–{to}'
+      summary: '{name} · {on}/{off} · {from}–{to}',
+      schedule: '{on}/{off} · {from}–{to}',
+      plants: { one: '{n} rostlina', few: '{n} rostliny', other: '{n} rostlin' },
+      noPlants: 'Zatím bez rostlin',
+      climate: '{temp} °C · {rh} %',
+      vpd: 'VPD {v}',
+      open: 'Otevřít {name}'
     },
     plant: {
       space: 'Stan',
