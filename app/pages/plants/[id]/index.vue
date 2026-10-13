@@ -1139,6 +1139,8 @@ function duplicate() {
         </div>
       </section>
 
+      <EnvironmentPlantCard :plant="plant" />
+
       <section>
         <h2 class="section-title block-title">
           <GrowIcon name="stage" /> {{ t('plant.info.timeline') }}

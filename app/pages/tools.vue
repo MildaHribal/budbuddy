@@ -171,6 +171,26 @@ function fromC() {
           />
         </NuxtLink>
       </nav>
+
+      <NuxtLink
+        to="/environment"
+        class="card tool-row"
+      >
+        <span
+          class="tool-tile"
+          style="color: var(--blue)"
+        >
+          <UIcon name="i-tabler-temperature" />
+        </span>
+        <span class="tool-text">
+          <span class="tool-title">{{ t('environment.open') }}</span>
+          <span class="tool-desc">{{ t('environment.openDesc') }}</span>
+        </span>
+        <UIcon
+          name="i-tabler-chevron-right"
+          class="size-5 tool-go"
+        />
+      </NuxtLink>
     </div>
 
     <div
