@@ -7,7 +7,7 @@ import { milestones, repeatDates } from '~/utils/upcoming'
 
 const { t, locale } = useI18n()
 
-useHead({ title: () => t('home.title') })
+useHead({ title: '' })
 
 const grow = useGrow()
 const { state } = grow
