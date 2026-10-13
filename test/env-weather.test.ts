@@ -77,6 +77,18 @@ describe('alerts', () => {
   })
 })
 
+describe('mould risk', () => {
+  const day = (date: string, wetHours: number, precip: number, rhMean: number) => ({ date, code: 3, tMin: 8, tMax: 15, precip, precipProb: 0, gust: 10, rhMean, wetHours })
+  it('ignores a dry day with a humid night', () => {
+    const f = { placeId: 'p', fetchedAt: 0, timezone: '', current: null, days: [day('2026-10-13', 12, 0, 78)] }
+    expect(weatherAlerts(f, '2026-10-13', { flowering: true })).toEqual([])
+  })
+  it('warns once for a wet spell', () => {
+    const f = { placeId: 'p', fetchedAt: 0, timezone: '', current: null, days: [day('2026-10-13', 14, 4, 90), day('2026-10-14', 18, 6, 92)] }
+    expect(weatherAlerts(f, '2026-10-13', { flowering: true }).map(a => a.date)).toEqual(['2026-10-13'])
+  })
+})
+
 describe('rain counts as watering', () => {
   const f = parseForecast(RAW, 'p1')
   it('suggests yesterday’s rain', () => {

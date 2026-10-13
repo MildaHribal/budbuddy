@@ -247,7 +247,14 @@ const fmtTime = (iso: string) => new Date(iso).toLocaleString(intlLocale(), { da
           </select>
         </label>
         <details class="calib">
-          <summary>{{ t('environment.light.calibration') }}</summary>
+          <summary>
+            {{ t('environment.light.calibration') }}
+            <span class="num calib-value">× {{ formatNumber(Number(calibration) || 1, 2) }}</span>
+            <UIcon
+              name="i-tabler-chevron-down"
+              class="size-4 calib-chev"
+            />
+          </summary>
           <label class="field">
             <input
               v-model.number="calibration"
@@ -415,6 +422,30 @@ const fmtTime = (iso: string) => new Date(iso).toLocaleString(intlLocale(), { da
   font-weight: 600;
   color: var(--text-2);
   cursor: pointer;
+}
+
+.calib summary {
+  gap: 8px;
+  list-style: none;
+}
+
+.calib summary::-webkit-details-marker {
+  display: none;
+}
+
+.calib-value {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.calib-chev {
+  margin-left: auto;
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.calib[open] .calib-chev {
+  transform: rotate(180deg);
 }
 
 .calib .field {

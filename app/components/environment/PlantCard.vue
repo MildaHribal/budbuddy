@@ -48,10 +48,13 @@ onMounted(() => {
       to="/environment/weather"
       class="env-row line"
     >
-      <UIcon
+      <span
+        class="env-tile"
+        aria-hidden="true"
+      ><UIcon
         :name="WEATHER_ICON[weatherKind(forecast?.current?.code ?? 3)]"
-        class="size-5 env-icon"
-      />
+        class="size-5"
+      /></span>
       <span class="env-text">
         <strong>{{ place.name }}</strong>
         <span v-if="forecast?.current">{{ t(`environment.weather.kinds.${weatherKind(forecast.current.code)}`) }}</span>
@@ -72,10 +75,10 @@ onMounted(() => {
       :to="{ path: '/environment/light', query: { plant: plant.id } }"
       class="env-row line"
     >
-      <GrowIcon
-        name="lamp"
-        class="env-icon lamp"
-      />
+      <span
+        class="env-tile lamp"
+        aria-hidden="true"
+      ><GrowIcon name="lamp" /></span>
       <span class="env-text">
         <strong class="num">{{ light.ppfd }} µmol · DLI {{ formatNumber(light.dli) }}</strong>
         <span>{{ t(`environment.light.types.${light.lightType}`) }}</span>
@@ -128,16 +131,20 @@ onMounted(() => {
   text-decoration: none;
 }
 
-.env-icon {
+.env-tile {
+  display: grid;
+  place-items: center;
   flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
   color: var(--blue);
-  font-size: 20px;
+  background: color-mix(in srgb, currentColor 14%, var(--surface));
+  font-size: 22px;
 }
 
-.env-icon.lamp {
+.env-tile.lamp {
   color: var(--amber);
-  width: 20px;
-  height: 20px;
 }
 
 .env-text {

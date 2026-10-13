@@ -17,6 +17,8 @@ const addOpen = ref(route.query.add === '1')
 const forecastFor = (id: string) => envApi.forecasts[id]
 const days = (id: string) => (forecastFor(id)?.days ?? []).filter(d => d.date >= today.value)
 const alertsFor = (id: string) => envApi.alerts.value.filter(a => a.placeId === id)
+// avoid "-0°"
+const deg = (v: number | null) => (v === null ? '–' : formatNumber(Math.round(v) || 0, 0))
 const stale = (id: string) => {
   const f = forecastFor(id)
   return !!f && Date.now() - f.fetchedAt > FORECAST_STALE
@@ -123,7 +125,7 @@ watch(online, (v) => {
               class="now-icon"
             />
             <div class="now-main">
-              <strong class="now-temp num">{{ formatNumber(forecastFor(p.id)!.current!.temp, 0) }} °C</strong>
+              <strong class="now-temp num">{{ deg(forecastFor(p.id)!.current!.temp) }} °C</strong>
               <span class="now-kind">{{ t(`environment.weather.kinds.${weatherKind(forecastFor(p.id)!.current!.code)}`) }}</span>
             </div>
             <span class="now-side num">{{ t('environment.weather.feels', { rh: formatNumber(forecastFor(p.id)!.current!.rh, 0), wind: formatNumber(forecastFor(p.id)!.current!.wind, 0) }) }}</span>
@@ -190,8 +192,8 @@ watch(online, (v) => {
                 >{{ t('environment.weather.rainChance', { p: d.precipProb ?? 0 }) }}</span>
               </span>
               <span class="day-temps num">
-                <span class="day-min">{{ formatNumber(d.tMin, 0) }}°</span>
-                <span class="day-max">{{ formatNumber(d.tMax, 0) }}°</span>
+                <span class="day-min">{{ deg(d.tMin) }}°</span>
+                <span class="day-max">{{ deg(d.tMax) }}°</span>
               </span>
             </li>
           </ol>

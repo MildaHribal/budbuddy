@@ -155,7 +155,7 @@ export const THRESHOLDS = {
   wind: 50,
   windSevere: 70,
   /** mould: hours of RH ≥ 85 % in a day, or rain + humid mean */
-  wetHours: 10,
+  wetHours: 12,
   mouldRain: 2,
   mouldRh: 80
 }
@@ -174,9 +174,11 @@ export function weatherAlerts(f: Forecast, today: string, opts: { flowering: boo
     if (d.tMax !== null && d.tMax >= THRESHOLDS.heat) push('heat', d.date, d.tMax >= THRESHOLDS.heatSevere, d.tMax)
     if (d.precip !== null && d.precip >= THRESHOLDS.rain) push('rain', d.date, d.precip >= THRESHOLDS.rainSevere, d.precip)
     if (d.gust !== null && d.gust >= THRESHOLDS.wind) push('wind', d.date, d.gust >= THRESHOLDS.windSevere, d.gust)
-    if (opts.flowering) {
+    // humid nights alone are normal in autumn: mould needs long wetness plus rain or a humid day, once per window
+    if (opts.flowering && !out.some(a => a.type === 'mould')) {
       const humidRain = (d.precip ?? 0) >= THRESHOLDS.mouldRain && (d.rhMean ?? 0) >= THRESHOLDS.mouldRh
-      if (d.wetHours >= THRESHOLDS.wetHours || humidRain) push('mould', d.date, d.wetHours >= 16, d.wetHours)
+      const longWet = d.wetHours >= THRESHOLDS.wetHours && ((d.precip ?? 0) >= 1 || (d.rhMean ?? 0) >= 85)
+      if (longWet || humidRain) push('mould', d.date, d.wetHours >= 16, d.wetHours)
     }
   }
   return out.sort((a, b) => a.date.localeCompare(b.date) || Number(b.severe) - Number(a.severe))

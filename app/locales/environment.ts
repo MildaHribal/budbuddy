@@ -97,7 +97,7 @@ export default {
     rain: {
       title: 'It rained {mm} mm {when}',
       text: { one: 'Count it as watering for {n} outdoor plant?', other: 'Count it as watering for {n} outdoor plants?' },
-      log: 'Log as watered',
+      log: 'Mark as watered',
       skip: 'Not needed',
       logged: { one: 'Rain logged for {n} plant', other: 'Rain logged for {n} plants' },
       entryNote: 'Rain {mm} mm'
@@ -206,7 +206,7 @@ export default {
       webOnly: 'The phone sensor is used in the Android app. Here you can type a lux value.',
       sensorError: 'The light sensor could not be started.',
       maxed: 'The sensor tops out at about {max} lux, so the real value may be higher.',
-      height: 'Lamp height above canopy',
+      height: 'Lamp height',
       plant: 'Plant',
       noPlant: 'No plant',
       save: 'Save measurement',
@@ -365,7 +365,7 @@ export default {
     rain: {
       title: '{when} napršelo {mm} mm',
       text: { one: 'Započítat to jako zálivku {n} venkovní rostlině?', few: 'Započítat to jako zálivku {n} venkovním rostlinám?', other: 'Započítat to jako zálivku {n} venkovním rostlinám?' },
-      log: 'Zapsat jako zalito',
+      log: 'Zalito deštěm',
       skip: 'Není potřeba',
       logged: { one: 'Déšť zapsán u {n} rostliny', few: 'Déšť zapsán u {n} rostlin', other: 'Déšť zapsán u {n} rostlin' },
       entryNote: 'Déšť {mm} mm'
@@ -474,7 +474,7 @@ export default {
       webOnly: 'Senzor telefonu se používá v aplikaci pro Android. Tady můžeš zadat lux ručně.',
       sensorError: 'Senzor světla se nepodařilo spustit.',
       maxed: 'Senzor končí zhruba na {max} luxech, skutečná hodnota může být vyšší.',
-      height: 'Výška lampy nad rostlinami',
+      height: 'Výška lampy',
       plant: 'Rostlina',
       noPlant: 'Bez rostliny',
       save: 'Uložit měření',
