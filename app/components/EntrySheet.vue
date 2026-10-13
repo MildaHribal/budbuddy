@@ -79,12 +79,21 @@ function applyLast(type: EntryType) {
 }
 
 // this week's dose from the plant's feeding schedule wins over the last mix
+let planText: string | null = null
 function applyPlan() {
   const p = plant.value
   const lines = p ? feeding.planLines(p, form.date) : []
   if (!lines.length) return
   form.feedLines = lines
-  form.nutrients = feedLinesText(lines)
+  form.nutrients = planText = feedLinesText(lines)
+}
+
+// bulk feed: an untouched plan dose is replaced by each plant's own plan
+function bulkFeedFor(plantId: string): Pick<JournalEntry, 'nutrients' | 'feedLines'> | null {
+  if (kind.value !== 'feed' || planText === null || form.nutrients.trim() !== planText) return null
+  const p = grow.getPlant(plantId)
+  const lines = p ? feeding.planLines(p, form.date) : []
+  return lines.length ? { nutrients: feedLinesText(lines), feedLines: lines } : null
 }
 
 watch(open, (v) => {
@@ -94,6 +103,7 @@ watch(open, (v) => {
   done.value = false
   picked.value = props.type
   bulkPicked.value = [...(bulkIds.value ?? [])]
+  planText = null
   Object.assign(form, emptyForm())
   if (props.entry) {
     const e = props.entry
@@ -107,7 +117,8 @@ watch(open, (v) => {
   form.date = props.date
   applyLast(props.type)
   if (props.prefill) Object.assign(form, props.prefill)
-  else if (props.type === 'feed') applyPlan()
+  // a voice log brings only the amount, so the plan still fills the products
+  if (props.type === 'feed' && !props.prefill?.nutrients && !props.prefill?.feedLines?.length) applyPlan()
 }, { immediate: true })
 
 onBeforeUnmount(() => clearTimeout(closeTimer))
@@ -259,7 +270,15 @@ function save() {
     grow.updateEntry(props.entry.id, data)
     written = [{ ...props.entry, ...data }]
   } else if (bulkIds.value) {
-    written = bulkPicked.value.map(plantId => grow.addEntry({ ...data, photoIds: [...data.photoIds], plantId, type: kind.value }))
+    // the ghost alignment was made against the first plant's previous photo
+    written = bulkPicked.value.map(plantId => grow.addEntry({
+      ...data,
+      ...bulkFeedFor(plantId),
+      photoIds: [...data.photoIds],
+      align: plantId === props.plantId ? data.align : undefined,
+      plantId,
+      type: kind.value
+    }))
   } else {
     written = [grow.addEntry({ ...data, plantId: props.plantId, type: kind.value })]
   }
