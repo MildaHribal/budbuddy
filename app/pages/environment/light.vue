@@ -13,9 +13,19 @@ const route = useRoute()
 
 const lightType = useLocalStorage<LightType>('budbuddy:light-type', 'led-white')
 const calibration = useLocalStorage('budbuddy:light-calibration', 1)
-const hours = ref<number | ''>(state.settings.lightHours)
-const height = ref<number | ''>('')
 const plantId = ref<string>(typeof route.query.plant === 'string' ? route.query.plant : '')
+// hours come from the plant's tent when it has a light schedule, else the global one
+const schedule = computed(() => {
+  const spaceId = state.plants.find(p => p.id === plantId.value)?.spaceId
+  const space = spaceId ? state.spaces?.find(s => s.id === spaceId) : undefined
+  return space && space.lightHours !== null ? { h: space.lightHours, tent: space.name } : { h: state.settings.lightHours, tent: null }
+})
+const hours = ref<number | ''>(schedule.value.h)
+const hoursTouched = ref(false)
+watch(() => schedule.value.h, (h) => {
+  if (!hoursTouched.value) hours.value = h
+})
+const height = ref<number | ''>('')
 const manualLux = ref<number | ''>('')
 const typing = ref(!sensor.native)
 
@@ -212,6 +222,7 @@ const fmtTime = (iso: string) => new Date(iso).toLocaleString(intlLocale(), { da
               inputmode="numeric"
               min="0"
               max="24"
+              @input="hoursTouched = true"
             >
           </label>
           <label class="field">
@@ -227,7 +238,7 @@ const fmtTime = (iso: string) => new Date(iso).toLocaleString(intlLocale(), { da
           </label>
         </div>
         <p class="field-hint">
-          {{ t('environment.light.hoursHint', { h: state.settings.lightHours }) }}
+          {{ schedule.tent ? t('environment.light.hoursHintTent', { h: schedule.h, tent: schedule.tent }) : t('environment.light.hoursHint', { h: schedule.h }) }}
         </p>
         <label
           v-if="plants.length"
