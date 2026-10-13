@@ -225,6 +225,80 @@ const TOOL_LINKS = [
         </NuxtLink>
       </section>
 
+      <section aria-labelledby="path-h">
+        <div class="section-head">
+          <h2
+            id="path-h"
+            class="section-title"
+          >
+            {{ t('guide.hub.path') }}
+          </h2>
+          <span class="section-meta num">{{ t('guide.hub.chapterCount', { n: chapters.length }) }}</span>
+        </div>
+        <ol class="chapters">
+          <li
+            v-for="({ chapter, p }, i) in path"
+            :key="chapter.id"
+            class="chapter"
+            :class="{ complete: p.complete, current: resume?.chapter.id === chapter.id }"
+          >
+            <NuxtLink
+              :to="`/guide/${chapter.id}`"
+              class="chapter-card card"
+            >
+              <GuideCover
+                :chapter="chapter.id"
+                :glyph="chapter.glyph"
+                :color="chapter.color"
+                class="chapter-art"
+              />
+              <span
+                v-if="p.complete"
+                class="chapter-check"
+              >
+                <UIcon name="i-tabler-check" />
+                <span class="sr-only">{{ t('guide.hub.chapterDone') }}</span>
+              </span>
+              <span class="chapter-body">
+                <span class="chapter-n num">{{ t('guide.hub.chapterN', { n: i + 1 }) }}</span>
+                <span class="chapter-title">{{ tr(chapter.title) }}</span>
+                <span class="chapter-meta num">
+                  {{ p.done && !p.complete ? t('guide.hub.chapterProgress', { done: p.done, total: p.total }) : t('guide.hub.chapterLessons', { n: p.total, min: chapter.lessons.reduce((s, l) => s + l.minutes, 0) }) }}
+                </span>
+                <span
+                  class="progress chapter-progress"
+                  aria-hidden="true"
+                >
+                  <span :style="{ width: `${(p.done / p.total) * 100}%` }" />
+                </span>
+              </span>
+            </NuxtLink>
+          </li>
+        </ol>
+      </section>
+
+      <NuxtLink
+        v-if="problems"
+        to="/guide/problems"
+        class="row-card card"
+      >
+        <span
+          class="tile"
+          :style="{ color: problems.color }"
+          aria-hidden="true"
+        >
+          <GrowIcon :name="problems.glyph" />
+        </span>
+        <span class="row-text">
+          <span class="row-title">{{ t('guide.hub.diagnose') }}</span>
+          <span class="row-sub">{{ t('guide.hub.diagnoseText') }}</span>
+        </span>
+        <UIcon
+          name="i-tabler-chevron-right"
+          class="chev"
+        />
+      </NuxtLink>
+
       <section aria-labelledby="setup-h">
         <div class="section-head">
           <h2
@@ -276,81 +350,6 @@ const TOOL_LINKS = [
           </div>
         </div>
       </section>
-
-      <section aria-labelledby="path-h">
-        <div class="section-head">
-          <h2
-            id="path-h"
-            class="section-title"
-          >
-            {{ t('guide.hub.path') }}
-          </h2>
-        </div>
-        <ol class="chapters card">
-          <li
-            v-for="({ chapter, p }, i) in path"
-            :key="chapter.id"
-            class="stop"
-            :class="{ complete: p.complete, current: resume?.chapter.id === chapter.id }"
-          >
-            <NuxtLink
-              :to="`/guide/${chapter.id}`"
-              class="stop-link"
-            >
-              <span
-                class="node num"
-                aria-hidden="true"
-              >
-                <UIcon
-                  v-if="p.complete"
-                  name="i-tabler-check"
-                />
-                <template v-else>{{ i + 1 }}</template>
-              </span>
-              <span class="stop-text">
-                <span class="stop-title">{{ tr(chapter.title) }}</span>
-                <span class="stop-meta num">
-                  <template v-if="p.complete">{{ t('guide.hub.chapterDone') }} · </template>
-                  {{ t('guide.hub.chapterMeta', { done: p.done, total: p.total, min: chapter.lessons.reduce((s, l) => s + l.minutes, 0) }) }}<template v-if="p.done && !p.complete"> · {{ t('guide.hub.chapterLeft', { min: p.minutesLeft }) }}</template>
-                </span>
-                <span
-                  v-if="p.done && !p.complete"
-                  class="progress stop-progress"
-                  aria-hidden="true"
-                >
-                  <span :style="{ width: `${(p.done / p.total) * 100}%` }" />
-                </span>
-              </span>
-              <UIcon
-                name="i-tabler-chevron-right"
-                class="chev"
-              />
-            </NuxtLink>
-          </li>
-        </ol>
-      </section>
-
-      <NuxtLink
-        v-if="problems"
-        to="/guide/problems"
-        class="row-card card"
-      >
-        <span
-          class="tile"
-          :style="{ color: problems.color }"
-          aria-hidden="true"
-        >
-          <GrowIcon :name="problems.glyph" />
-        </span>
-        <span class="row-text">
-          <span class="row-title">{{ t('guide.hub.diagnose') }}</span>
-          <span class="row-sub">{{ t('guide.hub.diagnoseText') }}</span>
-        </span>
-        <UIcon
-          name="i-tabler-chevron-right"
-          class="chev"
-        />
-      </NuxtLink>
 
       <section aria-labelledby="tools-h">
         <div class="section-head">
@@ -425,7 +424,7 @@ const TOOL_LINKS = [
 
 .welcome-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -680,84 +679,99 @@ const TOOL_LINKS = [
 
 /* Chapters */
 .chapters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 10px;
   margin: 0;
-  padding: 0 0 0 14px;
+  padding: 0;
   list-style: none;
 }
 
-.stop + .stop {
-  border-top: 1px solid var(--line);
+.chapter {
+  display: flex;
 }
 
-.stop-link {
+.chapter-card {
+  position: relative;
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 10px 12px 10px 0;
+  flex-direction: column;
+  overflow: hidden;
   color: inherit;
   text-decoration: none;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.stop-link:active {
-  background: var(--surface-2);
+.chapter-card:active {
+  transform: scale(0.985);
 }
 
-.node {
-  flex: none;
+.current .chapter-card {
+  border-color: var(--accent-line);
+}
+
+.chapter-art {
+  aspect-ratio: 8 / 5;
+  border-bottom: 1px solid var(--line);
+}
+
+.chapter-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-3);
-  color: var(--text-2);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.complete .node {
-  background: var(--accent-soft);
-  color: var(--green);
-  font-size: 18px;
-}
-
-.current .node {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
   background: var(--green);
   color: var(--on-accent);
+  font-size: 15px;
 }
 
-.stop-text {
+.chapter-body {
   flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 10px 12px 12px;
 }
 
-.stop-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.stop-meta {
+.chapter-n {
   font-size: 12px;
   color: var(--text-3);
 }
 
-.complete .stop-meta {
+.current .chapter-n {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.chapter-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.chapter-meta {
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.complete .chapter-meta {
   color: var(--green);
 }
 
-.stop-progress {
+.chapter-progress {
   display: block;
   height: 4px;
-  margin-top: 4px;
-  max-width: 160px;
+  margin-top: 8px;
 }
 
-.stop-progress > span {
+.chapter-progress > span {
   display: block;
   height: 100%;
   border-radius: inherit;

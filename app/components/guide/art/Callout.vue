@@ -12,7 +12,7 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <g>
+  <g class="ga-callout">
     <path
       :d="`M${x} ${y}L${tx} ${ty}`"
       stroke="var(--text-3)"

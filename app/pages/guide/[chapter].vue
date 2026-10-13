@@ -166,13 +166,43 @@ function revealHash(smooth: boolean) {
   if (!id || !meta.value) return
   if (!lessons.value.some(l => l.id === id) && meta.value.lessons.some(l => l.id === id)) showAll.value = true
   render(id)
-  nextTick(() => requestAnimationFrame(() => scrollToId(id, smooth)))
+  nextTick(() => requestAnimationFrame(() => landOn(id, smooth)))
+}
+
+// Lessons around the target render late and shift it, so keep correcting until the layout settles or the reader takes over.
+function landOn(id: string, smooth = true) {
+  const root = scrollRoot.value
+  scrollToId(id, smooth)
+  if (!root) return
+  let stopped = false
+  const stop = () => (stopped = true)
+  const events = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const
+  events.forEach(e => window.addEventListener(e, stop, { passive: true, capture: true }))
+  const start = Date.now()
+  let settling = !smooth
+  if (smooth) {
+    root.addEventListener('scrollend', () => (settling = true), { once: true })
+  }
+  const tick = () => {
+    const el = document.getElementById(id)
+    const elapsed = Date.now() - start
+    if (stopped || !el || elapsed > 2500) {
+      events.forEach(e => window.removeEventListener(e, stop, { capture: true }))
+      return
+    }
+    if (settling || elapsed > 1000) {
+      const want = root.getBoundingClientRect().top + parseFloat(getComputedStyle(el).scrollMarginTop || '0')
+      if (Math.abs(el.getBoundingClientRect().top - want) > 2) el.scrollIntoView({ block: 'start' })
+    }
+    requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
 }
 
 function goTo(id: string) {
   render(id)
   router.replace({ hash: `#${id}` })
-  if (route.hash === `#${id}`) nextTick(() => scrollToId(id))
+  if (route.hash === `#${id}`) nextTick(() => landOn(id))
 }
 
 function nextInChapter(lesson: LessonMeta): LessonMeta | undefined {
@@ -330,29 +360,20 @@ function pickPlant(id: string) {
       :style="{ '--c': meta.color }"
     >
       <header class="intro card">
-        <div class="intro-row">
-          <span
-            class="tile"
-            aria-hidden="true"
-          >
-            <GrowIcon :name="meta.glyph" />
-          </span>
+        <GuideCover
+          :chapter="meta.id"
+          :glyph="meta.glyph"
+          :color="meta.color"
+          class="intro-art"
+        />
+        <div class="intro-body">
+          <p class="intro-n num">
+            {{ t('guide.hub.chapterN', { n: position + 1 }) }} · {{ t('guide.hub.chapterLessons', { n: lessons.length, min: totalMinutes }) }}
+          </p>
           <p class="intro-summary">
             {{ tr(meta.summary) }}
           </p>
         </div>
-        <div
-          class="progress"
-          aria-hidden="true"
-        >
-          <div
-            v-if="progress.done"
-            :style="{ width: `${(progress.done / progress.total) * 100}%` }"
-          />
-        </div>
-        <p class="intro-meta num">
-          {{ t('guide.hub.chapterMeta', { done: progress.done, total: progress.total, min: totalMinutes }) }}
-        </p>
       </header>
 
       <nav
@@ -686,30 +707,32 @@ function pickPlant(id: string) {
 
 /* Chapter intro */
 .intro {
+  overflow: hidden;
+}
+
+.intro-art {
+  aspect-ratio: 2 / 1;
+  border-bottom: 1px solid var(--line);
+}
+
+.intro-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   padding: 14px;
 }
 
-.intro-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+.intro-n {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .intro-summary {
   margin: 0;
-  padding-top: 2px;
   font-size: 15px;
   line-height: 1.5;
   color: var(--text);
-}
-
-.intro-meta {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-3);
 }
 
 /* Table of contents */
@@ -814,24 +837,26 @@ function pickPlant(id: string) {
 /* Lessons */
 .lesson {
   scroll-margin-top: calc(84px + var(--safe-top));
-  padding-top: 24px;
+  padding-top: 28px;
   border-top: 1px solid var(--line);
 }
 
 .lesson-head {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .lesson-title {
   margin: 0;
-  font-size: 22px;
+  max-width: 30ch;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .lesson-count {
-  margin: 4px 0 0;
+  margin: 6px 0 0;
   font-size: 12px;
   color: var(--text-3);
 }

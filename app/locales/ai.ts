@@ -2,13 +2,29 @@
 export default {
   en: {
     web: {
-      title: 'The AI assistant lives in the app',
-      text: 'On the website the assistant is switched off. Get the free Android app to ask about your plants.',
-      point1: 'Answers built on the BudBuddy grow guide',
-      point2: 'Photo checks for pests and deficiencies',
-      point3: 'Works offline once the AI pack is installed',
-      download: 'Download from GitHub',
-      note: 'Open the latest release and install the .apk file on your Android phone.'
+      subtitle: 'In the BudBuddy Android app',
+      title: 'The assistant runs in the Android app',
+      text: 'On this website it is switched off. Install the free Android app to ask about your own plants.',
+      point1: 'Reads your plant\'s journal: stage, watering, feeding and measurements',
+      point2: 'Checks photos for pests and deficiencies right on the phone',
+      point3: 'Bases its answers on the BudBuddy grow guide and links the lessons',
+      online: 'Answers come from an online model, so they need an internet connection. Photo checks and the knowledge search run on the phone.',
+      download: 'Download for Android',
+      note: 'Open the latest release on GitHub and install the .apk file on your Android phone.',
+      sample: {
+        title: 'What a chat looks like',
+        badge: 'Example',
+        intro: 'A sample conversation, written for this page. It is not live and nothing here is sent anywhere.',
+        q1: 'Week 5 of flower and the lower fan leaves are turning yellow. It started at the bottom, the top looks fine. Should I worry?',
+        a1: 'Even yellowing that starts on the oldest leaves and works upwards, while the top stays green, is the classic look of **nitrogen running short** [1]. Some of this is normal in flower, because the plant moves nitrogen from old leaves into the buds. Week 5 is a little early for it, so check a few things before you change the feed.\n\n**Check first**\n- **pH of the water going in.** Aim for 6.3–6.8 in soil and 5.8–6.2 in coco. Outside that range the roots cannot take up nitrogen even when it is in the pot [2].\n- **How fast it climbs.** A leaf or two a week is fine. If it reaches the middle of the plant within days, the plant is hungry.\n- **The pattern.** Yellow across the whole leaf points to nitrogen. Yellow between veins that stay green points to magnesium.\n\nDon\'t switch back to a high-nitrogen veg feed now, it can slow the buds down. Pull leaves only once they are fully yellow and come away with a light tug.\n\nWhat medium are you in, and what are you feeding?',
+        q2: 'Soil, pH 6.4 going in. Bloom nutrients at half the label dose every other watering.',
+        a2: 'Then pH is not the problem and the plant is most likely **just hungry**. Half strength every other watering is a light diet for the heaviest weeks of flower.\n\n- Raise the bloom feed to about **three quarters of the label dose**.\n- Watch the leaf tips for a week. If they stay green, go up to the full dose. Burnt, crispy tips mean you have gone far enough.\n- Leaves that are already yellow will not green up again. What counts is that the yellowing stops climbing within a week or so.\n\nFrom around week 7, a slow fade from the bottom is expected and usually means the plant is finishing on time.',
+        src1: 'Nutrient deficiencies',
+        src1Text: 'Nitrogen (N): lower leaves turn evenly pale, then yellow, and eventually drop. In the last weeks of flower, yellowing lower leaves are normal.',
+        src2: 'pH & EC per medium',
+        src2Text: 'Soil sweet spot pH 6.3–6.8, coco 5.8–6.2. Outside the range nutrients lock out even when they are in the feed.',
+        credit: 'Photo in the example: Cannabis Training University, CC BY-SA 3.0'
+      }
     },
     settings: {
       title: 'AI assistant',
@@ -242,13 +258,29 @@ export default {
   },
   cs: {
     web: {
-      title: 'AI asistent je v aplikaci',
-      text: 'Na webu je asistent vypnutý. Stáhni si zdarma aplikaci pro Android a ptej se na své rostliny.',
-      point1: 'Odpovědi postavené na průvodci BudBuddy',
-      point2: 'Kontrola fotek kvůli škůdcům a nedostatkům',
-      point3: 'S AI balíčkem funguje i offline',
-      download: 'Stáhnout z GitHubu',
-      note: 'Otevři nejnovější verzi a nainstaluj soubor .apk do telefonu s Androidem.'
+      subtitle: 'V aplikaci BudBuddy pro Android',
+      title: 'Asistent běží v aplikaci pro Android',
+      text: 'Na webu je vypnutý. Nainstaluj si zdarma aplikaci pro Android a ptej se na své rostliny.',
+      point1: 'Čte deník rostliny: fázi, zálivku, hnojení a měření',
+      point2: 'Kontroluje fotky kvůli škůdcům a nedostatkům přímo v telefonu',
+      point3: 'Odpovídá podle průvodce BudBuddy a odkazuje na lekce',
+      online: 'Odpovědi dává online model, takže potřebují připojení k internetu. Kontrola fotek a hledání ve znalostní bázi běží v telefonu.',
+      download: 'Stáhnout pro Android',
+      note: 'Otevři nejnovější vydání na GitHubu a nainstaluj soubor .apk do telefonu s Androidem.',
+      sample: {
+        title: 'Jak vypadá konverzace',
+        badge: 'Ukázka',
+        intro: 'Ukázková konverzace napsaná pro tuhle stránku. Není živá a nic se z ní nikam neposílá.',
+        q1: 'Pátý týden kvetení a spodní velké listy žloutnou. Začalo to dole, vršek vypadá dobře. Mám se bát?',
+        a1: 'Rovnoměrné žloutnutí, které začíná na nejstarších listech a postupuje nahoru, zatímco vršek zůstává zelený, je typický obraz **nedostatku dusíku** [1]. Částečně je to v kvetení normální, protože rostlina přesouvá dusík ze starých listů do palic. Na pátý týden je to ale trochu brzy, tak než změníš hnojení, zkontroluj pár věcí.\n\n**Nejdřív zkontroluj**\n- **pH vody, kterou zaléváš.** V hlíně drž 6,3–6,8, v kokosu 5,8–6,2. Mimo tohle rozmezí kořeny dusík nepřijmou, ani když ho v květináči je [2].\n- **Jak rychle to stoupá.** List nebo dva za týden nevadí. Pokud to během pár dní dojde do půlky rostliny, má hlad.\n- **Vzor.** Žlutý celý list ukazuje na dusík. Žlutá mezi žilkami, které zůstávají zelené, ukazuje na hořčík.\n\nTeď se nevracej k hnojivu na růst s vysokým dusíkem, může zpomalit palice. Listy otrhávej, až když jsou úplně žluté a samy povolí.\n\nV čem pěstuješ a čím hnojíš?',
+        q2: 'Hlína, pH 6,4 na vstupu. Hnojivo na kvetení v polovině dávky z etikety, každou druhou zálivku.',
+        a2: 'Pak pH problém není a rostlina má nejspíš **prostě hlad**. Poloviční dávka každou druhou zálivku je na nejnáročnější týdny kvetení málo.\n\n- Zvyš hnojivo na kvetení zhruba na **tři čtvrtiny dávky z etikety**.\n- Týden sleduj špičky listů. Když zůstanou zelené, přejdi na plnou dávku. Spálené, suché špičky znamenají, že už je to dost.\n- Listy, které už zežloutly, znovu nezezelenají. Důležité je, aby žloutnutí zhruba do týdne přestalo stoupat.\n\nZhruba od sedmého týdne se pomalé blednutí odspodu čeká a obvykle znamená, že rostlina dozrává včas.',
+        src1: 'Nedostatky živin',
+        src1Text: 'Dusík (N): spodní listy rovnoměrně blednou, pak žloutnou a nakonec opadají. V posledních týdnech kvetení je žloutnutí spodních listů normální.',
+        src2: 'pH a EC podle substrátu',
+        src2Text: 'Ideální pH v hlíně 6,3–6,8, v kokosu 5,8–6,2. Mimo rozmezí se živiny zablokují, i když v hnojivu jsou.',
+        credit: 'Fotka v ukázce: Cannabis Training University, CC BY-SA 3.0'
+      }
     },
     settings: {
       title: 'AI asistent',
