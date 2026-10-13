@@ -147,7 +147,8 @@ const details = computed(() => {
     { icon: 'i-tabler-bucket', label: t('plant.info.pot'), value: p.potSize || '–' },
     { icon: 'i-tabler-shovel', label: t('plant.info.medium'), value: t(`plant.info.mediums.${p.medium}`) },
     { icon: 'i-tabler-home', label: t('plant.info.location'), value: t(`plant.info.locations.${p.location}`) },
-    { icon: 'i-tabler-bulb', label: t('plant.info.light'), value: stage.value.light }
+    { icon: 'i-tabler-bulb', label: t('plant.info.light'), value: stage.value.light },
+    ...plantGroupDetails(p)
   ]
 })
 
@@ -249,7 +250,7 @@ function applyStage() {
   grow.setStage(p.id, stageChoice.value, stageDate.value)
   stageSheet.value = false
   const msg = t('plant.toast.stageChanged', { name: p.name, stage: stageInfo(stageChoice.value).label.toLowerCase() })
-  if (stageChoice.value === 'flowering' && p.type === 'photoperiod' && grow.state.settings.lightHours !== 12) {
+  if (stageChoice.value === 'flowering' && p.type === 'photoperiod' && (litSpace.value ? litSpace.value.lightHours : grow.state.settings.lightHours) !== 12) {
     notify(`${msg}. ${t('plant.flip.ask')}`, {
       icon: 'lamp',
       duration: 9000,
@@ -260,10 +261,18 @@ function applyStage() {
   }
 }
 
+// the plant's tent has its own schedule; otherwise the global one
+const litSpace = computed(() => {
+  const s = useSpaces().getSpace(plant.value?.spaceId)
+  return s && s.lightHours !== null ? s : null
+})
+
 function switchTo1212() {
-  grow.updateSettings({ lightHours: 12 })
+  const space = litSpace.value
+  if (space) useSpaces().updateSpace(space.id, { lightHours: 12 })
+  else grow.updateSettings({ lightHours: 12 })
   haptic('success')
-  notify(t('plant.flip.done', { on: grow.state.settings.lightsOn }), { icon: 'lamp' })
+  notify(t('plant.flip.done', { on: space?.lightsOn ?? grow.state.settings.lightsOn }), { icon: 'lamp' })
 }
 
 const harvestSheet = ref(false)
@@ -335,6 +344,7 @@ async function nextStep() {
 
 // ── More menu ─────────────────────────────────────────────────────
 const moreSheet = ref(false)
+const spaceSheet = ref(false)
 
 async function toggleArchive() {
   const p = plant.value
@@ -897,6 +907,10 @@ function duplicate() {
             > · {{ t('plant.water.last', { when: formatRelativeDay(watering.lastDate).toLowerCase() }) }}</span>
           </span>
         </p>
+        <WateringSmartWatering
+          v-if="isGrowing(plant)"
+          :plant="plant"
+        />
 
         <div
           v-if="needsHelp"
@@ -1609,6 +1623,25 @@ function duplicate() {
         <button
           type="button"
           class="menu-item"
+          @click="moreSheet = false; spaceSheet = true"
+        >
+          <UIcon
+            name="i-tabler-tent"
+            class="size-5"
+          /> {{ t('organize.plant.moveToSpace') }}
+        </button>
+        <NuxtLink
+          :to="{ path: '/labels', query: { ids: plant.id } }"
+          class="menu-item"
+        >
+          <UIcon
+            name="i-tabler-qrcode"
+            class="size-5"
+          /> {{ t('organize.plant.label') }}
+        </NuxtLink>
+        <button
+          type="button"
+          class="menu-item"
           @click="duplicate"
         >
           <UIcon
@@ -1639,6 +1672,11 @@ function duplicate() {
         </button>
       </div>
     </BottomSheet>
+
+    <SpacesMoveSheet
+      v-model:open="spaceSheet"
+      :plant-ids="[plant.id]"
+    />
 
     <BottomSheet
       v-model:open="shareSheet"
@@ -2632,6 +2670,10 @@ h1 {
   font-size: 15px;
   font-weight: 500;
   text-align: left;
+}
+
+a.menu-item {
+  text-decoration: none;
 }
 
 .menu-item:last-child {

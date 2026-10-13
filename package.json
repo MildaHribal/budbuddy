@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@capacitor-community/bluetooth-le": "~7.3.2",
+    "@capacitor-mlkit/barcode-scanning": "^7.5.0",
     "@capacitor/android": "^7.4.4",
     "@capacitor/app": "7.1.0",
     "@capacitor/browser": "^7.0.5",
@@ -35,8 +36,10 @@
     "fflate": "^0.8.3",
     "gifenc": "^1.0.3",
     "mediabunny": "^1.61.3",
+    "jsqr": "^1.4.0",
     "nuxt": "^4.2.1",
     "onnxruntime-web": "1.30.0",
+    "qrcode": "^1.5.4",
     "vue": "^3.5.24",
     "vue-router": "^4.6.3"
   },
@@ -44,6 +47,7 @@
     "@capacitor/cli": "^7.4.4",
     "@fontsource-variable/onest": "^5.3.1",
     "@nuxt/eslint": "^1.10.0",
+    "@types/qrcode": "^1.5.6",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4",

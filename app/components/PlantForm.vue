@@ -22,10 +22,23 @@ const form = reactive({
   medium: (props.plant?.medium ?? 'soil') as Medium,
   location: (props.plant?.location ?? 'indoor') as Location,
   wateringInterval: props.plant ? props.plant.wateringInterval : 3,
+  wateringAuto: props.plant?.wateringAuto ?? false,
+  spaceId: props.plant?.spaceId ?? (typeof useRoute().query.space === 'string' ? useRoute().query.space as string : null),
   health: (props.plant?.health ?? 4) as HealthLevel,
   photoId: props.plant?.photoId ?? null,
   notes: props.plant?.notes ?? ''
 })
+
+const { spaces, getSpace } = useSpaces()
+function pickSpace(id: string | null) {
+  form.spaceId = id
+  const s = getSpace(id)
+  if (s) form.location = s.location
+}
+function pickInterval(v: number | null) {
+  form.wateringAuto = false
+  form.wateringInterval = v
+}
 
 const isEdit = computed(() => !!props.plant)
 const submitted = ref(false)
@@ -40,7 +53,7 @@ const errors = computed(() => {
   else if (props.plant?.stageHistory[1] && form.startDate > props.plant.stageHistory[1].date) {
     e.startDate = t('plantForm.errors.dateAfterStage', { date: formatDate(props.plant.stageHistory[1].date) })
   }
-  if (form.wateringInterval !== null && (form.wateringInterval < 1 || form.wateringInterval > 30)) {
+  if (!form.wateringAuto && form.wateringInterval !== null && (form.wateringInterval < 1 || form.wateringInterval > 30)) {
     e.wateringInterval = t('plantForm.errors.intervalRange')
   }
   return e
@@ -84,7 +97,9 @@ function submit() {
     potSize: form.potSize.trim(),
     medium: form.medium,
     location: form.location,
-    wateringInterval: form.wateringInterval,
+    wateringInterval: form.wateringAuto ? (form.wateringInterval ?? 3) : form.wateringInterval,
+    wateringAuto: form.wateringAuto,
+    spaceId: getSpace(form.spaceId) ? form.spaceId : null,
     health: form.health,
     photoId: form.photoId,
     notes: form.notes.trim()
@@ -324,6 +339,32 @@ function submit() {
           </option>
         </select>
       </div>
+      <div
+        v-if="spaces.length"
+        class="field"
+      >
+        <label
+          class="field-label"
+          for="p-space"
+        >{{ t('organize.plant.space') }}</label>
+        <select
+          id="p-space"
+          :value="form.spaceId ?? ''"
+          class="input"
+          @change="pickSpace(($event.target as HTMLSelectElement).value || null)"
+        >
+          <option value="">
+            {{ t('organize.plant.noSpace') }}
+          </option>
+          <option
+            v-for="s in spaces"
+            :key="s.id"
+            :value="s.id"
+          >
+            {{ s.name }}
+          </option>
+        </select>
+      </div>
     </section>
 
     <section class="group card">
@@ -334,17 +375,28 @@ function submit() {
         <span class="field-label">{{ t('plantForm.wateringReminder') }}</span>
         <div class="chips wrap">
           <button
+            type="button"
+            class="chip"
+            :aria-pressed="form.wateringAuto"
+            @click="form.wateringAuto = true"
+          >
+            <UIcon
+              name="i-tabler-sparkles"
+              class="size-4"
+            /> {{ t('organize.water.modes.smart') }}
+          </button>
+          <button
             v-for="i in intervals"
             :key="String(i.value)"
             type="button"
             class="chip"
-            :aria-pressed="form.wateringInterval === i.value"
-            @click="form.wateringInterval = i.value"
+            :aria-pressed="!form.wateringAuto && form.wateringInterval === i.value"
+            @click="pickInterval(i.value)"
           >
             {{ i.label }}
           </button>
         </div>
-        <span class="field-hint">{{ t('plantForm.wateringHint') }}</span>
+        <span class="field-hint">{{ form.wateringAuto ? t('organize.water.formHint') : t('plantForm.wateringHint') }}</span>
         <span
           v-if="submitted && errors.wateringInterval"
           class="field-error"

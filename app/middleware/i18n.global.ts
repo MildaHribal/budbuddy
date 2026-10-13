@@ -11,6 +11,8 @@ const ROUTES: [RegExp, LazyNamespace[]][] = [
   [/^\/environment(\/|$)/, ['environment']],
   [/^\/stats(\/|$)/, ['stats']],
   [/^\/(feeding|costs|inventory|legal)(\/|$)/, ['manage']],
+  [/^\/hunts(\/|$)/, ['hunts']],
+  [/^\/labels(\/|$)/, ['labels']],
   [/^\/ai-assistant(\/|$)/, ['ai']],
   // timelapse, compare, Grow Wrapped and export (plus their entry points)
   [/^\/(tools|stats|compare|wrapped|plants\/[^/]+(\/(timelapse|export))?)\/?$/, ['review']]

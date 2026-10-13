@@ -8,7 +8,8 @@ import { createId } from '~/utils/id'
 import { blobToDataUrl, compressImage, dataUrlToBlob } from '~/utils/image'
 import { photoStore, type StoredPhoto } from '~/utils/photoStore'
 import { wateringBase } from '~/utils/reminders'
-import { isGrowing } from '~/utils/stages'
+import { isGrowing, stageStartDate } from '~/utils/stages'
+import { suggestWatering, type WateringSuggestion } from '~/utils/watering'
 import { resetPhotoUrls, THUMB_SUFFIX } from './useUi'
 import { emptyEnvironment } from '~/utils/env/schema'
 import { emptyData, migrateLegacy, normalizeData, normalizePlant, type LegacyInput } from '~/utils/schema'
@@ -59,7 +60,12 @@ function replaceState(data: GrowData) {
   state.inventory = data.inventory
   state.legal = data.legal
   state.environment = data.environment
+  state.spaces = data.spaces ?? []
+  state.hunts = data.hunts ?? []
 }
+
+/** Writable store for feature composables (useSpaces, useHunts); pages use useGrow().state. */
+export const growStore = state
 
 async function readLegacy(): Promise<LegacyInput | null> {
   const { value } = await Preferences.get({ key: LEGACY_PLANTS_KEY })
@@ -228,6 +234,10 @@ function deletePlant(id: string) {
   state.plants = state.plants.filter(p => p.id !== id)
   state.entries = state.entries.filter(e => e.plantId !== id)
   state.tasks = state.tasks.filter(t => t.plantId !== id)
+  for (const h of state.hunts ?? []) {
+    h.candidates = h.candidates.filter(c => c.plantId !== id)
+    if (h.keeper?.plantId === id) h.keeper = null
+  }
   collectGarbagePhotos().catch(() => {})
 }
 
@@ -316,15 +326,26 @@ export interface WateringStatus {
   nextDate: string
   /** negative = overdue by n days */
   dueIn: number
+  /** days between waterings in use */
+  interval: number
+  /** interval comes from the smart suggestion */
+  smart: boolean
+}
+
+function wateringSuggestion(plant: Plant): WateringSuggestion {
+  const dates = state.entries.filter(e => e.plantId === plant.id && (e.type === 'water' || e.type === 'feed')).map(e => e.date)
+  return suggestWatering({ dates, potSize: plant.potSize, medium: plant.medium, stage: plant.stage, stageSince: stageStartDate(plant) })
 }
 
 function wateringStatus(plant: Plant, today = todayISO()): WateringStatus | null {
   // harvested plants (drying, curing) are not watered any more
-  if (!plant.wateringInterval || plant.wateringInterval <= 0 || !isGrowing(plant)) return null
+  if (!isGrowing(plant)) return null
+  const interval = plant.wateringAuto ? wateringSuggestion(plant).days : plant.wateringInterval
+  if (!interval || interval <= 0) return null
   const last = lastEntryOf(plant.id, ['water', 'feed'])
   const from = wateringBase(plant.startDate, plant.createdAt, last?.date)
-  const nextDate = addDays(from, plant.wateringInterval)
-  return { lastDate: last?.date ?? null, nextDate, dueIn: daysBetween(today, nextDate) }
+  const nextDate = addDays(from, interval)
+  return { lastDate: last?.date ?? null, nextDate, dueIn: daysBetween(today, nextDate), interval, smart: !!plant.wateringAuto }
 }
 
 // ── Tasks ──────────────────────────────────────────────────────────
@@ -465,6 +486,7 @@ export function useGrow() {
     entriesFor,
     lastEntryOf,
     wateringStatus,
+    wateringSuggestion,
     addTask,
     updateTask,
     deleteTask,

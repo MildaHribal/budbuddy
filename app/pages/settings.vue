@@ -358,6 +358,13 @@ async function erase() {
             id="s-light-hours-hint"
             :class="hoursInvalid ? 'field-error' : 'field-hint'"
           >{{ hoursInvalid ? t('settings.light.invalid') : t('settings.light.hint') }}</span>
+          <NuxtLink
+            v-if="state.spaces?.length"
+            to="/spaces"
+            class="link"
+          >
+            {{ t('organize.settingsSpaces', { n: state.spaces.length }) }}
+          </NuxtLink>
         </div>
       </section>
 

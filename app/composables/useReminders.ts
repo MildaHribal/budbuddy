@@ -31,7 +31,10 @@ export async function syncReminders() {
 
   const plants = state.plants
     .filter(p => !p.archived)
-    .map(p => ({ id: p.id, name: p.name, nextWater: wateringStatus(p)?.nextDate ?? null, interval: p.wateringInterval }))
+    .map((p) => {
+      const w = wateringStatus(p)
+      return { id: p.id, name: p.name, nextWater: w?.nextDate ?? null, interval: w?.interval ?? null }
+    })
   const tasks = state.tasks.map(t => ({ title: t.title, date: t.date, done: t.done }))
   const days = planReminders({ plants, tasks }, state.settings.reminderTime, new Date(), SPAN)
 
