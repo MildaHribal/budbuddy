@@ -10,7 +10,9 @@ const ROUTES: [RegExp, LazyNamespace[]][] = [
   [/^\/tools(\/|$)/, ['tools']],
   [/^\/stats(\/|$)/, ['stats']],
   [/^\/(feeding|costs|inventory|legal)(\/|$)/, ['manage']],
-  [/^\/ai-assistant(\/|$)/, ['ai']]
+  [/^\/ai-assistant(\/|$)/, ['ai']],
+  // timelapse, compare, Grow Wrapped and export (plus their entry points)
+  [/^\/(tools|stats|compare|wrapped|plants\/[^/]+(\/(timelapse|export))?)\/?$/, ['review']]
 ]
 
 export default defineNuxtRouteMiddleware(async (to) => {

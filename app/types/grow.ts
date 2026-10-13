@@ -110,6 +110,16 @@ export interface JournalEntry {
   createdAt: string
   /** feed entries: products as poured (from a schedule or the mixer) */
   feedLines?: FeedLine[]
+  /** photoId → how the photo was lined up with the previous one (timelapse ghost) */
+  align?: Record<string, PhotoAlign>
+}
+
+/** Offset as a fraction of the frame size, scale factor and rotation in degrees. */
+export interface PhotoAlign {
+  x: number
+  y: number
+  scale: number
+  rotate: number
 }
 
 export interface Task {
