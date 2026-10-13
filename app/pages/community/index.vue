@@ -329,14 +329,14 @@ useOnlineRetry(() => error.value, retry)
           <CommunityUserAvatar
             :url="profile?.avatar_url"
             :name="profile ? authorName(profile) : '?'"
-            :size="36"
+            :size="32"
           />
           <span>{{ t('feed.home.starter') }}</span>
         </button>
         <div class="starter-actions">
           <button
             type="button"
-            class="starter-act"
+            class="btn starter-act"
             @click="compose({ category: 'problem' })"
           >
             <GrowIcon
@@ -347,7 +347,7 @@ useOnlineRetry(() => error.value, retry)
           </button>
           <button
             type="button"
-            class="starter-act"
+            class="btn starter-act"
             @click="compose({ category: 'plants' })"
           >
             <GrowIcon
@@ -360,21 +360,26 @@ useOnlineRetry(() => error.value, retry)
       </section>
 
       <nav
-        class="explore"
+        class="explore card"
         :aria-label="t('feed.explore.label')"
       >
         <NuxtLink
           v-for="e in EXPLORE"
           :key="e.key"
           :to="e.to"
-          class="explore-card card"
+          class="explore-row"
         >
-          <GrowIcon
-            :name="e.glyph"
-            class="explore-glyph"
+          <span class="explore-icon">
+            <GrowIcon :name="e.glyph" />
+          </span>
+          <span class="explore-text">
+            <span class="explore-title">{{ t(`feed.explore.${e.key}`) }}</span>
+            <span class="explore-sub">{{ t(`feed.explore.${e.key}Text`) }}</span>
+          </span>
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="explore-chev"
           />
-          <span class="explore-title">{{ t(`feed.explore.${e.key}`) }}</span>
-          <span class="explore-text">{{ t(`feed.explore.${e.key}Text`) }}</span>
         </NuxtLink>
       </nav>
 
@@ -383,7 +388,7 @@ useOnlineRetry(() => error.value, retry)
         class="filters"
       >
         <div
-          class="segmented tabs"
+          class="tabs"
           role="tablist"
           :aria-label="t('feed.title')"
         >
@@ -594,7 +599,7 @@ useOnlineRetry(() => error.value, retry)
 }
 
 .feed-page {
-  gap: 18px;
+  gap: 16px;
   padding-top: 4px;
   /* clear the FAB above the nav so the last card's actions stay tappable */
   padding-bottom: calc(76px + 24px);
@@ -611,12 +616,11 @@ useOnlineRetry(() => error.value, retry)
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 52px;
-  padding: 6px 14px 6px 6px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #0b0d10;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  min-height: 48px;
+  padding: 6px 14px 6px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--well);
   color: var(--text-3);
   font-size: 15px;
   text-align: left;
@@ -625,7 +629,7 @@ useOnlineRetry(() => error.value, retry)
 
 .starter-prompt:active {
   transform: scale(0.985);
-  border-color: var(--accent-line);
+  border-color: var(--green);
 }
 
 .starter-actions {
@@ -635,24 +639,10 @@ useOnlineRetry(() => error.value, retry)
 }
 
 .starter-act {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   min-height: 44px;
   padding: 0 10px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--surface);
+  font-size: 14px;
   color: var(--text-2);
-  font-size: 13.5px;
-  font-weight: 600;
-  transition: transform var(--dur-fast) var(--ease-out), color var(--dur) ease;
-}
-
-.starter-act:active {
-  transform: scale(0.97);
-  color: var(--text);
 }
 
 .starter-act .grow-icon {
@@ -660,11 +650,11 @@ useOnlineRetry(() => error.value, retry)
 }
 
 .ask-glyph {
-  color: var(--pink);
+  color: var(--red);
 }
 
 .show-glyph {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .examples {
@@ -676,7 +666,7 @@ useOnlineRetry(() => error.value, retry)
 
 .ex-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -717,44 +707,66 @@ useOnlineRetry(() => error.value, retry)
   flex-shrink: 0;
   margin-top: 1px;
   font-size: 17px;
-  color: var(--info);
+  color: var(--blue);
 }
 
 .explore {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.explore-card {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 12px 12px 11px;
+  overflow: hidden;
+}
+
+.explore-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px;
   color: inherit;
   text-decoration: none;
-  transition: transform var(--dur-fast) var(--ease-out);
+  transition: background var(--dur-fast) ease;
 }
 
-.explore-card:active {
-  transform: scale(0.97);
+.explore-row + .explore-row {
+  border-top: 1px solid var(--line);
 }
 
-.explore-glyph {
+.explore-row:active {
+  background: var(--surface-2);
+}
+
+.explore-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--green);
   font-size: 22px;
-  color: var(--leaf);
-  margin-bottom: 6px;
-}
-
-.explore-title {
-  font-size: 13px;
-  font-weight: 600;
 }
 
 .explore-text {
-  font-size: 11px;
-  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.explore-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.explore-sub {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.explore-chev {
+  flex-shrink: 0;
   color: var(--text-3);
 }
 
@@ -764,7 +776,12 @@ useOnlineRetry(() => error.value, retry)
   gap: 12px;
 }
 
+/* underline tabs: five labels don't fit a segmented control at 390px */
 .tabs {
+  display: flex;
+  margin: 0 -16px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -774,27 +791,53 @@ useOnlineRetry(() => error.value, retry)
 }
 
 .tabs button {
-  flex: 1 0 auto;
+  flex: 0 0 auto;
+  position: relative;
+  min-height: 44px;
   padding: 0 12px;
-  font-size: 13.5px;
-  min-height: 40px;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
+  transition: color var(--dur) ease;
+}
+
+.tabs button::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background var(--dur) ease;
+}
+
+.tabs button[aria-selected="true"] {
+  color: var(--text);
+}
+
+.tabs button[aria-selected="true"]::after {
+  background: var(--green);
 }
 
 .cats {
-  margin: 0 -20px;
-  padding: 0 20px 2px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .sentinel {
   height: 1px;
-  margin-top: -18px;
+  margin-top: -16px;
 }
 
 .foot {
@@ -808,7 +851,7 @@ useOnlineRetry(() => error.value, retry)
 
 .foot .spin {
   font-size: 22px;
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .end {
@@ -818,30 +861,12 @@ useOnlineRetry(() => error.value, retry)
 }
 
 .end .grow-icon {
-  color: var(--leaf);
+  color: var(--green);
   font-size: 16px;
 }
 
 .fab {
   position: fixed;
-  right: 20px;
-  bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
-  z-index: 30;
-  width: 56px;
-  height: 56px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #b3ef87 0%, var(--leaf) 55%, #86d257 100%);
-  color: var(--on-accent);
-  font-size: 26px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 26px -8px rgba(155, 227, 107, 0.6);
-  transition: transform var(--dur) var(--ease-out), opacity var(--dur) ease;
-}
-
-.fab:active {
-  transform: scale(0.92);
 }
 
 .fab.away {

@@ -11,7 +11,7 @@ export default {
     cs: 'Nauč se číst, co ti rostlina říká: nedostatky živin, přehnojení a zablokování, škůdci, plíseň a hermafroditi. U každého problému máš jasný postup.'
   },
   glyph: 'pest',
-  color: '#ff8a5c',
+  color: '#f0905a',
   lessons: [
     {
       id: 'problems-diagnose',

@@ -183,6 +183,7 @@ async function withdraw() {
 }
 
 const editOpen = ref(false)
+const editFormId = useId()
 const editCaption = ref('')
 const editBusy = ref(false)
 function startEdit() {
@@ -476,6 +477,7 @@ useOnlineRetry(() => failed.value, load)
       :title="t('challenge.sheet.caption')"
     >
       <form
+        :id="editFormId"
         class="form-stack"
         @submit.prevent="saveCaption"
       >
@@ -490,14 +492,17 @@ useOnlineRetry(() => failed.value, load)
         <p class="field-hint">
           {{ t('challenge.sheet.english') }}
         </p>
+      </form>
+      <template #footer>
         <button
           type="submit"
-          class="btn btn-primary btn-block"
+          :form="editFormId"
+          class="btn btn-primary"
           :disabled="editBusy"
         >
           {{ t('common.save') }}
         </button>
-      </form>
+      </template>
     </BottomSheet>
   </div>
 </template>
@@ -505,17 +510,16 @@ useOnlineRetry(() => failed.value, load)
 <style scoped>
 .skeleton {
   border-radius: var(--radius);
-  background: linear-gradient(100deg, var(--surface) 30%, var(--surface-3) 50%, var(--surface) 70%);
-  background-size: 300% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
 .head-sk { height: 220px; }
 .tile-sk { aspect-ratio: 4 / 5; }
 
-@keyframes shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: 0 0; }
+@keyframes pulse {
+  50% { opacity: 0.55; }
 }
 
 .error {
@@ -534,7 +538,7 @@ useOnlineRetry(() => failed.value, load)
 .cover {
   display: block;
   width: 100%;
-  height: 160px;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
 }
 
@@ -542,15 +546,15 @@ useOnlineRetry(() => failed.value, load)
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
   padding: 16px;
 }
 
 .desc {
   margin: 0;
   color: var(--text-2);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.45;
 }
 
 .rules {
@@ -573,10 +577,10 @@ useOnlineRetry(() => failed.value, load)
   align-items: flex-start;
   gap: 10px;
   margin: 0;
+  width: 100%;
   padding: 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-control);
   background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent-line);
   color: var(--text-2);
   font-size: 13px;
   line-height: 1.5;
@@ -590,7 +594,7 @@ useOnlineRetry(() => failed.value, load)
 .welcome-glyph {
   flex-shrink: 0;
   font-size: 22px;
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .eligibility,
@@ -648,7 +652,7 @@ useOnlineRetry(() => failed.value, load)
 .mine-actions .btn {
   min-height: 44px;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .removed {
@@ -657,7 +661,7 @@ useOnlineRetry(() => failed.value, load)
   gap: 6px;
   margin: 0;
   font-size: 12px;
-  color: #ff9aa3;
+  color: var(--red);
 }
 
 .caption {
@@ -673,7 +677,7 @@ useOnlineRetry(() => failed.value, load)
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -683,17 +687,16 @@ useOnlineRetry(() => failed.value, load)
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border-radius: var(--radius);
+  border-radius: 12px;
   border: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: var(--panel-shadow);
+  background: var(--surface);
   overflow: hidden;
 }
 
 .shot {
   position: relative;
   aspect-ratio: 4 / 5;
-  background: var(--surface);
+  background: var(--surface-2);
 }
 
 .shot img {
@@ -744,19 +747,19 @@ useOnlineRetry(() => failed.value, load)
 }
 
 .vote {
-  margin-top: auto;
+  margin: auto 0 0 -6px;
   display: flex;
   align-items: center;
   gap: 6px;
   min-height: 44px;
-  padding: 0 12px;
-  border-radius: 12px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--text-2);
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text-3);
   font-size: 13px;
   font-weight: 600;
-  transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
+  transition: color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .vote:active {
@@ -764,35 +767,24 @@ useOnlineRetry(() => failed.value, load)
 }
 
 .vote .iconify {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .vote-label {
-  margin-left: auto;
-}
-
-.vote.blind {
-  justify-content: center;
-}
-
-.vote.blind .vote-label {
-  margin-left: 0;
+  margin-left: 2px;
 }
 
 .vote.on {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .vote.on .iconify {
-  animation: vote-burst 420ms var(--ease-out);
-  filter: drop-shadow(0 0 6px rgba(155, 227, 107, 0.6));
+  animation: vote-pop 300ms var(--ease-out);
 }
 
-@keyframes vote-burst {
-  0% { transform: scale(0.6); }
-  55% { transform: scale(1.3); }
+@keyframes vote-pop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.2); }
   100% { transform: scale(1); }
 }
 

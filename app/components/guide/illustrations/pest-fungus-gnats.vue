@@ -83,7 +83,7 @@ const crumbs = [[110, 140], [140, 150], [170, 136], [196, 152], [124, 170], [160
           cx="6.4"
           cy="0"
           r="1.5"
-          fill="#0b0d10"
+          fill="var(--well)"
           :stroke="ART.text"
           stroke-width="0.6"
         />
@@ -113,19 +113,19 @@ const crumbs = [[110, 140], [140, 150], [170, 136], [196, 152], [124, 170], [160
       cx="113"
       cy="62"
       r="1.3"
-      fill="#0b0d10"
+      fill="var(--well)"
     />
     <circle
       cx="122"
       cy="70"
       r="1.3"
-      fill="#0b0d10"
+      fill="var(--well)"
     />
     <circle
       cx="116"
       cy="75"
       r="1.3"
-      fill="#0b0d10"
+      fill="var(--well)"
     />
     <path
       d="M140 64q14 10 30-6t32 4M196 50q-20-12-30 2"

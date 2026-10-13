@@ -205,7 +205,7 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
       >
         <button
           type="button"
-          class="item card row"
+          class="item row"
           @click="startEdit(c)"
         >
           <img
@@ -234,7 +234,7 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
       v-model:open="open"
       :title="editing ? t('admin.challenges.editTitle') : t('admin.challenges.newTitle')"
       icon="lamp"
-      icon-color="var(--lamp)"
+      icon-color="var(--amber)"
     >
       <form
         class="form-stack"
@@ -410,10 +410,13 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
   padding-top: 4px;
 }
 
-.row {
+.item.row {
   flex-direction: row;
   align-items: center;
   width: 100%;
+  min-height: 56px;
+  border: 0;
+  background: none;
   text-align: left;
   color: inherit;
 }
@@ -423,7 +426,7 @@ const coverShown = computed(() => coverPreview.value ?? form.cover)
   height: 56px;
   flex-shrink: 0;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
 }
 
 .row-body {

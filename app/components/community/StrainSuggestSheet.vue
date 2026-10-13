@@ -61,7 +61,7 @@ async function submit() {
     v-model:open="open"
     :title="t('strains.suggestTitle')"
     icon="flowering"
-    icon-color="var(--leaf)"
+    icon-color="var(--green)"
   >
     <form
       id="strain-suggest"

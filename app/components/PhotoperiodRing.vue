@@ -17,7 +17,6 @@ onMounted(() => {
 onBeforeUnmount(() => clearInterval(timer))
 
 const { t } = useI18n()
-const uid = useId()
 const R = 70
 const C = 2 * Math.PI * R
 const state = computed(() => lightState(props.lightsOn, props.hours, now.value))
@@ -47,36 +46,6 @@ const label = computed(() => t('ring.label', { on: props.hours, off: 24 - props.
       role="img"
       :aria-label="label"
     >
-      <defs>
-        <filter
-          :id="`${uid}-blur`"
-          x="-30%"
-          y="-30%"
-          width="160%"
-          height="160%"
-        >
-          <feGaussianBlur stdDeviation="4" />
-        </filter>
-        <radialGradient :id="`${uid}-core`">
-          <stop
-            offset="0"
-            stop-color="#ffd28a"
-            stop-opacity=".16"
-          />
-          <stop
-            offset="1"
-            stop-color="#ffd28a"
-            stop-opacity="0"
-          />
-        </radialGradient>
-      </defs>
-      <circle
-        class="core"
-        cx="90"
-        cy="90"
-        r="62"
-        :fill="`url(#${uid}-core)`"
-      />
       <g
         transform="rotate(-90 90 90)"
         fill="none"
@@ -86,7 +55,7 @@ const label = computed(() => t('ring.label', { on: props.hours, off: 24 - props.
           cx="90"
           cy="90"
           :r="R"
-          stroke="#14171b"
+          stroke="var(--track)"
           stroke-width="12"
         />
         <circle
@@ -100,21 +69,11 @@ const label = computed(() => t('ring.label', { on: props.hours, off: 24 - props.
           :stroke-dashoffset="-litLen"
         />
         <circle
-          class="lit-arc glow"
-          cx="90"
-          cy="90"
-          :r="R"
-          stroke="var(--leaf)"
-          stroke-width="10"
-          :filter="`url(#${uid}-blur)`"
-          :stroke-dasharray="`${drawn ? litLen : 0} ${C}`"
-        />
-        <circle
           class="lit-arc"
           cx="90"
           cy="90"
           :r="R"
-          stroke="var(--leaf)"
+          stroke="var(--green)"
           stroke-width="10"
           :stroke-dasharray="`${drawn ? litLen : 0} ${C}`"
         />
@@ -123,17 +82,9 @@ const label = computed(() => t('ring.label', { on: props.hours, off: 24 - props.
         <circle
           :cx="marker.x"
           :cy="marker.y"
-          r="9"
-          fill="var(--lamp)"
-          :filter="`url(#${uid}-blur)`"
-          opacity=".8"
-        />
-        <circle
-          :cx="marker.x"
-          :cy="marker.y"
           r="5.5"
-          fill="#fff4de"
-          stroke="var(--lamp)"
+          fill="var(--text)"
+          stroke="var(--amber)"
           stroke-width="2"
         />
       </g>
@@ -175,10 +126,6 @@ svg {
   transition: stroke-dasharray 1.4s 0.5s var(--ease-out);
 }
 
-.lit-arc.glow {
-  opacity: 0.55;
-}
-
 .marker {
   opacity: 0;
   animation: marker-in 0.6s 1.5s var(--ease-out) forwards;
@@ -190,17 +137,13 @@ svg {
   }
 }
 
-.dark .core {
-  opacity: 0.25;
-}
-
 .dark .lit-arc {
   stroke-opacity: 0.55;
 }
 
 .ring-value {
-  font-size: 26px;
-  font-weight: 300;
+  font-size: 24px;
+  font-weight: 600;
   fill: var(--text);
 }
 
@@ -215,11 +158,11 @@ svg {
 
 .ring-big {
   margin-top: 2px;
-  font-size: 28px;
-  font-weight: 300;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  color: var(--lamp);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
 
 .legend {
@@ -241,7 +184,7 @@ svg {
 }
 
 .legend .lit {
-  background: var(--leaf);
+  background: var(--green);
 }
 
 .legend .off {

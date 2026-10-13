@@ -26,10 +26,9 @@ const count = computed(() => props.items.filter((_, i) => ticks.value.has(i)).le
             class="box"
             aria-hidden="true"
           >
-            <UIcon
-              name="i-tabler-check"
-              class="tick"
-            />
+            <svg viewBox="0 0 12 12">
+              <path d="M2.5 6.5l2.5 2.5 4.5-5" />
+            </svg>
           </span>
           <span class="label">{{ tr(item) }}</span>
         </button>
@@ -43,7 +42,7 @@ const count = computed(() => props.items.filter((_, i) => ticks.value.has(i)).le
 
 <style scoped>
 .checklist {
-  padding: 6px 6px 12px;
+  padding: 0 14px;
 }
 
 ul {
@@ -52,25 +51,24 @@ ul {
   list-style: none;
 }
 
+li + li {
+  border-top: 1px solid var(--line);
+}
+
 .check {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   width: 100%;
-  min-height: 48px;
-  padding: 12px 10px;
+  min-height: 52px;
+  padding: 14px 0;
   border: 0;
-  border-radius: 10px;
   background: none;
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.45;
   text-align: left;
-}
-
-.check:active {
-  background: var(--surface-2);
 }
 
 .box {
@@ -79,37 +77,44 @@ ul {
   place-items: center;
   width: 22px;
   height: 22px;
-  margin-top: -1px;
-  border-radius: 7px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-  transition: background var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+  border-radius: 6px;
+  border: 2px solid var(--line-strong);
+  transition: background var(--dur) ease, border-color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
-.tick {
-  font-size: 15px;
-  color: var(--on-accent);
+.box svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--on-accent);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   opacity: 0;
-  transform: scale(0.5);
-  transition: opacity var(--dur-fast) ease, transform var(--dur) var(--ease-out);
+  transition: opacity var(--dur-fast) ease;
+}
+
+.check:active .box {
+  transform: scale(0.9);
 }
 
 .check[aria-checked="true"] .box {
-  background: var(--leaf);
-  box-shadow: 0 0 10px rgba(155, 227, 107, 0.35);
+  background: var(--green);
+  border-color: var(--green);
 }
 
-.check[aria-checked="true"] .tick {
+.check[aria-checked="true"] .box svg {
   opacity: 1;
-  transform: none;
 }
 
 .check[aria-checked="true"] .label {
-  color: var(--text-2);
+  color: var(--text-3);
 }
 
 .meta {
-  margin: 4px 10px 0;
+  margin: 0;
+  padding: 10px 0 12px;
+  border-top: 1px solid var(--line);
   font-size: 12px;
   color: var(--text-3);
 }

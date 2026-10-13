@@ -6,7 +6,7 @@ const { t } = useI18n()
 const items = [
   { to: '/', label: 'home', icon: 'home' },
   { to: '/plants', label: 'plants', icon: 'plants' },
-  { to: '/ai-assistant', label: 'ai', icon: 'spark', center: true, heavy: true },
+  { to: '/ai-assistant', label: 'ai', icon: 'spark', heavy: true },
   { to: '/guide', label: 'guide', icon: 'guide' },
   { to: '/community', label: 'community', icon: 'community', heavy: true }
 ]
@@ -31,14 +31,11 @@ const isActive = (to: string) => {
         :to="item.to"
         :prefetch-on="item.heavy ? 'interaction' : 'visibility'"
         class="nav-item"
-        :class="{ active: isActive(item.to), center: item.center }"
+        :class="{ active: isActive(item.to) }"
         :aria-current="isActive(item.to) ? 'page' : undefined"
       >
         <span class="nav-icon-wrap">
-          <GrowIcon
-            :name="item.icon"
-            :glow="isActive(item.to)"
-          />
+          <GrowIcon :name="item.icon" />
         </span>
         <span class="nav-label">{{ t(`common.nav.${item.label}`) }}</span>
       </NuxtLink>
@@ -53,77 +50,55 @@ const isActive = (to: string) => {
   right: 0;
   bottom: 0;
   z-index: 50;
-  background: linear-gradient(180deg, #0d0f12, #07080a);
+  background: var(--bg);
   border-top: 1px solid var(--line);
 }
 
 .nav-row {
   display: flex;
-  justify-content: space-around;
-  padding: 8px 8px calc(8px + var(--safe-bottom));
+  padding: 6px 8px calc(6px + var(--safe-bottom));
 }
 
 .nav-item {
-  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 6px 0 2px;
+  padding: 8px 0 4px;
   color: var(--text-3);
   text-decoration: none;
   user-select: none;
   transition: color var(--dur) ease;
 }
 
-.nav-item::before {
-  content: "";
-  position: absolute;
-  top: -9px;
-  left: 50%;
-  width: 26px;
-  height: 2px;
-  margin-left: -13px;
-  border-radius: 2px;
-  background: var(--leaf);
-  box-shadow: 0 0 12px 2px rgba(155, 227, 107, 0.55);
-  opacity: 0;
-  transform: scaleX(0.2);
-  transition: opacity var(--dur) ease, transform var(--dur-slow) var(--ease-out);
-}
-
 .nav-icon-wrap {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 32px;
+  border-radius: 16px;
   font-size: 24px;
-  transition: transform var(--dur-fast) var(--ease-out);
+  transition: background var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .nav-item:active .nav-icon-wrap {
-  transform: scale(0.86);
+  transform: scale(0.9);
 }
 
 .nav-label {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.01em;
 }
 
 .nav-item.active {
-  color: var(--leaf);
+  color: var(--text);
 }
 
-.nav-item.active::before {
-  opacity: 1;
-  transform: scaleX(1);
-}
-
-.nav-item.center.active {
-  color: var(--lamp);
-}
-
-.nav-item.center::before {
-  background: var(--lamp);
-  box-shadow: 0 0 12px 2px rgba(255, 210, 138, 0.55);
+.nav-item.active .nav-icon-wrap {
+  background: var(--accent-soft);
+  color: var(--green);
 }
 </style>

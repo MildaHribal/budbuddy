@@ -191,12 +191,12 @@ function save() {
   }
   notify(isEdit.value ? t('entry.updated') : t(`entry.types.${kind.value}.logged`), { icon: info.value.icon })
   emit('saved', saved)
-  // let the glyph fill before the sheet drops away
+  // show the "logged" state briefly before the sheet drops away
   done.value = true
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   closeTimer = setTimeout(() => {
     open.value = false
-  }, reduce ? 0 : 460)
+  }, reduce ? 0 : 320)
 }
 </script>
 
@@ -209,11 +209,7 @@ function save() {
     <template #icon>
       <GrowIcon
         :name="info.glyph"
-        draw
-        glow
-        :stroke-width="1.4"
         class="entry-glyph"
-        :class="{ filled: done }"
       />
     </template>
 
@@ -605,26 +601,7 @@ function save() {
 
 <style scoped>
 .entry-glyph {
-  font-size: 40px;
-  transition: transform var(--dur-slow) var(--ease-out);
-}
-
-.entry-glyph :deep(.tint path) {
-  transition: fill-opacity var(--dur-slow) var(--ease-out);
-}
-
-.entry-glyph.filled {
-  animation: glyph-pop 460ms var(--ease-out);
-}
-
-.entry-glyph.filled :deep(.tint path) {
-  fill-opacity: 0.85;
-}
-
-@keyframes glyph-pop {
-  40% {
-    transform: scale(1.14);
-  }
+  font-size: 28px;
 }
 
 .types {
@@ -641,18 +618,12 @@ function save() {
 .type-glyph {
   font-size: 18px;
   color: var(--c);
-  opacity: 0.75;
-  transition: opacity var(--dur) ease;
 }
 
 .type-chip[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--c) 12%, transparent);
-  border-color: color-mix(in srgb, var(--c) 40%, transparent);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  border-color: transparent;
   color: var(--text);
-}
-
-.type-chip[aria-pressed="true"] .type-glyph {
-  opacity: 1;
 }
 
 .unit-input {
@@ -697,8 +668,8 @@ input.num[type="number"] {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--dark-arc);
-  transition: background var(--dur) ease, box-shadow var(--dur) ease;
+  background: var(--track);
+  transition: background var(--dur) ease;
 }
 
 .range[data-state="in"] {
@@ -706,16 +677,15 @@ input.num[type="number"] {
 }
 
 .range[data-state="in"] i {
-  background: var(--leaf);
-  box-shadow: 0 0 6px rgba(155, 227, 107, 0.6);
+  background: var(--green);
 }
 
 .range[data-state="out"] {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .range[data-state="out"] i {
-  background: var(--lamp);
+  background: var(--amber);
 }
 
 .quick,
@@ -737,14 +707,6 @@ input.num[type="number"] {
 
 .save.done .save-check {
   display: inline-block;
-  animation: check-in 300ms var(--ease-out);
-}
-
-@keyframes check-in {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
 }
 
 .photos {
@@ -757,10 +719,9 @@ input.num[type="number"] {
   position: relative;
   width: 84px;
   height: 84px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   overflow: hidden;
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .photo.add {
@@ -769,9 +730,9 @@ input.num[type="number"] {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border: 1px dashed var(--accent-line);
-  background: transparent;
-  color: var(--accent);
+  border: 1px solid var(--line-strong);
+  background: var(--well);
+  color: var(--green);
   font-size: 12px;
   font-weight: 600;
 }

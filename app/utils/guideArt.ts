@@ -1,19 +1,19 @@
 // Procedural cannabis fan-leaf geometry for the guide illustrations.
 
 export const ART = {
-  leaf: '#9be36b',
-  leafDeep: '#5fb04a',
-  lamp: '#ffd28a',
-  text: '#e9f3e4',
-  muted: '#8d9a8a',
+  leaf: 'var(--green)',
+  leafDeep: 'var(--green-deep)',
+  lamp: 'var(--amber)',
+  text: 'var(--text)',
+  muted: 'var(--text-3)',
   yellow: '#e8d96a',
   pale: '#f2edc8',
   lime: '#dbe58c',
   burn: '#b9773e',
   rust: '#d9a76a',
-  purple: '#c9a2ff',
+  purple: '#b58cf5',
   magenta: '#d27bd0',
-  water: '#7cc8f2',
+  water: 'var(--blue)',
   soil: '#8a6a4c',
   pest: '#ff8a5c'
 } as const

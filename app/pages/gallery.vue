@@ -153,10 +153,12 @@ async function deletePhoto(item: LightboxItem) {
           :key="g.month"
           class="month"
         >
-          <h2 class="month-head">
-            {{ g.month }}
-            <span class="num">{{ g.items.length }}</span>
-          </h2>
+          <div class="section-head month-head">
+            <h2 class="section-title">
+              {{ g.month }}
+            </h2>
+            <span class="section-meta num">{{ g.items.length }}</span>
+          </div>
           <div class="grid">
             <button
               v-for="i in g.items"
@@ -193,8 +195,8 @@ async function deletePhoto(item: LightboxItem) {
 
 <style scoped>
 .filter {
-  margin: 0 -20px;
-  padding: 0 20px 2px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
 }
 
 .filter .chip {
@@ -204,30 +206,20 @@ async function deletePhoto(item: LightboxItem) {
 .months {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin: 0 -20px;
+  gap: 24px;
 }
 
 .month-head {
   position: sticky;
   top: calc(var(--head-h) - 8px);
   z-index: 2;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin: 0;
-  text-transform: capitalize;
-  padding: 10px 20px 10px;
-  background: linear-gradient(180deg, var(--bg) 70%, rgba(7, 8, 10, 0.88));
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  margin: 0 -16px 12px;
+  padding: 8px 16px;
+  background: var(--bg);
 }
 
-.month-head span {
-  color: var(--text-3);
-  font-weight: 500;
-  font-size: 13px;
+.section-title {
+  text-transform: capitalize;
 }
 
 .grid {
@@ -242,19 +234,18 @@ async function deletePhoto(item: LightboxItem) {
   aspect-ratio: 1;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--surface);
 }
 
 .cell :deep(img.plant-photo) {
   opacity: 0;
-  transform: scale(1.06);
-  transition: opacity var(--dur-slow) var(--ease-out), transform 600ms var(--ease-out);
+  transition: opacity var(--dur) ease;
 }
 
 .cell.loaded :deep(img.plant-photo) {
   opacity: 1;
-  transform: none;
 }
 
 .cell:active :deep(img.plant-photo) {
@@ -267,12 +258,13 @@ async function deletePhoto(item: LightboxItem) {
 
 .cell-label {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 16px 6px 5px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.78));
-  color: #fff;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(14, 16, 15, 0.8);
+  color: var(--text);
   font-size: 11px;
   font-weight: 600;
   text-align: left;

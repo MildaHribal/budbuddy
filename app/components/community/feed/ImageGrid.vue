@@ -63,8 +63,8 @@ function open(i: number, e: MouseEvent) {
 <style scoped>
 .grid {
   display: grid;
-  gap: 4px;
-  border-radius: 14px;
+  gap: 2px;
+  border-radius: 12px;
   overflow: hidden;
   grid-template-columns: 1fr 1fr;
   aspect-ratio: 4 / 3;
@@ -92,14 +92,12 @@ function open(i: number, e: MouseEvent) {
   min-height: 0;
   padding: 0;
   border: 0;
-  background: linear-gradient(110deg, #15181c 30%, #1d2126 50%, #15181c 70%) 0 0 / 300% 100%;
-  animation: shimmer 1.4s linear infinite;
+  background: var(--surface-3);
   overflow: hidden;
 }
 
 .cell.loaded {
-  animation: none;
-  background: #0b0d10;
+  background: var(--well);
 }
 
 .cell img {
@@ -124,21 +122,9 @@ function open(i: number, e: MouseEvent) {
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(7, 8, 10, 0.6);
-  font-size: 26px;
-  font-weight: 300;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 22px;
+  font-weight: 600;
   color: var(--text);
-}
-
-@keyframes shimmer {
-  to {
-    background-position: -300% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cell {
-    animation: none;
-  }
 }
 </style>

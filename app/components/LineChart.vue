@@ -12,12 +12,8 @@ const props = withDefaults(defineProps<{
   label: string
 }>(), {
   unit: '',
-  color: 'var(--leaf)'
+  color: 'var(--green)'
 })
-
-const uid = useId()
-const fadeId = `fade-${uid}`
-const glowId = `glow-${uid}`
 
 const W = 320
 const H = 150
@@ -87,34 +83,6 @@ const tip = computed(() => {
       @pointerdown="pick"
       @pointerleave="active = null"
     >
-      <defs>
-        <linearGradient
-          :id="fadeId"
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="1"
-        >
-          <stop
-            offset="0"
-            class="fade-top"
-          />
-          <stop
-            offset="1"
-            class="fade-bottom"
-          />
-        </linearGradient>
-        <filter
-          :id="glowId"
-          filterUnits="userSpaceOnUse"
-          x="0"
-          y="0"
-          :width="W"
-          :height="H"
-        >
-          <feGaussianBlur stdDeviation="3.5" />
-        </filter>
-      </defs>
       <g class="grid">
         <template
           v-for="g in gridLines"
@@ -137,18 +105,10 @@ const tip = computed(() => {
         v-if="area"
         :d="area"
         class="area"
-        :fill="`url(#${fadeId})`"
-      />
-      <path
-        :d="path"
-        class="line-glow"
-        :filter="`url(#${glowId})`"
-        pathLength="1"
       />
       <path
         :d="path"
         class="line"
-        pathLength="1"
       />
       <line
         v-if="tip"
@@ -206,7 +166,7 @@ svg {
 }
 
 .grid line {
-  stroke: rgba(255, 255, 255, 0.05);
+  stroke: var(--line);
   stroke-width: 1;
 }
 
@@ -217,41 +177,21 @@ svg {
   font-variant-numeric: tabular-nums;
 }
 
-.fade-top {
-  stop-color: var(--series);
-  stop-opacity: 0.22;
-}
-
-.fade-bottom {
-  stop-color: var(--series);
-  stop-opacity: 0;
-}
-
 .area {
-  animation: chart-fade 0.6s var(--ease-out) 0.25s backwards;
-}
-
-.line,
-.line-glow {
-  fill: none;
-  stroke: var(--series);
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-  animation: chart-draw 0.9s var(--ease-out) backwards;
+  fill: var(--series);
+  fill-opacity: 0.1;
 }
 
 .line {
+  fill: none;
+  stroke: var(--series);
   stroke-width: 2;
-}
-
-.line-glow {
-  stroke-width: 4;
-  opacity: 0.55;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 .dot {
-  fill: #0b0d10;
+  fill: var(--surface);
   stroke: var(--series);
   stroke-width: 1.5;
   transition: r var(--dur-fast) var(--ease-out);
@@ -259,12 +199,12 @@ svg {
 
 .dot.on {
   fill: var(--series);
-  stroke: #0b0d10;
+  stroke: var(--surface);
   stroke-width: 2;
 }
 
 .cross {
-  stroke: rgba(255, 255, 255, 0.18);
+  stroke: var(--line-strong);
   stroke-dasharray: 2 3;
 }
 
@@ -275,10 +215,10 @@ svg {
   flex-direction: column;
   align-items: center;
   padding: 6px 10px;
-  border-radius: 10px;
-  background: var(--panel);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
   border: 1px solid var(--line-strong);
-  box-shadow: var(--panel-shadow);
+  box-shadow: var(--shadow-float);
   font-size: 13px;
   white-space: nowrap;
   pointer-events: none;
@@ -291,17 +231,5 @@ svg {
 .tip span {
   color: var(--text-2);
   font-size: 11px;
-}
-
-@keyframes chart-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
-
-@keyframes chart-fade {
-  from {
-    opacity: 0;
-  }
 }
 </style>

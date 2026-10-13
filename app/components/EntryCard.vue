@@ -66,7 +66,7 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
     :style="{ '--c': color }"
   >
     <span
-      class="node"
+      class="tile"
       aria-hidden="true"
     >
       <GrowIcon :name="glyph" />
@@ -166,65 +166,39 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
 
 <style scoped>
 .entry {
-  position: relative;
   display: flex;
-  gap: 14px;
-  padding: 6px 0 14px;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 8px 12px 14px;
 }
 
-/* the hairline the nodes hang on; trimmed at the ends of the list */
-.entry::before {
-  content: '';
-  position: absolute;
-  left: 17.5px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--line-strong);
+.entry + .entry {
+  border-top: 1px solid var(--line);
 }
 
-.entry:first-child::before {
-  top: 22px;
-}
-
-.entry:last-child::before {
-  bottom: auto;
-  height: 22px;
-}
-
-.entry:only-child::before {
-  display: none;
-}
-
-.node {
-  position: relative;
-  z-index: 1;
+.tile {
   width: 36px;
   height: 36px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 18%, #101317), #0b0d10 75%);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent),
-    0 0 12px -3px color-mix(in srgb, var(--c) 40%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
   color: var(--c);
-  font-size: 19px;
+  font-size: 20px;
 }
 
 .entry-main {
   flex: 1;
   min-width: 0;
-  padding-top: 2px;
 }
 
 .entry-top {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 32px;
+  min-height: 36px;
 }
 
 .entry-title {
@@ -232,8 +206,7 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
   min-width: 0;
   margin: 0;
   font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -247,7 +220,7 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
 
 .entry-actions {
   display: flex;
-  margin: -6px -10px -6px -4px;
+  margin: -4px -6px -4px -4px;
 }
 
 .mini-btn {
@@ -257,7 +230,7 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-3);
   transition: color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
@@ -269,21 +242,20 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
 }
 
 .mini-btn.danger:active {
-  color: var(--danger);
+  color: var(--red);
 }
 
 .entry-plant {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .entry-detail {
   margin: 0;
   font-size: 13px;
-  font-weight: 500;
-  color: var(--c);
+  color: var(--text-2);
 }
 
 .metrics {
@@ -296,33 +268,33 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
 .metric {
   display: inline-flex;
   align-items: baseline;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: 8px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
 }
 
 .metric dt {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-3);
 }
 
 .metric dd {
   margin: 0;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
 }
 
 .metric dd span {
   font-size: 11px;
+  font-weight: 500;
   color: var(--text-3);
 }
 
 .entry-note {
-  margin: 6px 0 0;
+  margin: 6px 8px 0 0;
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-2);
@@ -342,10 +314,9 @@ const editable = computed(() => props.entry.type !== 'stage' && props.entry.type
   height: 76px;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line);
   transition: transform var(--dur-fast) var(--ease-out);
 }
 

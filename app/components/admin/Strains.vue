@@ -147,7 +147,7 @@ async function save(approveToo: boolean) {
       <li
         v-for="s in items"
         :key="s.id"
-        class="item card"
+        class="item"
         :class="{ busy: busy === s.id }"
       >
         <div class="strain">

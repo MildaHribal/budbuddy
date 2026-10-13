@@ -53,6 +53,10 @@ Fully offline, private, no account. Everything (data and photos) stays on the de
 3. The plant is the hero: photos and growth history are the content, chrome recedes.
 4. Every screen must work in the dark at the tent.
 
+## Brand Commitments
+
+- Visual direction (chosen 2026-10-13): the category standard, played straight. BudBuddy sits alongside Grow with Jane, Planta and GrowDiaries and must match their craft level: a calm dark grow app with one green accent, flat surfaces with 1px borders, rounded photo cards, standard controls, no gradients, glows, blur or decorative shadows.
+
 ## Accessibility & Inclusion
 
 Large touch targets for one-handed use; readable contrast on a dark screen in low light; respect reduced motion.

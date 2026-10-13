@@ -41,7 +41,7 @@ defineProps<{ photo?: boolean }>()
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px;
+  padding: 14px;
 }
 
 .row {
@@ -59,26 +59,15 @@ defineProps<{ photo?: boolean }>()
 }
 
 .sk {
-  position: relative;
   display: block;
-  overflow: hidden;
   border-radius: 6px;
-  background: #1b1f24;
-}
-
-/* compositor-only shimmer */
-.sk::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.045) 50%, transparent 80%);
-  transform: translateX(-100%);
-  animation: shimmer 1.4s linear infinite;
+  background: var(--surface-3);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
 .circle {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
 }
 
@@ -96,17 +85,17 @@ defineProps<{ photo?: boolean }>()
 
 .photo {
   aspect-ratio: 4 / 3;
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
-@keyframes shimmer {
-  to {
-    transform: translateX(100%);
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sk::after {
+  .sk {
     animation: none;
   }
 }

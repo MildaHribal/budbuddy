@@ -51,7 +51,6 @@ const pots = [70, 128]
       :fill="ART.lamp"
       fill-opacity="0.3"
       :stroke="ART.lamp"
-      class="ga-glow"
       :style="{ color: ART.lamp }"
     />
     <rect
@@ -79,7 +78,7 @@ const pots = [70, 128]
     />
     <path
       d="M168 26h28"
-      stroke="#0b0d10"
+      stroke="var(--well)"
       stroke-width="2"
     />
     <circle

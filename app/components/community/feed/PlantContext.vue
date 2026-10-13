@@ -82,10 +82,9 @@ const feed = computed(() => {
 <style scoped>
 .ctx {
   padding: 12px 14px;
-  border-radius: 14px;
-  background: #0b0d10;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
   border: 1px solid var(--line);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .ctx.compact {

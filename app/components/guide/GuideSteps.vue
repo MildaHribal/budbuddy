@@ -6,7 +6,7 @@ const { tr } = useGuide()
 </script>
 
 <template>
-  <ol class="steps">
+  <ol class="steps card">
     <li
       v-for="(step, i) in items"
       :key="i"
@@ -30,49 +30,36 @@ const { tr } = useGuide()
 .steps {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 14px;
 }
 
 .step {
-  position: relative;
   display: flex;
-  gap: 14px;
-  padding-bottom: 18px;
+  gap: 12px;
+  padding: 14px 0;
 }
 
-.step:last-child {
-  padding-bottom: 0;
-}
-
-.step:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  left: 15px;
-  top: 34px;
-  bottom: 4px;
-  width: 1px;
-  background: linear-gradient(180deg, var(--accent-line), var(--line));
+.step + .step {
+  border-top: 1px solid var(--line);
 }
 
 .step-n {
   flex: none;
   display: grid;
   place-items: center;
-  width: 31px;
-  height: 31px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  border: 1px solid var(--accent-line);
-  color: var(--leaf);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text);
   font-size: 14px;
-  font-weight: 500;
-  box-shadow: inset 0 1px 0 var(--highlight);
+  font-weight: 600;
 }
 
 .step-body {
   min-width: 0;
   flex: 1;
-  padding-top: 4px;
+  padding-top: 5px;
 }
 
 .step-title {
@@ -84,6 +71,7 @@ const { tr } = useGuide()
 
 .step :deep(.guide-md) {
   font-size: 14px;
+  line-height: 1.5;
   color: var(--text-2);
 }
 </style>

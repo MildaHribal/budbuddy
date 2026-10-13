@@ -93,7 +93,6 @@ useOnlineRetry(() => failed.value, load)
       <template v-if="loading">
         <div class="skeleton hero-sk" />
         <div class="skeleton row-sk" />
-        <div class="skeleton row-sk" />
       </template>
 
       <div
@@ -116,16 +115,16 @@ useOnlineRetry(() => failed.value, load)
         <section>
           <div class="section-head">
             <h2 class="section-title">
-              <GrowIcon name="lamp" />{{ t('challenge.current') }}
+              {{ t('challenge.current') }}
             </h2>
           </div>
           <NuxtLink
             v-if="current && phase"
             :to="`/challenges/${current.slug}`"
-            class="hero"
+            class="hero card"
           >
             <div
-              class="hero-bg"
+              class="hero-cover"
               aria-hidden="true"
             >
               <img
@@ -133,6 +132,10 @@ useOnlineRetry(() => failed.value, load)
                 :src="current.cover_url"
                 alt=""
               >
+              <UIcon
+                v-else
+                name="i-tabler-trophy"
+              />
             </div>
             <div class="hero-body">
               <div class="hero-top">
@@ -170,7 +173,7 @@ useOnlineRetry(() => failed.value, load)
         <section>
           <div class="section-head">
             <h2 class="section-title">
-              <UIcon name="i-tabler-trophy" />{{ t('challenge.past') }}
+              {{ t('challenge.past') }}
             </h2>
           </div>
           <EmptyState
@@ -181,7 +184,7 @@ useOnlineRetry(() => failed.value, load)
           />
           <ul
             v-else
-            class="past rise"
+            class="past card rise"
           >
             <li
               v-for="p in past"
@@ -189,46 +192,32 @@ useOnlineRetry(() => failed.value, load)
             >
               <NuxtLink
                 :to="`/challenges/${p.c.slug}`"
-                class="past-card card"
+                class="past-row"
               >
-                <div class="past-head">
-                  <div>
-                    <p class="past-title">
-                      {{ challengeTitle(p.c) }}
-                    </p>
-                    <p class="section-meta">
-                      {{ monthLabel(p.c.starts_at) }}
-                    </p>
-                  </div>
-                  <UIcon
-                    name="i-tabler-chevron-right"
-                    class="chev"
-                  />
-                </div>
-                <ol
-                  v-if="p.winners.length"
-                  class="mini-podium"
-                >
-                  <li
-                    v-for="(w, i) in p.winners"
-                    :key="w.id"
-                    :class="{ first: i === 0 }"
+                <span class="past-thumb">
+                  <img
+                    v-if="p.winners[0]"
+                    :src="p.winners[0].image_url"
+                    alt=""
+                    loading="lazy"
                   >
-                    <img
-                      :src="w.image_url"
-                      alt=""
-                      loading="lazy"
-                    >
-                    <span class="mini-place num">{{ i + 1 }}</span>
-                    <span class="mini-name">{{ authorName(w) }}</span>
-                  </li>
-                </ol>
-                <p
-                  v-else
-                  class="section-meta"
-                >
-                  {{ t('challenge.noWinners') }}
-                </p>
+                  <UIcon
+                    v-else
+                    name="i-tabler-trophy"
+                  />
+                </span>
+                <span class="past-text">
+                  <span class="past-title">{{ challengeTitle(p.c) }}</span>
+                  <span class="past-meta">
+                    <span class="num">{{ monthLabel(p.c.starts_at) }}</span>
+                    <template v-if="p.winners[0]"> · {{ authorName(p.winners[0]) }}</template>
+                    <template v-else> · {{ t('challenge.noWinners') }}</template>
+                  </span>
+                </span>
+                <UIcon
+                  name="i-tabler-chevron-right"
+                  class="chev"
+                />
               </NuxtLink>
             </li>
           </ul>
@@ -246,17 +235,16 @@ useOnlineRetry(() => failed.value, load)
 <style scoped>
 .skeleton {
   border-radius: var(--radius);
-  background: linear-gradient(100deg, var(--surface) 30%, var(--surface-3) 50%, var(--surface) 70%);
-  background-size: 300% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
-.hero-sk { height: 320px; border-radius: var(--radius-lg); }
-.row-sk { height: 140px; }
+.hero-sk { height: 360px; }
+.row-sk { height: 120px; }
 
-@keyframes shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: 0 0; }
+@keyframes pulse {
+  50% { opacity: 0.55; }
 }
 
 .error {
@@ -269,16 +257,10 @@ useOnlineRetry(() => failed.value, load)
 }
 
 .hero {
-  position: relative;
   display: block;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 210, 138, 0.2);
-  background: linear-gradient(180deg, #211f1a 0%, var(--surface-2) 100%);
-  box-shadow: var(--panel-shadow);
   overflow: hidden;
   color: inherit;
   text-decoration: none;
-  isolation: isolate;
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
@@ -286,63 +268,48 @@ useOnlineRetry(() => failed.value, load)
   transform: scale(0.985);
 }
 
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: 160px;
-  z-index: -1;
-  background: radial-gradient(70% 100% at 50% -10%, rgba(255, 210, 138, 0.22), transparent 70%);
+.hero-cover {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 40px;
 }
 
-.hero-bg {
-  height: 150px;
-  position: relative;
-}
-
-.hero-bg img {
+.hero-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  mask-image: linear-gradient(180deg, #000 40%, transparent);
-}
-
-.hero-bg:not(:has(img)) {
-  height: 24px;
 }
 
 .hero-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 18px 18px;
-  margin-top: -32px;
-  position: relative;
-}
-
-.hero-bg:not(:has(img)) + .hero-body {
-  margin-top: 0;
+  gap: 10px;
+  padding: 14px 16px 16px;
 }
 
 .hero-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
 h3 {
   margin: 0;
-  font-size: 24px;
+  font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
 .desc {
   margin: 0;
   color: var(--text-2);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.45;
 }
 
 .hero-foot {
@@ -350,110 +317,88 @@ h3 {
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
+  margin-top: 2px;
 }
 
 .count {
+  flex-shrink: 0;
+  padding-bottom: 3px;
   font-size: 13px;
   color: var(--text-2);
-  padding-bottom: 4px;
 }
 
-.small {
-  margin: 0;
-  font-size: 13px;
+.hero .btn {
+  margin-top: 4px;
 }
 
 .past {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
+  overflow: hidden;
 }
 
-.past-card {
+.past li + li {
+  border-top: 1px solid var(--line);
+}
+
+.past-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 12px;
-  padding: 14px;
+  min-height: 64px;
+  padding: 8px 12px 8px 8px;
   color: inherit;
   text-decoration: none;
 }
 
-.past-head {
+.past-thumb {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 22px;
+}
+
+.past-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.past-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .past-title {
-  margin: 0 0 2px;
   font-size: 15px;
-  font-weight: 600;
-}
-
-.chev {
-  color: var(--text-3);
-  font-size: 20px;
-}
-
-.mini-podium {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.mini-podium li {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.mini-podium img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid var(--line-strong);
-}
-
-.mini-podium .first img {
-  border-color: rgba(255, 210, 138, 0.5);
-  box-shadow: 0 0 16px -4px rgba(255, 210, 138, 0.45);
-}
-
-.mini-place {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(7, 8, 10, 0.72);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.first .mini-place {
-  background: var(--lamp);
-  color: #1a1206;
-}
-
-.mini-name {
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  color: var(--text-2);
+}
+
+.past-meta {
+  font-size: 13px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chev {
+  flex-shrink: 0;
+  color: var(--text-3);
+  font-size: 20px;
 }
 
 .sentinel {

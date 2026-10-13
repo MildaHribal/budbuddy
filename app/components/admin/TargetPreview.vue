@@ -17,7 +17,7 @@ const when = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nume
     >
     <div class="body">
       <div class="meta">
-        <span class="type">{{ t(`admin.types.${type}`) }}</span>
+        <span class="badge type">{{ t(`admin.types.${type}`) }}</span>
         <span
           v-if="preview?.isHidden"
           class="badge hidden-badge"
@@ -64,15 +64,18 @@ const when = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nume
   display: flex;
   gap: 12px;
   min-width: 0;
+  padding: 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--well);
 }
 
 .thumb {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   flex-shrink: 0;
   object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
 }
 
 .body {
@@ -90,16 +93,9 @@ const when = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nume
   gap: 6px;
 }
 
-.type {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
-.hidden-badge { color: var(--text-2); }
-.banned-badge { color: #ff9aa3; }
+.type { color: var(--text-2); }
+.hidden-badge { color: var(--amber); }
+.banned-badge { color: var(--red); }
 
 .title {
   margin: 0;

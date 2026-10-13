@@ -259,11 +259,11 @@ const dragProgress = computed(() => {
   max-height: 92%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #1c2025 0%, #15181c 120px, #121417 100%);
-  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-bottom: 0;
-  border-radius: 24px 24px 0 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 -18px 40px -12px rgba(0, 0, 0, 0.7);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-sheet);
   outline: none;
   transform: translateY(max(var(--drag, 0px), -12px));
   transition: transform var(--dur-slow) cubic-bezier(0.32, 0.72, 0, 1);
@@ -289,12 +289,12 @@ const dragProgress = computed(() => {
   height: 4px;
   margin: 10px auto 6px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--line-strong);
   transition: background var(--dur) ease, width var(--dur) var(--ease-out);
 }
 
 .sheet.dragging .sheet-handle {
-  background: rgba(255, 255, 255, 0.36);
+  background: var(--text-3);
 }
 
 .sheet-head {
@@ -313,9 +313,9 @@ h2 {
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .sheet-body {

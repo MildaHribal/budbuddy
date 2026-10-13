@@ -230,14 +230,12 @@ const presetNote = computed(() => (PRESETS.includes(hours.value) ? t(`guideWidge
 }
 
 .dark-arc {
-  stroke: var(--dark-arc);
-  opacity: 0.6;
+  stroke: var(--track);
 }
 
 .lit-arc {
-  stroke: var(--lamp);
+  stroke: var(--amber);
   stroke-linecap: round;
-  filter: drop-shadow(0 0 6px rgba(255, 210, 138, 0.55));
   transition: stroke-dasharray var(--dur-slow) var(--ease-out);
 }
 
@@ -262,17 +260,16 @@ const presetNote = computed(() => (PRESETS.includes(hours.value) ? t(`guideWidge
 }
 
 .tip circle {
-  fill: #fff4dc;
-  stroke: var(--lamp);
+  fill: var(--amber);
+  stroke: var(--surface);
   stroke-width: 3;
-  filter: drop-shadow(0 0 8px rgba(255, 210, 138, 0.9));
 }
 
 .center {
-  font-size: 40px;
-  font-weight: 300;
-  letter-spacing: -0.03em;
-  fill: var(--lamp);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  fill: var(--text);
   text-anchor: middle;
 }
 
@@ -318,7 +315,7 @@ const presetNote = computed(() => (PRESETS.includes(hours.value) ? t(`guideWidge
 
 .v-icon {
   font-size: 18px;
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .v dd {

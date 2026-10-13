@@ -18,14 +18,25 @@ export interface ShareCardData {
   photoUrl: string | null
 }
 
-const FONT = 'Sora, system-ui, sans-serif'
+const FONT = 'Onest, system-ui, sans-serif'
+
+// app palette (main.css tokens), spelled out because canvas cannot read CSS variables
+const C = {
+  bg: '#0e100f',
+  surface: '#1e2220',
+  line: '#323835',
+  text: '#f2f4f1',
+  text2: '#a5ada8',
+  green: '#3dd173',
+  amber: '#f2b544'
+}
 
 async function ensureFonts() {
   if (typeof document === 'undefined' || !document.fonts) return
   await Promise.all([
-    document.fonts.load(`600 64px Sora`),
-    document.fonts.load(`300 64px Sora`),
-    document.fonts.load(`500 32px Sora`)
+    document.fonts.load(`600 64px Onest`),
+    document.fonts.load(`500 32px Onest`),
+    document.fonts.load(`400 32px Onest`)
   ]).catch(() => {})
 }
 
@@ -73,16 +84,12 @@ function drawGlyph(ctx: CanvasRenderingContext2D, name: string, color: string, c
   ctx.scale(size / 24, size / 24)
   ctx.fillStyle = color
   ctx.strokeStyle = color
-  ctx.lineWidth = 1.3
+  ctx.lineWidth = 1.6
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
-  ctx.shadowColor = color
-  ctx.shadowBlur = 60
-  ctx.globalAlpha = 0.32
+  ctx.globalAlpha = 0.2
   drawParts(ctx, g.fill ?? [], 'fill')
   ctx.globalAlpha = 1
-  drawParts(ctx, g.line, 'stroke')
-  ctx.shadowBlur = 18
   drawParts(ctx, g.line, 'stroke')
   ctx.restore()
 }
@@ -100,17 +107,8 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, max: number): stri
 }
 
 function drawGround(ctx: CanvasRenderingContext2D) {
-  // mylar ground + lamp glow from the top edge
-  ctx.fillStyle = '#07080a'
+  ctx.fillStyle = C.bg
   ctx.fillRect(0, 0, CARD_W, CARD_H)
-  const lamp = ctx.createRadialGradient(CARD_W / 2, -120, 40, CARD_W / 2, -120, 1100)
-  lamp.addColorStop(0, 'rgba(255, 210, 138, 0.30)')
-  lamp.addColorStop(0.35, 'rgba(255, 210, 138, 0.08)')
-  lamp.addColorStop(1, 'rgba(255, 210, 138, 0)')
-  ctx.fillStyle = lamp
-  ctx.fillRect(0, 0, CARD_W, CARD_H)
-  ctx.fillStyle = 'rgba(255, 210, 138, 0.9)'
-  ctx.fillRect(CARD_W * 0.22, 0, CARD_W * 0.56, 4)
 }
 
 interface Box { x: number, y: number, w: number, h: number }
@@ -127,22 +125,14 @@ async function drawTile(ctx: CanvasRenderingContext2D, tile: Box, photoUrl: stri
     const h = img.height * s
     ctx.drawImage(img, tile.x + (tile.w - w) / 2, tile.y + (tile.h - h) / 2, w, h)
   } else {
-    const g = ctx.createRadialGradient(CARD_W / 2, tile.y + 260, 20, CARD_W / 2, tile.y + 260, 640)
-    g.addColorStop(0, '#2f5a2c')
-    g.addColorStop(0.55, '#0f2412')
-    g.addColorStop(1, '#08140a')
-    ctx.fillStyle = g
+    ctx.fillStyle = C.surface
     ctx.fillRect(tile.x, tile.y, tile.w, tile.h)
-    ctx.globalAlpha = 0.22
-    ctx.fillStyle = color
-    ctx.fillRect(tile.x, tile.y, tile.w, tile.h)
-    ctx.globalAlpha = 1
-    drawGlyph(ctx, glyph, color, CARD_W / 2, tile.y + tile.h / 2, Math.min(420, tile.h * 0.6))
+    drawGlyph(ctx, glyph, color, CARD_W / 2, tile.y + tile.h / 2, Math.min(360, tile.h * 0.5))
   }
   ctx.restore()
   ctx.save()
-  roundRect(ctx, tile.x + 0.5, tile.y + 0.5, tile.w - 1, tile.h - 1, 44)
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)'
+  roundRect(ctx, tile.x + 1, tile.y + 1, tile.w - 2, tile.h - 2, 44)
+  ctx.strokeStyle = C.line
   ctx.lineWidth = 2
   ctx.stroke()
   ctx.restore()
@@ -150,10 +140,10 @@ async function drawTile(ctx: CanvasRenderingContext2D, tile: Box, photoUrl: stri
 
 function drawBrand(ctx: CanvasRenderingContext2D, pad: number) {
   ctx.font = `600 28px ${FONT}`
-  ctx.fillStyle = '#9be36b'
+  ctx.fillStyle = C.green
   ctx.textAlign = 'right'
   ctx.fillText('BudBuddy', CARD_W - pad, CARD_H - 56)
-  drawGlyph(ctx, 'vegetative', '#9be36b', CARD_W - pad - ctx.measureText('BudBuddy').width - 30, CARD_H - 66, 34)
+  drawGlyph(ctx, 'vegetative', C.green, CARD_W - pad - ctx.measureText('BudBuddy').width - 30, CARD_H - 66, 34)
   ctx.textAlign = 'left'
 }
 
@@ -184,33 +174,30 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
   // text block
   let y = tile.y + tile.h + 108
   ctx.textBaseline = 'alphabetic'
-  ctx.fillStyle = '#e9f3e4'
-  ctx.font = `600 76px ${FONT}`
+  ctx.fillStyle = C.text
+  ctx.font = `600 72px ${FONT}`
   ctx.fillText(fitText(ctx, data.name, CARD_W - pad * 2), pad, y)
   if (data.strain) {
     y += 56
     ctx.font = `400 36px ${FONT}`
-    ctx.fillStyle = 'rgba(233, 243, 228, 0.68)'
+    ctx.fillStyle = C.text2
     ctx.fillText(fitText(ctx, data.strain, CARD_W - pad * 2), pad, y)
   }
 
   y += 84
   ctx.font = `600 38px ${FONT}`
   ctx.fillStyle = data.stageColor
-  ctx.shadowColor = data.stageColor
-  ctx.shadowBlur = 24
   ctx.fillText(fitText(ctx, data.stageLine, CARD_W - pad * 2), pad, y)
-  ctx.shadowBlur = 0
 
   y += 60
   ctx.font = `400 32px ${FONT}`
-  ctx.fillStyle = 'rgba(233, 243, 228, 0.72)'
+  ctx.fillStyle = C.text2
   ctx.fillText(fitText(ctx, data.facts.join('  ·  '), CARD_W - pad * 2), pad, y)
 
   if (data.harvestLine) {
     y += 72
-    ctx.font = `300 54px ${FONT}`
-    ctx.fillStyle = '#ffd28a'
+    ctx.font = `600 48px ${FONT}`
+    ctx.fillStyle = C.amber
     ctx.fillText(fitText(ctx, data.harvestLine, CARD_W - pad * 2), pad, y)
   }
 
@@ -240,48 +227,45 @@ export async function renderRecapCard(data: RecapCardData): Promise<Blob> {
   const { canvas, ctx } = await setup()
   const pad = 72
   const tile = { x: pad, y: 120, w: CARD_W - pad * 2, h: 620 }
-  await drawTile(ctx, tile, data.photoUrl, 'harvest', '#ffd28a')
+  await drawTile(ctx, tile, data.photoUrl, 'harvest', C.amber)
 
   let y = tile.y + tile.h + 96
   ctx.textBaseline = 'alphabetic'
   ctx.font = `600 34px ${FONT}`
-  ctx.fillStyle = '#ffd28a'
-  ctx.shadowColor = '#ffd28a'
-  ctx.shadowBlur = 22
+  ctx.fillStyle = C.amber
   ctx.fillText(fitText(ctx, data.title, CARD_W - pad * 2), pad, y)
-  ctx.shadowBlur = 0
 
   y += 80
-  ctx.fillStyle = '#e9f3e4'
+  ctx.fillStyle = C.text
   ctx.font = `600 68px ${FONT}`
   ctx.fillText(fitText(ctx, data.name, CARD_W - pad * 2), pad, y)
   if (data.strain) {
     y += 52
     ctx.font = `400 34px ${FONT}`
-    ctx.fillStyle = 'rgba(233, 243, 228, 0.68)'
+    ctx.fillStyle = C.text2
     ctx.fillText(fitText(ctx, data.strain, CARD_W - pad * 2), pad, y)
   }
 
   // stat row: hairline above, equal columns
   const stats = data.stats.slice(0, 4)
   y += 64
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.10)'
+  ctx.fillStyle = C.line
   ctx.fillRect(pad, y, CARD_W - pad * 2, 2)
   const col = (CARD_W - pad * 2) / Math.max(1, stats.length)
   stats.forEach((s, i) => {
     const x = pad + i * col
     // shrink long numbers (e.g. 112.5) before resorting to an ellipsis
-    let size = 92
-    ctx.font = `300 ${size}px ${FONT}`
-    while (size > 52 && ctx.measureText(s.value).width > col - 24) {
+    let size = 80
+    ctx.font = `600 ${size}px ${FONT}`
+    while (size > 48 && ctx.measureText(s.value).width > col - 24) {
       size -= 4
-      ctx.font = `300 ${size}px ${FONT}`
+      ctx.font = `600 ${size}px ${FONT}`
     }
-    ctx.fillStyle = s.warm ? '#ffd28a' : '#e9f3e4'
-    ctx.fillText(fitText(ctx, s.value, col - 24), x, y + 118)
+    ctx.fillStyle = s.warm ? C.amber : C.text
+    ctx.fillText(fitText(ctx, s.value, col - 24), x, y + 112)
     ctx.font = `500 28px ${FONT}`
-    ctx.fillStyle = 'rgba(233, 243, 228, 0.66)'
-    ctx.fillText(fitText(ctx, s.label, col - 24), x, y + 164)
+    ctx.fillStyle = C.text2
+    ctx.fillText(fitText(ctx, s.label, col - 24), x, y + 160)
   })
 
   drawBrand(ctx, pad)

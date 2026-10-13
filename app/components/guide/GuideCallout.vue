@@ -8,14 +8,15 @@ const icon = computed(() => ({ tip: 'i-tabler-bulb', warning: 'i-tabler-alert-tr
 
 <template>
   <aside
-    class="callout"
+    class="callout card"
     :class="tone"
   >
-    <UIcon
-      :name="icon"
-      class="callout-icon"
+    <span
+      class="callout-tile"
       aria-hidden="true"
-    />
+    >
+      <UIcon :name="icon" />
+    </span>
     <div class="callout-body">
       <p
         v-if="title"
@@ -30,48 +31,48 @@ const icon = computed(() => ({ tip: 'i-tabler-bulb', warning: 'i-tabler-alert-tr
 
 <style scoped>
 .callout {
-  --tone: var(--leaf);
-  --tone-soft: var(--accent-soft);
+  --tone: var(--green);
   display: flex;
   gap: 12px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--tone-soft), transparent 140%), var(--surface);
-  border: 1px solid color-mix(in srgb, var(--tone) 22%, transparent);
-  box-shadow: inset 0 1px 0 var(--highlight);
+  padding: 14px;
 }
 
 .callout.warning {
-  --tone: var(--lamp);
-  --tone-soft: var(--lamp-soft);
+  --tone: var(--amber);
 }
 
 .callout.info {
-  --tone: var(--info);
-  --tone-soft: color-mix(in srgb, var(--info) 12%, transparent);
+  --tone: var(--blue);
 }
 
-.callout-icon {
+.callout-tile {
   flex: none;
-  margin-top: 2px;
-  font-size: 20px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
   color: var(--tone);
+  font-size: 20px;
 }
 
 .callout-body {
   min-width: 0;
   flex: 1;
+  padding-top: 6px;
 }
 
 .callout-title {
   margin: 0 0 4px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--tone);
+  letter-spacing: -0.01em;
 }
 
 .callout :deep(.guide-md) {
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-2);
 }
 </style>

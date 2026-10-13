@@ -139,7 +139,7 @@ function onVote(v: 1 | -1) {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 8px 12px 14px;
+  padding: 12px 8px 6px 14px;
 }
 
 .tip-head {
@@ -153,7 +153,7 @@ function onVote(v: 1 | -1) {
   margin: 0;
   padding-right: 6px;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.45;
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -165,7 +165,6 @@ function onVote(v: 1 | -1) {
   margin: -2px 0 0;
   color: var(--text-3);
   font-size: 12px;
-  font-weight: 500;
 }
 
 .share.strong {
@@ -178,13 +177,13 @@ function onVote(v: 1 | -1) {
   height: 4px;
   overflow: hidden;
   border-radius: 2px;
-  background: var(--line-strong);
+  background: var(--track);
 }
 
 .meter i {
   display: block;
   height: 100%;
-  background: var(--leaf);
+  background: var(--green);
   transform-origin: left;
   transition: transform var(--dur-slow) var(--ease-out);
 }
@@ -206,27 +205,31 @@ function onVote(v: 1 | -1) {
 .tip-foot {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
+  margin: 0 0 0 -10px;
   padding-right: 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 2px;
 }
 
 .vote {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+  min-width: 44px;
   min-height: 44px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--text-2);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text-3);
   font-size: 13px;
   font-weight: 600;
-  transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
+  transition: color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .vote .iconify {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .vote:active {
@@ -234,14 +237,10 @@ function onVote(v: 1 | -1) {
 }
 
 .vote.up.on {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .vote.down.on {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.22);
   color: var(--text);
 }
 
@@ -250,12 +249,12 @@ function onVote(v: 1 | -1) {
 }
 
 .vote-icon.burst {
-  animation: like-burst 420ms var(--ease-out);
+  animation: like-burst 360ms var(--ease-out);
 }
 
 @keyframes like-burst {
   0% { transform: scale(1); }
-  35% { transform: scale(1.35) rotate(-10deg); }
+  40% { transform: scale(1.25); }
   100% { transform: scale(1); }
 }
 
@@ -263,8 +262,14 @@ function onVote(v: 1 | -1) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  min-height: 44px;
+  padding-left: 10px;
   color: var(--text-3);
   font-size: 13px;
+}
+
+.own .iconify {
+  font-size: 18px;
 }
 
 .own .sep {

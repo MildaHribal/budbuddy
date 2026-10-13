@@ -43,23 +43,23 @@ const pad = (n: number) => String(n).padStart(2, '0')
 }
 
 .cd-label {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-3);
 }
 
 .cd-value {
-  font-size: 28px;
-  font-weight: 300;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  color: var(--lamp);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
 
 .cd-value small {
-  margin: 0 4px 0 1px;
+  margin: 0 6px 0 2px;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0;
-  color: color-mix(in srgb, var(--lamp) 65%, transparent);
+  color: var(--text-3);
 }
 </style>

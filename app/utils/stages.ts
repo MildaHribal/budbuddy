@@ -26,7 +26,7 @@ export const STAGES: StageInfo[] = [
     short: 'Germ.',
     icon: 'i-tabler-seeding',
     glyph: 'germination',
-    color: '#e9d68f',
+    color: '#d9c46b',
     days: 7,
     range: '3–10 days',
     light: '18/6 or 24/0, low intensity',
@@ -39,7 +39,7 @@ export const STAGES: StageInfo[] = [
     short: 'Seedling',
     icon: 'i-tabler-plant',
     glyph: 'seedling',
-    color: '#c8f08f',
+    color: '#8fd97a',
     days: 21,
     range: '2–3 weeks',
     light: '18/6, gentle light',
@@ -52,7 +52,7 @@ export const STAGES: StageInfo[] = [
     short: 'Veg',
     icon: 'i-tabler-trees',
     glyph: 'vegetative',
-    color: '#9be36b',
+    color: '#3dd173',
     days: 42,
     range: '3–16 weeks',
     light: '18/6',
@@ -65,7 +65,7 @@ export const STAGES: StageInfo[] = [
     short: 'Flower',
     icon: 'i-tabler-flower',
     glyph: 'flowering',
-    color: '#c9a2ff',
+    color: '#b58cf5',
     days: 63,
     range: '7–11 weeks',
     light: '12/12 (photoperiod)',
@@ -78,7 +78,7 @@ export const STAGES: StageInfo[] = [
     short: 'Drying',
     icon: 'i-tabler-wind',
     glyph: 'drying',
-    color: '#d9a76a',
+    color: '#d9a06a',
     days: 10,
     range: '7–14 days',
     light: 'Dark',
@@ -91,7 +91,7 @@ export const STAGES: StageInfo[] = [
     short: 'Curing',
     icon: 'i-tabler-bottle',
     glyph: 'curing',
-    color: '#f0b95e',
+    color: '#f2b544',
     days: 28,
     range: '2–8 weeks',
     light: 'Dark',
@@ -220,11 +220,11 @@ export function stageProgress(plant: Pick<Plant, 'stageHistory' | 'startDate' | 
 export interface HealthInfo { value: HealthLevel, label: string, icon: string, color: string }
 
 export const HEALTH_LEVELS: HealthInfo[] = [
-  { value: 5, label: 'Thriving', icon: 'i-tabler-mood-happy', color: '#9be36b' },
-  { value: 4, label: 'Good', icon: 'i-tabler-mood-smile', color: '#c8f08f' },
-  { value: 3, label: 'Fair', icon: 'i-tabler-mood-neutral', color: '#ffd28a' },
-  { value: 2, label: 'Struggling', icon: 'i-tabler-mood-sad', color: '#ff9a62' },
-  { value: 1, label: 'Critical', icon: 'i-tabler-mood-cry', color: '#ff5f6d' }
+  { value: 5, label: 'Thriving', icon: 'i-tabler-mood-happy', color: '#3dd173' },
+  { value: 4, label: 'Good', icon: 'i-tabler-mood-smile', color: '#8fd97a' },
+  { value: 3, label: 'Fair', icon: 'i-tabler-mood-neutral', color: '#f2b544' },
+  { value: 2, label: 'Struggling', icon: 'i-tabler-mood-sad', color: '#f0905a' },
+  { value: 1, label: 'Critical', icon: 'i-tabler-mood-cry', color: '#f2626a' }
 ]
 
 const HEALTH_CS: Record<HealthLevel, string> = { 5: 'Výborné', 4: 'Dobré', 3: 'Ujde', 2: 'Trápí se', 1: 'Kritické' }

@@ -52,7 +52,6 @@ const info = computed(() => stageInfo(props.stage))
       <GrowIcon
         :name="info.glyph"
         class="placeholder-glyph"
-        :stroke-width="1.2"
       />
     </span>
   </span>
@@ -82,23 +81,12 @@ const info = computed(() => stageInfo(props.stage))
   align-items: center;
   justify-content: center;
   container-type: size;
-  background:
-    radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--stage) 26%, #10251a) 0%, #0d1d12 55%, #070d09 100%);
+  background: color-mix(in srgb, var(--stage) 12%, var(--surface-2));
 }
 
 .placeholder-glyph {
   position: relative;
   font-size: 56cqmin;
-  color: var(--stage);
-}
-
-/* static glow instead of a per-tile drop-shadow filter */
-.placeholder::before {
-  content: '';
-  position: absolute;
-  width: 60cqmin;
-  height: 60cqmin;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--stage) 30%, transparent) 0%, transparent 70%);
+  color: color-mix(in srgb, var(--stage) 70%, var(--text-3));
 }
 </style>

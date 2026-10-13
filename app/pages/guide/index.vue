@@ -79,16 +79,10 @@ const TOOL_LINKS = [
         aria-labelledby="welcome-h"
       >
         <span
-          class="welcome-glyph"
+          class="tile welcome-tile"
           aria-hidden="true"
         >
-          <span class="welcome-halo" />
-          <GrowIcon
-            name="seedling"
-            draw
-            glow
-            :stroke-width="1.2"
-          />
+          <GrowIcon name="seedling" />
         </span>
         <h2
           id="welcome-h"
@@ -103,8 +97,8 @@ const TOOL_LINKS = [
           :to="resumeLink"
           class="first"
         >
-          <span class="first-lead num">{{ t('guide.hub.firstLesson') }} · {{ t('guide.chapter.minutes', { n: resume.lesson.minutes }) }}</span>
           <span class="first-title">{{ tr(resume.lesson.title) }}</span>
+          <span class="first-lead num">{{ t('guide.hub.firstLesson') }} · {{ t('guide.chapter.minutes', { n: resume.lesson.minutes }) }}</span>
           <span class="btn btn-primary btn-block first-btn">
             {{ t('guide.hub.firstCta') }}
             <UIcon name="i-tabler-arrow-right" />
@@ -113,27 +107,26 @@ const TOOL_LINKS = [
       </section>
 
       <template v-else>
-        <section class="hero card">
-          <div class="hero-main">
-            <GuideProgressRing
-              :value="overall.ratio"
-              :size="112"
-              :label="t('guide.hub.progressLabel', { done: overall.done, total: overall.total })"
-            >
-              <span class="pct num">{{ percent }}<small>%</small></span>
-            </GuideProgressRing>
-            <div class="hero-text">
-              <p class="hero-big num">
-                {{ t('guide.hub.lessonsDone', { n: overall.done }) }}
-              </p>
-              <p class="hero-of num">
-                {{ t('guide.hub.ofTotal', { total: overall.total }) }}
-              </p>
-              <p class="hero-left num">
-                {{ overall.minutesLeft ? t('guide.hub.timeLeft', { time: timeLeft }) : t('guide.hub.allRead') }}
-              </p>
-            </div>
+        <section
+          class="hero card"
+          :aria-label="t('guide.hub.progressLabel', { done: overall.done, total: overall.total })"
+        >
+          <div class="hero-row">
+            <p class="hero-big num">
+              {{ t('guide.hub.lessonsDone', { n: overall.done }) }}
+              <span class="hero-of">{{ t('guide.hub.ofTotal', { total: overall.total }) }}</span>
+            </p>
+            <span class="hero-pct num">{{ percent }} %</span>
           </div>
+          <div
+            class="progress"
+            aria-hidden="true"
+          >
+            <div :style="{ width: `${percent}%` }" />
+          </div>
+          <p class="hero-left num">
+            {{ overall.minutesLeft ? t('guide.hub.timeLeft', { time: timeLeft }) : t('guide.hub.allRead') }}
+          </p>
           <div
             v-if="weekText"
             class="week"
@@ -165,13 +158,11 @@ const TOOL_LINKS = [
           class="resume card"
         >
           <span
-            class="resume-glyph"
+            class="tile"
             :style="{ color: resume.chapter.color }"
+            aria-hidden="true"
           >
-            <GrowIcon
-              :name="resume.chapter.glyph"
-              glow
-            />
+            <GrowIcon :name="resume.chapter.glyph" />
           </span>
           <span class="resume-text">
             <span class="resume-lead">{{ t('guide.hub.continue') }}</span>
@@ -185,13 +176,13 @@ const TOOL_LINKS = [
         </NuxtLink>
         <section
           v-else
-          class="resume card finished"
+          class="resume card"
         >
-          <span class="resume-glyph">
-            <GrowIcon
-              name="harvest"
-              glow
-            />
+          <span
+            class="tile amber"
+            aria-hidden="true"
+          >
+            <GrowIcon name="harvest" />
           </span>
           <span class="resume-text">
             <span class="resume-title">{{ t('guide.hub.finishedTitle') }}</span>
@@ -200,26 +191,39 @@ const TOOL_LINKS = [
         </section>
       </template>
 
-      <NuxtLink
+      <section
         v-if="forGrow"
-        :to="`/guide/${forGrow.chapter.id}`"
-        class="for-grow card"
-        :style="{ '--c': forGrow.chapter.color }"
+        aria-labelledby="for-grow-title"
       >
-        <GrowIcon
-          :name="forGrow.chapter.glyph"
-          class="diag-glyph"
-        />
-        <span class="diag-text">
-          <span class="for-lead">{{ t('guide.hub.forGrow') }}</span>
-          <span class="diag-title">{{ tr(forGrow.chapter.title) }}</span>
-          <span class="diag-sub">{{ t('guide.hub.forGrowText', { plant: forGrow.plant.name, stage: forGrow.stage }) }}</span>
-        </span>
-        <UIcon
-          name="i-tabler-chevron-right"
-          class="stop-chev"
-        />
-      </NuxtLink>
+        <div class="section-head">
+          <h2
+            id="for-grow-title"
+            class="section-title"
+          >
+            {{ t('guide.hub.forGrow') }}
+          </h2>
+        </div>
+        <NuxtLink
+          :to="`/guide/${forGrow.chapter.id}`"
+          class="row-card card"
+        >
+          <span
+            class="tile"
+            :style="{ color: forGrow.chapter.color }"
+            aria-hidden="true"
+          >
+            <GrowIcon :name="forGrow.chapter.glyph" />
+          </span>
+          <span class="row-text">
+            <span class="row-title">{{ tr(forGrow.chapter.title) }}</span>
+            <span class="row-sub">{{ t('guide.hub.forGrowText', { plant: forGrow.plant.name, stage: forGrow.stage }) }}</span>
+          </span>
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="chev"
+          />
+        </NuxtLink>
+      </section>
 
       <section aria-labelledby="setup-h">
         <div class="section-head">
@@ -282,54 +286,44 @@ const TOOL_LINKS = [
             {{ t('guide.hub.path') }}
           </h2>
         </div>
-        <ol class="journey">
+        <ol class="chapters card">
           <li
             v-for="({ chapter, p }, i) in path"
             :key="chapter.id"
             class="stop"
             :class="{ complete: p.complete, current: resume?.chapter.id === chapter.id }"
-            :style="{ '--c': chapter.color, '--i': i }"
           >
             <NuxtLink
               :to="`/guide/${chapter.id}`"
               class="stop-link"
             >
               <span
-                class="node"
+                class="node num"
                 aria-hidden="true"
               >
-                <GrowIcon
-                  :name="chapter.glyph"
-                  :glow="p.complete"
-                />
-                <span
+                <UIcon
                   v-if="p.complete"
-                  class="node-check"
-                >
-                  <UIcon name="i-tabler-check" />
-                </span>
+                  name="i-tabler-check"
+                />
+                <template v-else>{{ i + 1 }}</template>
               </span>
-              <div class="stop-text">
-                <span class="stop-title">
-                  <span class="stop-n num">{{ String(i + 1).padStart(2, '0') }}</span>
-                  {{ tr(chapter.title) }}
-                </span>
-                <span class="stop-summary">{{ tr(chapter.summary) }}</span>
+              <span class="stop-text">
+                <span class="stop-title">{{ tr(chapter.title) }}</span>
                 <span class="stop-meta num">
                   <template v-if="p.complete">{{ t('guide.hub.chapterDone') }} · </template>
                   {{ t('guide.hub.chapterMeta', { done: p.done, total: p.total, min: chapter.lessons.reduce((s, l) => s + l.minutes, 0) }) }}<template v-if="p.done && !p.complete"> · {{ t('guide.hub.chapterLeft', { min: p.minutesLeft }) }}</template>
                 </span>
-                <div
+                <span
                   v-if="p.done && !p.complete"
                   class="progress stop-progress"
                   aria-hidden="true"
                 >
-                  <div :style="{ width: `${(p.done / p.total) * 100}%` }" />
-                </div>
-              </div>
+                  <span :style="{ width: `${(p.done / p.total) * 100}%` }" />
+                </span>
+              </span>
               <UIcon
                 name="i-tabler-chevron-right"
-                class="stop-chev"
+                class="chev"
               />
             </NuxtLink>
           </li>
@@ -339,20 +333,22 @@ const TOOL_LINKS = [
       <NuxtLink
         v-if="problems"
         to="/guide/problems"
-        class="diagnose card"
-        :style="{ '--c': problems.color }"
+        class="row-card card"
       >
-        <GrowIcon
-          :name="problems.glyph"
-          class="diag-glyph"
-        />
-        <span class="diag-text">
-          <span class="diag-title">{{ t('guide.hub.diagnose') }}</span>
-          <span class="diag-sub">{{ t('guide.hub.diagnoseText') }}</span>
+        <span
+          class="tile"
+          :style="{ color: problems.color }"
+          aria-hidden="true"
+        >
+          <GrowIcon :name="problems.glyph" />
+        </span>
+        <span class="row-text">
+          <span class="row-title">{{ t('guide.hub.diagnose') }}</span>
+          <span class="row-sub">{{ t('guide.hub.diagnoseText') }}</span>
         </span>
         <UIcon
           name="i-tabler-chevron-right"
-          class="stop-chev"
+          class="chev"
         />
       </NuxtLink>
 
@@ -362,7 +358,6 @@ const TOOL_LINKS = [
             id="tools-h"
             class="section-title"
           >
-            <GrowIcon name="tools" />
             {{ t('guide.hub.tools') }}
           </h2>
           <NuxtLink
@@ -392,56 +387,55 @@ const TOOL_LINKS = [
 </template>
 
 <style scoped>
+/* Icon tile: tinted by currentColor */
+.tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: var(--green);
+  font-size: 24px;
+}
+
+.tile.amber {
+  color: var(--amber);
+}
+
+.chev {
+  flex: none;
+  font-size: 18px;
+  color: var(--text-3);
+}
+
+/* First visit */
 .welcome {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  padding: 20px 18px 18px;
-  background:
-    radial-gradient(90% 80% at 20% 0%, rgba(155, 227, 107, 0.1), transparent 65%),
-    var(--panel);
+  padding: 16px;
 }
 
-.welcome-glyph {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  font-size: 48px;
-  color: var(--leaf);
-}
-
-.welcome-halo {
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(155, 227, 107, 0.2), transparent 70%);
-  animation: welcome-breathe 4.2s ease-in-out 3 both;
-}
-
-@keyframes welcome-breathe {
-  50% {
-    opacity: 0.55;
-    transform: scale(0.92);
-  }
+.welcome-tile {
+  margin-bottom: 4px;
 }
 
 .welcome-title {
-  margin: 6px 0 0;
-  max-width: 20ch;
+  margin: 0;
   font-size: 22px;
   font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.025em;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .welcome-text {
   margin: 0;
-  max-width: 40ch;
+  max-width: 44ch;
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--text-2);
 }
 
@@ -450,7 +444,7 @@ const TOOL_LINKS = [
   flex-direction: column;
   gap: 3px;
   width: 100%;
-  margin-top: 10px;
+  margin-top: 8px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
   color: inherit;
@@ -459,7 +453,7 @@ const TOOL_LINKS = [
 
 .first-lead {
   font-size: 12px;
-  color: var(--lamp);
+  color: var(--text-3);
 }
 
 .first-title {
@@ -470,30 +464,57 @@ const TOOL_LINKS = [
 
 .first-btn {
   margin-top: 12px;
-  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .first:active .first-btn {
-  transform: scale(0.985);
+  transform: scale(0.98);
 }
 
+/* Progress */
 .hero {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 18px;
-  background:
-    radial-gradient(90% 120% at 15% 0%, rgba(155, 227, 107, 0.08), transparent 60%),
-    var(--panel);
+  gap: 10px;
+  padding: 16px;
 }
 
-.hero-main {
+.hero-row {
   display: flex;
-  align-items: center;
-  gap: 20px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-big {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.hero-of {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.hero-pct {
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.hero-left {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
 }
 
 .week {
+  margin-top: 4px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
 }
@@ -516,12 +537,11 @@ const TOOL_LINKS = [
   max-width: 30px;
   height: 6px;
   border-radius: 3px;
-  background: var(--surface-3);
+  background: var(--track);
 }
 
 .day.on i {
-  background: var(--leaf);
-  box-shadow: 0 0 10px rgba(155, 227, 107, 0.35);
+  background: var(--green);
 }
 
 .day small {
@@ -542,49 +562,12 @@ const TOOL_LINKS = [
   color: var(--text-2);
 }
 
-.pct {
-  font-size: 34px;
-  font-weight: 300;
-  letter-spacing: -0.04em;
-  line-height: 1;
-}
-
-.pct small {
-  font-size: 16px;
-  color: var(--text-3);
-  margin-left: 1px;
-}
-
-.hero-text {
-  min-width: 0;
-}
-
-.hero-big {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-}
-
-.hero-of {
-  margin: 2px 0 0;
-  font-size: 13px;
-  color: var(--text-3);
-}
-
-.hero-left {
-  margin: 12px 0 0;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--lamp);
-}
-
+/* Continue */
 .resume {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 4px 14px;
-  padding: 16px;
+  gap: 4px 12px;
+  padding: 14px;
   color: inherit;
   text-decoration: none;
   transition: transform var(--dur-fast) var(--ease-out);
@@ -594,20 +577,10 @@ const TOOL_LINKS = [
   transform: scale(0.985);
 }
 
-.resume-glyph {
-  grid-row: span 1;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  font-size: 30px;
-  color: var(--leaf);
-}
-
 .resume-text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
   align-self: center;
 }
@@ -632,13 +605,50 @@ const TOOL_LINKS = [
 
 .resume-btn {
   grid-column: 1 / -1;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
-.finished .resume-glyph {
-  color: var(--lamp);
+/* Single-row link cards */
+.row-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 12px 12px 12px 14px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
+.row-card:active {
+  transform: scale(0.985);
+}
+
+.row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row-lead {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.row-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.row-sub {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+/* Setup */
 .hint {
   margin: -4px 0 12px;
   font-size: 13px;
@@ -659,103 +669,62 @@ const TOOL_LINKS = [
 .setup-label {
   flex: none;
   width: 64px;
-  font-size: 12px;
-  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
 }
 
 .setup-row .chips {
   min-width: 0;
 }
 
-.journey {
+/* Chapters */
+.chapters {
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 14px;
   list-style: none;
 }
 
-.stop {
-  position: relative;
-}
-
-.stop:not(:last-child)::before,
-.stop:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  left: 23px;
-  top: 52px;
-  bottom: -6px;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--surface-3);
-}
-
-.stop.complete:not(:last-child)::after {
-  background: linear-gradient(180deg, var(--leaf), color-mix(in srgb, var(--leaf) 40%, transparent));
-  box-shadow: 0 0 10px rgba(155, 227, 107, 0.45);
-  transform-origin: top;
-  animation: rail-light 0.6s var(--ease-out) both;
-  animation-delay: calc(300ms + var(--i) * 90ms);
-}
-
-@keyframes rail-light {
-  from {
-    transform: scaleY(0);
-  }
+.stop + .stop {
+  border-top: 1px solid var(--line);
 }
 
 .stop-link {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 6px 0 14px;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 12px 10px 0;
   color: inherit;
   text-decoration: none;
 }
 
-.stop-link:active .node {
-  transform: scale(0.94);
+.stop-link:active {
+  background: var(--surface-2);
 }
 
 .node {
-  position: relative;
   flex: none;
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 30%, var(--surface-3), var(--surface));
-  border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
-  box-shadow: inset 0 1px 0 var(--highlight);
-  color: var(--c);
-  font-size: 24px;
-  transition: transform var(--dur-fast) var(--ease-out);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .complete .node {
-  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--c) 22%, var(--surface-2)), var(--surface));
-  border-color: color-mix(in srgb, var(--c) 60%, transparent);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--c) 28%, transparent), inset 0 1px 0 var(--highlight);
+  background: var(--accent-soft);
+  color: var(--green);
+  font-size: 18px;
 }
 
 .current .node {
-  border-color: var(--leaf);
-  box-shadow: 0 0 0 3px var(--accent-soft), inset 0 1px 0 var(--highlight);
-}
-
-.node-check {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--leaf);
+  background: var(--green);
   color: var(--on-accent);
-  font-size: 12px;
-  box-shadow: 0 0 0 2px var(--bg);
 }
 
 .stop-text {
@@ -763,8 +732,7 @@ const TOOL_LINKS = [
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding-top: 3px;
+  gap: 2px;
 }
 
 .stop-title {
@@ -773,89 +741,27 @@ const TOOL_LINKS = [
   letter-spacing: -0.01em;
 }
 
-.stop-n {
-  margin-right: 4px;
-  font-weight: 400;
-  color: var(--text-3);
-}
-
-.stop-summary {
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--text-2);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
 .stop-meta {
   font-size: 12px;
   color: var(--text-3);
 }
 
 .complete .stop-meta {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .stop-progress {
+  display: block;
   height: 4px;
-  margin-top: 6px;
+  margin-top: 4px;
   max-width: 160px;
 }
 
-.stop-chev {
-  flex: none;
-  align-self: center;
-  font-size: 18px;
-  color: var(--text-3);
-}
-
-.for-lead {
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.diagnose,
-.for-grow {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  min-height: 72px;
-  color: inherit;
-  text-decoration: none;
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-
-.diagnose:active,
-.for-grow:active {
-  transform: scale(0.985);
-}
-
-.diag-glyph {
-  flex: none;
-  font-size: 30px;
-  color: var(--c);
-}
-
-.diag-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.diag-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.diag-sub {
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--text-2);
+.stop-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
 }
 
 .tool-chip {
@@ -866,13 +772,6 @@ const TOOL_LINKS = [
 .tool-chip .grow-icon,
 .tool-chip .iconify {
   font-size: 17px;
-  color: var(--leaf);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stop.complete:not(:last-child)::after,
-  .welcome-halo {
-    animation: none;
-  }
+  color: var(--green);
 }
 </style>

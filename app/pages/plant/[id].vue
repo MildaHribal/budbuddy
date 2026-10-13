@@ -310,64 +310,55 @@ useOnlineRetry(() => state.value === 'error', load)
     </div>
 
     <template v-else>
+      <div class="top-bar">
+        <button
+          type="button"
+          class="icon-btn"
+          :aria-label="t('common.back')"
+          @click="$goBack()"
+        >
+          <UIcon name="i-tabler-chevron-left" />
+        </button>
+        <CommunityReportMenu
+          class="bar-menu"
+          target-type="plant"
+          :target-id="plant.id"
+          :author-id="owner?.id"
+          :author-name="ownerName"
+          no-edit
+          @delete="removeShared"
+        />
+      </div>
+
       <section
         class="hero"
-        :class="{ lit: !plant.cover_url }"
         :style="{ '--stage': stage.color }"
       >
-        <template v-if="plant.cover_url">
-          <button
-            type="button"
-            class="hero-img-btn"
-            :aria-label="t('profile.plant.photo')"
-            @click="openPhoto(plant.cover_url, $event)"
+        <button
+          v-if="plant.cover_url"
+          type="button"
+          class="hero-img-btn card"
+          :aria-label="t('profile.plant.photo')"
+          @click="openPhoto(plant.cover_url, $event)"
+        >
+          <img
+            :src="plant.cover_url"
+            :alt="plant.name"
+            class="hero-img"
           >
-            <img
-              :src="plant.cover_url"
-              :alt="plant.name"
-              class="hero-img"
-            >
-          </button>
-          <div
-            class="hero-shade"
-            aria-hidden="true"
-          />
-        </template>
+        </button>
         <div
           v-else
-          class="hero-tile"
+          class="hero-tile card"
           aria-hidden="true"
         >
           <GrowIcon
             :name="stage.glyph"
             class="hero-tile-glyph"
-            draw
-            :stroke-width="1.3"
-          />
-        </div>
-        <div class="hero-bar">
-          <button
-            type="button"
-            class="bar-btn"
-            :aria-label="t('common.back')"
-            @click="$goBack()"
-          >
-            <UIcon
-              name="i-tabler-arrow-left"
-              class="size-5"
-            />
-          </button>
-          <CommunityReportMenu
-            class="bar-menu"
-            target-type="plant"
-            :target-id="plant.id"
-            :author-id="owner?.id"
-            :author-name="ownerName"
-            no-edit
-            @delete="removeShared"
           />
         </div>
         <div class="hero-info">
+          <h1>{{ plant.name }}</h1>
           <div class="hero-badges">
             <span
               class="badge stage-badge"
@@ -387,8 +378,11 @@ useOnlineRetry(() => state.value === 'error', load)
                 class="size-3.5"
               />{{ t('profile.plant.archived') }}
             </span>
+            <span
+              v-if="age != null"
+              class="hero-day num"
+            >{{ t('profile.day', { n: age }) }}</span>
           </div>
-          <h1>{{ plant.name }}</h1>
           <p class="hero-strain">
             <NuxtLink
               v-if="strainRef"
@@ -397,8 +391,6 @@ useOnlineRetry(() => state.value === 'error', load)
             >{{ plant.strain || strainRef.name }}</NuxtLink>
             <template v-else>
               {{ plant.strain || t('profile.plant.unknownStrain') }}
-            </template><template v-if="age != null">
-              <span aria-hidden="true"> · </span><span class="num">{{ t('profile.day', { n: age }) }}</span>
             </template>
           </p>
         </div>
@@ -413,7 +405,7 @@ useOnlineRetry(() => state.value === 'error', load)
           <CommunityUserAvatar
             :url="owner.avatar_url"
             :name="ownerName"
-            :size="40"
+            :size="32"
           />
           <span class="owner-text">
             <span class="owner-by">{{ t('profile.plant.by') }}</span>
@@ -428,6 +420,10 @@ useOnlineRetry(() => state.value === 'error', load)
               class="text-[13px]"
             />{{ ownerLevel.label }}
           </span>
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="owner-chev"
+          />
         </NuxtLink>
 
         <div
@@ -480,10 +476,7 @@ useOnlineRetry(() => state.value === 'error', load)
                   :aria-current="s.state === 'current' ? 'step' : undefined"
                 >
                   <span class="rail-node">
-                    <GrowIcon
-                      :name="s.glyph"
-                      :draw="s.state === 'current'"
-                    />
+                    <GrowIcon :name="s.glyph" />
                   </span>
                   <span
                     class="rail-label"
@@ -715,7 +708,7 @@ useOnlineRetry(() => state.value === 'error', load)
                 <h3 class="week-label">
                   {{ w.label }}
                 </h3>
-                <ol class="entries rise">
+                <ol class="entries card rise">
                   <li
                     v-for="it in w.items"
                     :key="it.id"
@@ -778,7 +771,7 @@ useOnlineRetry(() => state.value === 'error', load)
             </p>
             <ul
               v-else
-              class="post-list"
+              class="post-list card"
             >
               <li
                 v-for="p in posts"
@@ -786,7 +779,7 @@ useOnlineRetry(() => state.value === 'error', load)
               >
                 <NuxtLink
                   :to="`/community/post/${p.id}`"
-                  class="post-row card"
+                  class="post-row"
                 >
                   <img
                     v-if="p.images[0]"
@@ -805,6 +798,10 @@ useOnlineRetry(() => state.value === 'error', load)
                       <span><UIcon name="i-tabler-message-circle" /> {{ p.comments_count }}</span>
                     </p>
                   </div>
+                  <UIcon
+                    name="i-tabler-chevron-right"
+                    class="post-chev"
+                  />
                 </NuxtLink>
               </li>
             </ul>
@@ -836,140 +833,106 @@ useOnlineRetry(() => state.value === 'error', load)
   align-self: stretch;
 }
 
-/* ── Hero (mirrors the local plant detail) ── */
-.hero {
-  position: relative;
-  height: 392px;
-  overflow: hidden;
-}
-
-.hero-img-btn {
-  position: absolute;
-  inset: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-}
-
-.hero-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  -webkit-mask-image: linear-gradient(180deg, #000 42%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 42%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
-}
-
-.hero.lit {
-  height: auto;
-  padding-top: calc(var(--safe-top) + 68px);
-}
-
-.hero.lit .hero-info {
-  position: relative;
-  left: auto;
-  right: auto;
-  bottom: auto;
-  padding: 16px 20px 8px;
-}
-
-.hero.lit h1 {
-  text-shadow: none;
-}
-
-.hero-tile {
-  height: 220px;
-  margin: 0 20px;
+.top-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 24px;
-  border: 1px solid var(--line);
-  background: radial-gradient(85% 90% at 50% 18%,
-    color-mix(in srgb, #2f5a2c 72%, var(--stage)) 0%,
-    color-mix(in srgb, #0f2412 86%, var(--stage)) 58%,
-    #08140a 100%);
-  box-shadow: inset 0 1px 0 var(--highlight), var(--panel-shadow);
-}
-
-.hero-tile-glyph {
-  font-size: 120px;
-  color: var(--stage);
-  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--stage) 60%, transparent));
-}
-
-.hero-shade {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(7, 8, 10, 0.62) 0%, transparent 24%),
-    linear-gradient(0deg, rgba(7, 8, 10, 0.88) 0%, rgba(7, 8, 10, 0.4) 34%, transparent 58%);
-  pointer-events: none;
-}
-
-.hero-bar {
-  position: absolute;
-  top: calc(12px + var(--safe-top));
-  left: 16px;
-  right: 16px;
-  display: flex;
   justify-content: space-between;
+  min-height: 64px;
+  padding: calc(12px + var(--safe-top)) 16px 12px;
 }
 
-.bar-btn,
-.hero-bar :deep(.more-btn) {
+.top-bar :deep(.more-btn) {
   width: 44px;
   height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(7, 8, 10, 0.66);
-  box-shadow: inset 0 1px 0 var(--highlight);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--text);
+}
+
+/* ── Hero ── */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 16px;
+}
+
+.hero-img-btn {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-3);
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.bar-btn:active {
-  transform: scale(0.92);
+.hero-img-btn:active {
+  transform: scale(0.985);
+}
+
+.hero-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-tile {
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--stage) 10%, var(--surface));
+}
+
+.hero-tile-glyph {
+  font-size: 72px;
+  color: var(--stage);
 }
 
 .hero-info {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 8px;
-  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .hero-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
+  align-items: center;
+  gap: 8px;
 }
 
 .stage-badge {
-  background: color-mix(in srgb, currentColor 14%, color-mix(in srgb, var(--bg) 88%, transparent));
+  background: color-mix(in srgb, currentColor 14%, transparent);
 }
 
 .muted-badge {
   color: var(--text-2);
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+.hero-day {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
 }
 
 h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 22px;
   font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.12;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
 .hero-strain {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--text-2);
   font-size: 14px;
 }
@@ -977,8 +940,8 @@ h1 {
 .detail-body {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 4px 20px 0;
+  gap: 24px;
+  padding: 24px 16px 0;
 }
 
 /* ── Owner ── */
@@ -986,7 +949,10 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  min-height: 56px;
+  padding: 8px 12px;
+  color: inherit;
+  text-decoration: none;
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
@@ -1002,7 +968,7 @@ h1 {
 }
 
 .owner-by {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-3);
 }
 
@@ -1020,13 +986,19 @@ h1 {
   color: var(--text-3);
 }
 
+.owner-chev {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--text-3);
+}
+
 .blocked-note {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   border: 1px solid var(--line);
   color: var(--text-2);
   font-size: 14px;
@@ -1034,10 +1006,10 @@ h1 {
 
 /* ── Stage rail ── */
 .stage-card {
-  padding: 18px 16px 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .rail {
@@ -1060,25 +1032,17 @@ h1 {
   right: calc(100% / 12);
   height: 2px;
   border-radius: 2px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--track);
 }
 
 .rail-fill {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--leaf-deep), var(--leaf));
-  box-shadow: 0 0 10px rgba(155, 227, 107, 0.55);
+  background: var(--green);
   transform: scaleX(var(--fill));
   transform-origin: left;
-  animation: rail-sweep 1s var(--ease-out) 0.15s backwards;
-}
-
-@keyframes rail-sweep {
-  from {
-    transform: scaleX(0);
-  }
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 .rail-stop {
@@ -1097,8 +1061,7 @@ h1 {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  background: var(--surface-3);
   color: var(--text-3);
   font-size: 19px;
 }
@@ -1109,14 +1072,14 @@ h1 {
 
 .rail-stop.done .rail-node {
   color: var(--c);
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 16%, #101317), #0b0d10 75%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 34%, transparent);
+  background: color-mix(in srgb, var(--c) 14%, var(--surface));
 }
 
 .rail-stop.current .rail-node {
   color: var(--c);
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 30%, #101317), #0b0d10 80%);
-  box-shadow: inset 0 0 0 1.5px var(--c), 0 0 16px color-mix(in srgb, var(--c) 45%, transparent);
+  background: color-mix(in srgb, var(--c) 18%, var(--surface));
+  outline: 1.5px solid var(--c);
+  outline-offset: 0;
 }
 
 .rail-label {
@@ -1144,7 +1107,7 @@ h1 {
 .strain-link {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: rgba(201, 162, 255, 0.5);
+  text-decoration-color: var(--line-strong);
   text-underline-offset: 3px;
 }
 
@@ -1153,15 +1116,17 @@ h1 {
   align-items: center;
   gap: 10px;
   min-height: 44px;
-  margin-top: 4px;
-  padding-top: 10px;
+  margin: 0 -16px -16px;
+  padding: 4px 16px;
   border-top: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
   font-size: 14px;
   font-weight: 600;
 }
 
 .strain-row .grow-icon {
-  color: #c9a2ff;
+  color: var(--green);
   font-size: 18px;
 }
 
@@ -1175,11 +1140,11 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: -6px;
+  margin-top: -14px;
 }
 
 .follow-cta .is-following {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .follow-hint {
@@ -1211,12 +1176,11 @@ h1 {
   max-width: 22px;
   height: 6px;
   border-radius: 3px;
-  background: var(--surface-3);
+  background: var(--track);
 }
 
 .week-cells li.on {
-  background: var(--leaf);
-  box-shadow: 0 0 6px rgba(155, 227, 107, 0.4);
+  background: var(--green);
 }
 
 .consistent-tag {
@@ -1225,14 +1189,14 @@ h1 {
   gap: 5px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--lamp);
+  color: var(--amber);
   white-space: nowrap;
 }
 
 .updates {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1255,19 +1219,18 @@ h1 {
 .update-week {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
 }
 
 .update-n {
-  font-size: 34px;
-  font-weight: 300;
+  font-size: 22px;
+  font-weight: 600;
   line-height: 1;
-  letter-spacing: -0.04em;
-  color: var(--lamp);
+  letter-spacing: -0.01em;
 }
 
 .update-wlabel {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -1289,7 +1252,7 @@ h1 {
 
 .update-photos {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -1311,7 +1274,7 @@ h1 {
 .update-photo {
   padding: 0;
   border: 0;
-  background: var(--surface);
+  background: var(--surface-3);
   aspect-ratio: 1;
   overflow: hidden;
 }
@@ -1355,8 +1318,7 @@ h1 {
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
+  background: var(--surface-3);
   color: var(--text-2);
   font-size: 12px;
   font-weight: 600;
@@ -1382,8 +1344,7 @@ h1 {
   min-height: 30px;
   padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
+  background: var(--surface-3);
   color: var(--text-2);
   font-size: 12px;
   font-weight: 600;
@@ -1391,47 +1352,55 @@ h1 {
 
 .fact .grow-icon,
 .fact .iconify {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 /* ── Harvest ── */
 .harvest {
-  padding: 16px;
+  padding: 14px 16px 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .harvest .section-title .grow-icon {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .harvest-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  margin: 0 -16px;
+  border-top: 1px solid var(--line);
 }
 
 .h-stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  padding: 12px 16px 14px;
+}
+
+.h-stat + .h-stat {
+  border-left: 1px solid var(--line);
 }
 
 .h-num {
-  font-size: 28px;
-  font-weight: 300;
-  letter-spacing: -0.03em;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.1;
 }
 
 .h-num small {
   font-size: 13px;
+  font-weight: 400;
   color: var(--text-3);
 }
 
 .h-stat.dry .h-num {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .h-label {
@@ -1443,16 +1412,14 @@ h1 {
 .weeks {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .week-label {
   margin: 0 0 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--lamp);
+  color: var(--text-2);
 }
 
 .entries {
@@ -1461,43 +1428,38 @@ h1 {
   list-style: none;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .entry {
-  position: relative;
   display: flex;
+  align-items: flex-start;
   gap: 12px;
-  padding-bottom: 14px;
+  min-height: 56px;
+  padding: 10px 12px;
 }
 
-.entry:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 16px;
-  top: 36px;
-  bottom: 2px;
-  width: 1px;
-  background: var(--line-strong);
+.entry + .entry {
+  border-top: 1px solid var(--line);
 }
 
 .entry-dot {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   color: var(--c);
   font-size: 18px;
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 16%, #101317), #0b0d10 75%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent);
+  background: color-mix(in srgb, currentColor 14%, transparent);
 }
 
 .entry-body {
   flex: 1;
   min-width: 0;
-  padding-top: 6px;
+  padding-top: 2px;
 }
 
 .entry-head {
@@ -1505,11 +1467,11 @@ h1 {
   justify-content: space-between;
   gap: 8px;
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .entry-head strong {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .entry-date {
@@ -1520,7 +1482,7 @@ h1 {
 
 .entry-facts {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-2);
 }
 
@@ -1528,13 +1490,14 @@ h1 {
   margin: 4px 0 0;
   font-size: 14px;
   line-height: 1.45;
+  color: var(--text-2);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 
 .entry-photos {
   display: flex;
-  gap: 6px;
+  gap: 2px;
   margin-top: 8px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -1545,10 +1508,10 @@ h1 {
   width: 88px;
   height: 88px;
   padding: 0;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 12px;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--surface-3);
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
@@ -1572,21 +1535,29 @@ h1 {
 .post-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
+  overflow: hidden;
+}
+
+.post-list li + li {
+  border-top: 1px solid var(--line);
 }
 
 .post-row {
   display: flex;
+  align-items: center;
   gap: 12px;
-  padding: 12px;
+  min-height: 56px;
+  padding: 10px 10px 10px 12px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .post-thumb {
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   flex-shrink: 0;
   border-radius: 12px;
   object-fit: cover;
@@ -1600,7 +1571,7 @@ h1 {
 .post-title {
   margin: 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
@@ -1608,7 +1579,7 @@ h1 {
 .post-meta {
   display: flex;
   gap: 14px;
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-size: 12px;
   color: var(--text-3);
 }
@@ -1619,34 +1590,24 @@ h1 {
   gap: 4px;
 }
 
+.post-chev {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--text-3);
+}
+
 /* ── Skeletons ── */
 .sk {
   display: block;
-  border-radius: 16px;
-  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-3) 50%, var(--surface) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius);
+  background: var(--surface-2);
 }
 
 .sk-hero {
-  height: 300px;
-  border-radius: 24px;
+  aspect-ratio: 16 / 9;
 }
 
 .sk-card {
   height: 110px;
-}
-
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sk,
-  .rail-fill {
-    animation: none;
-  }
 }
 </style>

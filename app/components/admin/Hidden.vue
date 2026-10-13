@@ -79,7 +79,7 @@ async function unhide(p: ModPreview) {
       <li
         v-for="p in items"
         :key="`${p.type}:${p.id}`"
-        class="item card"
+        class="item"
         :class="{ busy: busy === p.id }"
       >
         <AdminTargetPreview

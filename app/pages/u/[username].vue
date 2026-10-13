@@ -274,7 +274,7 @@ useOnlineRetry(() => state.value === 'error', load)
         <span class="sk sk-line w60" />
         <span class="sk sk-line w40" />
       </div>
-      <div class="stats">
+      <div class="stats card">
         <span
           v-for="i in 6"
           :key="i"
@@ -312,32 +312,19 @@ useOnlineRetry(() => state.value === 'error', load)
 
     <template v-else-if="profile">
       <section class="hero">
-        <div
-          class="hero-glow"
-          aria-hidden="true"
+        <CommunityUserAvatar
+          :url="profile.avatar_url"
+          :name="name"
+          :size="72"
         />
-        <div class="avatar-ring">
-          <CommunityUserAvatar
-            :url="profile.avatar_url"
-            :name="name"
-            :size="88"
-          />
-        </div>
         <h1>{{ name }}</h1>
         <p class="handle">
-          @{{ profile.username }}
-        </p>
-        <div class="badges">
-          <span
-            class="badge"
+          @{{ profile.username }} · <span
             :style="{ color: level.color }"
             :title="t('profile.levelHint', { n: profile.reputation })"
-          >
-            <GrowIcon
-              :name="level.glyph"
-              class="text-[14px]"
-            />{{ level.label }}
-          </span>
+          >{{ level.label }}</span>
+        </p>
+        <div class="badges">
           <span class="badge exp">{{ t(`profile.experience.${profile.experience}`) }}</span>
           <span
             v-if="profile.first_grow"
@@ -434,7 +421,7 @@ useOnlineRetry(() => state.value === 'error', load)
 
       <div class="page body">
         <section
-          class="stats"
+          class="stats card"
           :aria-label="t('profile.title')"
         >
           <div class="stat">
@@ -483,10 +470,7 @@ useOnlineRetry(() => state.value === 'error', load)
           aria-labelledby="h-level"
         >
           <div class="level-head">
-            <span class="level-glyph"><GrowIcon
-              :name="level.glyph"
-              glow
-            /></span>
+            <span class="level-glyph"><GrowIcon :name="level.glyph" /></span>
             <div class="level-text">
               <h2
                 id="h-level"
@@ -574,7 +558,7 @@ useOnlineRetry(() => state.value === 'error', load)
             />
             <ul
               v-else
-              class="plant-grid rise"
+              class="plant-list card rise"
             >
               <li
                 v-for="p in plants"
@@ -582,51 +566,48 @@ useOnlineRetry(() => state.value === 'error', load)
               >
                 <NuxtLink
                   :to="`/plant/${p.id}`"
-                  class="plant-card card"
+                  class="plant-row"
                   :style="{ '--stage': stageInfo(p.stage).color }"
                 >
-                  <div class="plant-cover">
+                  <span class="plant-cover">
                     <img
                       v-if="p.cover_url"
                       :src="p.cover_url"
                       :alt="p.name"
                       loading="lazy"
                     >
-                    <div
+                    <GrowIcon
                       v-else
-                      class="cover-tile"
-                    >
-                      <GrowIcon
-                        :name="stageInfo(p.stage).glyph"
-                        :stroke-width="1.2"
-                      />
-                    </div>
-                    <span
-                      class="badge stage"
-                      :style="{ color: stageInfo(p.stage).color }"
-                    >
-                      <GrowIcon
-                        :name="stageInfo(p.stage).glyph"
-                        class="text-[13px]"
-                      />{{ stageInfo(p.stage).label }}
-                    </span>
-                  </div>
-                  <div class="plant-meta">
-                    <p class="plant-name">
-                      {{ p.name }}
-                    </p>
-                    <p class="plant-sub">
+                      :name="stageInfo(p.stage).glyph"
+                    />
+                  </span>
+                  <span class="plant-meta">
+                    <span class="plant-name">{{ p.name }}</span>
+                    <span class="plant-sub">
                       <span>{{ p.strain || t('profile.plant.unknownStrain') }}</span>
                       <span
                         v-if="p.harvest_dry_g"
-                        class="lamp num"
+                        class="amber num"
                       >{{ Math.round(Number(p.harvest_dry_g)) }} g</span>
                       <span
                         v-else-if="plantDay(p) != null"
                         class="num"
                       >{{ t('profile.day', { n: plantDay(p)! }) }}</span>
-                    </p>
-                  </div>
+                    </span>
+                  </span>
+                  <span
+                    class="badge stage"
+                    :style="{ color: stageInfo(p.stage).color }"
+                  >
+                    <GrowIcon
+                      :name="stageInfo(p.stage).glyph"
+                      class="text-[13px]"
+                    />{{ stageInfo(p.stage).label }}
+                  </span>
+                  <UIcon
+                    name="i-tabler-chevron-right"
+                    class="plant-go"
+                  />
                 </NuxtLink>
               </li>
             </ul>
@@ -826,62 +807,40 @@ useOnlineRetry(() => state.value === 'error', load)
 .topbar :deep(.more-btn) {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  background: rgba(7, 8, 10, 0.66);
+  border-radius: var(--radius-control);
+  background: var(--surface);
   border: 1px solid var(--line);
   color: var(--text);
 }
 
 /* ── Hero ── */
 .hero {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 0 20px 8px;
-  margin-top: -40px;
-}
-
-.hero-glow {
-  position: absolute;
-  inset: -40px 0 auto;
-  height: 260px;
-  background: radial-gradient(60% 70% at 50% 0%, rgba(255, 210, 138, 0.16), transparent 70%);
-  pointer-events: none;
-}
-
-.avatar-ring {
-  position: relative;
-  margin-top: 28px;
-  padding: 4px;
-  border-radius: 50%;
-  background: conic-gradient(from 200deg, var(--leaf-deep), var(--leaf), var(--lamp), var(--leaf-deep));
-  box-shadow: 0 0 28px rgba(155, 227, 107, 0.25);
-}
-
-.avatar-ring :deep(.avatar) {
-  border: 3px solid var(--bg);
+  padding: 8px 16px 0;
 }
 
 h1 {
-  position: relative;
-  margin: 14px 0 0;
-  font-size: 24px;
+  margin: 12px 0 0;
+  font-size: 22px;
   font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
 .handle {
   margin: 2px 0 0;
-  color: var(--text-3);
-  font-size: 14px;
+  color: var(--text-2);
+  font-size: 13px;
 }
 
 .badges {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
   margin-top: 10px;
 }
@@ -891,19 +850,13 @@ h1 {
 }
 
 .badge.first {
-  color: #c8f08f;
-}
-
-.badges {
-  flex-wrap: wrap;
-  justify-content: center;
+  color: var(--green);
 }
 
 .pinned {
-  position: relative;
   display: flex;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   margin-top: 14px;
   padding: 4px;
 }
@@ -938,9 +891,15 @@ h1 {
 }
 
 .level-glyph {
-  font-size: 26px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--lc) 14%, transparent);
   color: var(--lc);
-  display: inline-flex;
+  font-size: 22px;
 }
 
 .level-text {
@@ -952,9 +911,9 @@ h1 {
 
 .level-name {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--lc);
+  letter-spacing: -0.01em;
 }
 
 .level-rep {
@@ -965,13 +924,12 @@ h1 {
 .level-next {
   max-width: 48%;
   font-size: 12px;
-  font-weight: 500;
   text-align: right;
   color: var(--text-2);
 }
 
 .level .progress > div {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--lc) 55%, #0b0d10), var(--lc));
+  background: var(--lc);
 }
 
 .level-perk {
@@ -998,18 +956,17 @@ h1 {
   flex-wrap: wrap;
   justify-content: center;
   gap: 6px;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .setup-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 30px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid var(--line-strong);
-  background: var(--surface);
   color: var(--text-2);
   font-size: 12px;
   font-weight: 600;
@@ -1017,11 +974,11 @@ h1 {
 
 .setup-chip .grow-icon,
 .setup-chip .iconify {
-  color: var(--leaf);
+  color: var(--text-3);
 }
 
 .bio {
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   max-width: 34ch;
   font-size: 15px;
   line-height: 1.45;
@@ -1033,13 +990,13 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font-size: 13px;
   color: var(--text-2);
 }
 
 .fav .grow-icon {
-  color: #c9a2ff;
+  color: var(--text-3);
 }
 
 .fav strong {
@@ -1059,7 +1016,7 @@ h1 {
 }
 
 .hero-btn.following {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .when-hover {
@@ -1076,20 +1033,19 @@ h1 {
   }
 
   .hero-btn.following:hover {
-    color: var(--danger);
+    color: var(--red);
   }
 }
 
 /* ── Stats ── */
 .body {
-  padding-top: 20px;
-  gap: 22px;
+  padding-top: 24px;
 }
 
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  overflow: hidden;
 }
 
 .stat {
@@ -1097,34 +1053,41 @@ h1 {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  min-height: 68px;
+  min-height: 64px;
   padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight);
+  border: 0;
+  background: none;
+  color: inherit;
   text-align: left;
   min-width: 0;
 }
 
+.stat:nth-child(3n + 2),
+.stat:nth-child(3n) {
+  border-left: 1px solid var(--line);
+}
+
+.stat:nth-child(n + 4) {
+  border-top: 1px solid var(--line);
+}
+
 .stat.tap {
-  transition: transform var(--dur-fast) var(--ease-out);
+  transition: background var(--dur) ease;
 }
 
 .stat.tap:active {
-  transform: scale(0.96);
+  background: var(--surface-2);
 }
 
 .stat-num {
-  font-size: 26px;
-  font-weight: 300;
-  letter-spacing: -0.03em;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.1;
 }
 
 .stat-label {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12px;
   color: var(--text-3);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1132,16 +1095,16 @@ h1 {
   max-width: 100%;
 }
 
-.lamp {
-  color: var(--lamp);
+.amber {
+  color: var(--amber);
 }
 
 .stat-dry {
   margin-left: 6px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0;
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .blocked-note {
@@ -1150,40 +1113,54 @@ h1 {
   gap: 8px;
   margin: 0;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   border: 1px solid var(--line);
   color: var(--text-2);
   font-size: 14px;
 }
 
 .tab-body {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 /* ── Plants ── */
-.plant-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+.plant-list {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.plant-card {
-  display: block;
   overflow: hidden;
-  transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.plant-card:active {
-  transform: scale(0.97);
+.plant-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.plant-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 8px 8px 8px 8px;
+  color: inherit;
+  text-decoration: none;
+  transition: background var(--dur) ease;
+}
+
+.plant-row:active {
+  background: var(--surface-2);
 }
 
 .plant-cover {
-  position: relative;
-  aspect-ratio: 1;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
   overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--surface-3);
+  color: var(--stage);
+  font-size: 26px;
 }
 
 .plant-cover img {
@@ -1193,35 +1170,16 @@ h1 {
   display: block;
 }
 
-.cover-tile {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 54px;
-  color: var(--stage);
-  background: radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--stage) 26%, #10251a) 0%, #0d1d12 55%, #070d09 100%);
-}
-
-.cover-tile .grow-icon {
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--stage) 45%, transparent));
-}
-
-.badge.stage {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  background: color-mix(in srgb, currentColor 14%, color-mix(in srgb, var(--bg) 88%, transparent));
-}
-
 .plant-meta {
-  padding: 10px 12px 12px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .plant-name {
-  margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -1230,17 +1188,24 @@ h1 {
 
 .plant-sub {
   display: flex;
-  justify-content: space-between;
   gap: 6px;
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--text-3);
+  font-size: 13px;
+  color: var(--text-2);
 }
 
 .plant-sub span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.badge.stage {
+  flex-shrink: 0;
+}
+
+.plant-go {
+  flex-shrink: 0;
+  color: var(--text-3);
 }
 
 /* ── Posts / tips ── */
@@ -1287,7 +1252,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .tip-ago {
@@ -1312,7 +1277,6 @@ h1 {
 .people {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   margin: 0;
   padding: 0 0 8px;
   list-style: none;
@@ -1330,6 +1294,8 @@ h1 {
   min-height: 56px;
   padding: 6px 4px;
   border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
 }
 
 .person-text {
@@ -1359,10 +1325,9 @@ h1 {
 /* ── Skeletons ── */
 .sk {
   display: block;
-  border-radius: 12px;
-  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-3) 50%, var(--surface) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-control);
+  background: var(--surface-3);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
 .sk-hero {
@@ -1374,8 +1339,8 @@ h1 {
 }
 
 .sk-avatar {
-  width: 96px;
-  height: 96px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
 }
 
@@ -1392,22 +1357,23 @@ h1 {
 }
 
 .sk-stat {
-  height: 68px;
-  border-radius: 14px;
+  height: 64px;
+  border-radius: 0;
 }
 
 .sk-row {
   height: 96px;
-  border-radius: 16px;
+  border-radius: var(--radius);
 }
 
 .sk-person {
   height: 52px;
+  margin-bottom: 4px;
 }
 
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
   }
 }
 

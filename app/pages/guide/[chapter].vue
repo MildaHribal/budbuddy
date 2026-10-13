@@ -282,24 +282,6 @@ function pickPlant(id: string) {
   if (pending.value) runFor(pending.value, id)
   pending.value = null
 }
-
-// Finale blooms when it scrolls into view, not offscreen.
-const finale = ref<HTMLElement | null>(null)
-const finaleSeen = ref(false)
-let finaleObserver: IntersectionObserver | null = null
-watch(finale, (el) => {
-  finaleObserver?.disconnect()
-  finaleSeen.value = false
-  if (!el) return
-  finaleObserver = new IntersectionObserver(([e]) => {
-    if (e?.isIntersecting) {
-      finaleSeen.value = true
-      finaleObserver?.disconnect()
-    }
-  }, { root: scrollRoot.value, threshold: 0.4 })
-  finaleObserver.observe(el)
-})
-onBeforeUnmount(() => finaleObserver?.disconnect())
 </script>
 
 <template>
@@ -347,40 +329,42 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
       class="page"
       :style="{ '--c': meta.color }"
     >
-      <header class="intro rise">
-        <span
-          class="intro-glyph"
-          aria-hidden="true"
-        >
-          <GrowIcon
-            :name="meta.glyph"
-            draw
-            glow
-            :stroke-width="1.3"
-          />
-        </span>
-        <p class="intro-summary">
-          {{ tr(meta.summary) }}
-        </p>
-        <p class="intro-meta num">
-          {{ t('guide.hub.chapterMeta', { done: progress.done, total: progress.total, min: totalMinutes }) }}
-        </p>
+      <header class="intro card">
+        <div class="intro-row">
+          <span
+            class="tile"
+            aria-hidden="true"
+          >
+            <GrowIcon :name="meta.glyph" />
+          </span>
+          <p class="intro-summary">
+            {{ tr(meta.summary) }}
+          </p>
+        </div>
         <div
           class="progress"
           aria-hidden="true"
         >
-          <div :style="{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }" />
+          <div
+            v-if="progress.done"
+            :style="{ width: `${(progress.done / progress.total) * 100}%` }"
+          />
         </div>
+        <p class="intro-meta num">
+          {{ t('guide.hub.chapterMeta', { done: progress.done, total: progress.total, min: totalMinutes }) }}
+        </p>
       </header>
 
       <nav
         class="toc"
         :aria-label="t('guide.chapter.lessons')"
       >
-        <h2 class="section-title toc-title">
-          {{ t('guide.chapter.lessons') }}
-        </h2>
-        <ol>
+        <div class="section-head">
+          <h2 class="section-title">
+            {{ t('guide.chapter.lessons') }}
+          </h2>
+        </div>
+        <ol class="card">
           <li
             v-for="(lesson, i) in lessons"
             :key="lesson.id"
@@ -449,15 +433,15 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
         :aria-labelledby="`${lesson.id}-h`"
       >
         <header class="lesson-head">
-          <p class="lesson-count num">
-            {{ t('guide.chapter.lessonOf', { n: i + 1, total: lessons.length }) }} · {{ t('guide.chapter.minutes', { n: lesson.minutes }) }}
-          </p>
           <h2
             :id="`${lesson.id}-h`"
             class="lesson-title"
           >
             {{ tr(lesson.title) }}
           </h2>
+          <p class="lesson-count num">
+            {{ t('guide.chapter.lessonOf', { n: i + 1, total: lessons.length }) }} · {{ t('guide.chapter.minutes', { n: lesson.minutes }) }}
+          </p>
         </header>
 
         <template v-if="isRendered(lesson.id)">
@@ -474,7 +458,7 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
           <footer class="lesson-foot">
             <section
               v-if="lessonActions(lesson.id).length"
-              class="use"
+              class="use card"
               :aria-label="t('guide.chapter.putToUse')"
             >
               <h3 class="use-title">
@@ -519,7 +503,7 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
               <button
                 type="button"
                 class="done-toggle"
-                :class="{ on: isDone(lesson.id), fresh: justDone === lesson.id }"
+                :class="{ on: isDone(lesson.id) }"
                 :aria-pressed="isDone(lesson.id)"
                 :title="isDone(lesson.id) ? t('guide.chapter.undo') : undefined"
                 @click="toggleDone(lesson)"
@@ -528,13 +512,8 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
                   class="done-mark"
                   aria-hidden="true"
                 >
-                  <svg viewBox="0 0 24 24">
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                    />
-                    <path d="M7.5 12.5l3 3 6-6.5" />
+                  <svg viewBox="0 0 12 12">
+                    <path d="M2.5 6.5l2.5 2.5 4.5-5" />
                   </svg>
                 </span>
                 {{ isDone(lesson.id) ? t('guide.chapter.done') : t('guide.chapter.markRead') }}
@@ -592,23 +571,15 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
 
       <section
         v-if="progress.complete && content"
-        ref="finale"
         :key="celebrateKey"
         class="finale"
-        :class="{ fresh: celebrateKey > 0 && finaleSeen }"
         aria-live="polite"
       >
         <span
-          class="finale-glyph"
+          class="tile finale-tile"
           aria-hidden="true"
         >
-          <span class="halo" />
-          <GrowIcon
-            :name="meta.glyph"
-            draw
-            glow
-            :stroke-width="1.2"
-          />
+          <GrowIcon :name="meta.glyph" />
         </span>
         <h2 class="finale-title">
           {{ t('guide.chapter.completeTitle') }}
@@ -639,7 +610,7 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
         <NuxtLink
           v-if="prevChapter"
           :to="`/guide/${prevChapter.id}`"
-          class="pager-link prev"
+          class="pager-link card"
         >
           <UIcon name="i-tabler-chevron-left" />
           <span>
@@ -691,38 +662,47 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
 
 <style scoped>
 .mini {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .mini span {
   font-size: 11px;
+  font-weight: 500;
   color: var(--text-3);
 }
 
+.tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  color: var(--c);
+  font-size: 24px;
+}
+
+/* Chapter intro */
 .intro {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 14px;
 }
 
-.intro-glyph {
-  display: grid;
-  place-items: center;
-  width: 84px;
-  height: 84px;
-  margin-bottom: 6px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--c) 16%, transparent), transparent 70%);
-  color: var(--c);
-  font-size: 56px;
+.intro-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .intro-summary {
   margin: 0;
-  max-width: 65ch;
-  font-size: 16px;
-  line-height: 1.55;
+  padding-top: 2px;
+  font-size: 15px;
+  line-height: 1.5;
   color: var(--text);
 }
 
@@ -732,33 +712,29 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   color: var(--text-3);
 }
 
-.intro .progress {
-  margin-top: 4px;
-}
-
-.toc-title {
-  margin-bottom: 8px;
-}
-
+/* Table of contents */
 .toc ol {
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 14px;
   list-style: none;
+}
+
+.toc li + li {
+  border-top: 1px solid var(--line);
 }
 
 .toc-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 48px;
-  padding: 6px 0;
+  min-height: 52px;
+  padding: 8px 14px 8px 0;
   color: var(--text);
   text-decoration: none;
-  border-bottom: 1px solid var(--line);
 }
 
-.toc li:last-child .toc-item {
-  border-bottom: 0;
+.toc-item:active {
+  background: var(--surface-2);
 }
 
 .toc-mark {
@@ -767,30 +743,29 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-3);
   font-size: 12px;
-  color: var(--text-3);
-  transition: background var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+  font-weight: 600;
+  color: var(--text-2);
+  transition: background var(--dur) ease, color var(--dur) ease;
 }
 
 .toc-item.here .toc-mark {
-  box-shadow: inset 0 0 0 1.5px var(--leaf);
-  color: var(--text);
+  background: var(--green);
+  color: var(--on-accent);
 }
 
 .toc-item.done .toc-mark {
   background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent-line);
-  color: var(--leaf);
+  color: var(--green);
   font-size: 15px;
 }
 
 .toc-name {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.35;
 }
@@ -826,7 +801,8 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   gap: 12px;
   padding: 16px;
   border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
+  border: 1px solid var(--line);
+  background: var(--surface);
   font-size: 14px;
   color: var(--text-2);
 }
@@ -835,53 +811,48 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   margin: 0;
 }
 
+/* Lessons */
 .lesson {
   scroll-margin-top: calc(84px + var(--safe-top));
-  padding-top: 8px;
+  padding-top: 24px;
   border-top: 1px solid var(--line);
 }
 
-.lesson-count {
-  margin: 12px 0 4px;
-  font-size: 12px;
-  color: var(--text-3);
+.lesson-head {
+  margin-bottom: 16px;
 }
 
 .lesson-title {
-  margin: 0 0 16px;
-  max-width: 24ch;
+  margin: 0;
   font-size: 22px;
   font-weight: 600;
   line-height: 1.25;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.01em;
+}
+
+.lesson-count {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .blocks {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  /* skip layout/paint of offscreen lessons; padding keeps card shadows unclipped */
-  margin: -16px -20px;
-  padding: 16px 20px;
   content-visibility: auto;
   contain-intrinsic-size: auto 1200px;
 }
 
 .lesson-pending.shimmer {
   border-radius: var(--radius);
-  background:
-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.035), transparent) 0 0 / 60% 100% no-repeat,
-    repeating-linear-gradient(180deg, var(--surface) 0 14px, transparent 14px 30px) 0 0 / 100% 210px no-repeat;
-  animation: shimmer 1.4s linear infinite;
+  background: var(--surface);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
-@keyframes shimmer {
-  from {
-    background-position: -60% 0, 0 0;
-  }
-
-  to {
-    background-position: 160% 0, 0 0;
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
   }
 }
 
@@ -889,21 +860,18 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 28px;
+  margin-top: 24px;
 }
 
 .use {
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius);
-  background: var(--panel);
-  box-shadow: var(--panel-shadow);
   overflow: hidden;
 }
 
 .use-title {
   margin: 0;
-  padding: 14px 16px 6px;
+  padding: 12px 14px 4px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-2);
@@ -914,17 +882,17 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   align-items: center;
   gap: 12px;
   min-height: 52px;
-  padding: 10px 16px;
+  padding: 8px 12px 8px 14px;
   border: 0;
   border-top: 1px solid var(--line);
   background: none;
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   text-align: left;
   text-decoration: none;
-  transition: background var(--dur-fast) var(--ease-out);
+  transition: background var(--dur-fast) ease;
 }
 
 .use-title + .use-item {
@@ -943,8 +911,8 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
 .use-item .grow-icon,
 .use-item > .iconify:first-child {
   flex: none;
-  font-size: 20px;
-  color: var(--leaf);
+  font-size: 22px;
+  color: var(--green);
 }
 
 .use-chev {
@@ -963,18 +931,18 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
 .done-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-height: 44px;
-  padding: 6px 14px 6px 8px;
+  padding: 6px 12px 6px 8px;
   margin-left: -8px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-control);
   background: none;
   color: var(--text-2);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  transition: color var(--dur) var(--ease-out), background var(--dur) var(--ease-out);
+  transition: color var(--dur) ease, background var(--dur) ease;
 }
 
 .done-toggle:active {
@@ -982,73 +950,43 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
 }
 
 .done-toggle.on {
-  color: var(--leaf);
+  color: var(--text);
 }
 
 .done-mark {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--line-strong);
+  transition: background var(--dur) ease, border-color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .done-mark svg {
-  width: 100%;
-  height: 100%;
+  width: 12px;
+  height: 12px;
   fill: none;
+  stroke: var(--on-accent);
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur-fast) ease;
 }
 
-.done-mark circle {
-  stroke: var(--line-strong);
-  stroke-width: 1.5;
-  transition: stroke var(--dur) var(--ease-out), fill var(--dur) var(--ease-out);
+.done-toggle:active .done-mark {
+  transform: scale(0.9);
 }
 
-.done-mark path {
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-dasharray: 16;
-  stroke-dashoffset: 16;
-  transition: stroke-dashoffset var(--dur-slow) var(--ease-out);
+.on .done-mark {
+  background: var(--green);
+  border-color: var(--green);
 }
 
-.on .done-mark circle {
-  stroke: var(--accent-line);
-  fill: var(--accent-soft);
-}
-
-.on .done-mark path {
-  stroke-dashoffset: 0;
-}
-
-.fresh .done-mark {
-  animation: done-pop 620ms var(--ease-out);
-}
-
-.fresh .done-mark svg {
-  animation: done-glow 1.4s var(--ease-out);
-}
-
-@keyframes done-pop {
-  0% {
-    transform: scale(0.7);
-  }
-
-  55% {
-    transform: scale(1.15);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes done-glow {
-  30% {
-    filter: drop-shadow(0 0 8px rgba(155, 227, 107, 0.7));
-  }
+.on .done-mark svg {
+  opacity: 1;
 }
 
 .end-hint {
@@ -1060,7 +998,6 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
 
 .next-btn {
   justify-content: space-between;
-  transition: background var(--dur) var(--ease-out), color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
 }
 
 .next-label {
@@ -1070,74 +1007,28 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   white-space: nowrap;
 }
 
+/* Chapter complete */
 .finale {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 28px 4px 4px;
+  padding: 24px 4px 4px;
   text-align: center;
   scroll-margin: 96px;
 }
 
-.finale-glyph {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 120px;
-  height: 120px;
-  font-size: 72px;
-  color: var(--c);
-}
-
-.halo {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(155, 227, 107, 0.28), rgba(155, 227, 107, 0.08) 45%, transparent 70%);
-}
-
-.fresh .halo {
-  animation: halo-bloom 1.6s var(--ease-out) both;
-}
-
-.fresh .finale-glyph .grow-icon {
-  animation: leaf-glow 1.8s 0.6s var(--ease-out) both;
-}
-
-@keyframes halo-bloom {
-  0% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-
-  45% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes leaf-glow {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 6px color-mix(in srgb, currentColor 55%, transparent));
-  }
-
-  40% {
-    filter: drop-shadow(0 0 18px color-mix(in srgb, currentColor 80%, transparent));
-  }
+.finale-tile {
+  width: 56px;
+  height: 56px;
+  font-size: 32px;
 }
 
 .finale-title {
   margin: 8px 0 0;
   font-size: 22px;
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.01em;
 }
 
 .finale-text {
@@ -1158,9 +1049,6 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   gap: 8px;
   min-height: 56px;
   padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: var(--surface);
   color: var(--text);
   text-decoration: none;
   font-size: 13px;
@@ -1200,7 +1088,7 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 60px;
+  min-height: 56px;
   padding: 10px 4px;
   border: 0;
   border-bottom: 1px solid var(--line);
@@ -1241,10 +1129,6 @@ onBeforeUnmount(() => finaleObserver?.disconnect())
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fresh .halo,
-  .fresh .finale-glyph .grow-icon,
-  .fresh .done-mark,
-  .fresh .done-mark svg,
   .lesson-pending.shimmer {
     animation: none;
   }

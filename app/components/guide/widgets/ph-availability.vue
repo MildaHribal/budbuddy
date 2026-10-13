@@ -133,7 +133,7 @@ const axis = [4, 5, 6, 7, 8]
       </button>
     </div>
 
-    <div class="head-row">
+    <div class="head-row gw-result">
       <p class="gw-big num">
         <span class="gw-unit">pH</span>{{ formatNumber(ph, 1, true) }}
       </p>
@@ -276,13 +276,14 @@ const axis = [4, 5, 6, 7, 8]
   gap: 12px;
 }
 
-.head-row .gw-big {
-  color: var(--lamp);
+.head-row {
+  flex-direction: row;
 }
 
 .opt {
   font-size: 12px;
-  color: var(--leaf);
+  color: var(--text-2);
+  text-align: right;
 }
 
 .chart {
@@ -310,19 +311,19 @@ const axis = [4, 5, 6, 7, 8]
 }
 
 .band {
-  fill: var(--leaf);
+  fill: var(--green);
   fill-opacity: 0.32;
   transition: d var(--dur-slow) var(--ease-out), fill var(--dur) ease, fill-opacity var(--dur) ease;
 }
 
 .dot {
-  fill: var(--leaf);
+  fill: var(--green);
   transition: r var(--dur-fast) var(--ease-out), fill var(--dur) ease;
 }
 
 .row.low .el,
 .row.low .dot {
-  fill: var(--lamp);
+  fill: var(--amber);
 }
 
 .row.locked .el,
@@ -353,14 +354,13 @@ const axis = [4, 5, 6, 7, 8]
 }
 
 .marker line {
-  stroke: var(--lamp);
+  stroke: var(--amber);
   stroke-width: 2;
-  filter: drop-shadow(0 0 4px rgba(255, 210, 138, 0.7));
 }
 
 .marker circle {
-  fill: var(--lamp);
-  stroke: #0b0d10;
+  fill: var(--amber);
+  stroke: var(--surface);
   stroke-width: 2;
 }
 
@@ -381,18 +381,18 @@ const axis = [4, 5, 6, 7, 8]
 }
 
 .verdict.ok .v-head {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .verdict.bad .v-head {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .locked-t {
-  color: #ff9aa3;
+  color: var(--red);
 }
 
 .low-t {
-  color: var(--lamp);
+  color: var(--amber);
 }
 </style>

@@ -9,7 +9,7 @@ export default {
     cs: 'Přepnutí na 12/12, stretch, jak se týden po týdnu vyvíjejí palice, jak si udržet plíseň od těla a jak podle trichomů poznat den sklizně.'
   },
   glyph: 'flowering',
-  color: '#c9a2ff',
+  color: '#b58cf5',
   lessons: [
     {
       id: 'flowering-flip',

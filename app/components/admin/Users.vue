@@ -140,7 +140,7 @@ const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nu
       <li
         v-for="u in results"
         :key="u.id"
-        class="item card"
+        class="item"
         :class="{ busy: busy === u.id }"
       >
         <button
@@ -241,7 +241,7 @@ const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nu
 .user {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   min-height: 44px;
   padding: 0;
@@ -271,8 +271,8 @@ const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nu
   color: var(--text-3);
 }
 
-.admin-badge { color: var(--leaf); }
-.banned-badge { color: #ff9aa3; }
+.admin-badge { color: var(--green); }
+.banned-badge { color: var(--red); }
 
 .chev {
   flex-shrink: 0;
@@ -311,6 +311,6 @@ const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nu
 }
 
 .facts .warn {
-  color: #ff9aa3;
+  color: var(--red);
 }
 </style>

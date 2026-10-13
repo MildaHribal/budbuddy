@@ -21,13 +21,10 @@ async function show() {
     :aria-label="t('feed.levelSheet.open', { level: level.label, n: rep ?? 0 })"
     @click.stop.prevent="show"
   >
-    <span class="pips">
-      <i
-        v-for="n in 5"
-        :key="n"
-        :class="{ lit: n <= level.tier + 1 }"
-      />
-    </span>
+    <span
+      class="dot"
+      aria-hidden="true"
+    />
     {{ level.label }}
   </button>
   <CommunityFeedLevelSheet
@@ -46,43 +43,27 @@ async function show() {
   align-items: center;
   gap: 5px;
   height: 20px;
-  padding: 0 7px 0 6px;
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  padding: 0;
+  border: 0;
   background: transparent;
-  color: var(--text-2);
-  font-size: 11px;
-  font-weight: 600;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
 }
 
-/* 44px hit area without growing the chip */
+/* 44px hit area without growing the label */
 .rep::after {
   content: '';
   position: absolute;
   inset: -12px -4px;
 }
 
-.pips {
-  display: inline-flex;
-  gap: 1.5px;
-  align-items: flex-end;
-}
-
-.pips i {
-  width: 2px;
-  height: 8px;
-  border-radius: 1px;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.pips i:nth-child(1) { height: 4px; }
-.pips i:nth-child(2) { height: 5px; }
-.pips i:nth-child(3) { height: 6px; }
-.pips i:nth-child(4) { height: 7px; }
-
-.pips i.lit {
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   background: var(--c);
 }
 </style>

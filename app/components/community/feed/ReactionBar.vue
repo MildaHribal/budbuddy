@@ -97,14 +97,6 @@ const label = (k: ReactionKind) => t('feed.react.count', { label: t(`feed.react.
     >
       <span class="glyph">
         <UIcon :name="liked ? 'i-tabler-heart-filled' : 'i-tabler-heart'" />
-        <span
-          class="sparks"
-          aria-hidden="true"
-        ><i
-          v-for="n in 6"
-          :key="n"
-          :style="{ '--a': `${n * 60}deg` }"
-        /></span>
       </span>
       <Transition
         name="tick"
@@ -195,7 +187,7 @@ const label = (k: ReactionKind) => t('feed.react.count', { label: t(`feed.react.
   min-height: 44px;
   padding: 0 10px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: none;
   color: var(--text-3);
   font-size: 13px;
@@ -215,7 +207,7 @@ const label = (k: ReactionKind) => t('feed.react.count', { label: t(`feed.react.
 }
 
 .act.on {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .more-btn {
@@ -239,27 +231,7 @@ const label = (k: ReactionKind) => t('feed.react.count', { label: t(`feed.react.
 
 .burst .glyph > .iconify,
 .burst .stack {
-  animation: pop 0.5s var(--ease-out);
-}
-
-.sparks {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  pointer-events: none;
-}
-
-.sparks i {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  margin: -2px;
-  border-radius: 50%;
-  background: var(--leaf);
-  opacity: 0;
-}
-
-.burst .sparks i {
-  animation: spark 0.6s var(--ease-out) forwards;
+  animation: pop var(--dur) var(--ease-out);
 }
 
 .num {
@@ -269,7 +241,7 @@ const label = (k: ReactionKind) => t('feed.react.count', { label: t(`feed.react.
 
 .tick-enter-active,
 .tick-leave-active {
-  transition: transform 160ms var(--ease-out), opacity 160ms ease;
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) ease;
 }
 
 .tick-enter-from {
@@ -289,11 +261,11 @@ const label = (k: ReactionKind) => t('feed.react.count', { label: t(`feed.react.
   z-index: 5;
   display: flex;
   gap: 2px;
-  padding: 5px;
-  border-radius: 20px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight), var(--panel-shadow), 0 14px 30px -10px rgba(0, 0, 0, 0.8);
+  padding: 4px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-float);
   transform-origin: 24px 100%;
 }
 
@@ -307,31 +279,25 @@ const label = (k: ReactionKind) => t('feed.react.count', { label: t(`feed.react.
   justify-content: center;
   gap: 4px;
   padding: 6px 2px 5px;
-  border: 1px solid transparent;
-  border-radius: 15px;
+  border: 0;
+  border-radius: var(--radius-control);
   background: none;
   color: var(--text-2);
   transition: transform var(--dur-fast) var(--ease-out), background var(--dur) ease;
 }
 
 .pick:active {
-  transform: scale(0.9);
+  transform: scale(0.94);
 }
 
 .pick.on {
-  background: color-mix(in srgb, var(--c) 13%, transparent);
-  border-color: color-mix(in srgb, var(--c) 32%, transparent);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
   color: var(--text);
 }
 
 .pick-glyph {
   font-size: 24px;
   color: var(--c);
-}
-
-.picker .pick {
-  animation: pick-in 260ms var(--ease-out) both;
-  animation-delay: calc(var(--i) * 28ms);
 }
 
 .pick-label {
@@ -353,48 +319,28 @@ const label = (k: ReactionKind) => t('feed.react.count', { label: t(`feed.react.
 }
 
 .picker-enter-active {
-  transition: transform 240ms var(--ease-out), opacity 180ms ease;
+  transition: transform var(--dur) var(--ease-out), opacity var(--dur-fast) ease;
 }
 
 .picker-leave-active {
-  transition: transform 140ms ease, opacity 140ms ease;
+  transition: transform var(--dur-fast) ease, opacity var(--dur-fast) ease;
 }
 
 .picker-enter-from,
 .picker-leave-to {
-  transform: translateY(6px) scale(0.92);
+  transform: translateY(4px) scale(0.96);
   opacity: 0;
 }
 
 @keyframes pop {
-  0% { transform: scale(0.6); }
-  45% { transform: scale(1.35); }
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.15); }
   100% { transform: scale(1); }
-}
-
-@keyframes spark {
-  0% {
-    opacity: 1;
-    transform: rotate(var(--a)) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: rotate(var(--a)) translateY(-16px) scale(0.4);
-  }
-}
-
-@keyframes pick-in {
-  from {
-    transform: translateY(8px) scale(0.7);
-    opacity: 0;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .burst .glyph > .iconify,
-  .burst .stack,
-  .burst .sparks i,
-  .picker .pick {
+  .burst .stack {
     animation: none;
   }
 }

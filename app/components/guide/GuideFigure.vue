@@ -80,25 +80,27 @@ const creditLine = computed(() => props.credit || (props.photo ? creditFromJson(
 .frame {
   position: relative;
   overflow: hidden;
-  border-radius: 16px;
-  background:
-    radial-gradient(120% 70% at 50% 0%, rgba(255, 210, 138, 0.07), transparent 60%),
-    linear-gradient(180deg, #111418, #0b0d10);
+  border-radius: 12px;
+  background: var(--surface);
   border: 1px solid var(--line);
-  box-shadow: inset 0 1px 0 var(--highlight);
 }
 
 .frame :deep(svg) {
   display: block;
   width: 100%;
   height: auto;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.frame.photo {
+  aspect-ratio: 16 / 9;
 }
 
 .frame.photo img {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 420px;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -117,20 +119,18 @@ const creditLine = computed(() => props.credit || (props.photo ? creditFromJson(
 
 .ph-glyph {
   font-size: 32px;
-  color: var(--dark-arc);
+  color: var(--text-3);
 }
 
 figcaption {
   margin-top: 10px;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
   color: var(--text-2);
 }
 
 .credit {
   display: block;
-  margin-top: 2px;
-  font-size: 11px;
   color: var(--text-3);
 }
 </style>

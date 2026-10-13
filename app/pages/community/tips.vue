@@ -640,7 +640,7 @@ useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
       v-model:open="composeOpen"
       :title="editing ? t('tips.editTitle') : t('tips.composeTitle')"
       icon="lamp"
-      icon-color="var(--lamp)"
+      icon-color="var(--amber)"
     >
       <form
         id="tip-form"
@@ -762,7 +762,7 @@ useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0 -20px -8px;
+  margin: 0 -16px -8px;
 }
 
 .filter-chip .iconify {
@@ -776,15 +776,15 @@ useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
   height: 20px;
   padding: 0 6px;
   border-radius: 10px;
-  background: var(--leaf);
-  color: #0b0d10;
+  background: var(--green);
+  color: var(--on-accent);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .active-chip {
-  color: var(--text);
-  border-color: var(--accent-line);
+  color: var(--green);
+  border-color: transparent;
   background: var(--accent-soft);
 }
 
@@ -801,11 +801,11 @@ useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
 .hub {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
 }
 
 .here {
-  color: var(--leaf);
+  color: var(--green);
   font-weight: 600;
 }
 
@@ -818,11 +818,11 @@ useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
 }
 
 .lamp {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .filter-row {
-  padding: 0 20px 2px;
+  padding: 0 16px 2px;
 }
 
 .filter-row .chip {
@@ -836,7 +836,7 @@ useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .state {
@@ -861,7 +861,7 @@ useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
   display: block;
   height: 12px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--surface-3);
   animation: pulse 1.4s ease-in-out infinite;
 }
 
@@ -915,7 +915,7 @@ useOnlineRetry(() => !!error.value, () => loadPage(!tips.value.length))
 }
 
 .warn {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .rule {

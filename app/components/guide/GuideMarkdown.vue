@@ -24,7 +24,7 @@ function onClick(e: MouseEvent) {
 
 <style scoped>
 .guide-md {
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.6;
   color: var(--text);
 }
@@ -39,7 +39,7 @@ function onClick(e: MouseEvent) {
 
 .guide-md :deep(h4) {
   margin: 20px 0 8px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -55,11 +55,7 @@ function onClick(e: MouseEvent) {
   padding-left: 2px;
 }
 
-.guide-md :deep(ul li::marker) {
-  color: var(--leaf);
-}
-
-.guide-md :deep(ol li::marker) {
+.guide-md :deep(li::marker) {
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
@@ -70,7 +66,8 @@ function onClick(e: MouseEvent) {
 }
 
 .guide-md :deep(a) {
-  color: var(--leaf);
+  color: var(--green);
+  font-weight: 600;
   text-decoration: underline;
   text-decoration-color: var(--accent-line);
   text-underline-offset: 3px;

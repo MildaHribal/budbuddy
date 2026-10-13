@@ -41,7 +41,7 @@ const comp = computed(() => widgets.get(componentKey(props.widget)))
 }
 
 .widget {
-  padding: 16px;
+  padding: 16px 14px;
 }
 
 .placeholder {
@@ -57,12 +57,12 @@ const comp = computed(() => widgets.get(componentKey(props.widget)))
 
 .ph-glyph {
   font-size: 30px;
-  color: var(--dark-arc);
+  color: var(--text-3);
 }
 
 figcaption {
   margin-top: 10px;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
   color: var(--text-2);
 }

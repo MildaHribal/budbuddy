@@ -42,7 +42,7 @@ const ang = computed(() => (props.droopy ? 112 : 62))
     </g>
     <path
       d="M214 30v140"
-      stroke="#8d9a8a"
+      stroke="var(--text-3)"
       stroke-opacity="0.25"
       stroke-dasharray="2 4"
     />
@@ -56,7 +56,6 @@ const ang = computed(() => (props.droopy ? 112 : 62))
         :fill="ART.lamp"
         fill-opacity="0.25"
         :stroke="ART.lamp"
-        class="ga-glow"
         :style="{ color: ART.lamp }"
       />
       <path

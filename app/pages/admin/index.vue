@@ -27,7 +27,7 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
       />
       <div
         v-else-if="!isAdmin"
-        class="locked"
+        class="locked card"
       >
         <UIcon
           name="i-tabler-lock"
@@ -89,8 +89,6 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
   gap: 6px;
   padding: 28px 20px 30px;
   text-align: center;
-  border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .locked-icon {
@@ -114,8 +112,8 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
 }
 
 .tabs {
-  margin: 0 -20px;
-  padding: 0 20px 2px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
 }
 </style>
 
@@ -128,16 +126,15 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
 }
 
 .admin-page .sk {
-  height: 150px;
+  height: 120px;
   border-radius: var(--radius);
-  background: linear-gradient(100deg, var(--surface) 30%, var(--surface-3) 50%, var(--surface) 70%);
-  background-size: 300% 100%;
-  animation: admin-shimmer 1.4s ease-in-out infinite;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: admin-pulse 1.4s ease-in-out infinite;
 }
 
-@keyframes admin-shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: 0 0; }
+@keyframes admin-pulse {
+  50% { opacity: 0.55; }
 }
 
 .admin-page .error {
@@ -149,20 +146,26 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
   text-align: center;
 }
 
+/* one card per list, rows divided by lines */
 .admin-page .list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.admin-page .list > li + li {
+  border-top: 1px solid var(--line);
 }
 
 .admin-page .item {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px;
+  padding: 14px 16px;
   transition: opacity var(--dur) ease;
 }
 
@@ -179,7 +182,7 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
 .admin-page .actions .btn {
   min-height: 44px;
   padding: 0 14px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -14,6 +14,7 @@ export default {
     lightCycle: 'Light cycle',
     editLight: 'Edit light schedule',
     tasks: {
+      doneOf: '{done} / {total} done',
       left: '{open} to go',
       allDone: 'All done',
       add: 'Add task',
@@ -66,6 +67,7 @@ export default {
       guide: 'Read more in the guide'
     },
     light: {
+      summary: 'Light · {on}/{off} · {from}–{to}',
       title: 'Light schedule',
       presets: 'Presets',
       on: 'Lights on',
@@ -89,6 +91,7 @@ export default {
     lightCycle: 'Světelný cyklus',
     editLight: 'Upravit světelný režim',
     tasks: {
+      doneOf: '{done} / {total} hotovo',
       left: 'Ještě {open} z {total}',
       allDone: 'Vše hotovo',
       add: 'Přidat úkol',
@@ -141,6 +144,7 @@ export default {
       guide: 'Víc v průvodci'
     },
     light: {
+      summary: 'Světlo · {on}/{off} · {from}–{to}',
       title: 'Světelný režim',
       presets: 'Předvolby',
       on: 'Rozsvícení',

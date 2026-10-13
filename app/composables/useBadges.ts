@@ -51,8 +51,8 @@ export function badgeGlyph(b: Pick<BadgeDef, 'glyph'> | null | undefined): strin
 }
 export function badgeColor(tier: number | null | undefined): string {
   if ((tier ?? 1) >= 3) return '#c9a2ff'
-  if ((tier ?? 1) === 2) return 'var(--lamp)'
-  return 'var(--leaf)'
+  if ((tier ?? 1) === 2) return 'var(--amber)'
+  return 'var(--green)'
 }
 
 /** Badge catalogue + per-user earned badges. Tables may be missing on old DBs → empty lists. */

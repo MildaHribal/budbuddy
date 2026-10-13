@@ -1,11 +1,7 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import type { EntryType, JournalEntry, Plant, StageId, Task } from '~/types/grow'
 import { loadNamespaces } from '~/composables/useI18n'
-
-let settledOnce = false
+import { formatDuration, lightState } from '~/utils/light'
 
 const { t, locale } = useI18n()
 
@@ -37,17 +33,6 @@ const greeting = computed(() => {
 })
 const initial = computed(() => state.settings.growerName?.trim().charAt(0).toUpperCase() ?? '')
 
-const settle = !settledOnce
-onMounted(() => {
-  settledOnce = true
-})
-
-// Quick lamp flash on the top edge when something gets logged or ticked off.
-const pulse = ref(0)
-function pulseLamp() {
-  pulse.value++
-}
-
 const growing = computed(() => state.plants.filter(p => isGrowing(p)))
 const postHarvest = computed(() => state.plants.filter(p => !p.archived && !isGrowing(p)))
 const activePlants = computed(() => [...growing.value, ...postHarvest.value])
@@ -71,6 +56,30 @@ const draftHours = ref<number | ''>(18)
 const hoursValid = computed(() => draftHours.value !== '' && Number.isInteger(draftHours.value) && draftHours.value >= 0 && draftHours.value <= 24)
 const onValid = computed(() => /^\d{2}:\d{2}$/.test(draftOn.value))
 
+const now = ref(new Date())
+let clock: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  clock = setInterval(() => (now.value = new Date()), 30_000)
+})
+onBeforeUnmount(() => clearInterval(clock))
+
+const light = computed(() => {
+  const hours = state.settings.lightHours
+  const s = lightState(state.settings.lightsOn, hours, now.value)
+  const span = (s.isOn ? hours : 24 - hours) * 60
+  const headline = hours >= 24
+    ? `${t('ring.lightsOnLead')} ${t('ring.allDay')}`
+    : hours <= 0
+      ? `${t('ring.lightsLead')} ${t('ring.off')}`
+      : `${s.isOn ? t('ring.offIn') : t('ring.onIn')} ${formatDuration(s.minutesLeft)}`
+  return {
+    ...s,
+    headline,
+    percent: span ? Math.round((1 - s.minutesLeft / span) * 100) : 100,
+    summary: t('home.light.summary', { on: hours, off: 24 - hours, from: s.onLabel, to: s.offLabel })
+  }
+})
+
 function openLight() {
   draftOn.value = state.settings.lightsOn
   draftHours.value = state.settings.lightHours
@@ -81,7 +90,6 @@ function saveLight() {
   if (!hoursValid.value || !onValid.value) return
   grow.updateSettings({ lightsOn: draftOn.value, lightHours: Number(draftHours.value) })
   lightOpen.value = false
-  pulseLamp()
   notify(t('home.light.saved'))
 }
 
@@ -90,7 +98,6 @@ const todaysTasks = computed(() => state.tasks
   .filter(x => x.date === today.value || (x.date < today.value && !x.done))
   .sort((a, b) => Number(a.done) - Number(b.done) || a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)))
 const doneCount = computed(() => todaysTasks.value.filter(x => x.done).length)
-const taskPct = computed(() => (todaysTasks.value.length ? Math.round((doneCount.value / todaysTasks.value.length) * 100) : 0))
 
 const adding = ref(false)
 const newTask = ref('')
@@ -115,7 +122,6 @@ function addTask() {
 
 function toggleTask(id: string, done: boolean) {
   grow.updateTask(id, { done })
-  if (done) pulseLamp()
 }
 
 function removeTask(id: string) {
@@ -153,7 +159,6 @@ const todayRows = computed<TodayRow[]>(() => [
 const hiddenRows = computed(() => Math.max(0, todayRows.value.length - TODAY_CAP))
 const visibleRows = computed(() => (todayExpanded.value ? todayRows.value : todayRows.value.slice(0, TODAY_CAP)))
 
-const openCount = computed(() => waterDue.value.length + todaysTasks.value.length - doneCount.value)
 const rowCount = computed(() => waterDue.value.length + todaysTasks.value.length)
 
 function stageHint(p: Plant): string | null {
@@ -175,6 +180,17 @@ function harvestChip(p: Plant): { text: string, late: boolean } | null {
     : { text: t('home.garden.harvestDays', { n: mid }), late: false }
 }
 
+// latest pH / EC logged for a plant
+function lastReadings(p: Plant): string[] {
+  const list = state.entries.filter(e => e.plantId === p.id && (e.ph != null || e.ec != null))
+  if (!list.length) return []
+  const last = list.reduce((a, b) => (b.date > a.date || (b.date === a.date && b.createdAt > a.createdAt) ? b : a))
+  const out: string[] = []
+  if (last.ph != null) out.push(`pH ${formatNumber(last.ph, 1)}`)
+  if (last.ec != null) out.push(`EC ${formatNumber(last.ec, 1)}`)
+  return out
+}
+
 function plantRow(p: Plant) {
   const prog = stageProgress(p, today.value)
   const harvest = harvestChip(p)
@@ -183,7 +199,8 @@ function plantRow(p: Plant) {
     week: Math.max(1, Math.ceil(prog.dayInStage / 7)),
     weeks: Math.max(1, Math.ceil(prog.stageDays / 7)),
     hint: harvest ? null : stageHint(p),
-    harvest
+    harvest,
+    readings: lastReadings(p)
   }
 }
 
@@ -224,21 +241,11 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 
 <template>
   <div>
-    <div
-      v-if="pulse"
-      :key="pulse"
-      class="lamp-pulse"
-      aria-hidden="true"
-    />
-
-    <div
-      class="page dash"
-      :class="{ settle }"
-    >
+    <div class="page dash rise">
       <header class="dash-head">
         <div class="dash-hello">
           <p class="dash-date">
-            {{ formatDate(today, { weekday: 'short', day: 'numeric', month: 'short' }) }}<template v-if="state.settings.demo">
+            {{ formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' }) }}<template v-if="state.settings.demo">
               <span aria-hidden="true"> · </span><span class="demo-tag">{{ t('home.demo') }}</span>
             </template>
           </p>
@@ -246,7 +253,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
         <NuxtLink
           to="/tools"
-          class="icon-btn dash-tools"
+          class="icon-btn"
           :aria-label="t('common.nav.tools')"
         >
           <GrowIcon name="tools" />
@@ -266,22 +273,6 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </NuxtLink>
       </header>
 
-      <section :aria-label="t('home.lightCycle')">
-        <button
-          type="button"
-          class="ring-btn"
-          aria-haspopup="dialog"
-          :aria-label="t('home.editLight')"
-          @click="openLight"
-        >
-          <PhotoperiodRing
-            :lights-on="state.settings.lightsOn"
-            :hours="state.settings.lightHours"
-            :size="148"
-          />
-        </button>
-      </section>
-
       <section aria-labelledby="tasks-title">
         <div class="section-head">
           <h2
@@ -292,9 +283,9 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           </h2>
           <div class="head-side">
             <span
-              v-if="rowCount"
+              v-if="todaysTasks.length"
               class="section-meta num"
-            >{{ openCount ? t('home.tasks.left', { open: openCount, total: rowCount }) : t('home.tasks.allDone') }}</span>
+            >{{ t('home.tasks.doneOf', { done: doneCount, total: todaysTasks.length }) }}</span>
             <button
               type="button"
               class="icon-btn accent"
@@ -361,17 +352,6 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           v-else-if="rowCount"
           class="card today"
         >
-          <div
-            v-if="todaysTasks.length"
-            class="progress today-progress"
-            role="progressbar"
-            :aria-label="t('home.tasks.done')"
-            :aria-valuenow="taskPct"
-            aria-valuemin="0"
-            aria-valuemax="100"
-          >
-            <div :style="{ width: `${taskPct}%` }" />
-          </div>
           <TransitionGroup
             name="task"
             tag="ul"
@@ -385,23 +365,26 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
                 v-if="r.kind === 'water'"
                 class="row"
               >
-                <span class="row-lead water">
-                  <GrowIcon name="water" />
-                </span>
+                <button
+                  type="button"
+                  class="check"
+                  :aria-label="t('home.tasks.logWater', { name: r.water.plant.name })"
+                  @click="quickLog(r.water.plant, 'water')"
+                >
+                  <span class="check-box water">
+                    <GrowIcon name="water" />
+                  </span>
+                </button>
                 <NuxtLink
                   :to="`/plants/${r.water.plant.id}`"
                   class="row-text"
                 >
                   <span class="row-title">{{ t('home.tasks.water', { name: r.water.plant.name }) }}</span>
                   <span
-                    v-if="!r.water.overdueBy"
                     class="row-meta"
-                  >{{ t('home.tasks.dueToday') }}</span>
+                    :class="{ late: r.water.overdueBy }"
+                  >{{ r.water.overdueBy ? t('home.tasks.overdueBy', { days: daysLabel(r.water.overdueBy) }) : t('home.tasks.dueToday') }}</span>
                 </NuxtLink>
-                <span
-                  v-if="r.water.overdueBy"
-                  class="badge badge-attention"
-                >{{ t('home.tasks.overdueBy', { days: daysLabel(r.water.overdueBy) }) }}</span>
                 <button
                   type="button"
                   class="log-btn"
@@ -424,29 +407,23 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
                   :aria-label="r.task.title"
                   @click="toggleTask(r.task.id, !r.task.done)"
                 >
-                  <span class="check-dot">
+                  <span class="check-box">
                     <svg
                       viewBox="0 0 12 12"
                       aria-hidden="true"
                     >
-                      <path
-                        d="M2.5 6.5l2.3 2.3 4.7-5"
-                        pathLength="1"
-                      />
+                      <path d="M2.5 6.5l2.3 2.3 4.7-5" />
                     </svg>
                   </span>
                 </button>
                 <div class="row-text">
-                  <span class="row-title"><span class="strike">{{ r.task.title }}</span></span>
+                  <span class="row-title">{{ r.task.title }}</span>
                   <span
-                    v-if="plantName(r.task.plantId)"
+                    v-if="plantName(r.task.plantId) || (r.task.date < today && !r.task.done)"
                     class="row-meta"
-                  >{{ plantName(r.task.plantId) }}</span>
+                    :class="{ late: r.task.date < today && !r.task.done }"
+                  >{{ r.task.date < today && !r.task.done ? t('home.tasks.overdue', { when: formatRelativeDay(r.task.date) }) : plantName(r.task.plantId) }}</span>
                 </div>
-                <span
-                  v-if="r.task.date < today && !r.task.done"
-                  class="badge badge-attention"
-                >{{ t('home.tasks.overdue', { when: formatRelativeDay(r.task.date) }) }}</span>
                 <button
                   type="button"
                   class="row-delete"
@@ -477,6 +454,38 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
       </section>
 
+      <button
+        type="button"
+        class="card light"
+        aria-haspopup="dialog"
+        :aria-label="`${t('home.editLight')}. ${light.summary}. ${light.headline}`"
+        @click="openLight"
+      >
+        <span
+          class="light-icon"
+          :class="{ dark: !light.isOn }"
+        >
+          <GrowIcon name="lamp" />
+        </span>
+        <span class="light-body">
+          <span class="light-sub">{{ light.summary }}</span>
+          <strong class="light-big num">{{ light.headline }}</strong>
+          <span
+            class="progress light-bar"
+            :class="{ dark: !light.isOn }"
+          >
+            <span
+              class="bar-fill"
+              :style="{ width: `${light.percent}%` }"
+            />
+          </span>
+        </span>
+        <UIcon
+          name="i-tabler-chevron-right"
+          class="size-5 light-go"
+        />
+      </button>
+
       <section aria-labelledby="plants-title">
         <div class="section-head">
           <h2
@@ -485,21 +494,15 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           >
             {{ t('home.garden.title') }}
           </h2>
-          <div class="head-side">
-            <span
-              v-if="activePlants.length"
-              class="section-meta num"
-            >{{ t('common.plants', { n: activePlants.length }) }}</span>
-            <NuxtLink
-              to="/plants"
-              class="link"
-            >
-              {{ t('common.viewAll') }} <UIcon
-                name="i-tabler-chevron-right"
-                class="size-4"
-              />
-            </NuxtLink>
-          </div>
+          <NuxtLink
+            to="/plants"
+            class="link"
+          >
+            {{ t('common.viewAll') }} <UIcon
+              name="i-tabler-chevron-right"
+              class="size-4"
+            />
+          </NuxtLink>
         </div>
 
         <EmptyState
@@ -510,7 +513,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         >
           <NuxtLink
             to="/plants/new"
-            class="btn btn-soft"
+            class="btn btn-primary"
           >
             <UIcon
               name="i-tabler-plus"
@@ -537,45 +540,46 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
               />
             </span>
             <span class="plant-body">
-              <span class="plant-name">{{ p.name }}</span>
-              <span class="plant-sub">
-                {{ stageInfo(p.stage).label }} · {{ t('home.garden.day', { n: plantRow(p).age }) }}<template v-if="p.strain"> · {{ p.strain }}</template>
+              <span class="plant-top">
+                <span class="plant-name">{{ p.name }}</span>
+                <StageBadge :stage="p.stage" />
               </span>
-              <span
-                v-if="plantRow(p).hint"
-                class="plant-hint"
-              >
-                <GrowIcon :name="stageInfo(nextStage(p.stage) ?? p.stage).glyph" />
-                {{ plantRow(p).hint }}
-              </span>
-              <span class="progress plant-bar">
-                <span
-                  class="bar-fill"
-                  :style="{ width: `${plantRow(p).percent}%` }"
-                />
-              </span>
-              <span class="plant-meta num">
-                <span>{{ t('home.garden.week', { week: plantRow(p).week, weeks: plantRow(p).weeks }) }}</span>
-                <span
-                  v-if="plantRow(p).harvest"
-                  class="eta-chip"
-                  :class="{ late: plantRow(p).harvest!.late }"
-                >
-                  <GrowIcon name="harvest" />{{ plantRow(p).harvest!.text }}
+              <span class="plant-lower">
+                <span class="plant-lines">
+                  <span class="plant-sub">
+                    <strong class="num">{{ t('home.garden.day', { n: plantRow(p).age }) }}</strong>
+                    <span
+                      v-for="r in plantRow(p).readings"
+                      :key="r"
+                      class="num"
+                    > · {{ r }}</span>
+                  </span>
+                  <span
+                    v-if="plantRow(p).hint || plantRow(p).harvest"
+                    class="plant-hint"
+                    :class="{ late: plantRow(p).harvest?.late }"
+                  >
+                    <GrowIcon :name="plantRow(p).harvest ? 'harvest' : stageInfo(nextStage(p.stage) ?? p.stage).glyph" />
+                    {{ plantRow(p).harvest ? plantRow(p).harvest!.text : plantRow(p).hint }}
+                  </span>
+                  <span class="progress plant-bar">
+                    <span
+                      class="bar-fill"
+                      :style="{ width: `${plantRow(p).percent}%` }"
+                    />
+                  </span>
                 </span>
-                <span v-else>{{ plantRow(p).percent }}%</span>
+                <button
+                  v-if="isGrowing(p)"
+                  type="button"
+                  class="plant-log"
+                  :aria-label="t('home.tasks.logWater', { name: p.name })"
+                  @click.prevent.stop="quickLog(p, 'water')"
+                >
+                  <GrowIcon name="water" />
+                </button>
               </span>
             </span>
-          </NuxtLink>
-          <NuxtLink
-            to="/plants/new"
-            class="add-plant"
-          >
-            <UIcon
-              name="i-tabler-plus"
-              class="size-5"
-            />
-            {{ t('home.garden.addPlant') }}
           </NuxtLink>
         </div>
       </section>
@@ -621,25 +625,21 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </span>
       </NuxtLink>
 
-      <div class="tip">
+      <div class="card tip">
         <button
           type="button"
           class="tip-cycle"
+          :aria-label="t('home.tip.title')"
           @click="tipIndex++"
         >
-          <GrowIcon
-            name="lamp"
-            class="tip-glyph"
-          />
+          <span class="tip-icon">
+            <GrowIcon :name="tip.stage.glyph" />
+          </span>
           <span class="tip-body">
             <span class="tip-head">
-              <span class="tip-title">{{ t('home.tip.title') }}</span>
-              <span
-                class="tip-stage"
-                :style="{ color: tip.stage.color }"
-              >{{ tip.stage.label }}</span>
+              <span class="tip-text">{{ tip.text }}</span>
+              <span class="tip-stage badge">{{ tip.stage.label }}</span>
             </span>
-            <span class="tip-text">{{ tip.text }}</span>
             <span class="tip-next">{{ t('home.tip.next') }}</span>
           </span>
         </button>
@@ -674,11 +674,12 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
             :to="`/plants/${e.plantId}`"
             class="recent-item"
           >
-            <GrowIcon
-              :name="entryInfo(e.type).glyph"
+            <span
               class="recent-glyph"
               :style="{ color: entryInfo(e.type).color }"
-            />
+            >
+              <GrowIcon :name="entryInfo(e.type).glyph" />
+            </span>
             <span class="recent-text">
               <strong>{{ e.type === 'stage' && e.stage ? t('home.recent.movedTo', { stage: stageInfo(e.stage).label }) : entryInfo(e.type).verb }}</strong>
               <span>{{ plantName(e.plantId) }}<template v-if="entrySummary(e)"> · {{ entrySummary(e) }}</template></span>
@@ -689,13 +690,21 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
       </section>
     </div>
 
+    <NuxtLink
+      v-if="activePlants.length"
+      to="/plants/new"
+      class="fab"
+      :aria-label="t('home.garden.addPlant')"
+    >
+      <UIcon name="i-tabler-plus" />
+    </NuxtLink>
+
     <EntrySheet
       v-if="sheetPlant"
       v-model:open="sheetOpen"
       :plant-id="sheetPlant"
       :type="sheetType"
       :date="today"
-      @saved="pulseLamp"
     />
 
     <BottomSheet
@@ -781,66 +790,21 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 </template>
 
 <style scoped>
-/* Authored entrance: sections settle into the light after the lamp comes on */
-.settle > * {
-  animation: settle 480ms var(--ease-out) both;
-  animation-delay: 160ms;
-}
-
-.settle > :nth-child(2) { animation-delay: 220ms; }
-.settle > :nth-child(3) { animation-delay: 290ms; }
-.settle > :nth-child(4) { animation-delay: 360ms; }
-.settle > :nth-child(n + 5) { animation-delay: 420ms; }
-
-@keyframes settle {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-    filter: brightness(0.45);
-  }
-}
-
-.lamp-pulse {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  z-index: 61;
-  width: 260px;
-  height: 140px;
-  margin-left: -130px;
-  background: radial-gradient(50% 60% at 50% 0%, rgba(255, 226, 170, 0.5) 0%, rgba(255, 210, 138, 0.16) 45%, transparent 80%);
-  pointer-events: none;
-  opacity: 0;
-  transform-origin: top;
-  animation: lamp-pulse 620ms var(--ease-out) forwards;
-}
-
-@keyframes lamp-pulse {
-  0% { opacity: 0; transform: scaleY(0.5); }
-  18% { opacity: 1; }
-  100% { opacity: 0; transform: scaleY(1.1); }
-}
-
 .dash {
-  padding-top: calc(18px + var(--safe-top));
+  padding-top: calc(12px + var(--safe-top));
 }
 
 /* Header */
 .dash-head {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: -8px;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
 }
 
 .dash-hello {
   flex: 1;
   min-width: 0;
-}
-
-.dash-tools {
-  color: var(--text-2);
 }
 
 .dash-me {
@@ -852,9 +816,12 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 
 .dash-date {
   margin: 0 0 2px;
-  font-size: 12px;
-  letter-spacing: 0.02em;
+  font-size: 13px;
   color: var(--text-3);
+}
+
+.dash-date::first-letter {
+  text-transform: uppercase;
 }
 
 .demo-tag {
@@ -866,27 +833,9 @@ h1 {
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: 1.2;
   overflow-wrap: anywhere;
-}
-
-/* Ring */
-.ring-btn {
-  position: relative;
-  display: block;
-  width: 100%;
-  margin-bottom: -14px;
-  padding: 4px 0;
-  border: 0;
-  border-radius: var(--radius);
-  background: none;
-  text-align: left;
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-
-.ring-btn:active {
-  transform: scale(0.985);
 }
 
 /* Section heads */
@@ -898,6 +847,76 @@ h1 {
 
 .section-head:has(.icon-btn) {
   align-items: center;
+}
+
+/* Light */
+.light {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 12px 14px 14px;
+  text-align: left;
+  color: inherit;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.light:active {
+  transform: scale(0.985);
+}
+
+.light-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--lamp-soft);
+  color: var(--amber);
+  font-size: 24px;
+}
+
+.light-icon.dark {
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+
+.light-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.light-sub {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.light-big {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.light-bar {
+  height: 4px;
+  margin-top: 6px;
+}
+
+.light-bar .bar-fill {
+  background: var(--amber);
+}
+
+.light-bar.dark .bar-fill {
+  background: var(--text-3);
+}
+
+.light-go {
+  flex-shrink: 0;
+  color: var(--text-3);
 }
 
 /* Today */
@@ -918,19 +937,7 @@ h1 {
 }
 
 .today {
-  position: relative;
   overflow: hidden;
-}
-
-.today-progress {
-  height: 2px;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent;
-}
-
-.today-progress > div {
-  box-shadow: var(--glow-leaf);
 }
 
 .rows {
@@ -939,37 +946,24 @@ h1 {
   padding: 0;
 }
 
-.rows + .rows {
-  border-top: 1px solid var(--line);
-}
-
 .row {
   display: flex;
   align-items: center;
   gap: 4px;
-  min-height: 48px;
-  padding: 0 6px 0 4px;
+  min-height: 56px;
+  padding: 0 8px 0 6px;
 }
 
 .row + .row {
   border-top: 1px solid var(--line);
 }
 
-.row-lead,
 .check {
   width: 44px;
   height: 44px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-}
-
-.row-lead {
-  font-size: 22px;
-}
-
-.row-lead.water {
-  color: var(--info);
 }
 
 .row-text {
@@ -983,9 +977,10 @@ h1 {
 }
 
 .row-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   overflow-wrap: anywhere;
+  transition: color var(--dur) ease;
 }
 
 .row-meta {
@@ -993,22 +988,27 @@ h1 {
   color: var(--text-3);
 }
 
+.row-meta.late {
+  color: var(--red);
+  font-weight: 600;
+}
+
 .log-btn {
   position: relative;
-  min-width: 56px;
-  height: 36px;
+  min-width: 64px;
+  height: 40px;
   margin: 4px 0;
   padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-control);
+  border: 0;
   background: var(--accent-soft);
-  color: var(--leaf);
+  color: var(--green);
   font-size: 13px;
   font-weight: 600;
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-/* keeps a 44px hit area around the compact pill */
+/* keeps a 44px hit area around the compact button */
 .log-btn::after {
   content: '';
   position: absolute;
@@ -1019,73 +1019,56 @@ h1 {
   transform: scale(0.95);
 }
 
-.badge-attention {
-  flex-shrink: 0;
-}
-
 .check {
   border: 0;
   background: none;
   padding: 0;
 }
 
-.check-dot {
+.check-box {
   width: 22px;
   height: 22px;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  border: 1.5px solid #5a6358;
-  transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+  border-radius: 6px;
+  border: 2px solid var(--line-strong);
+  transition: background var(--dur) ease, border-color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
-.check-dot svg {
+.check-box.water {
+  border-color: color-mix(in srgb, var(--blue) 60%, transparent);
+  color: var(--blue);
+  font-size: 13px;
+}
+
+.check-box svg {
   width: 12px;
   height: 12px;
   fill: none;
   stroke: var(--on-accent);
-  stroke-width: 2;
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur-fast) ease;
 }
 
-.check-dot path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  transition: stroke-dashoffset var(--dur-fast) ease;
+.check:active .check-box {
+  transform: scale(0.9);
 }
 
-.check:active .check-dot {
-  transform: scale(0.88);
+.done .check-box {
+  background: var(--green);
+  border-color: var(--green);
 }
 
-.done .check-dot {
-  background: var(--leaf);
-  border-color: var(--leaf);
-  box-shadow: var(--glow-leaf);
-  animation: check-pop 300ms var(--ease-out);
+.done .check-box svg {
+  opacity: 1;
 }
 
-.done .check-dot path {
-  stroke-dashoffset: 0;
-  transition: stroke-dashoffset 260ms 90ms var(--ease-out);
-}
-
-@keyframes check-pop {
-  40% { transform: scale(1.14); }
-}
-
-.strike {
-  background: linear-gradient(var(--text-3), var(--text-3)) 0 55% / 0 1px no-repeat;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-  transition: color var(--dur) ease, background-size var(--dur) var(--ease-out);
-}
-
-.done .strike {
+.done .row-title {
   color: var(--text-3);
-  background-size: 100% 1px;
-  transition-delay: 0s, 80ms;
+  text-decoration: line-through;
 }
 
 .more-rows {
@@ -1100,11 +1083,7 @@ h1 {
   background: transparent;
   color: var(--text-2);
   font-size: 13px;
-  font-weight: 500;
-}
-
-.more-rows:active {
-  color: var(--text);
+  font-weight: 600;
 }
 
 .row-delete {
@@ -1114,13 +1093,13 @@ h1 {
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-3);
 }
 
 .row-delete:active {
-  color: var(--danger);
+  color: var(--red);
 }
 
 .task-move {
@@ -1155,7 +1134,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 10px;
+  padding: 12px;
   color: inherit;
   text-decoration: none;
   transition: transform var(--dur-fast) var(--ease-out);
@@ -1166,12 +1145,11 @@ h1 {
 }
 
 .plant-photo {
-  width: 68px;
-  height: 68px;
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .plant-body {
@@ -1179,10 +1157,19 @@ h1 {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+}
+
+.plant-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .plant-name {
-  font-size: 14px;
+  min-width: 0;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -1191,27 +1178,68 @@ h1 {
 }
 
 .plant-sub {
-  margin: 2px 0 9px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.plant-sub strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.plant-lower {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.plant-lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plant-log {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  margin-bottom: -2px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  color: var(--blue);
+  font-size: 20px;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.plant-log:active {
+  transform: scale(0.92);
+}
+
 .plant-hint {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: -4px 0 9px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--lamp);
+  color: var(--amber);
+}
+
+.plant-hint.late {
+  color: var(--red);
 }
 
 .plant-bar {
   display: block;
-  height: 5px;
+  height: 4px;
+  margin-top: 4px;
 }
 
 .bar-fill {
@@ -1219,49 +1247,14 @@ h1 {
   height: 100%;
   min-width: 4px;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--leaf-deep), var(--leaf));
-  transform-origin: left;
-  animation: progress-fill 0.9s 0.45s var(--ease-out) both;
-}
-
-.plant-meta {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-  font-size: 11px;
-  color: var(--text-3);
-}
-
-.eta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--lamp);
-  font-weight: 500;
-}
-
-.eta-chip.late {
-  color: var(--pink);
-}
-
-.add-plant {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  border-radius: var(--radius);
-  border: 1px dashed var(--accent-line);
-  color: var(--leaf);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
+  background: var(--green);
+  transition: width var(--dur-slow) var(--ease-out);
 }
 
 /* zero-size until the tips load, without adding a page gap */
 .tips-anchor:empty {
   height: 0;
-  margin-top: -28px;
+  margin-top: -24px;
 }
 
 /* Week strip */
@@ -1296,8 +1289,8 @@ h1 {
   align-items: center;
   gap: 6px;
   font-size: 20px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1309,21 +1302,21 @@ h1 {
 
 .week-cell.week-health strong {
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.15;
   min-height: 29px;
   white-space: normal;
 }
 
 .health-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   flex-shrink: 0;
   border-radius: 50%;
 }
 
 .week-cell > span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-3);
   white-space: nowrap;
 }
@@ -1332,7 +1325,7 @@ h1 {
   display: flex;
   align-items: center;
   padding: 0 6px 0 2px;
-  color: var(--leaf);
+  color: var(--text-3);
 }
 
 /* Recent */
@@ -1344,9 +1337,9 @@ h1 {
 .recent-item {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   min-height: 56px;
-  padding: 10px 14px;
+  padding: 8px 14px;
   color: inherit;
   text-decoration: none;
 }
@@ -1356,7 +1349,14 @@ h1 {
 }
 
 .recent-glyph {
-  font-size: 22px;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-size: 20px;
 }
 
 .recent-text {
@@ -1389,25 +1389,31 @@ h1 {
 .tip {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  padding: 14px 14px 6px;
 }
 
 .tip-cycle {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  padding: 4px 0;
+  padding: 0;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
 }
 
-.tip-glyph {
-  margin-top: 2px;
-  font-size: 24px;
-  color: var(--leaf);
+.tip-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--green);
+  font-size: 20px;
 }
 
 .tip-body {
@@ -1415,45 +1421,36 @@ h1 {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .tip-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.tip-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.tip-guide {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 44px;
-  margin-left: 38px;
-  font-size: 14px;
-}
-
 .tip-stage {
-  font-size: 12px;
-  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-2);
 }
 
 .tip-text {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .tip-next {
   font-size: 12px;
   color: var(--text-3);
+}
+
+.tip-guide {
+  min-height: 44px;
+  margin-left: 48px;
 }
 
 /* Light sheet */
@@ -1466,17 +1463,5 @@ h1 {
   flex: 1;
   justify-content: center;
   min-height: 44px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .settle > *,
-  .bar-fill,
-  .done .check-dot {
-    animation: none;
-  }
-
-  .lamp-pulse {
-    display: none;
-  }
 }
 </style>

@@ -122,7 +122,7 @@ async function leave() {
     v-model:open="signInOpen"
     :title="t('auth.signIn.title')"
     icon="community"
-    icon-color="var(--leaf)"
+    icon-color="var(--green)"
   >
     <div class="intro">
       <p class="lead">
@@ -130,30 +130,21 @@ async function leave() {
       </p>
       <ul class="points">
         <li>
-          <GrowIcon
-            name="community"
-            class="pt-glyph"
-          />
+          <span class="pt-tile"><GrowIcon name="community" /></span>
           <span>{{ t('auth.signIn.pointCommunity') }}</span>
         </li>
         <li>
-          <UIcon
-            name="i-tabler-lock"
-            class="pt-glyph"
-          />
+          <span class="pt-tile"><UIcon name="i-tabler-lock" /></span>
           <span>{{ t('auth.signIn.pointPrivate') }}</span>
         </li>
         <li>
-          <UIcon
-            name="i-tabler-world"
-            class="pt-glyph"
-          />
+          <span class="pt-tile"><UIcon name="i-tabler-world" /></span>
           <span>{{ t('auth.signIn.pointShare') }}</span>
         </li>
       </ul>
       <button
         type="button"
-        class="google-btn"
+        class="btn btn-block google-btn"
         :disabled="busy"
         @click="google"
       >
@@ -204,7 +195,7 @@ async function leave() {
     v-model:open="gateOpen"
     :title="t('auth.gate.title')"
     icon="seedling"
-    icon-color="var(--leaf)"
+    icon-color="var(--green)"
   >
     <form
       class="form-stack"
@@ -298,7 +289,7 @@ async function leave() {
 .intro {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   padding-bottom: calc(8px + var(--safe-bottom));
 }
 
@@ -312,52 +303,35 @@ async function leave() {
 .points {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   margin: 0;
-  padding: 14px 16px;
+  padding: 0;
   list-style: none;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--well, #0b0d10);
 }
 
 .points li {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
+  min-height: 36px;
   font-size: 14px;
   line-height: 1.45;
 }
 
-.pt-glyph {
+.pt-tile {
   flex-shrink: 0;
-  margin-top: 1px;
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--green);
   font-size: 20px;
-  color: var(--leaf);
 }
 
 .google-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 12px;
-  min-height: 52px;
-  padding: 0 20px;
-  border: 1px solid #dadce0;
-  border-radius: 14px;
-  background: #fff;
-  color: #1f1f1f;
-  font-size: 15px;
-  font-weight: 600;
-  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur) ease;
-}
-
-.google-btn:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.google-btn:disabled {
-  opacity: 0.7;
 }
 
 .g-mark {
@@ -375,7 +349,7 @@ async function leave() {
 }
 
 a {
-  color: var(--leaf);
+  color: var(--green);
   text-underline-offset: 2px;
 }
 
@@ -411,17 +385,13 @@ a {
   width: 22px;
   height: 22px;
   margin: 0;
-  accent-color: var(--leaf);
+  accent-color: var(--green);
 }
 
 .rule {
   display: flex;
   gap: 10px;
   margin: 0;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 210, 138, 0.25);
-  background: rgba(255, 210, 138, 0.06);
   font-size: 13px;
   line-height: 1.45;
   color: var(--text-2);
@@ -429,7 +399,8 @@ a {
 
 .rule-icon {
   flex-shrink: 0;
+  margin-top: 1px;
   font-size: 18px;
-  color: var(--lamp);
+  color: var(--text-3);
 }
 </style>

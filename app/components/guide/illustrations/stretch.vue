@@ -29,7 +29,6 @@ const after = { x: 214, h: 116, leaves: plant(116) }
       :fill="ART.lamp"
       fill-opacity="0.25"
       :stroke="ART.lamp"
-      class="ga-glow"
       :style="{ color: ART.lamp }"
     />
     <path

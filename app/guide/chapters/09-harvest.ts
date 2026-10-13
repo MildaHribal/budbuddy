@@ -9,7 +9,7 @@ export default {
     cs: 'Den sklizně, mokrý a suchý střih, pomalé sušení kolem 18–20 °C a 60 % a zrání ve sklenicích — kroky, které rozhodnou, jak bude úroda vonět a chutnat.'
   },
   glyph: 'harvest',
-  color: '#ffd28a',
+  color: '#f2b544',
   lessons: [
     {
       id: 'harvest-chop-day',

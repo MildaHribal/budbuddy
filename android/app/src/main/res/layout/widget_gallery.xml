@@ -50,7 +50,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:maxLines="1"
-            android:textColor="#CCE9F3E4"
+            android:textColor="#CCF2F4F1"
             android:textSize="12sp" />
     </LinearLayout>
 </FrameLayout>

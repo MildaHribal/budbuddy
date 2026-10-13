@@ -96,7 +96,7 @@ const fill = computed(() => level.value * frac.value[1])
         max="50"
         step="1"
         class="gw-range"
-        :style="{ '--pct': `${((litres - 1) / 49) * 100}%`, '--fill': 'var(--info)' }"
+        :style="{ '--pct': `${((litres - 1) / 49) * 100}%`, '--fill': 'var(--blue)' }"
       >
       <div
         class="gw-chips pots"
@@ -116,7 +116,7 @@ const fill = computed(() => level.value * frac.value[1])
       </div>
     </div>
 
-    <div class="result">
+    <div class="result gw-result">
       <svg
         class="pot"
         viewBox="0 0 120 160"
@@ -196,15 +196,20 @@ const fill = computed(() => level.value * frac.value[1])
     </div>
 
     <div class="lift">
-      <p class="lift-head">
-        <GrowIcon
-          name="water"
-          class="lift-icon"
-        />{{ t('guideWidgets.water.liftHead') }}
-      </p>
-      <p class="gw-text">
-        {{ t('guideWidgets.water.lift') }}
-      </p>
+      <span
+        class="lift-tile"
+        aria-hidden="true"
+      >
+        <GrowIcon name="water" />
+      </span>
+      <div class="lift-body">
+        <p class="lift-head">
+          {{ t('guideWidgets.water.liftHead') }}
+        </p>
+        <p class="gw-text">
+          {{ t('guideWidgets.water.lift') }}
+        </p>
+      </div>
     </div>
 
     <p class="gw-hint">
@@ -238,7 +243,7 @@ const fill = computed(() => level.value * frac.value[1])
 }
 
 .pot-body {
-  fill: #23282f;
+  fill: var(--surface-3);
   stroke: var(--line-strong);
 }
 
@@ -251,7 +256,7 @@ const fill = computed(() => level.value * frac.value[1])
 }
 
 .wet {
-  fill: var(--info);
+  fill: var(--blue);
   opacity: 0.55;
   transform-box: fill-box;
   transform-origin: center top;
@@ -259,12 +264,12 @@ const fill = computed(() => level.value * frac.value[1])
 }
 
 .rim {
-  fill: #2c323a;
+  fill: var(--line-strong);
   stroke: var(--line-strong);
 }
 
 .drops path {
-  fill: var(--info);
+  fill: var(--blue);
   opacity: 0;
   transform: translateY(-4px);
   transition: opacity var(--dur) ease, transform var(--dur) var(--ease-out);
@@ -283,9 +288,7 @@ const fill = computed(() => level.value * frac.value[1])
 }
 
 .amount {
-  font-size: 36px;
-  color: var(--info);
-  text-shadow: 0 0 22px rgba(124, 200, 242, 0.3);
+  color: var(--text);
 }
 
 .runoff {
@@ -301,26 +304,35 @@ const fill = computed(() => level.value * frac.value[1])
 
 .lift {
   display: flex;
+  gap: 12px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.lift-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  color: var(--blue);
+  font-size: 20px;
+}
+
+.lift-body {
+  display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
+  min-width: 0;
+  padding-top: 6px;
 }
 
 .lift-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
-}
-
-.lift-icon {
-  font-size: 18px;
-  color: var(--info);
 }
 </style>

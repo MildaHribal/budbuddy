@@ -8,6 +8,7 @@ const emit = defineEmits<{ entered: [entry: ChallengeEntry] }>()
 const { t } = useI18n()
 const { user } = useAuth()
 const { notify } = useNotify()
+const formId = useId()
 
 interface MyPlant { id: string, name: string, cover_url: string }
 
@@ -100,6 +101,7 @@ async function submit() {
     icon="photo"
   >
     <form
+      :id="formId"
       class="form-stack"
       @submit.prevent="submit"
     >
@@ -166,15 +168,17 @@ async function submit() {
         <span class="field-hint hint-row"><UIcon name="i-tabler-language" />{{ t('challenge.sheet.english') }}</span>
         <span class="field-hint hint-row"><UIcon name="i-tabler-shield-check" />{{ t('challenge.sheet.noSale') }}</span>
       </label>
-
+    </form>
+    <template #footer>
       <button
         type="submit"
-        class="btn btn-primary btn-block"
+        :form="formId"
+        class="btn btn-primary"
         :disabled="!imageUrl || busy"
       >
         {{ busy ? t('challenge.sheet.uploading') : t('challenge.sheet.submit') }}
       </button>
-    </form>
+    </template>
   </BottomSheet>
 </template>
 
@@ -185,10 +189,9 @@ async function submit() {
   place-items: center;
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
   border: 1px dashed var(--line-strong);
-  background: #0b0d10;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  background: var(--well);
   color: var(--text-2);
   overflow: hidden;
 }
@@ -256,7 +259,7 @@ async function submit() {
 }
 
 .plant[aria-pressed="true"] img {
-  border-color: var(--leaf);
+  border-color: var(--green);
 }
 
 .plant span {

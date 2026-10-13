@@ -27,7 +27,7 @@ const { t } = useI18n()
   padding: 0 7px 0 5px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: #c8f08f;
+  color: var(--green);
   font-size: 11px;
   font-weight: 600;
   line-height: 1;

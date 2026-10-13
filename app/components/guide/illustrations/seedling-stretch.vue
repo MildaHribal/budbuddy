@@ -29,7 +29,6 @@ const { t } = useI18n()
       :fill="ART.lamp"
       fill-opacity="0.35"
       :stroke="ART.lamp"
-      class="ga-glow"
       :style="{ color: ART.lamp }"
     />
     <path

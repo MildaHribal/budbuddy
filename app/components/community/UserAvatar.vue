@@ -26,9 +26,8 @@ const initial = computed(() => (props.name?.trim().charAt(0) || '?').toUpperCase
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
-  color: var(--lamp);
+  background: var(--surface-3);
+  color: var(--text-2);
   font-weight: 600;
 }
 

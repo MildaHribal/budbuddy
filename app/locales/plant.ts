@@ -17,6 +17,7 @@ export default {
     day: 'day {n}',
     dayCap: 'Day {n}',
     dayOf: { pre: 'Day ', post: ' of {stage}' },
+    key: { day: 'Day', week: 'Week' },
     eta: {
       ahead: { one: 'Harvest in about {min}–{n} day ({range})', other: 'Harvest in about {min}–{n} days ({range})' },
       window: { one: 'Harvest window open · up to {n} more day ({range})', other: 'Harvest window open · up to {n} more days ({range})' },
@@ -262,6 +263,7 @@ export default {
     day: '{n}. den',
     dayCap: 'Den {n}',
     dayOf: { pre: '', post: '. den {stage}' },
+    key: { day: 'Den', week: 'Týden' },
     eta: {
       ahead: { one: 'Sklizeň zhruba za {min}–{n} den ({range})', few: 'Sklizeň zhruba za {min}–{n} dny ({range})', other: 'Sklizeň zhruba za {min}–{n} dní ({range})' },
       window: { one: 'Okno sklizně je otevřené · ještě až {n} den ({range})', few: 'Okno sklizně je otevřené · ještě až {n} dny ({range})', other: 'Okno sklizně je otevřené · ještě až {n} dní ({range})' },

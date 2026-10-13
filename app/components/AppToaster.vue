@@ -62,24 +62,12 @@ const icons = { success: 'i-tabler-circle-check', error: 'i-tabler-alert-triangl
   gap: 10px;
   min-height: 52px;
   padding: 4px 6px 4px 14px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #23272d 0%, #16191d 100%);
+  border-radius: var(--radius);
+  background: var(--surface-3);
   border: 1px solid var(--line-strong);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 14px 32px -10px rgba(0, 0, 0, 0.85), 0 -6px 22px -12px rgba(255, 210, 138, 0.45);
+  box-shadow: var(--shadow-float);
   font-size: 14px;
   font-weight: 500;
-}
-
-/* lit top edge: the lamp catches the panel */
-.toast::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 18%;
-  right: 18%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--lamp), transparent);
-  opacity: 0.85;
 }
 
 .toast-icon {
@@ -88,7 +76,7 @@ const icons = { success: 'i-tabler-circle-check', error: 'i-tabler-alert-triangl
 }
 
 .toast.success .toast-icon {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .toast.error .toast-icon {
@@ -108,9 +96,9 @@ const icons = { success: 'i-tabler-circle-check', error: 'i-tabler-alert-triangl
   min-height: 44px;
   padding: 0 14px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: none;
-  color: var(--leaf);
+  color: var(--green);
   font-size: 14px;
   font-weight: 600;
   transition: background var(--dur-fast) ease;

@@ -23,7 +23,7 @@ withDefaults(defineProps<{ label: string, viewBox?: string }>(), { viewBox: '0 0
   width: 100%;
   height: auto;
   overflow: visible;
-  font-family: var(--font-sans, 'Sora', sans-serif);
+  font-family: var(--font-sans, 'Onest', sans-serif);
 }
 
 .guide-art text {
@@ -33,15 +33,11 @@ withDefaults(defineProps<{ label: string, viewBox?: string }>(), { viewBox: '0 0
   letter-spacing: 0.01em;
 }
 
-.guide-art .ga-glow {
-  filter: drop-shadow(0 0 5px color-mix(in srgb, currentColor 50%, transparent));
-}
-
 .guide-art .ga-muted {
-  fill: #8d9a8a;
+  fill: var(--text-3);
 }
 
 .guide-art .ga-text {
-  fill: #e9f3e4;
+  fill: var(--text);
 }
 </style>

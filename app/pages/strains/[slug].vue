@@ -248,9 +248,9 @@ const statTiles = computed(() => {
   const s = stats.value
   return [
     { key: 'avgFlowering', value: s?.avg_flowering_days != null ? t('strains.daysShort', { n: s.avg_flowering_days }) : '–', icon: 'flowering', color: stageInfo('flowering').color },
-    { key: 'avgYield', value: s?.avg_yield_g != null ? t('strains.gramsShort', { n: s.avg_yield_g }) : '–', icon: 'harvest', color: 'var(--lamp)' },
+    { key: 'avgYield', value: s?.avg_yield_g != null ? t('strains.gramsShort', { n: s.avg_yield_g }) : '–', icon: 'harvest', color: 'var(--amber)' },
     { key: 'avgDifficulty', value: s?.avg_difficulty != null ? fmt1(Number(s.avg_difficulty)) : '–', suffix: t('strains.ofFive'), icon: 'train', color: 'var(--text-2)' },
-    { key: 'avgRating', value: s?.avg_rating != null ? fmt1(Number(s.avg_rating)) : '–', suffix: t('strains.ofFive'), icon: 'spark', color: 'var(--leaf)' }
+    { key: 'avgRating', value: s?.avg_rating != null ? fmt1(Number(s.avg_rating)) : '–', suffix: t('strains.ofFive'), icon: 'spark', color: 'var(--green)' }
   ]
 })
 useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
@@ -271,6 +271,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
           target-type="strain"
           :target-id="strain.id"
           :author-id="strain.created_by"
+          framed
         />
       </template>
     </AppHeader>
@@ -280,7 +281,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       class="page"
       aria-busy="true"
     >
-      <div class="hero sk" />
+      <div class="card hero sk" />
       <div class="card sk-block" />
       <div class="card sk-block tall" />
       <span class="sr-only">{{ t('common.loading') }}</span>
@@ -317,7 +318,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       v-else
       class="page"
     >
-      <figure class="hero-wrap">
+      <figure class="hero-wrap card">
         <div
           class="hero"
           :class="{ loaded: !strain.image_url || heroLoaded, empty: !strain.image_url }"
@@ -335,8 +336,6 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
             v-else
             :name="strain.flowering === 'auto' ? 'seedling' : 'flowering'"
             class="placeholder"
-            draw
-            glow
           />
         </div>
         <figcaption
@@ -410,11 +409,11 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
           </h2>
           <span class="section-meta num">{{ t('strains.reportsN', { n: stats?.reports ?? 0 }) }}</span>
         </div>
-        <div class="stats">
+        <div class="card stats">
           <div
             v-for="s in statTiles"
             :key="s.key"
-            class="card stat"
+            class="stat"
           >
             <GrowIcon
               :name="s.icon"
@@ -462,7 +461,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
         <div class="cta-row">
           <button
             type="button"
-            class="btn btn-soft"
+            class="btn btn-primary"
             @click="openReport()"
           >
             <UIcon name="i-tabler-plus" />{{ t('strains.addReport') }}
@@ -494,12 +493,12 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
         />
         <ul
           v-else
-          class="reports rise"
+          class="card reports rise"
         >
           <li
             v-for="r in shownReports"
             :key="r.id"
-            class="card report"
+            class="report"
           >
             <div class="report-head">
               <CommunityAuthorChip :author="r.user">
@@ -540,7 +539,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
               <span
                 v-if="r.yield_g != null"
                 class="badge"
-                style="color: var(--lamp)"
+                style="color: var(--amber)"
               >
                 <GrowIcon name="harvest" />{{ t('strains.gramsShort', { n: r.yield_g }) }}
               </span>
@@ -648,7 +647,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       v-model:open="sheetOpen"
       :title="editing ? t('strains.editReport') : t('strains.addReport')"
       icon="harvest"
-      icon-color="var(--lamp)"
+      icon-color="var(--amber)"
     >
       <form
         id="strain-report"
@@ -844,7 +843,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       v-model:open="growOpen"
       :title="t('strains.growingTitle')"
       icon="plants"
-      icon-color="var(--leaf)"
+      icon-color="var(--green)"
     >
       <div class="form-stack">
         <p class="muted grow-intro">
@@ -919,19 +918,18 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 
 <style scoped>
 .hero-wrap {
-  margin: -16px -20px 0;
+  margin: 0;
+  overflow: hidden;
 }
 
 .hero {
   position: relative;
   display: grid;
   place-items: center;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   color: var(--text-3);
-  background:
-    radial-gradient(70% 60% at 50% 10%, rgba(233, 243, 228, 0.07), transparent 72%),
-    #0b0d10;
+  background: var(--surface-3);
 }
 
 .hero img {
@@ -941,36 +939,22 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transform: scale(1.04);
-  transition: opacity var(--dur-slow) var(--ease-out), transform 700ms var(--ease-out);
+  transition: opacity var(--dur) ease;
 }
 
 .hero.loaded img {
   opacity: 1;
-  transform: none;
-}
-
-.hero::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0;
-  height: 40%;
-  background: linear-gradient(transparent, rgba(7, 8, 10, 0.55));
-  pointer-events: none;
-}
-
-.hero.empty {
-  aspect-ratio: 16 / 7;
 }
 
 .placeholder {
-  font-size: 64px;
+  font-size: 48px;
 }
 
 .credit {
-  padding: 6px 20px 0;
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
   color: var(--text-3);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -980,55 +964,59 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
   gap: 8px;
   margin: 0;
   padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 210, 138, 0.3);
+  border-radius: var(--radius-control);
   background: var(--lamp-soft);
-  color: var(--lamp);
+  color: var(--amber);
   font-size: 13px;
   font-weight: 600;
 }
 
 .facts {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   margin: 0;
+  overflow: hidden;
 }
 
 .facts > div {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  padding: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 14px;
 }
 
 .facts > div + div {
-  border-left: 1px solid var(--line);
+  border-top: 1px solid var(--line);
 }
 
 .facts dt {
-  color: var(--text-3);
-  font-size: 11px;
-  font-weight: 500;
+  flex-shrink: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .facts dd {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: flex-end;
   gap: 6px;
+  min-width: 0;
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  overflow-wrap: break-word;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .facts .lamp {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .dom-icon {
   flex-shrink: 0;
-  margin-top: 1px;
   color: var(--text-3);
   font-size: 16px;
 }
@@ -1049,9 +1037,9 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 
 .by-medium-title {
   margin: 0 0 4px;
-  color: var(--text-3);
-  font-size: 12px;
-  font-weight: 500;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .by-medium dl {
@@ -1063,7 +1051,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .medium-row + .medium-row {
@@ -1079,8 +1067,8 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 
 .medium-row dt .num {
   color: var(--text-3);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .medium-row dd {
@@ -1097,13 +1085,13 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 }
 
 .lamp {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .cta-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   margin-top: 12px;
 }
 
@@ -1127,7 +1115,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 .diaries-glyph {
   flex-shrink: 0;
   font-size: 28px;
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .diaries-empty .chev {
@@ -1175,7 +1163,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
   height: 44px;
   overflow: hidden;
   border-radius: 12px;
-  background: #0b0d10;
+  background: var(--surface-3);
   font-size: 22px;
 }
 
@@ -1213,22 +1201,32 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 }
 
 .about {
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   color: var(--text-2);
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  overflow: hidden;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   padding: 12px 14px;
+}
+
+.stat:nth-child(2n) {
+  border-left: 1px solid var(--line);
+}
+
+.stat:nth-child(n + 3) {
+  border-top: 1px solid var(--line);
 }
 
 .stat-icon {
@@ -1237,14 +1235,15 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 }
 
 .stat-value {
-  font-size: 26px;
-  font-weight: 300;
+  font-size: 22px;
+  font-weight: 600;
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
 }
 
 .stat-value small {
   font-size: 13px;
+  font-weight: 400;
   color: var(--text-3);
   letter-spacing: 0;
 }
@@ -1264,7 +1263,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 .reports {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  overflow: hidden;
 }
 
 .report {
@@ -1272,6 +1271,10 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
   flex-direction: column;
   gap: 10px;
   padding: 8px 8px 14px 14px;
+}
+
+.report + .report {
+  border-top: 1px solid var(--line);
 }
 
 .report-head {
@@ -1283,7 +1286,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 .stars {
   display: inline-flex;
   gap: 1px;
-  color: var(--lamp);
+  color: var(--amber);
   font-size: 14px;
 }
 
@@ -1323,8 +1326,8 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 .plants {
   display: flex;
   gap: 10px;
-  margin: 0 -20px;
-  padding: 0 20px 4px;
+  margin: 0 -16px;
+  padding: 0 16px 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -1346,7 +1349,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  background: #0b0d10;
+  background: var(--surface-3);
   font-size: 36px;
 }
 
@@ -1372,12 +1375,12 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 }
 
 .plant-meta strong {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .plant-meta span {
   color: var(--text-3);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .star-input {
@@ -1399,7 +1402,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 }
 
 .star-input button.on {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .star-input button:active {
@@ -1426,13 +1429,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 
 .sk,
 .sk-block {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
-}
-
-.hero.sk {
-  margin: -16px -20px 0;
+  background: var(--surface-2);
 }
 
 .sk-block {
@@ -1441,11 +1438,5 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 
 .sk-block.tall {
   height: 160px;
-}
-
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
-  }
 }
 </style>

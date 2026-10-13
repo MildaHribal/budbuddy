@@ -65,10 +65,12 @@ const optionState = (i: number) => {
   >
     <header class="quiz-head">
       <h3>
-        <GrowIcon
-          name="spark"
-          class="quiz-glyph"
-        />
+        <span
+          class="quiz-tile"
+          aria-hidden="true"
+        >
+          <GrowIcon name="spark" />
+        </span>
         {{ t('guide.quiz.title') }}
       </h3>
       <span
@@ -185,7 +187,7 @@ const optionState = (i: number) => {
 
 <style scoped>
 .quiz {
-  padding: 18px 16px 16px;
+  padding: 14px;
 }
 
 .quiz-head {
@@ -199,15 +201,22 @@ const optionState = (i: number) => {
 h3 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.quiz-glyph {
+.quiz-tile {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--green);
   font-size: 20px;
-  color: var(--lamp);
 }
 
 .best {
@@ -216,13 +225,13 @@ h3 {
 }
 
 .quiz-body {
-  animation: q-in var(--dur-slow) var(--ease-out) both;
+  animation: q-in var(--dur) var(--ease-out) both;
 }
 
 @keyframes q-in {
   from {
     opacity: 0;
-    transform: translateX(14px);
+    transform: translateY(6px);
   }
 }
 
@@ -234,22 +243,22 @@ h3 {
 
 .dots i {
   flex: 1;
-  height: 3px;
+  height: 4px;
   border-radius: 2px;
-  background: var(--surface-3);
+  background: var(--track);
   transition: background var(--dur) ease;
 }
 
 .dots i.current {
-  background: color-mix(in srgb, var(--leaf) 45%, var(--surface-3));
+  background: var(--line-strong);
 }
 
 .dots i.right {
-  background: var(--leaf);
+  background: var(--green);
 }
 
 .dots i.wrong {
-  background: color-mix(in srgb, var(--danger) 70%, var(--surface-3));
+  background: var(--red);
 }
 
 .q-count {
@@ -268,8 +277,9 @@ h3 {
 .q {
   margin: 4px 0 14px;
   font-size: 16px;
-  font-weight: 500;
-  line-height: 1.45;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
 }
 
 .options {
@@ -281,19 +291,19 @@ h3 {
 .option {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   min-height: 48px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line-strong);
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 500;
   line-height: 1.4;
   text-align: left;
-  transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), opacity var(--dur) ease, transform var(--dur-fast) var(--ease-out);
+  transition: background var(--dur) ease, border-color var(--dur) ease, color var(--dur) ease, opacity var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .option:active:not(:disabled) {
@@ -306,42 +316,38 @@ h3 {
 
 .option.right {
   background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--leaf);
+  border-color: transparent;
+  color: var(--green);
 }
 
 .option.wrong {
   background: var(--danger-soft);
-  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
-  color: #ffb3ba;
+  border-color: transparent;
+  color: var(--red);
 }
 
 .option.dim {
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 .opt-key {
   flex: none;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-  font-size: 11px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--surface-3);
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-3);
-  transition: color var(--dur) ease, box-shadow var(--dur) ease;
+  color: var(--text-2);
+  transition: background var(--dur) ease, color var(--dur) ease;
 }
 
-.option.right .opt-key {
-  box-shadow: inset 0 0 0 1px var(--accent-line);
-  color: var(--leaf);
-}
-
+.option.right .opt-key,
 .option.wrong .opt-key {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 50%, transparent);
-  color: #ffb3ba;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
 }
 
 .opt-text {
@@ -354,56 +360,32 @@ h3 {
   font-size: 18px;
 }
 
-.option.right .opt-mark {
-  animation: mark-pop var(--dur-slow) var(--ease-out) both;
-}
-
-.option.wrong {
-  animation: nudge 320ms var(--ease-out);
-}
-
-@keyframes mark-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-}
-
-@keyframes nudge {
-  25% {
-    transform: translateX(-4px);
-  }
-
-  60% {
-    transform: translateX(3px);
-  }
-}
-
 .feedback {
-  margin-top: 14px;
+  margin-top: 12px;
   padding: 14px;
-  border-radius: 14px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
   animation: q-in var(--dur) var(--ease-out) both;
 }
 
 .fb-title {
   margin: 0 0 6px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 }
 
 .feedback.right .fb-title {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .feedback.wrong .fb-title {
-  color: #ffb3ba;
+  color: var(--red);
 }
 
 .feedback :deep(.guide-md) {
   font-size: 14px;
+  line-height: 1.5;
   color: var(--text-2);
 }
 
@@ -413,16 +395,16 @@ h3 {
 
 .result {
   text-align: center;
-  animation: q-in var(--dur-slow) var(--ease-out) both;
+  animation: q-in var(--dur) var(--ease-out) both;
 }
 
 .score {
   margin: 4px 0 0;
-  font-size: 48px;
-  font-weight: 300;
+  font-size: 28px;
+  font-weight: 600;
   line-height: 1;
-  letter-spacing: -0.04em;
-  color: var(--leaf);
+  letter-spacing: -0.01em;
+  color: var(--green);
 }
 
 .score.low {
@@ -430,19 +412,19 @@ h3 {
 }
 
 .score span {
-  font-size: 24px;
+  font-size: 18px;
   color: var(--text-3);
 }
 
 .result-label {
   margin: 8px 0 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 }
 
 .verdict {
   margin: 6px auto 16px;
-  max-width: 32ch;
+  max-width: 36ch;
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-2);
@@ -451,9 +433,7 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .quiz-body,
   .feedback,
-  .result,
-  .option.right .opt-mark,
-  .option.wrong {
+  .result {
     animation: none;
   }
 }

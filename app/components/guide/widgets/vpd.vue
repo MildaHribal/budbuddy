@@ -36,7 +36,7 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
     </div>
 
     <div
-      class="readout"
+      class="readout gw-result"
       aria-live="polite"
     >
       <p class="gw-big num value">
@@ -136,7 +136,7 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
         max="95"
         step="1"
         class="gw-range"
-        :style="{ '--pct': pct(rh, 20, 95), '--fill': 'var(--info)' }"
+        :style="{ '--pct': pct(rh, 20, 95), '--fill': 'var(--blue)' }"
       >
     </div>
     <div class="gw-field">
@@ -175,9 +175,7 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
 }
 
 .value {
-  color: var(--zone);
-  text-shadow: 0 0 22px color-mix(in srgb, var(--zone) 35%, transparent);
-  transition: color var(--dur-slow) var(--ease-out), text-shadow var(--dur-slow) var(--ease-out);
+  color: var(--text);
 }
 
 .zone-text {
@@ -191,7 +189,7 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -200,7 +198,6 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
   height: 9px;
   border-radius: 50%;
   background: var(--zone);
-  box-shadow: 0 0 10px var(--zone);
 }
 
 .scale {
@@ -220,13 +217,12 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
   flex-basis: 0;
   border-radius: 3px;
   background: var(--c);
-  opacity: 0.28;
-  transition: opacity var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+  opacity: 0.3;
+  transition: opacity var(--dur) var(--ease-out);
 }
 
 .band.on {
   opacity: 1;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 60%, transparent);
 }
 
 .marker-rail {
@@ -241,12 +237,13 @@ const pct = (v: number, min: number, max: number) => `${((v - min) / (max - min)
   position: absolute;
   left: 0;
   top: 0;
-  width: 4px;
+  box-sizing: border-box;
+  width: 8px;
   height: 32px;
-  margin-left: -2px;
-  border-radius: 2px;
+  margin-left: -4px;
+  border-radius: 4px;
+  border: 2px solid var(--surface);
   background: var(--text);
-  box-shadow: 0 0 0 2px #0b0d10, 0 0 12px rgba(233, 243, 228, 0.6);
 }
 
 .ticks {

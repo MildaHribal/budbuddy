@@ -50,7 +50,7 @@ const mites = [[124, 44], [136, 50], [98, 50], [156, 68]]
       cx="262"
       cy="62"
       r="40"
-      fill="#0b0d10"
+      fill="var(--well)"
       :stroke="ART.muted"
       stroke-opacity="0.8"
     />

@@ -26,7 +26,6 @@ const entries = computed(() => grow.entriesFor(plantId.value))
 const progress = computed(() => (plant.value ? stageProgress(plant.value) : null))
 const stage = computed(() => stageInfo(plant.value?.stage))
 const watering = computed(() => (plant.value ? grow.wateringStatus(plant.value) : null))
-const heroPhoto = usePhotoUrl(computed(() => plant.value?.photoId))
 
 const harvestEta = computed(() => (plant.value ? harvestEstimate(plant.value, today.value) : null))
 const harvestEtaText = computed(() => {
@@ -42,7 +41,6 @@ const harvestEtaText = computed(() => {
 type Tab = 'journal' | 'history' | 'info' | 'photos'
 const tabs = computed<{ id: Tab, label: string }[]>(() => (['journal', 'history', 'info', 'photos'] as const).map(id => ({ id, label: t(`plant.tabs.${id}`) })))
 const tab = ref<Tab>((route.query.tab as Tab) || 'journal')
-const tabIndex = computed(() => Math.max(0, tabs.value.findIndex(x => x.id === tab.value)))
 
 // ── Stage journey ─────────────────────────────────────────────────
 const stageIndex = computed(() => Math.max(0, STAGES.findIndex(s => s.id === plant.value?.stage)))
@@ -50,12 +48,13 @@ const journey = computed(() => stages().map((s, i) => ({
   ...s,
   state: i < stageIndex.value ? 'done' as const : i === stageIndex.value ? 'current' as const : 'future' as const
 })))
-// The fill reaches the current node and creeps toward the next one as the stage matures.
-const railFill = computed(() => {
-  const last = STAGES.length - 1
-  const within = stageIndex.value < last ? (progress.value?.percent ?? 0) / 100 : 0
-  return Math.min(1, (stageIndex.value + within * 0.85) / last)
-})
+const weekInStage = computed(() => ({
+  week: Math.max(1, Math.ceil((progress.value?.dayInStage ?? 0) / 7)),
+  weeks: Math.max(1, Math.ceil((progress.value?.stageDays ?? 7) / 7))
+}))
+// newest entry with a pH or EC reading
+const lastReading = computed(() => entries.value.find(e => e.ph != null || e.ec != null) ?? null)
+const latestHeight = computed(() => entries.value.find(e => e.heightCm != null)?.heightCm ?? null)
 watch(tab, t => navigateTo({ query: { ...route.query, tab: t === 'journal' ? undefined : t } }, { replace: true }))
 
 // ── Journal ───────────────────────────────────────────────────────
@@ -516,8 +515,6 @@ watch(shareSheet, (v) => {
 })
 onBeforeUnmount(clearShare)
 
-const latestHeight = computed(() => entries.value.find(e => e.heightCm != null)?.heightCm ?? null)
-
 async function openShareCard() {
   const p = plant.value
   const prog = progress.value
@@ -613,60 +610,30 @@ function duplicate() {
     v-if="plant && progress"
     class="detail"
   >
-    <section
-      class="hero"
-      :class="{ lit: !heroPhoto }"
-      :style="{ '--stage': stage.color }"
-    >
-      <template v-if="heroPhoto">
-        <img
-          :src="heroPhoto"
-          :alt="plant.name"
-          class="hero-img"
-        >
-        <div
-          class="hero-shade"
-          aria-hidden="true"
-        />
-      </template>
-      <div
-        v-else
-        class="hero-tile"
-        aria-hidden="true"
-      >
-        <GrowIcon
-          :name="stage.glyph"
-          class="hero-tile-glyph"
-          draw
-          :stroke-width="1.3"
-        />
-      </div>
-      <div class="hero-bar">
+    <header class="detail-head">
+      <div class="head-bar">
         <button
           type="button"
-          class="bar-btn"
+          class="icon-btn"
           :aria-label="t('common.back')"
           @click="$goBack()"
         >
           <UIcon
-            name="i-tabler-arrow-left"
+            name="i-tabler-chevron-left"
             class="size-5"
           />
         </button>
-        <div class="hero-bar-right">
+        <div class="head-actions">
           <NuxtLink
             :to="{ path: '/ai-assistant', query: { plant: plant.id } }"
-            class="bar-btn ask"
+            class="icon-btn accent"
             :aria-label="t('plant.aria.ask')"
           >
-            <GrowIcon
-              name="spark"
-              glow
-            />
+            <GrowIcon name="spark" />
           </NuxtLink>
           <NuxtLink
             :to="`/plants/${plant.id}/edit`"
-            class="bar-btn"
+            class="icon-btn"
             :aria-label="t('plant.aria.edit')"
           >
             <UIcon
@@ -676,7 +643,7 @@ function duplicate() {
           </NuxtLink>
           <button
             type="button"
-            class="bar-btn"
+            class="icon-btn"
             :aria-label="t('plant.aria.more')"
             @click="moreSheet = true"
           >
@@ -687,114 +654,182 @@ function duplicate() {
           </button>
         </div>
       </div>
-      <div class="hero-info">
-        <div class="hero-mark">
-          <div class="hero-badges">
-            <span
-              class="badge health"
-              :style="{ color: healthInfo(plant.health).color }"
-            >
-              <UIcon
-                :name="healthInfo(plant.health).icon"
-                class="size-3.5"
-              /> {{ healthInfo(plant.health).label }}
-            </span>
-            <button
-              type="button"
-              class="badge public-chip"
-              :class="{ on: isShared, other: unlinked }"
-              :aria-pressed="isShared"
-              :disabled="publicBusy"
-              :aria-label="unlinked ? t('auth.share.chipOtherAria') : isShared ? t('auth.share.chipPublicAria') : t('auth.share.chipPrivateAria')"
-              @click="togglePublic"
-            >
-              <UIcon
-                :name="publicBusy ? 'i-tabler-loader-2' : unlinked ? 'i-tabler-user-question' : isShared ? 'i-tabler-world' : 'i-tabler-lock'"
-                class="size-3.5"
-                :class="{ 'animate-spin': publicBusy }"
-              /> {{ unlinked ? t('auth.share.otherAccount') : isShared ? t('auth.share.public') : t('auth.share.private') }}
-            </button>
-            <span
-              v-if="growStreak?.consistent"
-              class="badge streak"
-              :title="t('plant.weekly.streakTitle')"
-            >
-              <UIcon
-                name="i-tabler-calendar-check"
-                class="size-3.5"
-              /> {{ t('plant.weekly.streak', { a: growStreak.updated, b: growStreak.weeks }) }}
-            </span>
-            <span
-              v-if="plant.archived"
-              class="badge archived"
-            ><UIcon
-              name="i-tabler-archive"
-              class="size-3.5"
-            /> {{ t('plant.archived') }}</span>
-          </div>
-        </div>
-        <h1>{{ plant.name }}</h1>
-        <p class="hero-strain">
-          {{ plant.strain || t('plant.unknownStrain') }} <span aria-hidden="true">·</span> <span class="num">{{ t('plant.day', { n: progress.age }) }}</span>
-        </p>
-      </div>
-    </section>
+      <h1>{{ plant.name }}</h1>
+      <p class="head-sub">
+        {{ plant.strain || t('plant.unknownStrain') }} <span aria-hidden="true">·</span> <span class="num">{{ t('plant.day', { n: progress.age }) }}</span>
+      </p>
+    </header>
 
     <div class="detail-body">
+      <section class="card photo-card">
+        <div
+          v-if="plant.photoId"
+          class="photo-frame"
+        >
+          <PlantPhoto
+            :photo-id="plant.photoId"
+            :stage="plant.stage"
+            :alt="plant.name"
+            size="full"
+          />
+        </div>
+        <button
+          v-else
+          type="button"
+          class="photo-frame empty"
+          :aria-label="t('plant.menu.changePhoto')"
+          @click="setProfilePhoto"
+        >
+          <PlantPhoto
+            :photo-id="null"
+            :stage="plant.stage"
+          />
+          <span class="photo-add">
+            <UIcon
+              name="i-tabler-camera-plus"
+              class="size-4"
+            /> {{ t('plant.menu.changePhoto') }}
+          </span>
+        </button>
+        <div class="photo-foot">
+          <StageBadge :stage="plant.stage" />
+          <span
+            class="badge"
+            :style="{ color: healthInfo(plant.health).color }"
+          >
+            <UIcon
+              :name="healthInfo(plant.health).icon"
+              class="size-3.5"
+            /> {{ healthInfo(plant.health).label }}
+          </span>
+          <span
+            v-if="growStreak?.consistent"
+            class="badge streak"
+            :title="t('plant.weekly.streakTitle')"
+          >
+            <UIcon
+              name="i-tabler-calendar-check"
+              class="size-3.5"
+            /> {{ t('plant.weekly.streak', { a: growStreak.updated, b: growStreak.weeks }) }}
+          </span>
+          <span
+            v-if="plant.archived"
+            class="badge archived"
+          ><UIcon
+            name="i-tabler-archive"
+            class="size-3.5"
+          /> {{ t('plant.archived') }}</span>
+          <button
+            type="button"
+            class="badge public-chip"
+            :class="{ on: isShared, other: unlinked }"
+            :aria-pressed="isShared"
+            :disabled="publicBusy"
+            :aria-label="unlinked ? t('auth.share.chipOtherAria') : isShared ? t('auth.share.chipPublicAria') : t('auth.share.chipPrivateAria')"
+            @click="togglePublic"
+          >
+            <UIcon
+              :name="publicBusy ? 'i-tabler-loader-2' : unlinked ? 'i-tabler-user-question' : isShared ? 'i-tabler-world' : 'i-tabler-lock'"
+              class="size-3.5"
+              :class="{ 'animate-spin': publicBusy }"
+            /> {{ unlinked ? t('auth.share.otherAccount') : isShared ? t('auth.share.public') : t('auth.share.private') }}
+          </button>
+        </div>
+      </section>
+
       <section
-        class="stage-card card"
+        class="card keys"
         :aria-label="t('plant.aria.journey')"
       >
-        <div
-          class="rail"
-          :style="{ '--fill': railFill }"
-        >
-          <span
-            class="rail-track"
-            aria-hidden="true"
-          ><span class="rail-fill" /></span>
-          <ol class="rail-stops">
-            <li
-              v-for="s in journey"
-              :key="s.id"
-              class="rail-stop"
-              :class="s.state"
-              :style="{ '--c': s.color }"
-              :aria-current="s.state === 'current' ? 'step' : undefined"
-            >
-              <span class="rail-node">
-                <GrowIcon
-                  :name="s.glyph"
-                  :draw="s.state === 'current'"
-                />
-              </span>
-              <span
-                class="rail-label"
-                aria-hidden="true"
-              >{{ s.short }}</span>
-              <span class="sr-only">{{ s.label }}, {{ t(`plant.railState.${s.state}`) }}</span>
-            </li>
-          </ol>
+        <div class="key">
+          <strong class="num">{{ progress.age }}</strong>
+          <span>{{ t('plant.key.day') }}</span>
         </div>
+        <div class="key">
+          <strong class="num">{{ weekInStage.week }}<small>/{{ weekInStage.weeks }}</small></strong>
+          <span>{{ t('plant.key.week') }}</span>
+        </div>
+        <div class="key">
+          <strong class="num">{{ lastReading?.ph != null ? formatNumber(lastReading.ph, 1) : '–' }}</strong>
+          <span>pH</span>
+        </div>
+        <div class="key">
+          <strong class="num">{{ lastReading?.ec != null ? formatNumber(lastReading.ec, 1) : '–' }}</strong>
+          <span>EC</span>
+        </div>
+        <div class="key">
+          <strong class="num">{{ latestHeight ?? '–' }}<small v-if="latestHeight != null"> cm</small></strong>
+          <span>{{ t('plant.info.height') }}</span>
+        </div>
+      </section>
+
+      <div
+        v-if="!plant.archived"
+        class="actions"
+        role="group"
+        :aria-label="t('plant.aria.log')"
+      >
+        <button
+          v-for="a in loggable"
+          :key="a.type"
+          type="button"
+          class="action"
+          :style="{ '--c': a.color }"
+          :disabled="tab === 'journal' && selectedDate > todayISO()"
+          @click="log(a.type)"
+        >
+          <span class="action-tile">
+            <GrowIcon :name="a.glyph" />
+          </span>
+          <span class="action-label">{{ a.label }}</span>
+        </button>
+      </div>
+
+      <section
+        class="card stage-card"
+        :aria-label="t('plant.aria.journey')"
+      >
+        <ol class="rail">
+          <li
+            v-for="s in journey"
+            :key="s.id"
+            class="rail-stop"
+            :class="s.state"
+            :aria-current="s.state === 'current' ? 'step' : undefined"
+          >
+            <span
+              class="rail-bar"
+              aria-hidden="true"
+            >
+              <span
+                class="rail-bar-fill"
+                :style="s.state === 'current' ? { width: `${Math.max(8, progress.percent)}%` } : undefined"
+              />
+            </span>
+            <span
+              class="rail-label"
+              aria-hidden="true"
+            >{{ s.short }}</span>
+            <span class="sr-only">{{ s.label }}, {{ t(`plant.railState.${s.state}`) }}</span>
+          </li>
+        </ol>
 
         <div class="stage-status">
           <div class="stage-day">
-            <div class="stage-day-text">
-              <p class="stage-label">
-                <span>{{ t('plant.dayOf.pre') }}</span><span class="stage-num num">{{ progress.dayInStage }}</span><span>{{ t('plant.dayOf.post', { stage: stage.label.toLowerCase() }) }}</span>
-              </p>
-              <p
-                class="stage-sub num"
-                :class="{ overdue: progress.overdue && GROWING_STAGES.includes(plant.stage) }"
-              >
-                <template v-if="progress.overdue">
-                  {{ t('plant.pastTypical', { range: stage.range }) }}
-                </template>
-                <template v-else>
-                  {{ t('plant.typically', { range: stage.range, p: progress.percent }) }}
-                </template>
-              </p>
-            </div>
+            <p class="stage-label">
+              <span>{{ t('plant.dayOf.pre') }}</span><span class="stage-num num">{{ progress.dayInStage }}</span><span>{{ t('plant.dayOf.post', { stage: stage.label.toLowerCase() }) }}</span>
+            </p>
+            <p
+              class="stage-sub num"
+              :class="{ overdue: progress.overdue && GROWING_STAGES.includes(plant.stage) }"
+            >
+              <template v-if="progress.overdue">
+                {{ t('plant.pastTypical', { range: stage.range }) }}
+              </template>
+              <template v-else>
+                {{ t('plant.typically', { range: stage.range, p: progress.percent }) }}
+              </template>
+            </p>
           </div>
           <button
             v-if="upcoming && !plant.archived"
@@ -828,8 +863,8 @@ function duplicate() {
             role="img"
             :aria-label="t('plant.eta.aria', { p: Math.round(harvestEta.position * 100) })"
           >
-            <span class="eta-done" />
             <span class="eta-window" />
+            <span class="eta-done" />
             <span class="eta-now" />
           </div>
           <p class="eta-note">
@@ -910,29 +945,6 @@ function duplicate() {
           <GrowIcon name="photo" /> {{ t('plant.weekly.cardAction') }}
         </button>
       </section>
-
-      <div
-        v-if="!plant.archived"
-        class="actions"
-        role="group"
-        :aria-label="t('plant.aria.log')"
-      >
-        <button
-          v-for="a in loggable"
-          :key="a.type"
-          type="button"
-          class="action"
-          :style="{ '--c': a.color }"
-          :disabled="tab === 'journal' && selectedDate > todayISO()"
-          @click="log(a.type)"
-        >
-          <GrowIcon
-            :name="a.glyph"
-            class="action-glyph"
-          />
-          <span>{{ a.label }}</span>
-        </button>
-      </div>
     </div>
 
     <div class="tabs-wrap">
@@ -940,12 +952,7 @@ function duplicate() {
         class="segmented tabs"
         role="tablist"
         :aria-label="t('plant.aria.sections')"
-        :style="{ '--i': tabIndex }"
       >
-        <span
-          class="tab-indicator"
-          aria-hidden="true"
-        />
         <button
           v-for="tb in tabs"
           :key="tb.id"
@@ -993,7 +1000,7 @@ function duplicate() {
         />
         <div
           v-else
-          class="entry-list"
+          class="card entry-list"
         >
           <EntryCard
             v-for="e in dayEntries"
@@ -1054,7 +1061,7 @@ function duplicate() {
           {{ formatDate(g.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) }}
           <span class="num">{{ t('plant.day', { n: Math.max(0, daysBetween(plant.startDate, g.date)) }) }}</span>
         </h3>
-        <div class="entry-list">
+        <div class="card entry-list">
           <EntryCard
             v-for="e in g.items"
             :key="e.id"
@@ -1163,7 +1170,7 @@ function duplicate() {
         <LineChart
           :points="heightPoints"
           unit=" cm"
-          color="var(--leaf)"
+          color="var(--green)"
           :label="t('plant.info.heightLabel', { v: heightPoints[heightPoints.length - 1]!.value })"
         />
       </section>
@@ -1369,7 +1376,7 @@ function duplicate() {
       v-model:open="harvestSheet"
       :title="harvestMode === 'harvest' ? t('plant.harvest.title') : harvestMode === 'dry' ? t('plant.harvest.dryTitle') : t('plant.harvest.editTitle')"
       :icon="harvestMode === 'dry' ? 'i-tabler-scale' : 'i-tabler-basket'"
-      icon-color="var(--lamp)"
+      icon-color="var(--amber)"
     >
       <form
         class="form-stack"
@@ -1666,148 +1673,108 @@ function duplicate() {
 </template>
 
 <style scoped>
-/* ── Hero ───────────────────────────────────────────────────────── */
-.hero {
-  position: relative;
-  height: 392px;
-  overflow: hidden;
+/* ── Header ─────────────────────────────────────────────────────── */
+.detail-head {
+  padding: calc(12px + var(--safe-top)) 16px 0;
 }
 
-/* the photo fades into the tent ground instead of ending on an edge */
-.hero-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  -webkit-mask-image: linear-gradient(180deg, #000 42%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 42%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
-}
-
-/* no photo: a lit tile with the stage glyph under the lamp */
-.hero.lit {
-  height: auto;
-  padding-top: calc(var(--safe-top) + 68px);
-}
-
-.hero.lit .hero-info {
-  position: relative;
-  left: auto;
-  right: auto;
-  bottom: auto;
-  padding: 16px 20px 8px;
-}
-
-.hero.lit h1 {
-  text-shadow: none;
-}
-
-.hero-tile {
-  height: 220px;
-  margin: 0 20px;
+.head-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 24px;
-  border: 1px solid var(--line);
-  background: radial-gradient(85% 90% at 50% 18%,
-    color-mix(in srgb, #2f5a2c 72%, var(--stage)) 0%,
-    color-mix(in srgb, #0f2412 86%, var(--stage)) 58%,
-    #08140a 100%);
-  box-shadow: inset 0 1px 0 var(--highlight), var(--panel-shadow);
-  overflow: hidden;
-}
-
-.hero-tile-glyph {
-  font-size: 120px;
-  color: var(--stage);
-  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--stage) 60%, transparent));
-}
-
-.hero-tile-glyph :deep(.tint path) {
-  fill-opacity: 0.42;
-}
-
-.hero-shade {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(7, 8, 10, 0.62) 0%, transparent 24%),
-    linear-gradient(0deg, rgba(7, 8, 10, 0.88) 0%, rgba(7, 8, 10, 0.4) 34%, transparent 58%);
-  pointer-events: none;
-}
-
-.hero-bar {
-  position: absolute;
-  top: calc(12px + var(--safe-top));
-  left: 16px;
-  right: 16px;
-  display: flex;
   justify-content: space-between;
+  min-height: 48px;
+  margin-bottom: 8px;
 }
 
-.hero-bar-right {
+.head-actions {
   display: flex;
   gap: 8px;
 }
 
-.bar-btn {
-  width: 44px;
-  height: 44px;
+h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.head-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px 0;
+}
+
+/* ── Photo card ─────────────────────────────────────────────────── */
+.photo-card {
+  overflow: hidden;
+}
+
+.photo-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+
+.photo-frame.empty {
+  position: relative;
+  aspect-ratio: 2 / 1;
+  padding: 0;
+  border: 0;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.photo-frame.empty :deep(.placeholder-glyph) {
+  font-size: 64px;
+}
+
+.photo-add {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(7, 8, 10, 0.66);
-  box-shadow: inset 0 1px 0 var(--highlight);
-  color: var(--text);
-  transition: transform var(--dur-fast) var(--ease-out);
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(14, 16, 15, 0.8);
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.bar-btn:active {
-  transform: scale(0.92);
-}
-
-.bar-btn.ask {
-  color: var(--lamp);
-  font-size: 21px;
-}
-
-.hero-info {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 8px;
-}
-
-.hero-mark {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.hero-badges {
+.photo-foot {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
-  padding-bottom: 6px;
-}
-
-.badge.archived,
-.badge.health {
-  background: rgba(7, 8, 10, 0.72);
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
 }
 
 .badge.archived {
   color: var(--text-2);
 }
 
+.badge.streak {
+  color: var(--green);
+}
+
 .public-chip {
   position: relative;
+  margin-left: auto;
+  border: 0;
   color: var(--text-2);
-  background: rgba(7, 8, 10, 0.72);
   transition: color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
@@ -1815,181 +1782,162 @@ function duplicate() {
 .public-chip::after {
   content: "";
   position: absolute;
-  inset: -12px -4px;
+  inset: -10px -4px;
 }
 
 .public-chip.on {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .public-chip.other {
-  color: var(--lamp);
-}
-
-.badge.streak {
-  color: var(--leaf);
-  background: rgba(7, 8, 10, 0.72);
+  color: var(--amber);
 }
 
 .public-chip:active:not(:disabled) {
   transform: scale(0.95);
 }
 
-.menu-grow {
-  flex: 1;
+/* ── Key numbers ────────────────────────────────────────────────── */
+.keys {
+  display: flex;
+  align-items: stretch;
+  padding: 12px 0;
 }
 
-.menu-state {
-  font-size: 13px;
+.key {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+}
+
+.key + .key {
+  border-left: 1px solid var(--line);
+}
+
+.key strong {
+  font-size: 20px;
   font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.key small {
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-3);
 }
 
-.menu-state.on {
-  color: var(--leaf);
+.key span {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
 }
 
-h1 {
-  margin: 0;
-  font-size: 30px;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.12;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
-  overflow-wrap: anywhere;
+/* ── Quick log ──────────────────────────────────────────────────── */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 4px 0;
 }
 
-.hero-strain {
-  margin: 4px 0 0;
+.action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--text-2);
-  font-size: 14px;
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur) ease;
 }
 
-/* ── Stage journey ──────────────────────────────────────────────── */
-.detail-body {
+.action:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.action:disabled {
+  opacity: 0.4;
+}
+
+.action-tile {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  color: var(--c);
+  font-size: 26px;
+}
+
+.action-label {
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Stage ──────────────────────────────────────────────────────── */
+.stage-card {
+  padding: 14px 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 4px 20px 0;
-}
-
-.stage-card {
-  padding: 18px 16px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
 }
 
 .rail {
-  position: relative;
-}
-
-.rail-stops {
-  position: relative;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.rail-track {
-  position: absolute;
-  top: 17px;
-  left: calc(100% / 12);
-  right: calc(100% / 12);
-  height: 2px;
-  border-radius: 2px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-
-.rail-fill {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--leaf-deep), var(--leaf));
-  box-shadow: 0 0 10px rgba(155, 227, 107, 0.55);
-  transform: scaleX(var(--fill));
-  transform-origin: left;
-  transition: transform 0.8s var(--ease-out);
-  animation: rail-sweep 1s var(--ease-out) 0.15s backwards;
-}
-
-@keyframes rail-sweep {
-  from {
-    transform: scaleX(0);
-  }
-}
-
 .rail-stop {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
 }
 
-.rail-node {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-  color: var(--text-3);
-  font-size: 19px;
-  transition: color var(--dur-slow) var(--ease-out), box-shadow var(--dur-slow) var(--ease-out), background var(--dur-slow) var(--ease-out);
+.rail-bar {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--track);
+  overflow: hidden;
 }
 
-.rail-stop.future .rail-node .grow-icon {
-  opacity: 0.55;
+.rail-bar-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  transition: width var(--dur-slow) var(--ease-out);
 }
 
-.rail-stop.done .rail-node {
-  color: var(--c);
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 16%, #101317), #0b0d10 75%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 34%, transparent);
-}
-
-.rail-stop.current .rail-node {
-  color: var(--c);
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 30%, #101317), #0b0d10 80%);
-  box-shadow: inset 0 0 0 1.5px var(--c), 0 0 16px color-mix(in srgb, var(--c) 45%, transparent);
-}
-
-.rail-stop.current .rail-node .grow-icon {
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 70%, transparent));
-}
-
-/* soft breathing halo on the current stage */
-.rail-stop.current .rail-node::after {
-  content: '';
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent), 0 0 18px color-mix(in srgb, var(--c) 35%, transparent);
-  opacity: 0.45;
-  animation: halo 2.8s ease-in-out infinite;
-}
-
-@keyframes halo {
-  50% {
-    opacity: 0.9;
-    transform: scale(1.08);
-  }
+.rail-stop.done .rail-bar-fill {
+  width: 100%;
 }
 
 .rail-label {
   max-width: 100%;
   overflow: hidden;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: -0.01em;
   color: var(--text-3);
+  text-align: center;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -2018,24 +1966,24 @@ h1 {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
 .stage-num {
-  font-size: 34px;
-  font-weight: 300;
-  letter-spacing: -0.03em;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .stage-sub {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   font-size: 12px;
   color: var(--text-3);
   white-space: nowrap;
 }
 
 .stage-sub.overdue {
-  color: var(--pink);
+  color: var(--red);
 }
 
 .next-btn {
@@ -2060,18 +2008,18 @@ h1 {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .eta.past .eta-text {
-  color: var(--pink);
+  color: var(--red);
 }
 
 .eta-bar {
   position: relative;
   height: 6px;
   border-radius: 999px;
-  background: var(--surface-3);
+  background: var(--track);
   overflow: hidden;
 }
 
@@ -2081,33 +2029,23 @@ h1 {
   bottom: 0;
 }
 
-.eta-done {
-  left: 0;
-  width: 100%;
-  transform-origin: left;
-  background: color-mix(in srgb, var(--leaf) 55%, transparent);
-  transform: scaleX(var(--pos));
-  animation: eta-grow var(--dur-slow) var(--ease-out) both;
-}
-
 .eta-window {
   left: calc(var(--win) * 100%);
   right: 0;
-  background: color-mix(in srgb, var(--lamp) 42%, transparent);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--lamp) 50%, transparent);
+  background: var(--lamp-soft);
+}
+
+.eta-done {
+  left: 0;
+  width: calc(var(--pos) * 100%);
+  border-radius: inherit;
+  background: var(--green);
 }
 
 .eta-now {
   left: calc(var(--pos) * 100% - 1px);
   width: 2px;
   background: var(--text);
-  border-radius: 1px;
-}
-
-@keyframes eta-grow {
-  from {
-    transform: scaleX(0);
-  }
 }
 
 .eta-note {
@@ -2124,7 +2062,7 @@ h1 {
   padding-top: 14px;
   border-top: 1px solid var(--line);
   font-size: 13px;
-  color: var(--info);
+  color: var(--blue);
 }
 
 .water-line .grow-icon {
@@ -2132,12 +2070,12 @@ h1 {
 }
 
 .water-line.due {
-  color: var(--lamp);
+  color: var(--amber);
   font-weight: 600;
 }
 
 .water-line.overdue {
-  color: var(--pink);
+  color: var(--red);
   font-weight: 600;
 }
 
@@ -2168,7 +2106,7 @@ h1 {
 .help-row p .grow-icon {
   flex-shrink: 0;
   margin-top: 1px;
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .help-btn {
@@ -2180,23 +2118,10 @@ h1 {
 
 /* ── Weekly update ─────────────────────────────────────────────── */
 .weekly {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 14px 14px 18px;
-  overflow: hidden;
-  animation: weekly-in var(--dur-slow) var(--ease-out) both;
-}
-
-/* lamp wash from the top edge: the week just ticked over */
-.weekly::before {
-  content: "";
-  position: absolute;
-  inset: 0 18% auto;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--lamp), transparent);
-  opacity: 0.8;
+  padding: 14px;
 }
 
 .weekly-text {
@@ -2208,6 +2133,7 @@ h1 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .weekly-sub {
@@ -2223,116 +2149,25 @@ h1 {
   padding: 0 16px;
 }
 
-@keyframes weekly-in {
-  from { opacity: 0; transform: translateY(8px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .weekly { animation: none; }
-}
-
-/* ── Quick log ──────────────────────────────────────────────────── */
-.actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.action {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 80px;
-  padding: 12px 2px 10px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: var(--panel-shadow);
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 500;
-  overflow: hidden;
-  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur) ease;
-}
-
-.action:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.action:disabled {
-  opacity: 0.4;
-}
-
-.action-glyph {
-  position: relative;
-  font-size: 28px;
-  color: var(--c);
-  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--c) 45%, transparent));
-}
-
-.action > span {
-  position: relative;
-}
-
 /* ── Tabs ───────────────────────────────────────────────────────── */
 .tabs-wrap {
   position: sticky;
   top: 0;
   z-index: 10;
-  margin-top: 22px;
-  padding: calc(8px + var(--safe-top)) 20px 12px;
-  background: linear-gradient(180deg, var(--bg) 0%, var(--bg) 78%, rgba(7, 8, 10, 0) 100%);
-}
-
-.tabs {
-  position: relative;
-}
-
-.tab-indicator {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: calc((100% - 20px) / 4);
-  border-radius: 12px;
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight), 0 2px 8px rgba(0, 0, 0, 0.45);
-  transform: translateX(calc(var(--i) * (100% + 4px)));
-  transition: transform var(--dur) var(--ease-out);
-}
-
-.tab-indicator::after {
-  content: '';
-  position: absolute;
-  left: 32%;
-  right: 32%;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--leaf);
-  box-shadow: 0 0 10px 1px rgba(155, 227, 107, 0.55);
+  margin-top: 12px;
+  padding: calc(8px + var(--safe-top)) 16px 12px;
+  background: var(--bg);
 }
 
 .tabs button {
-  position: relative;
-  z-index: 1;
-  min-height: 44px;
-}
-
-.tabs button[aria-selected="true"] {
-  background: transparent;
-  box-shadow: none;
-  color: var(--text);
+  min-height: 40px;
 }
 
 .tab-body {
-  padding: 8px 20px 8px;
+  padding: 4px 16px 8px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
 }
 
 .day-of {
@@ -2353,16 +2188,19 @@ h1 {
 .history-day {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 .history-date {
   display: flex;
   justify-content: space-between;
-  margin: 0;
+  margin: 0 0 8px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-2);
+}
+
+.history-date::first-letter {
+  text-transform: uppercase;
 }
 
 .history-date span {
@@ -2373,12 +2211,10 @@ h1 {
 /* ── Info ───────────────────────────────────────────────────────── */
 .harvest {
   padding: 16px;
-  border-color: rgba(255, 210, 138, 0.22);
-  background: radial-gradient(120% 90% at 50% 0%, rgba(255, 210, 138, 0.1), transparent 62%), var(--panel);
 }
 
 .harvest .section-title .grow-icon {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .edit-link {
@@ -2411,19 +2247,20 @@ h1 {
 }
 
 .harvest-grid .weight {
-  font-size: 30px;
-  font-weight: 300;
+  font-size: 24px;
+  font-weight: 600;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .harvest-grid .weight small {
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-3);
 }
 
 .harvest-grid .lamp {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .harvest-notes {
@@ -2447,8 +2284,8 @@ h1 {
   grid-template-rows: auto auto;
   column-gap: 10px;
   row-gap: 1px;
-  padding: 13px 14px;
-  background: var(--surface-2);
+  padding: 12px 14px;
+  background: var(--surface);
 }
 
 .info-item:last-child:nth-child(odd) {
@@ -2480,45 +2317,34 @@ h1 {
 .timeline {
   list-style: none;
   margin: 0;
-  padding: 16px;
+  padding: 0 14px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
 .timeline li {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 56px;
+  padding: 8px 0;
 }
 
-.timeline li:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 17px;
-  top: 36px;
-  height: 16px;
-  width: 1px;
-  background: var(--line-strong);
+.timeline li + li {
+  border-top: 1px solid var(--line);
 }
 
 .tl-dot {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   color: var(--c);
-  font-size: 18px;
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 16%, #101317), #0b0d10 75%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent);
-}
-
-.timeline li.current .tl-dot {
-  box-shadow: inset 0 0 0 1.5px var(--c), 0 0 14px color-mix(in srgb, var(--c) 40%, transparent);
+  font-size: 20px;
+  background: color-mix(in srgb, var(--c) 14%, transparent);
 }
 
 .tl-text {
@@ -2527,6 +2353,10 @@ h1 {
 }
 
 .tl-text strong {
+  font-weight: 500;
+}
+
+.timeline li.current .tl-text strong {
   font-weight: 600;
 }
 
@@ -2542,22 +2372,24 @@ h1 {
 .chart-latest {
   margin-left: auto;
   font-size: 20px;
-  font-weight: 300;
+  font-weight: 600;
   color: var(--text);
 }
 
 .chart-latest small {
   font-size: 12px;
+  font-weight: 500;
   color: var(--text-3);
 }
 
 .counts {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   padding: 14px 0;
 }
 
 .count {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2569,16 +2401,15 @@ h1 {
 }
 
 .count-glyph {
-  font-size: 22px;
+  font-size: 20px;
   color: var(--c);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c) 40%, transparent));
 }
 
 .count strong {
-  margin-top: 6px;
-  font-size: 24px;
-  font-weight: 300;
-  line-height: 1.1;
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .count > span:last-child {
@@ -2615,7 +2446,7 @@ h1 {
 }
 
 .stage-tips li::marker {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 /* ── Photos ─────────────────────────────────────────────────────── */
@@ -2633,9 +2464,7 @@ h1 {
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  border-radius: var(--radius);
-  overflow: hidden;
+  gap: 2px;
 }
 
 .photo-cell {
@@ -2643,6 +2472,8 @@ h1 {
   aspect-ratio: 1;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
   background: var(--surface-2);
 }
 
@@ -2650,11 +2481,11 @@ h1 {
   position: absolute;
   left: 6px;
   bottom: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(7, 8, 10, 0.72);
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(14, 16, 15, 0.8);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ── Sheets ─────────────────────────────────────────────────────── */
@@ -2669,18 +2500,18 @@ h1 {
   align-items: center;
   gap: 12px;
   min-height: 56px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line-strong);
-  background: var(--surface);
+  background: var(--well);
   color: var(--c);
   text-align: left;
-  transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+  transition: background var(--dur) ease, border-color var(--dur) ease;
 }
 
 .stage-row[aria-checked="true"] {
-  border-color: color-mix(in srgb, var(--c) 60%, transparent);
-  background: color-mix(in srgb, var(--c) 10%, var(--surface));
+  border-color: var(--green);
+  background: var(--accent-soft);
 }
 
 .stage-row-text {
@@ -2699,6 +2530,10 @@ h1 {
   color: var(--text-2);
 }
 
+.stage-row > :deep(span[class*="i-"]) {
+  color: var(--green);
+}
+
 .intro {
   margin: 0;
   font-size: 14px;
@@ -2712,7 +2547,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 18px;
+  border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--surface);
   overflow: hidden;
@@ -2722,14 +2557,6 @@ h1 {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  animation: share-in var(--dur-slow) var(--ease-out) both;
-}
-
-@keyframes share-in {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
 }
 
 .share-loading {
@@ -2766,8 +2593,22 @@ h1 {
   color: var(--text-2);
 }
 
+.menu-grow {
+  flex: 1;
+}
+
+.menu-state {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.menu-state.on {
+  color: var(--green);
+}
+
 .menu-item.danger,
 .menu-item.danger :deep(span[class*="i-"]) {
-  color: #ff8a93;
+  color: var(--red);
 }
 </style>

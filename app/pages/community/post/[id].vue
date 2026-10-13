@@ -463,7 +463,7 @@ useOnlineRetry(() => status.value === 'error', load)
 
 .post-page {
   flex: 1;
-  gap: 22px;
+  gap: 24px;
   padding-top: 4px;
 }
 
@@ -497,17 +497,16 @@ useOnlineRetry(() => status.value === 'error', load)
 .replies {
   margin-left: 22px;
   padding-left: 14px;
-  border-left: 1px solid var(--line-strong);
+  border-left: 1px solid var(--line);
 }
 
 .composer {
   position: sticky;
   bottom: 0;
   z-index: 10;
-  padding: 10px 20px calc(10px + var(--safe-bottom));
-  background: linear-gradient(180deg, rgba(11, 13, 16, 0.96) 0%, #07080a 100%);
+  padding: 10px 16px calc(10px + var(--safe-bottom));
+  background: var(--bg);
   border-top: 1px solid var(--line);
-  box-shadow: 0 -12px 24px -12px rgba(0, 0, 0, 0.7);
 }
 
 :global(html.kb-open) .composer {
@@ -528,7 +527,7 @@ useOnlineRetry(() => status.value === 'error', load)
   gap: 6px;
   margin: -2px 0 8px;
   font-size: 12px;
-  color: #c8f08f;
+  color: var(--green);
 }
 
 .nudge .grow-icon {
@@ -559,7 +558,6 @@ useOnlineRetry(() => status.value === 'error', load)
   font-size: 16px;
   border-color: transparent;
   background: transparent;
-  box-shadow: none;
   color: var(--text-3);
 }
 
@@ -567,25 +565,24 @@ useOnlineRetry(() => status.value === 'error', load)
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 4px 4px 4px 14px;
-  border-radius: 22px;
+  padding: 2px 2px 2px 14px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line-strong);
-  background: #0b0d10;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  background: var(--well);
   transition: border-color var(--dur) ease, box-shadow var(--dur) ease;
 }
 
 .composer-row:focus-within {
-  border-color: var(--leaf);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(155, 227, 107, 0.14);
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .composer-input {
   flex: 1;
   min-width: 0;
-  min-height: 44px;
+  min-height: 42px;
   max-height: 140px;
-  padding: 11px 0;
+  padding: 10px 0;
   border: 0;
   background: none;
   color: var(--text);
@@ -597,18 +594,18 @@ useOnlineRetry(() => status.value === 'error', load)
 }
 
 .composer-input::placeholder {
-  color: #6b7669;
+  color: var(--text-3);
 }
 
 .send {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #b3ef87 0%, var(--leaf) 55%, #86d257 100%);
+  border-radius: var(--radius-sm);
+  background: var(--green);
   color: var(--on-accent);
   font-size: 20px;
   transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur) ease;
@@ -620,5 +617,6 @@ useOnlineRetry(() => status.value === 'error', load)
 
 .send:active:not(:disabled) {
   transform: scale(0.92);
+  background: var(--green-deep);
 }
 </style>

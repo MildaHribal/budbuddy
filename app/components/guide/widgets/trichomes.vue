@@ -43,7 +43,7 @@ const HEADS = [
 const BASE = 150
 const heads = computed(() => HEADS.map((h) => {
   const c = headColor(s.value + h.o)
-  return { ...h, fill: rgba(c), stroke: rgba([c[0], c[1], c[2], Math.min(1, c[3] + 0.5)]), glow: c[3] > 0.9 && c[0] - c[2] > 100 }
+  return { ...h, fill: rgba(c), stroke: rgba([c[0], c[1], c[2], Math.min(1, c[3] + 0.5)]) }
 }))
 </script>
 
@@ -78,7 +78,6 @@ const heads = computed(() => HEADS.map((h) => {
           />
           <circle
             class="head"
-            :class="{ glow: h.glow }"
             :cx="h.x"
             :cy="BASE - h.h"
             :r="h.r"
@@ -175,9 +174,9 @@ const heads = computed(() => HEADS.map((h) => {
 
 <style scoped>
 .scope {
-  border-radius: 14px;
-  background: radial-gradient(circle at 50% 40%, #1a2a1c 0%, #0b0d10 72%);
-  box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--well);
   overflow: hidden;
 }
 
@@ -188,7 +187,8 @@ const heads = computed(() => HEADS.map((h) => {
 }
 
 .surface {
-  fill: #3c6b34;
+  fill: var(--green-deep);
+  fill-opacity: 0.5;
 }
 
 .stalk {
@@ -197,11 +197,7 @@ const heads = computed(() => HEADS.map((h) => {
 
 .head {
   stroke-width: 1.5;
-  transition: fill var(--dur) ease, stroke var(--dur) ease, filter var(--dur) ease;
-}
-
-.head.glow {
-  filter: drop-shadow(0 0 6px rgba(222, 142, 48, 0.6));
+  transition: fill var(--dur) ease, stroke var(--dur) ease;
 }
 
 .shine {
@@ -264,7 +260,7 @@ const heads = computed(() => HEADS.map((h) => {
 .legend dd {
   margin: 0;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -289,10 +285,10 @@ const heads = computed(() => HEADS.map((h) => {
 
 .advice.peak .a-head,
 .advice.ideal .a-head {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .advice.late .a-head {
-  color: var(--lamp);
+  color: var(--amber);
 }
 </style>

@@ -9,7 +9,7 @@ export default {
     cs: 'Probuď semínko, zasaď ho do správné hloubky a proveď křehkou sazenici prvními týdny.'
   },
   glyph: 'germination',
-  color: '#e9d68f',
+  color: '#d9c46b',
   lessons: [
     {
       id: 'germination-methods',

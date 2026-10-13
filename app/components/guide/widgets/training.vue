@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { stageInfo } from '~/utils/stages'
+
 type Technique = 'lst' | 'topping' | 'fim' | 'scrog' | 'defoliation' | 'lollipop' | 'supercrop'
 type Kind = 'stem' | 'fan' | 'bud' | 'tie' | 'cut' | 'net' | 'mark' | 'knot'
 interface Part { k: Kind, d?: string, x?: number, y?: number, rot?: number, s?: number }
@@ -9,6 +11,7 @@ const props = withDefaults(defineProps<{ technique?: Technique }>(), { technique
 const { t } = useI18n()
 const uid = useId()
 const fanId = `fan-${uid}`
+const budColor = stageInfo('flowering').color
 
 const stem = (d: string): Part => ({ k: 'stem', d })
 const fan = (x: number, y: number, rot = 0, s = 1): Part => ({ k: 'fan', x, y, rot, s })
@@ -139,6 +142,7 @@ function style(el: El) {
     <div
       class="stage"
       :class="phase"
+      :style="{ '--bud': budColor }"
     >
       <svg
         viewBox="0 0 240 200"
@@ -149,7 +153,7 @@ function style(el: El) {
           <g :id="fanId">
             <path
               d="M0 0 V-4"
-              stroke="#7fcf5a"
+              stroke="var(--green)"
               stroke-width="1.6"
             />
             <ellipse
@@ -162,30 +166,8 @@ function style(el: El) {
               :transform="`rotate(${a})`"
             />
           </g>
-          <linearGradient
-            :id="`beam-${uid}`"
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-          >
-            <stop
-              offset="0"
-              stop-color="#ffd28a"
-              stop-opacity="0.16"
-            />
-            <stop
-              offset="1"
-              stop-color="#ffd28a"
-              stop-opacity="0"
-            />
-          </linearGradient>
         </defs>
 
-        <path
-          d="M64 12 H176 L206 170 H34 Z"
-          :fill="`url(#beam-${uid})`"
-        />
         <rect
           class="lamp"
           x="64"
@@ -324,9 +306,9 @@ function style(el: El) {
 
 <style scoped>
 .stage {
-  border-radius: 14px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--well);
   overflow: hidden;
 }
 
@@ -338,12 +320,11 @@ function style(el: El) {
 }
 
 .lamp {
-  fill: var(--lamp);
-  filter: drop-shadow(0 0 6px rgba(255, 210, 138, 0.7));
+  fill: var(--amber);
 }
 
 .pot {
-  fill: #23282f;
+  fill: var(--surface-3);
   stroke: var(--line-strong);
 }
 
@@ -364,40 +345,40 @@ function style(el: El) {
 
 .stem {
   fill: none;
-  stroke: #7fcf5a;
+  stroke: var(--green);
   stroke-width: 3.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .fan {
-  fill: #5fb04a;
-  stroke: #9be36b;
+  fill: var(--green-deep);
+  stroke: var(--green);
   stroke-width: 0.6;
 }
 
 .bud ellipse {
-  fill: #c9a2ff;
-  filter: drop-shadow(0 0 4px rgba(201, 162, 255, 0.6));
+  fill: var(--bud);
 }
 
 .bud path {
   fill: none;
-  stroke: #e6d6ff;
+  stroke: var(--text);
+  stroke-opacity: 0.7;
   stroke-width: 1;
   stroke-linecap: round;
 }
 
 .tie {
   fill: none;
-  stroke: var(--lamp);
+  stroke: var(--amber);
   stroke-width: 1.6;
   stroke-dasharray: 3 3;
 }
 
 .cut {
   fill: none;
-  stroke: var(--lamp);
+  stroke: var(--amber);
   stroke-width: 2.2;
   stroke-linecap: round;
 }
@@ -410,14 +391,14 @@ function style(el: El) {
 
 .mark {
   fill: none;
-  stroke: var(--leaf);
+  stroke: var(--green);
   stroke-width: 1;
   stroke-dasharray: 4 4;
 }
 
 .knot {
-  fill: var(--lamp);
-  stroke: #0b0d10;
+  fill: var(--amber);
+  stroke: var(--well);
   stroke-width: 2;
 }
 

@@ -9,7 +9,7 @@ export default {
     cs: 'Hlína, kokos, nebo hydro: co od tebe který vyžaduje, jaký vybrat květináč a jak zalévat, abys kořeny neutopil.'
   },
   glyph: 'water',
-  color: '#7cc8f2',
+  color: '#5fb4ee',
   lessons: [
     {
       id: 'media-overview',

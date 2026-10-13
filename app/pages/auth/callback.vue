@@ -58,30 +58,32 @@ watch(() => route.query.code, () => {
 
 <template>
   <div class="callback">
-    <template v-if="!failed">
-      <UIcon
-        name="i-tabler-loader-2"
-        class="spin"
-      />
-      <p>{{ t('auth.callback.working') }}</p>
-    </template>
-    <template v-else>
-      <GrowIcon
-        name="community"
-        class="glyph"
-      />
-      <h1>{{ t('auth.callback.failed') }}</h1>
-      <p class="muted">
-        {{ failed }}
-      </p>
-      <NuxtLink
-        to="/community"
-        replace
-        class="btn btn-soft"
-      >
-        {{ t('auth.callback.back') }}
-      </NuxtLink>
-    </template>
+    <div class="card box">
+      <template v-if="!failed">
+        <UIcon
+          name="i-tabler-loader-2"
+          class="spin"
+        />
+        <p>{{ t('auth.callback.working') }}</p>
+      </template>
+      <template v-else>
+        <GrowIcon
+          name="community"
+          class="glyph"
+        />
+        <h1>{{ t('auth.callback.failed') }}</h1>
+        <p class="muted">
+          {{ failed }}
+        </p>
+        <NuxtLink
+          to="/community"
+          replace
+          class="btn btn-primary btn-block"
+        >
+          {{ t('auth.callback.back') }}
+        </NuxtLink>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -89,35 +91,53 @@ watch(() => route.query.code, () => {
 .callback {
   min-height: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: calc(40px + var(--safe-top)) 24px 40px;
+  padding: calc(24px + var(--safe-top)) 16px 40px;
+}
+
+.box {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px 20px;
   text-align: center;
 }
 
 .spin {
-  font-size: 32px;
-  color: var(--leaf);
+  font-size: 28px;
+  color: var(--green);
   animation: spin 0.9s linear infinite;
 }
 
 .glyph {
-  font-size: 44px;
-  color: var(--lamp);
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: var(--radius-control);
+  background: var(--danger-soft);
+  color: var(--red);
 }
 
 h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 p {
   margin: 0;
   max-width: 300px;
+  font-size: 14px;
   overflow-wrap: anywhere;
+}
+
+.box .btn {
+  margin-top: 8px;
 }
 
 @keyframes spin {

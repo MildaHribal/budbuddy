@@ -132,7 +132,7 @@ async function submit() {
     v-model:open="open"
     :title="t('plant.weekly.sheetTitle', { n: week })"
     icon="photo"
-    icon-color="var(--leaf)"
+    icon-color="var(--green)"
   >
     <form
       class="form-stack"
@@ -248,10 +248,13 @@ async function submit() {
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  overflow: hidden;
 }
 
 .stats li {
@@ -259,33 +262,43 @@ async function submit() {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+  min-width: 0;
   padding: 10px 10px 9px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: inset 0 1px 0 var(--highlight);
+}
+
+.stats li + li {
+  border-left: 1px solid var(--line);
 }
 
 .stats li.zero {
-  opacity: 0.55;
+  color: var(--text-3);
 }
 
 .stat-glyph {
   font-size: 18px;
-  color: var(--leaf);
+  color: var(--green);
+}
+
+.stats li.zero .stat-glyph {
+  color: var(--text-3);
 }
 
 .stat-n {
-  font-size: 22px;
-  font-weight: 300;
+  font-size: 20px;
+  font-weight: 600;
   line-height: 1.1;
   color: var(--text);
+}
+
+.stats li.zero .stat-n {
+  color: var(--text-3);
 }
 
 .stat-label {
   font-size: 11px;
   color: var(--text-3);
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .grid {
@@ -298,10 +311,10 @@ async function submit() {
   position: relative;
   aspect-ratio: 1;
   min-height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   overflow: hidden;
   border: 1px solid var(--line);
-  background: #0b0d10;
+  background: var(--well);
   transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) ease;
 }
 
@@ -321,8 +334,7 @@ async function submit() {
 }
 
 .tile.on {
-  border-color: var(--leaf);
-  box-shadow: 0 0 0 1px var(--leaf), var(--glow-leaf);
+  border: 2px solid var(--green);
 }
 
 .tile.add {
@@ -343,32 +355,23 @@ async function submit() {
   height: 22px;
   border-radius: 999px;
   border: 1.5px solid rgba(255, 255, 255, 0.7);
-  background: rgba(7, 8, 10, 0.45);
+  background: rgba(14, 16, 15, 0.5);
 }
 
 .tile.on .tick {
-  border-color: var(--leaf);
-  background: var(--leaf);
-  animation: pop var(--dur) var(--ease-out);
+  border-color: var(--green);
+  background: var(--green);
 }
 
 .tick-n {
   font-size: 12px;
-  font-weight: 700;
-  color: #07080a;
+  font-weight: 600;
+  color: var(--on-accent);
 }
 
 .hint-row {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-@keyframes pop {
-  from { transform: scale(0.5); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tile.on .tick { animation: none; }
 }
 </style>

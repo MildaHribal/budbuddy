@@ -15,15 +15,15 @@ export interface EntryTypeInfo {
 }
 
 export const ENTRY_TYPES: EntryTypeInfo[] = [
-  { type: 'water', label: 'Water', verb: 'Watered', icon: 'i-tabler-droplet-filled', glyph: 'water', color: '#7cc8f2', loggable: true },
-  { type: 'feed', label: 'Feed', verb: 'Fed nutrients', icon: 'i-tabler-flask', glyph: 'feed', color: '#c9a2ff', loggable: true },
-  { type: 'train', label: 'Train', verb: 'Training', icon: 'i-tabler-scissors', glyph: 'train', color: '#9be36b', loggable: true },
-  { type: 'pest', label: 'Pest', verb: 'Pest treatment', icon: 'i-tabler-bug', glyph: 'pest', color: '#ff8a5c', loggable: true },
-  { type: 'measure', label: 'Measure', verb: 'Measurement', icon: 'i-tabler-ruler-measure', glyph: 'measure', color: '#6fe0c8', loggable: true },
-  { type: 'note', label: 'Note', verb: 'Note', icon: 'i-tabler-notes', glyph: 'note', color: '#c9d4c4', loggable: true },
-  { type: 'photo', label: 'Photo', verb: 'Photo', icon: 'i-tabler-camera', glyph: 'photo', color: '#a9b8ff', loggable: true },
-  { type: 'stage', label: 'Stage', verb: 'Stage change', icon: 'i-tabler-arrow-big-right-lines', glyph: 'stage', color: '#9be36b', loggable: false },
-  { type: 'harvest', label: 'Harvest', verb: 'Harvested', icon: 'i-tabler-basket', glyph: 'harvest', color: '#ffd28a', loggable: false }
+  { type: 'water', label: 'Water', verb: 'Watered', icon: 'i-tabler-droplet-filled', glyph: 'water', color: '#5fb4ee', loggable: true },
+  { type: 'feed', label: 'Feed', verb: 'Fed nutrients', icon: 'i-tabler-flask', glyph: 'feed', color: '#b58cf5', loggable: true },
+  { type: 'train', label: 'Train', verb: 'Training', icon: 'i-tabler-scissors', glyph: 'train', color: '#3dd173', loggable: true },
+  { type: 'pest', label: 'Pest', verb: 'Pest treatment', icon: 'i-tabler-bug', glyph: 'pest', color: '#f0905a', loggable: true },
+  { type: 'measure', label: 'Measure', verb: 'Measurement', icon: 'i-tabler-ruler-measure', glyph: 'measure', color: '#5fd9c4', loggable: true },
+  { type: 'note', label: 'Note', verb: 'Note', icon: 'i-tabler-notes', glyph: 'note', color: '#a5ada8', loggable: true },
+  { type: 'photo', label: 'Photo', verb: 'Photo', icon: 'i-tabler-camera', glyph: 'photo', color: '#8ea6f5', loggable: true },
+  { type: 'stage', label: 'Stage', verb: 'Stage change', icon: 'i-tabler-arrow-big-right-lines', glyph: 'stage', color: '#3dd173', loggable: false },
+  { type: 'harvest', label: 'Harvest', verb: 'Harvested', icon: 'i-tabler-basket', glyph: 'harvest', color: '#f2b544', loggable: false }
 ]
 
 const ENTRY_CS: Record<EntryType, Pick<EntryTypeInfo, 'label' | 'verb'>> = {

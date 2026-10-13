@@ -62,7 +62,7 @@ const colony = [
       cx="250"
       cy="136"
       r="44"
-      fill="#0b0d10"
+      fill="var(--well)"
       :stroke="ART.muted"
       stroke-opacity="0.8"
     />

@@ -51,7 +51,6 @@ const rays = Array.from({ length: 8 }, (_, i) => {
       :fill="ART.lamp"
       fill-opacity="0.35"
       :stroke="ART.lamp"
-      class="ga-glow"
       :style="{ color: ART.lamp }"
     />
     <path

@@ -127,7 +127,7 @@ async function send() {
     v-model:open="open"
     :title="t('plant.recap.title')"
     icon="harvest"
-    icon-color="var(--lamp)"
+    icon-color="var(--amber)"
   >
     <div class="form-stack">
       <div
@@ -200,7 +200,7 @@ async function send() {
 
       <button
         type="button"
-        class="btn btn-lamp btn-block"
+        class="btn btn-primary btn-block"
         :disabled="!blob || busy"
         @click="send"
       >
@@ -221,11 +221,10 @@ async function send() {
   aspect-ratio: 4 / 5;
   width: min(100%, 300px);
   margin: 0 auto;
-  border-radius: 18px;
+  border-radius: var(--radius-control);
   overflow: hidden;
   border: 1px solid var(--line);
-  background: #07080a;
-  box-shadow: var(--panel-shadow);
+  background: var(--well);
 }
 
 .preview img {
@@ -251,10 +250,10 @@ async function send() {
 .ph {
   flex: 0 0 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   overflow: hidden;
   border: 1px solid var(--line);
-  background: #0b0d10;
+  background: var(--well);
 }
 
 .ph img {
@@ -267,12 +266,11 @@ async function send() {
   display: grid;
   place-items: center;
   font-size: 22px;
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .ph[aria-pressed='true'] {
-  border-color: var(--lamp);
-  box-shadow: 0 0 0 1px var(--lamp);
+  border: 2px solid var(--green);
 }
 
 .hint-row {
@@ -283,7 +281,7 @@ async function send() {
 }
 
 @keyframes develop {
-  from { opacity: 0; filter: brightness(1.6) saturate(0.4); }
+  from { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

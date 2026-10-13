@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import type { Plant, StageId } from '~/types/grow'
+import type { EntryType, Plant, StageId } from '~/types/grow'
 
 definePageMeta({ alias: ['/my-trees'] })
 const { t } = useI18n()
 useHead({ title: () => t('plants.list.title') })
 
 const { state, wateringStatus } = useGrow()
+const today = useToday()
+
+const sheetOpen = ref(false)
+const sheetPlant = ref('')
+const sheetType = ref<EntryType>('water')
+function quickLog(plant: Plant, type: EntryType) {
+  sheetPlant.value = plant.id
+  sheetType.value = type
+  sheetOpen.value = true
+}
 
 type View = 'active' | 'archive'
 type Sort = 'recent' | 'name' | 'age'
@@ -63,8 +73,8 @@ function jarWeight(plant: Plant) {
   return null
 }
 
-function rowStyle(plant: Plant, index: number) {
-  return { '--c': stageInfo(plant.stage).color, '--d': `${Math.min(index, 6) * 45}ms` }
+function rowStyle(index: number) {
+  return { '--d': `${Math.min(index, 5) * 40}ms` }
 }
 </script>
 
@@ -92,11 +102,6 @@ function rowStyle(plant: Plant, index: number) {
           role="tablist"
           :aria-label="t('plants.list.tabsLabel')"
         >
-          <span
-            class="seg-thumb"
-            :class="{ right: view === 'archive' }"
-            aria-hidden="true"
-          />
           <button
             type="button"
             role="tab"
@@ -162,15 +167,13 @@ function rowStyle(plant: Plant, index: number) {
             v-for="s in stagesInView"
             :key="s.id"
             type="button"
-            class="chip stage-chip"
-            :style="{ '--c': s.color }"
+            class="chip"
             :aria-pressed="stageFilter === s.id"
             @click="stageFilter = stageFilter === s.id ? null : s.id"
           >
             <GrowIcon
               :name="s.glyph"
               class="chip-glyph"
-              :glow="stageFilter === s.id"
             />
             {{ s.label }}
           </button>
@@ -195,140 +198,100 @@ function rowStyle(plant: Plant, index: number) {
         </NuxtLink>
       </EmptyState>
 
-      <TransitionGroup
-        v-else-if="view === 'active'"
-        key="active"
-        tag="ul"
-        name="row"
-        class="plant-list"
-        appear
-      >
-        <li
-          v-for="(p, i) in list"
-          :key="p.id"
-          :style="rowStyle(p, i)"
-        >
-          <NuxtLink
-            :to="`/plants/${p.id}`"
-            class="plant-row card"
-          >
-            <div class="row-photo">
-              <PlantPhoto
-                :photo-id="p.photoId"
-                :stage="p.stage"
-                :alt="p.name"
-              />
-            </div>
-            <div class="row-main">
-              <div class="row-top">
-                <h2>{{ p.name }}</h2>
-                <UIcon
-                  v-if="p.type === 'autoflower'"
-                  name="i-tabler-bolt"
-                  class="size-4 auto"
-                  :aria-label="t('plants.list.autoflower')"
-                />
-              </div>
-              <p class="row-strain">
-                {{ p.strain || t('plants.list.unknownStrain') }}
-              </p>
-              <div class="row-stage">
-                <GrowIcon
-                  :name="stageInfo(p.stage).glyph"
-                  class="stage-glyph"
-                />
-                <span class="stage-label">{{ stageInfo(p.stage).label }}</span>
-                <span class="stage-day num">{{ t('plants.list.totalAge', { n: stageProgress(p).age }) }}</span>
-              </div>
-              <div
-                class="progress tube"
-                role="progressbar"
-                :aria-valuenow="stageProgress(p).percent"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                :aria-label="t('plants.list.stageProgress', { stage: stageInfo(p.stage).label })"
-              >
-                <div :style="{ width: `${stageProgress(p).percent}%` }" />
-              </div>
-              <span
-                v-if="waterLabel(p)"
-                class="water"
-                :class="waterLabel(p)!.tone"
-              >
-                <UIcon
-                  name="i-tabler-droplet"
-                  class="size-3.5"
-                /> {{ waterLabel(p)!.text }}
-              </span>
-            </div>
-            <div class="row-age">
-              <span class="age num">{{ stageProgress(p).dayInStage }}</span>
-              <span class="age-unit">{{ t('plants.list.dayOf', { stage: stageInfo(p.stage).label.toLowerCase() }) }}</span>
-            </div>
-          </NuxtLink>
-        </li>
-      </TransitionGroup>
-
       <section
         v-else
-        class="shelf-wrap"
-        :aria-label="t('plants.list.archivedLabel')"
+        :aria-label="view === 'archive' ? t('plants.list.archivedLabel') : undefined"
       >
-        <p
+        <div
           v-if="totalDry"
-          class="shelf-total"
+          class="section-head"
         >
-          <span class="total-num num">{{ totalDry }}</span>
-          <span class="total-unit">{{ t('plants.list.dryOnShelf') }}</span>
-        </p>
+          <span class="section-meta num">
+            <strong>{{ totalDry }}</strong> {{ t('plants.list.dryOnShelf') }}
+          </span>
+        </div>
         <TransitionGroup
-          key="archive"
+          :key="view"
           tag="ul"
           name="row"
-          class="shelf"
+          class="plant-list"
           appear
         >
           <li
             v-for="(p, i) in list"
             :key="p.id"
-            :style="rowStyle(p, i)"
+            :style="rowStyle(i)"
           >
             <NuxtLink
               :to="`/plants/${p.id}`"
-              class="jar"
+              class="card plant"
             >
-              <span
-                class="jar-lid"
-                aria-hidden="true"
-              />
-              <div class="jar-glass">
+              <span class="plant-photo">
                 <PlantPhoto
                   :photo-id="p.photoId"
                   :stage="p.stage"
                   :alt="p.name"
                 />
-              </div>
-              <div class="jar-label">
-                <h2>{{ p.name }}</h2>
-                <p class="row-strain">
-                  {{ p.strain || t('plants.list.unknownStrain') }}
-                </p>
-                <p
-                  v-if="jarWeight(p)"
-                  class="jar-weight"
-                >
-                  <span class="weight num">{{ jarWeight(p)!.value }}</span>
-                  <span class="weight-unit">{{ jarWeight(p)!.unit }}</span>
-                </p>
-                <p class="jar-stage">
-                  <GrowIcon
-                    :name="stageInfo(p.stage).glyph"
-                    class="stage-glyph"
-                  />
-                  {{ stageInfo(p.stage).label }}
-                  <span class="num">· {{ t('plants.list.ageShort', { n: stageProgress(p).age }) }}</span>
-                </p>
-              </div>
+              </span>
+              <span class="plant-body">
+                <span class="plant-top">
+                  <span class="plant-name">
+                    {{ p.name }}
+                    <UIcon
+                      v-if="p.type === 'autoflower'"
+                      name="i-tabler-bolt"
+                      class="size-4 auto"
+                      :aria-label="t('plants.list.autoflower')"
+                    />
+                  </span>
+                  <StageBadge :stage="p.stage" />
+                </span>
+                <span class="plant-lower">
+                  <span class="plant-lines">
+                    <span class="plant-sub">
+                      <strong class="num">{{ t('plants.list.totalAge', { n: stageProgress(p).age }) }}</strong>
+                      <span> · {{ p.strain || t('plants.list.unknownStrain') }}</span>
+                    </span>
+                    <span
+                      v-if="view === 'archive' && jarWeight(p)"
+                      class="plant-hint"
+                    >
+                      <GrowIcon name="harvest" />
+                      <span class="num">{{ jarWeight(p)!.value }} {{ jarWeight(p)!.unit }}</span>
+                    </span>
+                    <span
+                      v-else-if="view === 'active' && waterLabel(p)"
+                      class="plant-hint"
+                      :class="waterLabel(p)!.tone"
+                    >
+                      <GrowIcon name="water" />
+                      {{ waterLabel(p)!.text }}
+                    </span>
+                    <span
+                      class="progress plant-bar"
+                      role="progressbar"
+                      :aria-valuenow="stageProgress(p).percent"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      :aria-label="t('plants.list.stageProgress', { stage: stageInfo(p.stage).label })"
+                    >
+                      <span
+                        class="bar-fill"
+                        :style="{ width: `${stageProgress(p).percent}%` }"
+                      />
+                    </span>
+                  </span>
+                  <button
+                    v-if="view === 'active' && isGrowing(p)"
+                    type="button"
+                    class="plant-log"
+                    :aria-label="t('home.tasks.logWater', { name: p.name })"
+                    @click.prevent.stop="quickLog(p, 'water')"
+                  >
+                    <GrowIcon name="water" />
+                  </button>
+                </span>
+              </span>
             </NuxtLink>
           </li>
         </TransitionGroup>
@@ -341,11 +304,16 @@ function rowStyle(plant: Plant, index: number) {
       class="fab"
       :aria-label="t('plants.list.addPlant')"
     >
-      <UIcon
-        name="i-tabler-plus"
-        class="size-7"
-      />
+      <UIcon name="i-tabler-plus" />
     </NuxtLink>
+
+    <EntrySheet
+      v-if="sheetPlant"
+      v-model:open="sheetOpen"
+      :plant-id="sheetPlant"
+      :type="sheetType"
+      :date="today"
+    />
   </div>
 </template>
 
@@ -357,29 +325,7 @@ function rowStyle(plant: Plant, index: number) {
 }
 
 .segmented button {
-  position: relative;
-  z-index: 1;
-}
-
-.segmented button[aria-selected="true"] {
-  background: transparent;
-  box-shadow: none;
-}
-
-.seg-thumb {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: calc(50% - 6px);
-  border-radius: 12px;
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight), 0 2px 8px rgba(0, 0, 0, 0.45);
-  transition: transform var(--dur) var(--ease-out);
-}
-
-.seg-thumb.right {
-  transform: translateX(calc(100% + 4px));
+  min-height: 40px;
 }
 
 .count {
@@ -417,76 +363,69 @@ function rowStyle(plant: Plant, index: number) {
   flex-shrink: 0;
 }
 
-.chips .chip {
-  min-height: 44px;
-}
-
 .chip-glyph {
-  font-size: 18px;
-  color: var(--c);
+  font-size: 16px;
 }
 
-.stage-chip[aria-pressed="true"] {
-  color: var(--c);
-  border-color: color-mix(in srgb, var(--c) 45%, transparent);
-  background: color-mix(in srgb, var(--c) 13%, var(--surface));
+.section-meta strong {
+  font-weight: 600;
+  color: var(--text);
 }
 
-/* Active list */
-.plant-list,
-.shelf {
+/* List */
+.plant-list {
   position: relative;
   list-style: none;
   margin: 0;
   padding: 0;
-}
-
-.plant-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.plant-row {
+.plant {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 14px 12px 12px;
+  padding: 12px;
   color: inherit;
   text-decoration: none;
-  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur) ease;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.plant-row:active {
+.plant:active {
   transform: scale(0.985);
-  border-color: var(--accent-line);
 }
 
-.row-photo {
-  width: 68px;
-  height: 68px;
+.plant-photo {
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-control);
   overflow: hidden;
-  box-shadow: 0 0 0 1px var(--line), 0 6px 16px -6px color-mix(in srgb, var(--c) 40%, transparent);
 }
 
-.row-main {
+.plant-body {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
-.row-top {
+.plant-top {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-h2 {
-  margin: 0;
-  font-size: 15px;
+.plant-name {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -495,12 +434,11 @@ h2 {
 }
 
 .auto {
-  color: var(--lamp);
   flex-shrink: 0;
+  color: var(--amber);
 }
 
-.row-strain {
-  margin: 1px 0 0;
+.plant-sub {
   font-size: 13px;
   color: var(--text-2);
   white-space: nowrap;
@@ -508,211 +446,80 @@ h2 {
   text-overflow: ellipsis;
 }
 
-.row-stage {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 8px;
-  font-size: 12px;
-}
-
-.stage-glyph {
-  font-size: 15px;
-  color: var(--c);
-}
-
-.stage-label {
+.plant-sub strong {
   font-weight: 600;
-  color: var(--c);
-}
-
-.stage-day {
-  min-width: 0;
-  margin-left: auto;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--text-3);
-}
-
-.tube {
-  height: 4px;
-  margin-top: 6px;
-}
-
-.tube > div {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #0b0d10), var(--c));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--c) 50%, transparent);
-}
-
-.water {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-top: 7px;
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.water.today {
-  color: var(--leaf);
-  font-weight: 600;
-}
-
-.water.overdue {
-  color: var(--pink);
-  font-weight: 600;
-}
-
-.row-age {
-  flex-shrink: 0;
-  min-width: 44px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1;
-}
-
-.age {
-  font-size: 30px;
-  font-weight: 300;
-  letter-spacing: -0.03em;
   color: var(--text);
 }
 
-.age-unit {
-  max-width: 76px;
-  margin-top: 4px;
-  font-size: 11px;
-  line-height: 1.25;
-  text-align: right;
-  color: var(--text-3);
+.plant-lower {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
 }
 
-/* Archive: a shelf of curing jars */
-.shelf-wrap {
+.plant-lines {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 4px;
 }
 
-.shelf-total {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.total-num {
-  font-size: 34px;
-  font-weight: 300;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  color: var(--lamp);
-  text-shadow: 0 0 18px rgba(255, 210, 138, 0.35);
-}
-
-.total-unit {
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.shelf {
+.plant-log {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  margin-bottom: -2px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 26px 12px;
-  padding-bottom: 6px;
-}
-
-.shelf > li {
-  position: relative;
-}
-
-/* the shelf plank under each jar */
-.shelf > li::after {
-  content: '';
-  position: absolute;
-  left: -6px;
-  right: -6px;
-  bottom: -12px;
-  height: 3px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 210, 138, 0.22) 20%, rgba(255, 210, 138, 0.22) 80%, transparent);
-  box-shadow: 0 6px 14px rgba(255, 210, 138, 0.08);
-}
-
-.jar {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  color: inherit;
-  text-decoration: none;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  color: var(--blue);
+  font-size: 20px;
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.jar:active {
-  transform: scale(0.97);
+.plant-log:active {
+  transform: scale(0.92);
 }
 
-.jar-lid {
-  align-self: center;
-  width: 62%;
-  height: 10px;
-  border-radius: 6px 6px 2px 2px;
-  background: linear-gradient(180deg, #3a3f46, #23272d);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.jar-glass {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  margin-top: 2px;
-  border-radius: 14px 14px 22px 22px;
-  overflow: hidden;
-  border: 1px solid var(--line-strong);
-  box-shadow: inset 0 1px 0 var(--highlight), 0 10px 24px -10px rgba(0, 0, 0, 0.7);
-}
-
-.jar-glass::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 18%, rgba(255, 255, 255, 0.1) 24%, transparent 31%);
-  pointer-events: none;
-}
-
-.jar-label {
-  padding: 10px 2px 0;
-  min-width: 0;
-}
-
-.jar-weight {
-  margin: 6px 0 0;
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-}
-
-.weight {
-  font-size: 24px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: var(--lamp);
-}
-
-.weight-unit {
-  font-size: 12px;
-  color: var(--text-2);
-}
-
-.jar-stage {
-  margin: 6px 0 0;
+.plant-hint {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 12px;
+  font-weight: 500;
   color: var(--text-3);
+}
+
+.plant-hint .grow-icon {
+  font-size: 14px;
+}
+
+.plant-hint.today {
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.plant-hint.overdue {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.plant-bar {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: var(--green);
+  transition: width var(--dur-slow) var(--ease-out);
 }
 
 /* Rows rise in (capped stagger); filtering moves and fades */
@@ -725,74 +532,25 @@ h2 {
   position: absolute;
   left: 0;
   right: 0;
-  transition: opacity var(--dur-fast) ease, transform var(--dur) var(--ease-out);
-}
-
-.shelf .row-leave-active {
-  right: auto;
-  width: calc(50% - 6px);
+  transition: opacity var(--dur-fast) ease;
 }
 
 .row-enter-from {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(8px);
 }
 
 .row-leave-to {
   opacity: 0;
-  transform: scale(0.96);
 }
 
 .row-move {
   transition: transform var(--dur-slow) var(--ease-out);
 }
 
-/* FAB: a leaf-lit lamp button */
-.fab {
-  position: absolute;
-  right: 20px;
-  bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
-  z-index: 40;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--on-accent);
-  background: radial-gradient(120% 120% at 50% 0%, #c6f59f 0%, var(--leaf) 45%, #76c24a 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 0 1px rgba(155, 227, 107, 0.4),
-    0 0 26px rgba(155, 227, 107, 0.45),
-    0 10px 24px -6px rgba(0, 0, 0, 0.7);
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur) var(--ease-out);
-  animation: fab-in var(--dur-slow) var(--ease-out) 120ms both;
-}
-
-.fab:active {
-  transform: scale(0.9);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 0 0 1px rgba(155, 227, 107, 0.5),
-    0 0 12px rgba(155, 227, 107, 0.6),
-    0 4px 10px -4px rgba(0, 0, 0, 0.7);
-}
-
-@keyframes fab-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .row-enter-active {
     transition-delay: 0ms;
-  }
-
-  .fab {
-    animation: none;
   }
 }
 </style>

@@ -80,9 +80,9 @@ watch(open, async (v) => {
   max-width: 340px;
   padding: 22px 20px 20px;
   border-radius: var(--radius-lg);
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line-strong);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 24px 60px -16px rgba(0, 0, 0, 0.9);
+  box-shadow: var(--shadow-float);
 }
 
 h2 {
@@ -107,10 +107,9 @@ p {
 }
 
 .confirm-danger {
-  background: linear-gradient(180deg, #ff7a86 0%, var(--danger) 100%);
-  border-color: transparent;
+  background: var(--red);
+  border-color: var(--red);
   color: #1a0507;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 22px -10px rgba(255, 95, 109, 0.6);
 }
 
 .confirm-enter-active,

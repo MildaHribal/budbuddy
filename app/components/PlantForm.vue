@@ -119,7 +119,7 @@ function submit() {
         <span class="photo-icon">
           <UIcon
             :name="busy ? 'i-tabler-loader-2' : 'i-tabler-camera'"
-            class="size-6"
+            class="size-5"
             :class="{ 'animate-spin': busy }"
           />
         </span>
@@ -168,9 +168,6 @@ function submit() {
             <GrowIcon
               :name="s.glyph"
               class="stage-glyph"
-              :draw="form.stage === s.id"
-              :glow="form.stage === s.id"
-              :stroke-width="1.4"
             />
           </span>
           <span class="stage-name">{{ s.label }}</span>
@@ -221,11 +218,6 @@ function submit() {
       <div class="field">
         <span class="field-label">{{ t('plantForm.type') }}</span>
         <div class="segmented">
-          <span
-            class="seg-thumb"
-            :class="{ right: form.type === 'autoflower' }"
-            aria-hidden="true"
-          />
           <button
             type="button"
             :aria-pressed="form.type === 'photoperiod'"
@@ -431,35 +423,29 @@ function submit() {
   padding: 16px;
 }
 
-/* Photo: a lit drop area */
+/* Photo */
 .photo-drop {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 156px;
+  min-height: 148px;
   padding: 0;
   overflow: hidden;
-  border-radius: var(--radius-lg);
-  border: 1.5px dashed var(--accent-line);
-  background:
-    radial-gradient(80% 90% at 50% 0%, rgba(255, 210, 138, 0.14) 0%, rgba(155, 227, 107, 0.07) 45%, transparent 80%),
-    #0b0d10;
-  box-shadow: inset 0 1px 0 var(--highlight);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--text);
-  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur) ease;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .photo-drop:active:not(:disabled) {
   transform: scale(0.985);
-  border-color: var(--leaf);
 }
 
 .photo-drop.filled {
   min-height: 0;
-  aspect-ratio: 16 / 10;
-  border-style: solid;
-  border-color: var(--line-strong);
+  aspect-ratio: 4 / 3;
 }
 
 .photo-preview {
@@ -484,32 +470,25 @@ function submit() {
   flex-direction: row;
   gap: 8px;
   padding: 6px 14px 6px 6px;
-  border-radius: 999px;
-  background: rgba(7, 8, 10, 0.78);
-  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: rgba(14, 16, 15, 0.8);
 }
 
 .photo-icon {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  color: var(--on-accent);
-  background: radial-gradient(120% 120% at 50% 0%, #c6f59f 0%, var(--leaf) 50%, #76c24a 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), var(--glow-leaf);
+  border-radius: var(--radius-control);
+  color: var(--green);
+  background: var(--accent-soft);
 }
 
 .filled .photo-icon {
   width: 32px;
   height: 32px;
-}
-
-.filled .photo-icon :deep(svg),
-.filled .photo-icon .size-6 {
-  width: 18px;
-  height: 18px;
+  border-radius: 8px;
 }
 
 .photo-title {
@@ -548,11 +527,11 @@ function submit() {
   gap: 2px;
   min-width: 0;
   padding: 12px 4px 10px;
-  border-radius: 16px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: #0b0d10;
+  background: var(--well);
   color: var(--text-2);
-  transition: border-color var(--dur) var(--ease-out), background var(--dur) var(--ease-out), color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
+  transition: border-color var(--dur) ease, background var(--dur) ease, color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .stage-option:active {
@@ -561,21 +540,20 @@ function submit() {
 
 .stage-option[aria-checked="true"] {
   color: var(--text);
-  border-color: color-mix(in srgb, var(--c) 55%, transparent);
-  background: radial-gradient(100% 80% at 50% 0%, color-mix(in srgb, var(--c) 22%, transparent) 0%, transparent 75%), #0b0d10;
-  box-shadow: 0 0 18px -4px color-mix(in srgb, var(--c) 45%, transparent);
+  border-color: var(--green);
+  background: var(--accent-soft);
 }
 
 .stage-glyph-wrap {
-  height: 40px;
+  height: 36px;
   display: flex;
   align-items: center;
   margin-bottom: 4px;
 }
 
 .stage-glyph {
-  font-size: 34px;
-  color: color-mix(in srgb, var(--c) 55%, var(--text-3));
+  font-size: 28px;
+  color: var(--text-3);
   transition: color var(--dur) ease;
 }
 
@@ -599,41 +577,12 @@ function submit() {
   line-height: 1.3;
 }
 
-/* Type segmented control with sliding thumb */
 .segmented button {
-  position: relative;
-  z-index: 1;
   min-height: 44px;
-}
-
-.segmented button[aria-pressed="true"] {
-  background: transparent;
-  box-shadow: none;
-}
-
-.seg-thumb {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: calc(50% - 6px);
-  border-radius: 12px;
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight), 0 2px 8px rgba(0, 0, 0, 0.45);
-  transition: transform var(--dur) var(--ease-out);
-}
-
-.seg-thumb.right {
-  transform: translateX(calc(100% + 4px));
 }
 
 .seg-icon {
   font-size: 17px;
-  transition: color var(--dur) ease;
-}
-
-.segmented button[aria-pressed="true"] .seg-icon {
-  color: var(--lamp);
 }
 
 .chips.wrap {
@@ -658,9 +607,9 @@ function submit() {
   gap: 4px;
   min-width: 0;
   padding: 10px 2px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: #0b0d10;
+  background: var(--well);
   color: var(--text-3);
   font-size: 11px;
   font-weight: 600;
@@ -669,8 +618,8 @@ function submit() {
 
 .health-opt[aria-checked="true"] {
   color: var(--c);
-  border-color: color-mix(in srgb, var(--c) 55%, transparent);
-  background: color-mix(in srgb, var(--c) 12%, #0b0d10);
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 12%, transparent);
 }
 
 .submit {

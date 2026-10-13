@@ -6,21 +6,20 @@ const { tr } = useGuide()
 </script>
 
 <template>
-  <div
-    class="compare"
-    :class="{ wide: columns.length > 2 }"
-  >
+  <div class="compare card">
     <section
       v-for="(col, i) in columns"
       :key="i"
-      class="col card"
+      class="col"
     >
       <h4 class="col-title">
-        <GrowIcon
+        <span
           v-if="col.glyph"
-          :name="col.glyph"
-          class="col-glyph"
-        />
+          class="col-tile"
+          aria-hidden="true"
+        >
+          <GrowIcon :name="col.glyph" />
+        </span>
         {{ tr(col.title) }}
       </h4>
       <ul>
@@ -37,57 +36,52 @@ const { tr } = useGuide()
 
 <style scoped>
 .compare {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.compare.wide {
-  grid-template-columns: 1fr;
+  padding: 0 14px;
 }
 
 .col {
-  padding: 14px;
+  padding: 14px 0;
+}
+
+.col + .col {
+  border-top: 1px solid var(--line);
 }
 
 .col-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 10px;
-  font-size: 14px;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-size: 16px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.col-glyph {
+.col-tile {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--green);
   font-size: 20px;
-  color: var(--leaf);
 }
 
 ul {
   margin: 0;
-  padding: 0;
-  list-style: none;
+  padding-left: 18px;
 }
 
 li {
-  position: relative;
-  padding-left: 14px;
-  margin: 6px 0;
-  font-size: 13px;
+  margin: 4px 0;
+  padding-left: 2px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--text-2);
 }
 
-li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.62em;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--leaf);
-  opacity: 0.7;
+li::marker {
+  color: var(--text-3);
 }
 </style>

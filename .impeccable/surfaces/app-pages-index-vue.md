@@ -5,22 +5,20 @@ primary_target: "app/pages/index.vue"
 related_targets: ["app/app.vue"]
 ---
 
-Scope: the whole BudBuddy app shell and every screen (dashboard, plants, plant detail, entry sheets, gallery, stats, tools, settings, AI page styling). Visitor mode: Operate (portfolio visitors judge it at first view).
+Scope: the whole BudBuddy app shell and every screen (home, plants, plant detail, entry sheets, gallery, stats, tools, settings, guide, community, AI page styling). Visitor mode: Operate.
 
 Audience/job: home grower at the tent in the evening, one hand, low light; portfolio visitor opening the demo garden.
 
 ## Direction contract
 
-THESIS: The app is the grow tent at lights-on. Dark crinkled-mylar ground, the canopy lit from a lamp at the top of the screen, and the light cycle is the clock of the day. Refuses the flat grey dark-mode tracker with green accent cards.
+THESIS: The category standard, played straight: a calm dark grow app at the craft level of Grow with Jane, Planta and GrowDiaries. It refuses the "lit tent" decoration of the previous world (lamp bar, glows, gradients, mylar sheen) and the generic AI-app tells: no gradients, glass, glow, decorative shadows, oversized headlines or pill-everything.
 
-OWN-WORLD: Ground #07080a with faint diagonal mylar sheen; panels #1a1d22 with a top-lit gradient and 1px inner highlight; text #e9f3e4, muted #8d9a8a; leaf green #9be36b for growth/success/active; lamp #ffd28a for light and time; full-spectrum pink #ff5fa2 only for overdue/attention. Sora variable, light 300 for big numbers, 600 for headings. Custom duotone line glyphs (1.6 stroke, 20% fill) for stages and entry types; active nav marked by a glowing leaf bar.
+OWN-WORLD: Ground #0E100F, cards #171A18 with 1px #252A27 borders and 16px corners, text #F2F4F1 / #A5ADA8 / #838B86. One accent, green #3DD173 (actions, active tab, progress, healthy); amber #F2B544 for light/time and harvest windows; red #F2626A for overdue and errors. Onest variable, 15px body, 600 headings, big numbers 600 tabular. Stage colours and the custom stage/entry glyphs stay, flat (no glow, no draw-in). Standard controls: 48px buttons (12px radius), chips, segmented control, labelled 5-tab bottom bar, bottom sheets with a handle, a green FAB on list screens.
 
-STORY: The grower sees what needs doing tonight, logs it in two taps, and watches each plant move through its stages; the visitor understands it is a full grow journal within one screen.
+STORY: The grower opens the app, sees today's tasks and the light countdown, logs a watering in two taps from a plant card, and reads the plant's history as a clean timeline; the visitor recognises a polished grow app immediately.
 
-FIRST VIEWPORT: Date + "Good evening, <name>" header; photoperiod ring (168px, lit arc green, dark arc slate, lamp marker = now) with "Lights off in 4 h 12 m"; Today tasks list in one panel; Your garden plant rows with photo, stage, day and stage progress; bottom nav with centre AI. Lamp bar glows at the top edge.
+FIRST VIEWPORT: Date line + "Dobrý večer, Mildo" (22px) with a bell/settings button right; "Dnes" card with checkbox rows and a "0 / 2 hotovo" count; light card with sun icon, "Světlo · 18/6 · 06:00–00:00", "Zhasíná za 2 h 40 min" and a flat progress bar; "Rostliny / Zobrazit vše" head; plant cards (56–64px photo, name, stage chip, bold day count + pH/EC, progress bar); green FAB bottom-right; labelled bottom tabs.
 
-FORM: Lights On (my pick, ranked 1st of 7 grounded candidates), seed key c067bf83.
-
-Signature interaction / motion grammar: lights-on boot — lamp bar flickers on, light falls down the screen, ring arc draws in, content settles. Routine transitions 150–300 ms ease-out (cubic-bezier(0.16,1,0.3,1)); stage glyphs draw themselves on stage change; logging an entry pulses the lamp light once. Reduced motion: fades only.
+FORM: Category standard (canon), chosen by the user over the assigned Seed Bank Catalogue; seed key 4c57e36d. Signature interaction: logging an entry from a plant card ticks the task and fills the progress bar; motion is 150–250 ms ease-out, no boot animation beyond a fade.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

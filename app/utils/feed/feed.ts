@@ -33,11 +33,11 @@ export const REACTIONS = ['like', 'healthy', 'training', 'frosty', 'helpful'] as
 export type ReactionKind = typeof REACTIONS[number]
 
 export const REACTION_GLYPH: Record<ReactionKind, { glyph: string, on: string, color: string }> = {
-  like: { glyph: 'i-tabler-heart', on: 'i-tabler-heart-filled', color: 'var(--leaf)' },
-  healthy: { glyph: 'vegetative', on: 'vegetative', color: 'var(--leaf)' },
+  like: { glyph: 'i-tabler-heart', on: 'i-tabler-heart-filled', color: 'var(--green)' },
+  healthy: { glyph: 'vegetative', on: 'vegetative', color: 'var(--green)' },
   training: { glyph: 'train', on: 'train', color: 'var(--info)' },
   frosty: { glyph: 'i-tabler-snowflake', on: 'i-tabler-snowflake', color: '#e4eefc' },
-  helpful: { glyph: 'i-tabler-bulb', on: 'i-tabler-bulb-filled', color: 'var(--lamp)' }
+  helpful: { glyph: 'i-tabler-bulb', on: 'i-tabler-bulb-filled', color: 'var(--amber)' }
 }
 
 /** Plant snapshot as stored in posts.plant_context. */

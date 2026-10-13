@@ -7,7 +7,7 @@ const missing = computed(() => props.error.statusCode === 404)
 </script>
 
 <template>
-  <div class="crash">
+  <div class="crash page">
     <EmptyState
       :icon="missing ? 'seedling' : 'pest'"
       :title="t(missing ? 'common.notFound.title' : 'common.crash.title')"
@@ -27,10 +27,7 @@ const missing = computed(() => props.error.statusCode === 404)
 <style scoped>
 .crash {
   min-height: 100dvh;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 20px;
   background: var(--bg);
 }
 </style>

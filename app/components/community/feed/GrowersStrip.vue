@@ -148,12 +148,12 @@ async function toggle(g: Grower) {
 .strip {
   display: flex;
   gap: 10px;
-  margin: 0 -20px;
-  padding: 2px 20px 6px;
+  margin: 0 -16px;
+  padding: 2px 16px 6px;
   list-style: none;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  scroll-padding: 0 20px;
+  scroll-padding: 0 16px;
   scrollbar-width: none;
 }
 
@@ -188,7 +188,7 @@ async function toggle(g: Grower) {
 
 .g-name {
   max-width: 100%;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -197,7 +197,7 @@ async function toggle(g: Grower) {
 
 .g-setup {
   max-width: 100%;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;

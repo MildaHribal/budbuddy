@@ -23,11 +23,11 @@ export interface VpdZone {
 }
 
 export function vpdZone(kpa: number): VpdZone {
-  if (kpa < 0.4) return { label: l({ en: 'Too low', cs: 'Příliš nízké' }), color: '#7cc8f2', advice: l({ en: 'Danger of mould – lower humidity or raise temperature.', cs: 'Hrozí plíseň – sniž vlhkost nebo zvyš teplotu.' }) }
-  if (kpa < 0.8) return { label: l({ en: 'Propagation', cs: 'Množení' }), color: '#6fe0c8', advice: l({ en: 'Ideal for clones and seedlings.', cs: 'Ideální pro řízky a sazenice.' }) }
-  if (kpa < 1.2) return { label: l({ en: 'Vegetative', cs: 'Vegetace' }), color: '#9be36b', advice: l({ en: 'Ideal for vegetative growth and early flower.', cs: 'Ideální pro vegetaci a začátek kvetení.' }) }
-  if (kpa <= 1.6) return { label: l({ en: 'Flowering', cs: 'Kvetení' }), color: '#c9a2ff', advice: l({ en: 'Ideal for mid and late flowering.', cs: 'Ideální pro střed a konec kvetení.' }) }
-  return { label: l({ en: 'Too high', cs: 'Příliš vysoké' }), color: '#ff5f6d', advice: l({ en: 'Plants are stressed – raise humidity or lower temperature.', cs: 'Rostliny jsou ve stresu – zvyš vlhkost nebo sniž teplotu.' }) }
+  if (kpa < 0.4) return { label: l({ en: 'Too low', cs: 'Příliš nízké' }), color: '#5fb4ee', advice: l({ en: 'Danger of mould – lower humidity or raise temperature.', cs: 'Hrozí plíseň – sniž vlhkost nebo zvyš teplotu.' }) }
+  if (kpa < 0.8) return { label: l({ en: 'Propagation', cs: 'Množení' }), color: '#5fd9c4', advice: l({ en: 'Ideal for clones and seedlings.', cs: 'Ideální pro řízky a sazenice.' }) }
+  if (kpa < 1.2) return { label: l({ en: 'Vegetative', cs: 'Vegetace' }), color: '#3dd173', advice: l({ en: 'Ideal for vegetative growth and early flower.', cs: 'Ideální pro vegetaci a začátek kvetení.' }) }
+  if (kpa <= 1.6) return { label: l({ en: 'Flowering', cs: 'Kvetení' }), color: '#b58cf5', advice: l({ en: 'Ideal for mid and late flowering.', cs: 'Ideální pro střed a konec kvetení.' }) }
+  return { label: l({ en: 'Too high', cs: 'Příliš vysoké' }), color: '#f2626a', advice: l({ en: 'Plants are stressed – raise humidity or lower temperature.', cs: 'Rostliny jsou ve stresu – zvyš vlhkost nebo sniž teplotu.' }) }
 }
 
 /** Daily light integral (mol/m²/day) from PPFD (µmol/m²/s) and hours of light. */

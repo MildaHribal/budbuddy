@@ -245,7 +245,7 @@ function onImgLoad() {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: calc(12px + var(--safe-top)) 14px 12px 20px;
+  padding: calc(12px + var(--safe-top)) 12px 12px 16px;
 }
 
 .lb-text {
@@ -277,7 +277,7 @@ a.lb-title {
 }
 
 .lb-chev {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .lb-sub {
@@ -288,10 +288,10 @@ a.lb-title {
   text-overflow: ellipsis;
 }
 
+/* flat chrome on black: 44px tiles, no border */
 .lb-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: none;
+  background: var(--surface-2);
+  border-color: transparent;
 }
 
 .lb-btn:disabled {
@@ -326,20 +326,21 @@ a.lb-title {
   min-width: 64px;
   text-align: center;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
 }
 
 .lb-total {
   color: var(--text-3);
+  font-weight: 500;
 }
 
 .lb-enter-active .lb-bg {
-  transition: opacity 280ms var(--ease-out);
+  transition: opacity var(--dur) var(--ease-out);
 }
 
 .lb-enter-active .lb-chrome {
-  transition: opacity 240ms ease 120ms;
+  transition: opacity var(--dur) ease 120ms;
 }
 
 .lb-enter-from .lb-bg,
@@ -348,7 +349,7 @@ a.lb-title {
 }
 
 .lb-leave-active {
-  transition: opacity 200ms ease;
+  transition: opacity var(--dur-fast) ease;
 }
 
 .lb-leave-to {

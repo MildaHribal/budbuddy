@@ -85,7 +85,7 @@ const reason = (r: string) => t(`admin.ai.reasons.${['offensive', 'dangerous', '
       <li
         v-for="g in groups"
         :key="g.key"
-        class="item card"
+        class="item"
         :class="{ busy: busy === g.key }"
       >
         <div class="item-head">
@@ -151,7 +151,7 @@ const reason = (r: string) => t(`admin.ai.reasons.${['offensive', 'dangerous', '
 
 .count {
   flex-shrink: 0;
-  color: var(--pink);
+  color: var(--red);
 }
 
 .model {
@@ -183,8 +183,9 @@ const reason = (r: string) => t(`admin.ai.reasons.${['offensive', 'dangerous', '
   max-height: 240px;
   overflow-y: auto;
   padding: 8px 10px;
-  border-radius: 10px;
-  background: var(--well, #0b0d10);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--well);
   color: var(--text-2);
 }
 

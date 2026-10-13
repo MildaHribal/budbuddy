@@ -59,7 +59,6 @@ const panels = [{ cx: 74, male: false }, { cx: 228, male: true }]
           d="M4 88q-6-12-16-18M4 88q6-12 17-17"
           :stroke="ART.pale"
           stroke-width="1.8"
-          class="ga-glow"
           :style="{ color: ART.pale }"
         />
       </template>
@@ -108,7 +107,7 @@ const panels = [{ cx: 74, male: false }, { cx: 228, male: true }]
     />
     <path
       d="M262 138L246 106"
-      stroke="#8d9a8a"
+      stroke="var(--text-3)"
       stroke-width="1"
       stroke-opacity="0.8"
     />
@@ -116,7 +115,7 @@ const panels = [{ cx: 74, male: false }, { cx: 228, male: true }]
       cx="246"
       cy="106"
       r="1.8"
-      fill="#8d9a8a"
+      fill="var(--text-3)"
     />
     <text
       x="262"

@@ -22,12 +22,12 @@ final class Texts {
 
     static int stageColor(String id) {
         switch (id) {
-            case "germination": return 0xffe9d68f;
-            case "vegetative": return 0xff9be36b;
-            case "flowering": return 0xffc9a2ff;
-            case "drying": return 0xffd9a76a;
-            case "curing": return 0xfff0b95e;
-            default: return 0xffc8f08f;
+            case "germination": return 0xffd9c46b;
+            case "vegetative": return 0xff3dd173;
+            case "flowering": return 0xffb58cf5;
+            case "drying": return 0xffd9a06a;
+            case "curing": return 0xfff2b544;
+            default: return 0xff8fd97a;
         }
     }
 

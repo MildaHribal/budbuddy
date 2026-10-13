@@ -72,7 +72,7 @@ const name = computed(() => props.author?.display_name?.trim() || props.author?.
 
 .chip-name {
   min-width: 0;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;

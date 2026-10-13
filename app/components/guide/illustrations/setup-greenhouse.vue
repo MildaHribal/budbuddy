@@ -45,7 +45,7 @@ const plants = [104, 142, 180, 218]
     />
     <path
       d="M176 50l40 20"
-      stroke="#0b0d10"
+      stroke="var(--well)"
       stroke-width="3"
     />
     <path
@@ -78,7 +78,6 @@ const plants = [104, 142, 180, 218]
       :fill="ART.lamp"
       fill-opacity="0.35"
       :stroke="ART.lamp"
-      class="ga-glow"
       :style="{ color: ART.lamp }"
     />
     <path

@@ -28,18 +28,18 @@ interface Item {
 const PAGE = 20
 const NuxtLink = resolveComponent('NuxtLink')
 const GLYPH: Record<Kind, { icon: string, color: string }> = {
-  like: { icon: 'i-tabler-heart-filled', color: '#ff8fb8' },
-  reaction: { icon: 'vegetative', color: '#9be36b' },
-  comment: { icon: 'i-tabler-message-circle', color: '#7cc8f2' },
-  reply: { icon: 'i-tabler-arrow-back-up', color: '#7cc8f2' },
-  follow: { icon: 'i-tabler-user-plus', color: '#9be36b' },
-  accepted: { icon: 'i-tabler-circle-check', color: '#9be36b' },
-  tip_vote: { icon: 'i-tabler-thumb-up', color: '#9be36b' },
-  challenge: { icon: 'i-tabler-trophy', color: '#ffd28a' },
-  moderation: { icon: 'i-tabler-shield-check', color: '#a9b5a6' },
-  badge: { icon: 'i-tabler-award', color: '#ffd28a' },
-  solve_ping: { icon: 'i-tabler-circle-check', color: '#ffd28a' },
-  update: { icon: 'photo', color: '#9be36b' }
+  like: { icon: 'i-tabler-heart-filled', color: 'var(--red)' },
+  reaction: { icon: 'vegetative', color: 'var(--green)' },
+  comment: { icon: 'i-tabler-message-circle', color: 'var(--blue)' },
+  reply: { icon: 'i-tabler-arrow-back-up', color: 'var(--blue)' },
+  follow: { icon: 'i-tabler-user-plus', color: 'var(--green)' },
+  accepted: { icon: 'i-tabler-circle-check', color: 'var(--green)' },
+  tip_vote: { icon: 'i-tabler-thumb-up', color: 'var(--green)' },
+  challenge: { icon: 'i-tabler-trophy', color: 'var(--amber)' },
+  moderation: { icon: 'i-tabler-shield-check', color: 'var(--text-2)' },
+  badge: { icon: 'i-tabler-award', color: 'var(--amber)' },
+  solve_ping: { icon: 'i-tabler-circle-check', color: 'var(--amber)' },
+  update: { icon: 'photo', color: 'var(--green)' }
 }
 const REACTION_KINDS = ['like', 'healthy', 'training', 'frosty', 'helpful']
 
@@ -322,19 +322,23 @@ useOnlineRetry(() => error.value, loadMore)
           <TransitionGroup
             tag="ul"
             name="nlist"
-            class="list"
+            class="list card"
           >
             <li
               v-for="i in g.items"
               :key="i.key"
               class="item"
-              :class="{ fresh: isFresh(i), celebrate: i.type === 'badge' }"
+              :class="{ fresh: isFresh(i) }"
             >
               <component
                 :is="link(i) ? NuxtLink : 'div'"
                 :to="link(i) ?? undefined"
                 class="item-main"
               >
+                <span
+                  class="dot"
+                  aria-hidden="true"
+                />
                 <span
                   class="who"
                   :class="{ stack: i.actors.length > 1 }"
@@ -343,29 +347,29 @@ useOnlineRetry(() => error.value, loadMore)
                     v-if="i.type === 'badge'"
                     :glyph="badgeGlyph(badgeOf(i))"
                     :tier="badgeOf(i)?.tier ?? 2"
-                    :size="44"
+                    :size="40"
                   />
                   <template v-else-if="i.actors.length">
                     <CommunityUserAvatar
                       :url="i.actors[0]!.avatar_url"
                       :name="nameOf(i.actors[0])"
-                      :size="44"
+                      :size="40"
                     />
                     <CommunityUserAvatar
                       v-if="i.actors[1]"
                       class="second"
                       :url="i.actors[1].avatar_url"
                       :name="nameOf(i.actors[1])"
-                      :size="28"
+                      :size="24"
                     />
+                    <span
+                      class="kind"
+                      :style="{ color: GLYPH[i.type]?.color }"
+                    ><GrowIcon :name="GLYPH[i.type]?.icon ?? 'note'" /></span>
                   </template>
                   <span
                     v-else
-                    class="sys-avatar"
-                  ><GrowIcon name="lamp" /></span>
-                  <span
-                    v-if="i.type !== 'badge'"
-                    class="kind"
+                    class="tile"
                     :style="{ color: GLYPH[i.type]?.color }"
                   ><GrowIcon :name="GLYPH[i.type]?.icon ?? 'note'" /></span>
                 </span>
@@ -417,101 +421,91 @@ useOnlineRetry(() => error.value, loadMore)
 
 <style scoped>
 .page {
-  gap: 20px;
+  gap: 24px;
   padding-top: 4px;
 }
 
 .group-label {
-  margin: 0 0 8px;
-  font-size: 12px;
+  margin: 0 0 12px;
+  font-size: 17px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-3);
+  letter-spacing: -0.01em;
 }
 
 .list {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
+  overflow: hidden;
 }
 
 .item {
   position: relative;
   display: flex;
   align-items: stretch;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight);
 }
 
-.item.fresh {
-  border-color: rgba(255, 210, 138, 0.28);
-  background: linear-gradient(180deg, rgba(255, 210, 138, 0.07), transparent 70%), var(--panel);
-}
-
-.item.fresh::before {
-  content: '';
-  position: absolute;
-  top: 18px;
-  left: -4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--lamp);
-  box-shadow: 0 0 10px rgba(255, 210, 138, 0.6);
-}
-
-.item.celebrate {
-  border-color: rgba(255, 210, 138, 0.34);
-  background:
-    radial-gradient(80% 120% at 0% 0%, rgba(255, 210, 138, 0.14), transparent 60%),
-    var(--panel);
+.item + .item {
+  border-top: 1px solid var(--line);
 }
 
 .item-main {
   flex: 1;
   min-width: 0;
   display: flex;
-  gap: 12px;
-  padding: 12px 4px 12px 12px;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px 0 10px 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-top: 17px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.fresh .dot {
+  background: var(--green);
 }
 
 .who {
   position: relative;
   flex-shrink: 0;
-  height: 44px;
+  width: 40px;
+  height: 40px;
 }
 
 .who.stack {
-  width: 62px;
+  width: 54px;
 }
 
 .who .second {
   position: absolute;
   right: 0;
-  top: -6px;
-  box-shadow: 0 0 0 2px var(--surface-2);
+  top: -4px;
+  border: 2px solid var(--surface);
 }
 
 .who.stack .kind {
-  right: 14px;
+  right: 10px;
 }
 
-.sys-avatar {
-  width: 44px;
-  height: 44px;
+.tile {
+  width: 40px;
+  height: 40px;
   display: inline-grid;
   place-items: center;
-  border-radius: 50%;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--lamp);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, currentColor 14%, transparent);
   font-size: 20px;
 }
 
@@ -519,27 +513,33 @@ useOnlineRetry(() => error.value, loadMore)
   position: absolute;
   right: -4px;
   bottom: -4px;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: inline-grid;
   place-items: center;
   border-radius: 50%;
   background: var(--surface-3);
-  box-shadow: 0 0 0 2px var(--surface-2);
-  font-size: 13px;
+  border: 2px solid var(--surface);
+  font-size: 11px;
 }
 
 .text {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   gap: 2px;
+  padding-top: 1px;
 }
 
 .line {
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.fresh .line {
+  font-weight: 600;
 }
 
 .snippet {
@@ -562,7 +562,7 @@ useOnlineRetry(() => error.value, loadMore)
   gap: 2px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--lamp);
+  color: var(--green);
 }
 
 .ago {
@@ -589,16 +589,20 @@ useOnlineRetry(() => error.value, loadMore)
 
 .sk {
   display: block;
-  height: 70px;
-  border-radius: 16px;
-  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-3) 50%, var(--surface) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  height: 64px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
+.list:not(.card) {
+  gap: 8px;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
   }
 }
 

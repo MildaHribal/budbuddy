@@ -9,7 +9,7 @@ export default {
     cs: 'Zákon, vybavení, rozpočet a první velká rozhodnutí: automat, nebo fotoperioda, feminizovaná, nebo regulérní semínka a jaká odrůda.'
   },
   glyph: 'seedling',
-  color: '#c8f08f',
+  color: '#8fd97a',
   lessons: [
     {
       id: 'start-legal',

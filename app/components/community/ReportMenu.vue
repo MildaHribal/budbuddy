@@ -9,6 +9,8 @@ const props = defineProps<{
   authorName?: string | null
   /** owner menu without Edit */
   noEdit?: boolean
+  /** page headers: keep the icon-btn frame (post cards use the bare trigger) */
+  framed?: boolean
 }>()
 const emit = defineEmits<{ edit: [], delete: [] }>()
 
@@ -75,7 +77,8 @@ async function toggleBlock() {
 <template>
   <button
     type="button"
-    class="icon-btn more-btn"
+    class="icon-btn"
+    :class="{ 'more-btn': !framed }"
     :aria-label="t('report.more')"
     @click.stop="openMenu"
   >
@@ -175,7 +178,6 @@ async function toggleBlock() {
   height: 44px;
   border-color: transparent;
   background: transparent;
-  box-shadow: none;
   color: var(--text-3);
 }
 
@@ -189,7 +191,7 @@ async function toggleBlock() {
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 52px;
+  min-height: 56px;
   padding: 0 4px;
   border: 0;
   border-bottom: 1px solid var(--line);
@@ -209,7 +211,7 @@ async function toggleBlock() {
 
 .menu-item.danger,
 .menu-item.danger .iconify {
-  color: #ff9aa3;
+  color: var(--red);
 }
 
 .reasons {

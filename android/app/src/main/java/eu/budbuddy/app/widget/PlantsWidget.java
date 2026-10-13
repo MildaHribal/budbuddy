@@ -40,7 +40,7 @@ public class PlantsWidget extends BaseWidget {
             } else {
                 v.setViewVisibility(WATER[i], View.VISIBLE);
                 v.setTextViewText(WATER[i], Texts.water(cs, p.dueIn));
-                v.setTextColor(WATER[i], p.dueIn < 0 ? 0xffff5fa2 : p.dueIn == 0 ? LightWidget.LAMP : LightWidget.MUTED);
+                v.setTextColor(WATER[i], p.dueIn < 0 ? 0xfff2626a : p.dueIn == 0 ? LightWidget.LAMP : LightWidget.MUTED);
             }
             v.setOnClickPendingIntent(ROWS[i], WidgetUpdater.open(context, "/plants/" + p.id));
         }

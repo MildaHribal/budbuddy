@@ -14,7 +14,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Zákon, vybavení, rozpočet a první velká rozhodnutí: automat, nebo fotoperioda, feminizovaná, nebo regulérní semínka a jaká odrůda.'
     },
     glyph: 'seedling',
-    color: '#c8f08f',
+    color: '#8fd97a',
     file: '01-start',
     lessons: [
       {
@@ -64,7 +64,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Uvnitř ve stanu, venku pod sluncem, nebo ve skleníku: jak nastavit světlo, vzduch a klima, aby se rostlinám dařilo.'
     },
     glyph: 'lamp',
-    color: '#6fe0c8',
+    color: '#5fd9c4',
     file: '02-environment',
     lessons: [
       {
@@ -154,7 +154,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Hlína, kokos, nebo hydro: co od tebe který vyžaduje, jaký vybrat květináč a jak zalévat, abys kořeny neutopil.'
     },
     glyph: 'water',
-    color: '#7cc8f2',
+    color: '#5fb4ee',
     file: '03-media',
     lessons: [
       {
@@ -229,7 +229,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Probuď semínko, zasaď ho do správné hloubky a proveď křehkou sazenici prvními týdny.'
     },
     glyph: 'germination',
-    color: '#e9d68f',
+    color: '#d9c46b',
     file: '04-germination',
     lessons: [
       {
@@ -279,7 +279,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Vypěstuj velkou a zdravou rostlinu: světlo a klima ve vegetaci, zálivka a hnojení, přesazování a rozpoznání samců od samic.'
     },
     glyph: 'vegetative',
-    color: '#9be36b',
+    color: '#3dd173',
     file: '05-vegetative',
     lessons: [
       {
@@ -337,7 +337,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Vytvaruj rostlinu do rovné a rovnoměrné koruny s víc vrcholovými palicemi: LST, topping, FIM, SCROG, defoliace, lollipopping a supercropping.'
     },
     glyph: 'train',
-    color: '#9be36b',
+    color: '#3dd173',
     file: '06-training',
     lessons: [
       {
@@ -411,7 +411,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Co rostlina jí, jak udržet pH a EC v rozmezí, kdy čím hnojit a jak poznat, že jsi to přehnal.'
     },
     glyph: 'feed',
-    color: '#c9a2ff',
+    color: '#b58cf5',
     file: '07-nutrition',
     lessons: [
       {
@@ -489,7 +489,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Přepnutí na 12/12, stretch, jak se týden po týdnu vyvíjejí palice, jak si udržet plíseň od těla a jak podle trichomů poznat den sklizně.'
     },
     glyph: 'flowering',
-    color: '#c9a2ff',
+    color: '#b58cf5',
     file: '08-flowering',
     lessons: [
       {
@@ -559,7 +559,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Den sklizně, mokrý a suchý střih, pomalé sušení kolem 18–20 °C a 60 % a zrání ve sklenicích — kroky, které rozhodnou, jak bude úroda vonět a chutnat.'
     },
     glyph: 'harvest',
-    color: '#ffd28a',
+    color: '#f2b544',
     file: '09-harvest',
     lessons: [
       {
@@ -617,7 +617,7 @@ export const CHAPTER_META: ChapterMeta[] = [
       cs: 'Nauč se číst, co ti rostlina říká: nedostatky živin, přehnojení a zablokování, škůdci, plíseň a hermafroditi. U každého problému máš jasný postup.'
     },
     glyph: 'pest',
-    color: '#ff8a5c',
+    color: '#f0905a',
     file: '10-problems',
     lessons: [
       {

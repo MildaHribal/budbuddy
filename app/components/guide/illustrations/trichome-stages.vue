@@ -24,7 +24,7 @@ const stages = computed(() => [
       <circle
         cy="92"
         r="48"
-        fill="#0b0d10"
+        fill="var(--well)"
         :stroke="ART.muted"
         stroke-opacity="0.6"
       />
@@ -66,7 +66,6 @@ const stages = computed(() => [
         :fill-opacity="s.fill"
         :stroke="s.head"
         stroke-width="1.6"
-        :class="{ 'ga-glow': s.fill > 0.5 }"
         :style="{ color: s.head }"
       />
       <ellipse

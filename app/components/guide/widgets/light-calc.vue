@@ -160,7 +160,7 @@ const ticks = [0, 400, 800, 1200]
     </div>
 
     <div
-      class="readout"
+      class="readout gw-result"
       aria-live="polite"
     >
       <div>
@@ -258,16 +258,11 @@ const ticks = [0, 400, 800, 1200]
 }
 
 .readout {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .dens {
-  color: var(--lamp);
-  text-shadow: 0 0 22px rgba(255, 210, 138, 0.3);
+  color: var(--text);
 }
 
 .ppfd {
@@ -278,7 +273,7 @@ const ticks = [0, 400, 800, 1200]
 
 .ppfd-v {
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -293,8 +288,7 @@ const ticks = [0, 400, 800, 1200]
   position: relative;
   height: 12px;
   border-radius: 3px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--track);
 }
 
 .band {
@@ -318,12 +312,13 @@ const ticks = [0, 400, 800, 1200]
   position: absolute;
   left: 0;
   top: 0;
-  width: 4px;
+  box-sizing: border-box;
+  width: 8px;
   height: 32px;
-  margin-left: -2px;
-  border-radius: 2px;
-  background: var(--lamp);
-  box-shadow: 0 0 0 2px #0b0d10, 0 0 12px rgba(255, 210, 138, 0.7);
+  margin-left: -4px;
+  border-radius: 4px;
+  border: 2px solid var(--surface);
+  background: var(--amber);
 }
 
 .ticks {
@@ -399,11 +394,11 @@ const ticks = [0, 400, 800, 1200]
 }
 
 .ok .v-text {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .dim .v-text,
 .strong .v-text {
-  color: var(--lamp);
+  color: var(--amber);
 }
 </style>

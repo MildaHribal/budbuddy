@@ -272,7 +272,7 @@ async function deleteAccount() {
         <CommunityUserAvatar
           :url="profile?.avatar_url"
           :name="name"
-          :size="56"
+          :size="48"
         />
         <div class="who-text">
           <strong>{{ name }}</strong>
@@ -610,15 +610,11 @@ async function deleteAccount() {
   padding: 16px;
 }
 
-.section-head {
-  padding: 0 2px;
-}
-
 .signed-out {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 14px;
-  align-items: start;
+  gap: 12px;
+  align-items: center;
 }
 
 .signed-out .btn {
@@ -626,15 +622,19 @@ async function deleteAccount() {
 }
 
 .so-glyph {
-  font-size: 30px;
-  color: var(--leaf);
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--green);
 }
 
 .so-text,
 .who-text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -665,27 +665,28 @@ async function deleteAccount() {
 .who {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 16px;
 }
 
 .row {
   width: 100%;
-  min-height: 64px;
+  min-height: 56px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 10px 16px;
   border: 0;
   border-top: 1px solid var(--line);
   background: transparent;
   color: var(--text);
   text-align: left;
-  transition: background var(--dur) var(--ease-out);
+  transition: background var(--dur) ease;
 }
 
 .row:active:not(:disabled) {
-  background: var(--highlight);
+  background: var(--surface-2);
 }
 
 .row:disabled {
@@ -702,7 +703,7 @@ async function deleteAccount() {
 
 .row-text strong {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .row-text span {
@@ -717,12 +718,12 @@ async function deleteAccount() {
 
 .row.attention strong,
 .row.attention .trail {
-  color: var(--lamp);
+  color: var(--green);
 }
 
 .row.danger strong,
 .row.danger .trail {
-  color: #ff9aa3;
+  color: var(--red);
 }
 
 .row.danger:active {
@@ -773,8 +774,8 @@ legend {
 
 .banned {
   display: flex;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 12px 16px;
   border-top: 1px solid var(--line);
   background: var(--danger-soft);
 }
@@ -782,7 +783,7 @@ legend {
 .banned-icon {
   flex-shrink: 0;
   margin-top: 2px;
-  color: #ff9aa3;
+  color: var(--red);
 }
 
 .banned .row-text span {
@@ -839,30 +840,30 @@ legend {
   width: 52px;
   height: 30px;
   border-radius: 999px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-  transition: background var(--dur) var(--ease-out), box-shadow var(--dur) ease;
+  border: 1px solid var(--line-strong);
+  background: var(--well);
+  transition: background var(--dur) ease, border-color var(--dur) ease;
 }
 
 .switch::after {
   content: "";
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: 3px;
+  left: 3px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
   background: var(--text-3);
-  transition: transform var(--dur-slow) var(--ease-out), background var(--dur) ease;
+  transition: transform var(--dur) var(--ease-out), background var(--dur) ease;
 }
 
 .switch-row[aria-checked="true"] .switch {
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent-line), var(--glow-leaf);
+  background: var(--green);
+  border-color: var(--green);
 }
 
 .switch-row[aria-checked="true"] .switch::after {
   transform: translateX(22px);
-  background: var(--leaf);
+  background: var(--on-accent);
 }
 </style>

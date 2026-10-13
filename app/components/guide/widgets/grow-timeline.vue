@@ -38,11 +38,6 @@ const harvestAt = computed(() => pctBefore('drying'))
 
 const open = ref<StageId | null>('vegetative')
 const key = (id: StageId, f: 'dur' | 'light' | 'focus') => t(`guideWidgets.timeline.${type.value === 'auto' ? 'a' : 'p'}.${id}.${f}`)
-
-const shown = ref(false)
-onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => {
-  shown.value = true
-})))
 </script>
 
 <template>
@@ -78,7 +73,7 @@ onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => {
     </div>
 
     <div
-      class="total"
+      class="total gw-result"
       aria-live="polite"
     >
       <span class="gw-label">{{ t('guideWidgets.timeline.total') }}</span>
@@ -101,16 +96,13 @@ onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => {
           :class="{ on: type === 'photo' }"
         >{{ t('guideWidgets.timeline.flip') }}</span>
       </div>
-      <div
-        class="bar"
-        :class="{ shown }"
-      >
+      <div class="bar">
         <span
-          v-for="(s, i) in list"
+          v-for="s in list"
           :key="s.id"
           class="seg"
           :class="{ on: open === s.id }"
-          :style="{ 'flexGrow': s.days, '--c': s.color, '--i': i }"
+          :style="{ 'flexGrow': s.days, '--c': s.color }"
         />
       </div>
       <div
@@ -184,9 +176,9 @@ onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => {
 
 .total-v {
   margin: 0;
-  font-size: 26px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
@@ -206,19 +198,12 @@ onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => {
   flex-basis: 0;
   border-radius: 4px;
   background: var(--c);
-  opacity: 0.55;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform var(--dur-slow) var(--ease-out) calc(var(--i) * 80ms), opacity var(--dur) ease, box-shadow var(--dur) ease;
-}
-
-.bar.shown .seg {
-  transform: scaleX(1);
+  opacity: 0.45;
+  transition: opacity var(--dur) ease, flex-grow var(--dur-slow) var(--ease-out);
 }
 
 .seg.on {
   opacity: 1;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 55%, transparent);
 }
 
 .rail {
@@ -244,7 +229,7 @@ onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => {
   transform: translateX(-50%);
   font-size: 11px;
   font-weight: 600;
-  color: var(--lamp);
+  color: var(--amber);
   opacity: 0;
   transition: opacity var(--dur) ease;
 }
@@ -260,7 +245,7 @@ onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => {
   top: 16px;
   width: 1px;
   height: 20px;
-  background: var(--lamp);
+  background: var(--amber);
 }
 
 .harvest {
@@ -269,7 +254,7 @@ onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => {
   bottom: 0;
   transform: translateX(-50%);
   font-size: 18px;
-  color: #f0b95e;
+  color: var(--amber);
 }
 
 .stages {

@@ -13,6 +13,11 @@
         ],
         "createdAt": "2026-10-11T02:24:06.145Z",
         "reason": "assistant decided: the flagged rule styles blockquotes inside rendered Markdown answers (standard typographic quote rule), not a card accent"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "onest",
+        "createdAt": "2026-10-13T00:37:23.561Z"
       }
     ]
   }

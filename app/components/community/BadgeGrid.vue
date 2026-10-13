@@ -90,7 +90,7 @@ async function togglePin() {
             :glyph="badgeGlyph(b)"
             :tier="b.tier"
             :earned="!!earned[b.id]"
-            :size="52"
+            :size="48"
           />
           <span class="cell-name">{{ badgeName(b) }}</span>
           <span
@@ -120,8 +120,7 @@ async function togglePin() {
           :glyph="badgeGlyph(current)"
           :tier="current.tier"
           :earned="!!currentEarned"
-          :size="88"
-          :draw="!!currentEarned"
+          :size="72"
         />
         <p
           class="state num"
@@ -147,7 +146,7 @@ async function togglePin() {
         <button
           type="button"
           class="btn btn-block"
-          :class="isPinned ? 'btn-soft' : 'btn-lamp'"
+          :class="isPinned ? '' : 'btn-soft'"
           :disabled="saving"
           @click="togglePin"
         >
@@ -181,28 +180,26 @@ async function togglePin() {
 .cell {
   position: relative;
   width: 100%;
-  min-height: 118px;
+  min-height: 112px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   padding: 12px 6px 10px;
-  border-radius: 14px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
   background: var(--surface);
-  color: var(--text-3);
+  color: var(--text-2);
   text-align: center;
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .cell.got {
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight);
   color: var(--text);
 }
 
 .cell:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 .cell-name {
@@ -210,10 +207,6 @@ async function togglePin() {
   font-weight: 600;
   line-height: 1.25;
   overflow-wrap: anywhere;
-}
-
-.cell:not(.got) .cell-name {
-  color: var(--text-2);
 }
 
 .cell-date {
@@ -227,7 +220,7 @@ async function togglePin() {
   right: 8px;
   width: 14px;
   height: 14px;
-  color: var(--lamp);
+  color: var(--green);
 }
 
 .detail {
@@ -251,10 +244,8 @@ async function togglePin() {
 
 .how {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: var(--surface);
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
   text-align: left;
 }
 

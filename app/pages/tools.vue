@@ -2,17 +2,26 @@
 import type { NutrientLine } from '~/utils/calc'
 
 const { t } = useI18n()
-useHead({ title: () => t('tools.title') })
 
 const { state } = useGrow()
 
 type Tool = 'nutrients' | 'vpd' | 'dli' | 'convert'
-const tools = computed(() => (['nutrients', 'vpd', 'dli', 'convert'] as Tool[]).map(id => ({ id, label: t(`tools.tabs.${id}`) })))
-const route = useRoute()
 const TOOL_IDS: Tool[] = ['nutrients', 'vpd', 'dli', 'convert']
-const queryTool = route.query.t as Tool
-const tool = ref<Tool>(TOOL_IDS.includes(queryTool) ? queryTool : 'nutrients')
-watch(tool, v => navigateTo({ query: { t: v } }, { replace: true }))
+const TOOL_META: Record<Tool, { icon: string, tone: string }> = {
+  nutrients: { icon: 'feed', tone: 'var(--green)' },
+  vpd: { icon: 'i-tabler-wind', tone: 'var(--blue)' },
+  dli: { icon: 'lamp', tone: 'var(--amber)' },
+  convert: { icon: 'i-tabler-arrows-exchange', tone: 'var(--text-2)' }
+}
+const tools = computed(() => TOOL_IDS.map(id => ({ id, ...TOOL_META[id], label: t(`tools.tabs.${id}`), desc: t(`tools.desc.${id}`) })))
+const route = useRoute()
+// the open tool lives in the URL so guide links and back navigation keep working
+const tool = computed<Tool | null>(() => {
+  const q = route.query.t as Tool
+  return TOOL_IDS.includes(q) ? q : null
+})
+const toolLabel = computed(() => (tool.value ? t(`tools.tabs.${tool.value}`) : t('tools.title')))
+useHead({ title: () => (tool.value ? `${toolLabel.value} · ${t('tools.title')}` : t('tools.title')) })
 
 const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
 const pos = (v: unknown) => Math.max(0, n(v))
@@ -21,6 +30,7 @@ const pos = (v: unknown) => Math.max(0, n(v))
 const seenTools = useLocalStorage<string[]>('budbuddy:tools-seen', [])
 const aboutOpen = ref(false)
 watch(tool, (v) => {
+  if (!v) return
   aboutOpen.value = !seenTools.value.includes(v)
   if (aboutOpen.value) seenTools.value = [...seenTools.value, v]
 }, { immediate: true })
@@ -76,13 +86,14 @@ const leafOffset = useLocalStorage('budbuddy:vpd-leaf', -2)
 const vpdValue = computed(() => vpd(n(temp.value), Math.min(100, Math.max(0, n(rh.value))), n(leafOffset.value)))
 const zone = computed(() => vpdZone(vpdValue.value))
 const VPD_MAX = 2
+// band colours come from vpdZone so the readout and the band always agree
 const vpdBands = [
-  { from: 0, to: 0.4, key: 'low', color: '#7cc8f2' },
-  { from: 0.4, to: 0.8, key: 'clones', color: '#6fe0c8' },
-  { from: 0.8, to: 1.2, key: 'veg', color: '#9be36b' },
-  { from: 1.2, to: 1.6, key: 'flower', color: '#c9a2ff' },
-  { from: 1.6, to: 2, key: 'high', color: '#ff5f6d' }
-]
+  { from: 0, to: 0.4, key: 'low' },
+  { from: 0.4, to: 0.8, key: 'clones' },
+  { from: 0.8, to: 1.2, key: 'veg' },
+  { from: 1.2, to: 1.6, key: 'flower' },
+  { from: 1.6, to: 2, key: 'high' }
+].map(b => ({ ...b, color: vpdZone((b.from + b.to) / 2).color }))
 // zone.label is localized, so match on colour
 const activeBand = computed(() => vpdBands.find(b => b.color === zone.value.color) ?? vpdBands[0]!)
 const vpdPos = computed(() => Math.min(100, Math.max(0, (vpdValue.value / VPD_MAX) * 100)))
@@ -124,76 +135,90 @@ function fromC() {
 <template>
   <div>
     <AppHeader
-      :title="t('tools.title')"
-      :subtitle="t('tools.subtitle')"
+      :title="toolLabel"
+      :subtitle="tool ? t('tools.title') : t('tools.subtitle')"
+      :back="!!tool"
     />
-    <div class="page">
-      <div
-        class="segmented"
-        role="tablist"
+
+    <!-- Tool list -->
+    <div
+      v-if="!tool"
+      class="page rise"
+    >
+      <nav
+        class="card tool-list"
         :aria-label="t('tools.title')"
       >
-        <button
+        <NuxtLink
           v-for="tb in tools"
           :key="tb.id"
-          type="button"
-          role="tab"
-          :aria-selected="tool === tb.id"
-          @click="tool = tb.id"
+          :to="{ path: '/tools', query: { t: tb.id } }"
+          class="tool-row"
         >
-          {{ tb.label }}
-        </button>
-      </div>
+          <span
+            class="tool-tile"
+            :style="{ color: tb.tone }"
+          >
+            <GrowIcon :name="tb.icon" />
+          </span>
+          <span class="tool-text">
+            <span class="tool-title">{{ tb.label }}</span>
+            <span class="tool-desc">{{ tb.desc }}</span>
+          </span>
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="size-5 tool-go"
+          />
+        </NuxtLink>
+      </nav>
+    </div>
 
-      <div class="tool">
-        <!-- What is this for? -->
-        <details
-          :key="tool"
-          class="card about"
-          :open="aboutOpen"
-          @toggle="onAboutToggle"
-        >
-          <summary class="about-summary">
-            <UIcon
-              name="i-tabler-bulb"
-              class="about-icon size-4"
-              aria-hidden="true"
-            />
-            <span>{{ t('tools.whatFor') }}</span>
-          </summary>
-          <div class="about-body">
-            <p class="about-text">
-              {{ t(`tools.${aboutNs[tool]}.what`) }}
-            </p>
-            <ul>
-              <li
-                v-for="k in learnKeys[tool]"
-                :key="k"
-              >
-                {{ t(`tools.${aboutNs[tool]}.learn.${k}`) }}
-              </li>
-            </ul>
-          </div>
-        </details>
+    <div
+      v-else
+      :key="tool"
+      class="page rise"
+    >
+      <!-- What is this for? -->
+      <details
+        class="about"
+        :open="aboutOpen"
+        @toggle="onAboutToggle"
+      >
+        <summary class="about-summary">
+          <span>{{ t('tools.whatFor') }}</span>
+          <UIcon
+            name="i-tabler-chevron-down"
+            class="size-4 about-chevron"
+          />
+        </summary>
+        <div class="about-body">
+          <p>{{ t(`tools.${aboutNs[tool]}.what`) }}</p>
+          <ul>
+            <li
+              v-for="k in learnKeys[tool]"
+              :key="k"
+            >
+              {{ t(`tools.${aboutNs[tool]}.learn.${k}`) }}
+            </li>
+          </ul>
+        </div>
+      </details>
 
-        <!-- Nutrients -->
-        <section
-          v-if="tool === 'nutrients'"
-          class="tool rise"
-        >
-          <!-- 1 · water -->
-          <div class="card pad step">
-            <h2 class="step-title">
-              <span
-                class="step-no num"
-                aria-hidden="true"
-              >1</span>{{ t('tools.mix.step1') }}
+      <!-- Nutrients -->
+      <template v-if="tool === 'nutrients'">
+        <section>
+          <div class="section-head">
+            <h2 class="section-title">
+              {{ t('tools.mix.step1') }}
             </h2>
-            <p class="step-hint">
-              {{ t('tools.mix.step1Hint') }}
-            </p>
-            <div class="water-row">
-              <div class="unit water-input">
+          </div>
+          <div class="card pad form-stack">
+            <div class="field">
+              <label
+                class="field-label"
+                for="mix-l"
+              >{{ t('tools.mix.water') }}<span class="sr-only">{{ t('tools.mix.waterSr') }}</span></label>
+              <div class="unit">
                 <input
                   id="mix-l"
                   v-model.number="litres"
@@ -202,10 +227,16 @@ function fromC() {
                   inputmode="decimal"
                   min="0"
                   step="any"
-                  :aria-label="t('tools.mix.water') + t('tools.mix.waterSr')"
                 >
                 <span aria-hidden="true">L</span>
               </div>
+              <span class="field-hint">{{ t('tools.mix.step1Hint') }}</span>
+            </div>
+            <div
+              class="chips"
+              role="group"
+              :aria-label="t('tools.mix.water')"
+            >
               <button
                 v-for="v in [5, 10, 20]"
                 :key="v"
@@ -218,16 +249,16 @@ function fromC() {
               </button>
             </div>
           </div>
+        </section>
 
-          <!-- 2 · products -->
-          <div class="card pad step">
-            <h2 class="step-title">
-              <span
-                class="step-no num"
-                aria-hidden="true"
-              >2</span>{{ t('tools.mix.step2') }}
+        <section>
+          <div class="section-head">
+            <h2 class="section-title">
+              {{ t('tools.mix.step2') }}
             </h2>
-            <p class="step-hint">
+          </div>
+          <div class="card pad form-stack">
+            <p class="field-hint">
               {{ t('tools.mix.step2Hint') }}
             </p>
             <div
@@ -275,7 +306,7 @@ function fromC() {
                 </button>
               </div>
             </div>
-            <div class="step-actions">
+            <div class="actions">
               <button
                 type="button"
                 class="btn btn-soft"
@@ -296,24 +327,24 @@ function fromC() {
               </button>
             </div>
           </div>
+        </section>
 
-          <!-- 3 · strength -->
-          <div class="card pad step">
-            <h2 class="step-title">
-              <span
-                class="step-no num"
-                aria-hidden="true"
-              >3</span>{{ t('tools.mix.step3') }}
+        <section>
+          <div class="section-head">
+            <h2 class="section-title">
+              {{ t('tools.mix.step3') }}
             </h2>
-            <p class="step-hint">
-              {{ t('tools.mix.step3Hint') }}
-            </p>
-            <div class="levels">
+          </div>
+          <div class="card pad form-stack">
+            <div
+              class="segmented levels"
+              role="group"
+              :aria-label="t('tools.mix.step3')"
+            >
               <button
                 v-for="s in strengthLevels"
                 :key="s"
                 type="button"
-                class="level"
                 :aria-pressed="strength === s"
                 @click="strength = s"
               >
@@ -321,6 +352,9 @@ function fromC() {
                 <span>{{ t(`tools.mix.levels.${s}`) }}</span>
               </button>
             </div>
+            <p class="field-hint">
+              {{ t('tools.mix.step3Hint') }}
+            </p>
             <div class="field custom-strength">
               <label
                 class="field-label"
@@ -341,18 +375,22 @@ function fromC() {
               </div>
             </div>
           </div>
+        </section>
 
-          <!-- Recipe -->
-          <div
-            class="card pad recipe"
-            aria-live="polite"
-          >
-            <h2 class="recipe-title">
-              <GrowIcon name="feed" /> {{ t('tools.mix.recipeTitle', { l: n(litres) }) }}
+        <!-- Recipe -->
+        <section aria-live="polite">
+          <div class="section-head">
+            <h2 class="section-title">
+              <GrowIcon
+                name="feed"
+                class="title-icon"
+              /> {{ t('tools.mix.recipeTitle', { l: n(litres) }) }}
             </h2>
+          </div>
+          <div class="card recipe">
             <p
               v-if="!mix.length"
-              class="muted empty-mix"
+              class="empty-mix"
             >
               {{ t('tools.mix.empty') }}
             </p>
@@ -377,14 +415,10 @@ function fromC() {
                 <h3>{{ t('tools.mix.howTitle') }}</h3>
                 <ol>
                   <li
-                    v-for="(k, i) in ['a', 'b', 'c']"
+                    v-for="k in ['a', 'b', 'c']"
                     :key="k"
                   >
-                    <span
-                      class="how-no num"
-                      aria-hidden="true"
-                    >{{ i + 1 }}</span>
-                    <span>{{ t(`tools.mix.how.${k}`) }}</span>
+                    {{ t(`tools.mix.how.${k}`) }}
                   </li>
                 </ol>
               </div>
@@ -418,7 +452,7 @@ function fromC() {
               </select>
               <button
                 type="button"
-                class="btn btn-primary"
+                class="btn btn-primary btn-block"
                 @click="logMix"
               >
                 {{ t('tools.mix.log') }}
@@ -426,16 +460,17 @@ function fromC() {
             </div>
           </div>
         </section>
+      </template>
 
-        <!-- VPD -->
-        <section
-          v-else-if="tool === 'vpd'"
-          class="tool rise"
-        >
-          <div class="card pad form-stack">
+      <!-- VPD -->
+      <template v-else-if="tool === 'vpd'">
+        <section>
+          <div class="section-head">
             <h2 class="section-title">
               {{ t('tools.vpd.inputsTitle') }}
             </h2>
+          </div>
+          <div class="card pad form-stack">
             <div class="field">
               <div class="range-head">
                 <label
@@ -502,65 +537,61 @@ function fromC() {
               <span class="field-hint">{{ t('tools.vpd.leafHint') }}</span>
             </div>
           </div>
+        </section>
+
+        <div
+          class="card pad result"
+          aria-live="polite"
+        >
+          <span class="result-label">{{ t('tools.vpd.resultLabel') }}</span>
+          <strong class="result-value num">{{ formatNumber(vpdValue, 2, true) }}<small>kPa</small></strong>
+          <p class="zone">
+            <span
+              class="zone-dot"
+              :style="{ background: activeBand.color }"
+              aria-hidden="true"
+            />
+            {{ t(`tools.vpd.zones.${activeBand.key}.title`) }}
+          </p>
+          <p class="advice">
+            {{ t(`tools.vpd.zones.${activeBand.key}.do`) }}
+          </p>
 
           <div
-            class="card pad vpd"
-            :style="{ '--c': activeBand.color }"
+            class="band"
+            role="img"
+            :aria-label="t('tools.vpd.aria', { value: formatNumber(vpdValue, 2), zone: zone.label })"
           >
-            <span class="readout-label">{{ t('tools.vpd.resultLabel') }}</span>
-            <p
-              class="zone"
-              aria-live="polite"
-            >
+            <div class="band-track">
               <span
-                class="zone-dot"
-                aria-hidden="true"
+                v-for="b in vpdBands"
+                :key="b.from"
+                class="band-seg"
+                :class="{ on: b === activeBand }"
+                :style="{ background: b.color }"
               />
-              {{ t(`tools.vpd.zones.${activeBand.key}.title`) }}
-            </p>
-            <p class="advice">
-              {{ t(`tools.vpd.zones.${activeBand.key}.do`) }}
-            </p>
-
-            <div
-              class="band"
-              role="img"
-              :aria-label="t('tools.vpd.aria', { value: formatNumber(vpdValue, 2), zone: zone.label })"
-            >
-              <div class="band-track">
-                <span
-                  v-for="b in vpdBands"
-                  :key="b.from"
-                  class="band-seg"
-                  :class="{ on: b === activeBand }"
-                  :style="{ '--seg': b.color }"
-                />
-              </div>
-              <div
-                class="band-glide"
-                :style="{ transform: `translateX(${vpdPos}%)` }"
-              >
-                <i class="band-marker" />
-              </div>
-              <div class="band-labels">
-                <span
-                  v-for="b in vpdBands"
-                  :key="b.from"
-                  :class="{ on: b === activeBand }"
-                >{{ t(`tools.vpd.bands.${b.key}`) }}</span>
-              </div>
+              <span
+                class="band-marker"
+                :style="{ left: `${vpdPos}%` }"
+              />
             </div>
-
-            <p class="vpd-number">
-              <strong class="mid-value num">{{ formatNumber(vpdValue, 2, true) }}<small>kPa</small></strong>
-              <span>VPD · {{ zone.label }}</span>
-            </p>
+            <div class="band-labels">
+              <span
+                v-for="b in vpdBands"
+                :key="b.from"
+                :class="{ on: b === activeBand }"
+              >{{ t(`tools.vpd.bands.${b.key}`) }}</span>
+            </div>
           </div>
+        </div>
 
-          <div class="card pad">
-            <h2 class="section-title block-title">
+        <section>
+          <div class="section-head">
+            <h2 class="section-title">
               {{ t('tools.vpd.targets') }}
             </h2>
+          </div>
+          <div class="card">
             <table class="ref">
               <tbody>
                 <tr>
@@ -582,16 +613,17 @@ function fromC() {
             </table>
           </div>
         </section>
+      </template>
 
-        <!-- DLI -->
-        <section
-          v-else-if="tool === 'dli'"
-          class="tool rise"
-        >
-          <div class="card pad form-stack">
+      <!-- DLI -->
+      <template v-else-if="tool === 'dli'">
+        <section>
+          <div class="section-head">
             <h2 class="section-title">
               {{ t('tools.dli.presetsTitle') }}
             </h2>
+          </div>
+          <div class="card pad form-stack">
             <div class="chips">
               <button
                 v-for="p in lightPresets"
@@ -646,22 +678,26 @@ function fromC() {
               </div>
             </div>
           </div>
-          <div
-            class="card pad dli"
-            aria-live="polite"
-          >
-            <div class="readout">
-              <span class="readout-label">{{ t('tools.dli.label') }}</span>
-              <strong class="big-value lamp num">{{ formatNumber(dliValue, 1) }}<small>{{ t('tools.dli.unit') }}</small></strong>
-            </div>
-            <p class="advice">
-              {{ dliAdvice(dliValue) }}
-            </p>
-          </div>
-          <div class="card pad form-stack">
+        </section>
+
+        <div
+          class="card pad result"
+          aria-live="polite"
+        >
+          <span class="result-label">{{ t('tools.dli.label') }}</span>
+          <strong class="result-value num">{{ formatNumber(dliValue, 1) }}<small>{{ t('tools.dli.unit') }}</small></strong>
+          <p class="advice">
+            {{ dliAdvice(dliValue) }}
+          </p>
+        </div>
+
+        <section>
+          <div class="section-head">
             <h2 class="section-title">
               {{ t('tools.dli.reverseTitle') }}
             </h2>
+          </div>
+          <div class="card pad form-stack">
             <div class="field">
               <div class="range-head">
                 <label
@@ -680,25 +716,26 @@ function fromC() {
                 min="5"
                 max="65"
                 step="1"
-                class="range lamp"
+                class="range"
               >
             </div>
             <div class="reverse">
-              <strong class="num">{{ neededPpfd == null ? '–' : formatNumber(neededPpfd, 0) }}<small>µmol/m²/s</small></strong>
-              <span>{{ t('tools.dli.needed', { h: hours }) }}</span>
+              <strong class="result-value num">{{ neededPpfd == null ? '–' : formatNumber(neededPpfd, 0) }}<small>µmol/m²/s</small></strong>
+              <span class="result-label">{{ t('tools.dli.needed', { h: hours }) }}</span>
             </div>
           </div>
         </section>
+      </template>
 
-        <!-- Convert -->
-        <section
-          v-else
-          class="tool rise"
-        >
-          <div class="card pad form-stack">
+      <!-- Convert -->
+      <template v-else>
+        <section>
+          <div class="section-head">
             <h2 class="section-title">
               {{ t('tools.convert.volume') }}
             </h2>
+          </div>
+          <div class="card pad">
             <div class="convert">
               <div class="field">
                 <label
@@ -744,10 +781,15 @@ function fromC() {
               </div>
             </div>
           </div>
-          <div class="card pad form-stack">
+        </section>
+
+        <section>
+          <div class="section-head">
             <h2 class="section-title">
               {{ t('tools.convert.temperature') }}
             </h2>
+          </div>
+          <div class="card pad">
             <div class="convert">
               <div class="field">
                 <label
@@ -791,10 +833,15 @@ function fromC() {
               </div>
             </div>
           </div>
-          <div class="card pad">
-            <h2 class="section-title block-title">
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2 class="section-title">
               {{ t('tools.convert.potSizes') }}
             </h2>
+          </div>
+          <div class="card">
             <table class="ref">
               <tbody>
                 <tr
@@ -811,7 +858,7 @@ function fromC() {
             </table>
           </div>
         </section>
-      </div>
+      </template>
     </div>
 
     <EntrySheet
@@ -826,42 +873,81 @@ function fromC() {
 </template>
 
 <style scoped>
-.segmented button {
-  font-size: 13px;
-  min-height: 44px;
-  padding: 0 4px;
+.pad {
+  padding: 16px;
 }
 
-.tool {
+/* Tool list */
+.tool-list {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.tool-row {
+  display: flex;
+  align-items: center;
   gap: 14px;
+  min-height: 64px;
+  padding: 10px 12px 10px 14px;
+  color: inherit;
+  text-decoration: none;
+  transition: background var(--dur-fast) ease;
 }
 
-.intro {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
+.tool-row + .tool-row {
+  border-top: 1px solid var(--line);
 }
 
-.pad {
-  padding: 18px 16px;
+.tool-row:active {
+  background: var(--surface-2);
 }
 
-.block-title {
-  margin-bottom: 14px;
+.tool-tile {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-size: 22px;
 }
 
-/* Beginner framing: one line, opens to the explainer */
+.tool-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tool-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tool-desc {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.tool-go {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+/* Explainer */
 .about {
-  padding: 0 16px;
+  margin: -8px 0;
 }
 
 .about-summary {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  min-height: 48px;
+  min-height: 44px;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-2);
@@ -873,191 +959,161 @@ function fromC() {
   display: none;
 }
 
-.about-summary::after {
-  content: '';
-  width: 7px;
-  height: 7px;
-  margin: -3px 4px 0 auto;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);
+.about-summary:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+.about-chevron {
+  flex-shrink: 0;
+  color: var(--text-3);
   transition: transform var(--dur) var(--ease-out);
 }
 
-.about[open] .about-summary::after {
-  margin-top: 3px;
-  transform: rotate(-135deg);
-}
-
-.about-summary:focus-visible {
-  outline: 2px solid var(--leaf);
-  outline-offset: -2px;
-  border-radius: 10px;
-}
-
-.about-icon {
-  flex-shrink: 0;
-  color: var(--text-3);
+.about[open] .about-chevron {
+  transform: rotate(180deg);
 }
 
 .about-body {
-  padding: 0 0 16px;
+  padding: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
 }
 
-.about-text {
-  margin: 0 0 10px;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--text);
+.about-body p {
+  margin: 0 0 8px;
 }
 
 .about-body ul {
   margin: 0;
   padding-left: 18px;
+  list-style: disc;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-2);
+  gap: 4px;
 }
 
-/* Guided steps */
-.step-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.step-no {
-  display: inline-grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent-line);
-  color: var(--leaf);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.step-hint {
-  margin: 6px 0 14px 38px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--text-2);
+.title-icon {
+  color: var(--green);
 }
 
 .chip {
   min-height: 44px;
 }
 
-.water-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.water-input {
-  flex: 1 1 120px;
-  min-width: 110px;
-}
-
-.water-input .input {
-  font-size: 22px;
-}
-
 .line-head {
-  margin-bottom: 6px;
+  margin-bottom: -8px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-3);
+  color: var(--text-2);
 }
 
-.step-actions {
+.actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
 }
 
-.levels {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-}
-
-.level {
-  display: flex;
+/* Strength: segmented with a two-line label */
+.levels button {
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-height: 60px;
-  padding: 6px 4px;
-  border-radius: 14px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--text-2);
-  text-align: center;
-  transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), color var(--dur) ease;
+  gap: 1px;
+  min-height: 52px;
+  padding: 4px 2px;
 }
 
-.level strong {
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--text);
+.levels strong {
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.level span {
+.levels span {
   font-size: 11px;
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
-.level[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--leaf);
-}
-
-.level[aria-pressed="true"] strong {
-  color: var(--leaf);
+.levels button[aria-pressed="true"] strong {
+  color: var(--green);
 }
 
 .custom-strength {
-  margin-top: 14px;
-  max-width: 200px;
+  max-width: 180px;
 }
 
-/* Recipe card */
+/* Recipe */
 .recipe {
-  border-color: var(--accent-line);
-  background: linear-gradient(180deg, var(--accent-soft), transparent 55%), var(--panel);
+  padding: 4px 16px 16px;
 }
 
-.recipe-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.mix-total .mix-name {
+.empty-mix {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
   color: var(--text-2);
 }
 
+.mix {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mix li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 0;
+}
+
+.mix li + li {
+  border-top: 1px solid var(--line);
+}
+
+.mix-name {
+  font-size: 15px;
+  font-weight: 500;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mix-name small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.mix strong {
+  flex-shrink: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.mix strong small,
+.result-value small {
+  margin-left: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-3);
+}
+
+.mix-total .mix-name,
 .mix-total strong {
   color: var(--text-2);
+}
+
+.how {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 
 .how h3 {
@@ -1069,61 +1125,23 @@ function fromC() {
 
 .how ol {
   margin: 0;
-  padding: 0;
-  list-style: none;
+  padding-left: 18px;
+  list-style: decimal;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-2);
 }
 
-.how li {
+.log-row {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-/* small version of .step-no */
-.how-no {
-  display: inline-grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent-line);
-  color: var(--leaf);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* VPD numeric detail */
-.vpd-number {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 18px 0 0;
-  padding-top: 14px;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
   border-top: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--text-3);
-}
-
-.mid-value {
-  font-size: 28px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-
-.mid-value small {
-  margin-left: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-3);
 }
 
 /* Inputs with a unit suffix */
@@ -1159,92 +1177,30 @@ function fromC() {
   align-items: center;
 }
 
-/* Big light readouts */
-.readout {
+/* Result card */
+.result {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.big-value {
-  font-size: 52px;
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.035em;
-  color: var(--text);
-}
-
-.big-value small,
-.mix strong small,
-.reverse strong small {
-  margin-left: 6px;
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--text-3);
-}
-
-.big-value.lamp {
-  color: var(--lamp);
-  text-shadow: 0 0 28px rgba(255, 210, 138, 0.3);
-}
-
-.readout-label {
+.result-label {
   font-size: 13px;
   color: var(--text-2);
 }
 
-.empty-mix {
-  margin: 0 0 12px;
+.result-value {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
-.mix {
-  list-style: none;
-  margin: 14px 0 16px;
-  padding: 0;
-}
-
-.mix li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
-}
-
-.mix-name {
+.advice {
+  margin: 4px 0 0;
   font-size: 14px;
-  font-weight: 500;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.mix-name small {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.mix strong {
-  flex-shrink: 0;
-  font-size: 34px;
-  line-height: 1;
-  color: var(--leaf);
-  font-weight: 300;
-  letter-spacing: -0.02em;
-}
-
-.log-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.log-row .btn {
-  width: 100%;
+  line-height: 1.5;
+  color: var(--text-2);
 }
 
 /* Sliders */
@@ -1256,12 +1212,10 @@ function fromC() {
 
 .range-value {
   font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
+  font-weight: 600;
 }
 
 .range {
-  --fill: var(--leaf);
   width: 100%;
   height: 32px;
   margin: 0;
@@ -1270,22 +1224,16 @@ function fromC() {
   -webkit-appearance: none;
 }
 
-.range.lamp {
-  --fill: var(--lamp);
-}
-
 .range::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  background: var(--track);
 }
 
 .range::-moz-range-track {
   height: 4px;
   border-radius: 999px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  background: var(--track);
 }
 
 .range::-webkit-slider-thumb {
@@ -1294,34 +1242,31 @@ function fromC() {
   height: 24px;
   margin-top: -10px;
   border-radius: 50%;
-  background: var(--fill);
-  border: 3px solid #0b0d10;
-  box-shadow: 0 0 0 1px var(--fill), 0 0 12px color-mix(in srgb, var(--fill) 50%, transparent);
+  background: var(--green);
+  border: 0;
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: var(--fill);
-  border: 3px solid #0b0d10;
-  box-shadow: 0 0 0 1px var(--fill), 0 0 12px color-mix(in srgb, var(--fill) 50%, transparent);
+  background: var(--green);
+  border: 0;
 }
 
 .range:active::-webkit-slider-thumb {
-  transform: scale(1.12);
+  transform: scale(1.1);
 }
 
 /* VPD zone band */
 .zone {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 6px 0 0;
-  font-size: 22px;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--text);
 }
 
 .zone-dot {
@@ -1329,17 +1274,14 @@ function fromC() {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--c);
-  box-shadow: 0 0 10px var(--c);
-  transition: background var(--dur) ease, box-shadow var(--dur) ease;
 }
 
 .band {
-  position: relative;
-  margin-top: 26px;
+  margin-top: 16px;
 }
 
 .band-track {
+  position: relative;
   display: flex;
   gap: 2px;
   height: 8px;
@@ -1348,35 +1290,23 @@ function fromC() {
 .band-seg {
   flex: 1;
   border-radius: 4px;
-  background: var(--seg);
-  opacity: 0.28;
-  transition: opacity var(--dur) ease, box-shadow var(--dur) ease;
+  opacity: 0.3;
+  transition: opacity var(--dur) ease;
 }
 
 .band-seg.on {
   opacity: 1;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--seg) 55%, transparent);
-}
-
-.band-glide {
-  position: absolute;
-  top: -8px;
-  left: 0;
-  width: 100%;
-  height: 24px;
-  pointer-events: none;
-  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 .band-marker {
   position: absolute;
-  left: -2px;
-  top: 0;
+  top: -4px;
   width: 4px;
-  height: 24px;
+  height: 16px;
+  margin-left: -2px;
   border-radius: 2px;
-  background: #fff;
-  box-shadow: 0 0 0 2px var(--surface-2), 0 0 12px rgba(255, 255, 255, 0.5);
+  background: var(--text);
+  transition: left var(--dur-slow) var(--ease-out);
 }
 
 .band-labels {
@@ -1392,7 +1322,6 @@ function fromC() {
   font-weight: 500;
   color: var(--text-3);
   white-space: nowrap;
-  transition: color var(--dur) ease;
 }
 
 .band-labels span.on {
@@ -1400,45 +1329,11 @@ function fromC() {
   font-weight: 600;
 }
 
-.band-ticks {
-  position: relative;
-  height: 14px;
-  margin-top: 4px;
-}
-
-.band-ticks span {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  font-size: 11px;
-  color: var(--text-3);
-}
-
-.advice {
-  margin: 14px 0 0;
-  font-size: 14px;
-  color: var(--text-2);
-  line-height: 1.5;
-}
-
-/* DLI */
+/* DLI reverse */
 .reverse {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.reverse strong {
-  font-size: 34px;
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--lamp);
-}
-
-.reverse > span {
-  font-size: 13px;
-  color: var(--text-2);
 }
 
 .chip-meta {
@@ -1458,7 +1353,8 @@ function fromC() {
 }
 
 .ref td {
-  padding: 11px 0;
+  height: 48px;
+  padding: 0 16px;
   border-top: 1px solid var(--line);
 }
 
@@ -1468,7 +1364,7 @@ function fromC() {
 
 .ref td:last-child {
   text-align: right;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Converters */
@@ -1485,8 +1381,8 @@ function fromC() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .band-glide,
-  .about-summary::after {
+  .band-marker,
+  .about-chevron {
     transition: none;
   }
 }

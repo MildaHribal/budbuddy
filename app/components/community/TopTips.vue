@@ -109,14 +109,14 @@ onMounted(load)
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  min-height: 48px;
+  min-height: 56px;
   padding: 12px 14px;
   color: var(--text);
   text-decoration: none;
 }
 
 .item:active {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-2);
 }
 
 .body {
@@ -136,7 +136,7 @@ onMounted(load)
   align-items: center;
   gap: 4px;
   padding-top: 1px;
-  color: var(--leaf);
+  color: var(--green);
   font-size: 12px;
   font-weight: 600;
 }

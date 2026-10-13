@@ -7,11 +7,11 @@ export type GrowerLevel = 'seedling' | 'sprout' | 'veg' | 'flowering' | 'master'
 
 /** Reputation thresholds (research #11); each level unlocks a privilege. */
 export const LEVELS: { id: GrowerLevel, min: number, color: string, glyph: string }[] = [
-  { id: 'seedling', min: 0, color: '#a9b5a6', glyph: 'germination' },
-  { id: 'sprout', min: 25, color: '#c8f08f', glyph: 'seedling' },
-  { id: 'veg', min: 100, color: '#9be36b', glyph: 'vegetative' },
-  { id: 'flowering', min: 300, color: '#c9a2ff', glyph: 'flowering' },
-  { id: 'master', min: 1000, color: '#ffd28a', glyph: 'harvest' }
+  { id: 'seedling', min: 0, color: '#a5ada8', glyph: 'germination' },
+  { id: 'sprout', min: 25, color: '#8fd97a', glyph: 'seedling' },
+  { id: 'veg', min: 100, color: '#3dd173', glyph: 'vegetative' },
+  { id: 'flowering', min: 300, color: '#b58cf5', glyph: 'flowering' },
+  { id: 'master', min: 1000, color: '#f2b544', glyph: 'harvest' }
 ]
 
 export interface GrowerLevelInfo {

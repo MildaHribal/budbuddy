@@ -208,16 +208,16 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
 
       <div
         v-else
-        class="grid-wrap"
+        class="list-wrap"
       >
-        <ul class="grid rise">
+        <ul class="card list rise">
           <li
             v-for="s in strains"
             :key="s.id"
           >
             <NuxtLink
               :to="`/strains/${s.slug}`"
-              class="card strain"
+              class="row"
             >
               <span
                 class="thumb"
@@ -238,10 +238,6 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
                   :name="s.flowering === 'auto' ? 'seedling' : 'flowering'"
                   class="placeholder"
                 />
-                <span
-                  v-if="s.flowering === 'auto'"
-                  class="badge auto"
-                >{{ t('strains.flowering.auto') }}</span>
               </span>
               <span class="meta">
                 <strong class="name">{{ s.name }}</strong>
@@ -249,43 +245,46 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
                 <span class="facts">
                   <span
                     v-if="s.dominance"
-                    class="fact dom"
+                    class="badge dom"
+                    :class="`dom-${s.dominance}`"
                   ><UIcon
                     :name="dominanceIcon(s.dominance)"
                     aria-hidden="true"
                   />{{ t(`strains.dominance.${s.dominance}`) }}</span>
                   <span
+                    v-if="s.flowering === 'auto'"
+                    class="badge auto"
+                  >{{ t('strains.flowering.auto') }}</span>
+                  <span
                     v-if="weeks(s)"
-                    class="fact lamp num"
+                    class="fact num"
                   >{{ weeks(s) }}</span>
+                  <span
+                    v-if="stats.get(s.id)?.reports"
+                    class="fact rating num"
+                  >
+                    <UIcon name="i-tabler-star-filled" />{{ stats.get(s.id)!.avg_rating ?? '–' }}
+                    <template v-if="stats.get(s.id)!.avg_yield_g">
+                      · {{ t('strains.gramsShort', { n: stats.get(s.id)!.avg_yield_g! }) }}
+                    </template>
+                  </span>
+                  <span
+                    v-else
+                    class="fact"
+                  >{{ t('strains.noRating') }}</span>
                 </span>
-                <span
-                  v-if="stats.get(s.id)?.reports"
-                  class="rating num"
-                >
-                  <UIcon name="i-tabler-star-filled" />{{ stats.get(s.id)!.avg_rating ?? '–' }}
-                  <template v-if="stats.get(s.id)!.avg_yield_g">
-                    · {{ t('strains.gramsShort', { n: stats.get(s.id)!.avg_yield_g! }) }}
-                  </template>
-                </span>
-                <span
-                  v-else
-                  class="rating none"
-                >{{ t('strains.noRating') }}</span>
               </span>
+              <UIcon
+                name="i-tabler-chevron-right"
+                class="chev"
+              />
             </NuxtLink>
           </li>
-        </ul>
-
-        <ul
-          v-if="loading"
-          class="grid"
-          aria-hidden="true"
-        >
           <li
-            v-for="i in strains.length ? 2 : 6"
-            :key="i"
-            class="card strain sk-card"
+            v-for="i in loading ? (strains.length ? 2 : 6) : 0"
+            :key="`sk${i}`"
+            class="row sk-row"
+            aria-hidden="true"
           >
             <span class="thumb sk" />
             <span class="meta">
@@ -296,7 +295,7 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
         </ul>
 
         <button
-          v-else-if="error"
+          v-if="error && !loading"
           type="button"
           class="btn btn-ghost"
           @click="loadPage()"
@@ -305,7 +304,7 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
         </button>
 
         <div
-          v-else-if="done"
+          v-else-if="done && !loading"
           class="end"
         >
           <p>{{ t('strains.suggestText') }}</p>
@@ -359,8 +358,8 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
 }
 
 .filter-row {
-  margin: 0 -20px;
-  padding: 0 20px 2px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
 }
 
 .filter-row .chip {
@@ -383,45 +382,49 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
   background: var(--line-strong);
 }
 
-.grid-wrap {
+.list-wrap {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+.list {
   margin: 0;
   padding: 0;
   list-style: none;
+  overflow: hidden;
 }
 
-.strain {
+.list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.row {
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 10px 10px 12px;
   color: var(--text);
   text-decoration: none;
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.strain:active {
-  transform: scale(0.98);
+.row:active {
+  transform: scale(0.985);
 }
 
 .thumb {
   position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
-  aspect-ratio: 4 / 3;
   overflow: hidden;
+  border-radius: 12px;
   color: var(--text-3);
-  background:
-    radial-gradient(80% 70% at 50% 0%, rgba(233, 243, 228, 0.07), transparent 70%),
-    #0b0d10;
+  background: var(--surface-3);
 }
 
 .thumb img {
@@ -431,7 +434,7 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity var(--dur-slow) var(--ease-out);
+  transition: opacity var(--dur) ease;
 }
 
 .thumb.loaded img {
@@ -439,30 +442,19 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
 }
 
 .placeholder {
-  font-size: 44px;
-  opacity: 0.85;
-}
-
-.auto {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  color: var(--text-2);
-  background: rgba(7, 8, 10, 0.78);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  font-size: 26px;
 }
 
 .meta {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
-  padding: 10px 12px 12px;
   min-width: 0;
 }
 
 .name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
   overflow: hidden;
@@ -471,8 +463,8 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
 }
 
 .breeder {
-  color: var(--text-3);
-  font-size: 12px;
+  color: var(--text-2);
+  font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -481,67 +473,64 @@ useOnlineRetry(() => !!error.value, () => loadPage(!strains.value.length))
 .facts {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px 8px;
   margin-top: 4px;
-  font-size: 12px;
-  font-weight: 600;
 }
 
-.fact.dom {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.dom .iconify {
+  font-size: 12px;
+}
+
+.dom-indica {
+  color: var(--blue);
+}
+
+.dom-sativa {
+  color: var(--amber);
+}
+
+.dom-hybrid {
+  color: var(--green);
+}
+
+.auto {
   color: var(--text-2);
 }
 
-.fact.dom .iconify {
+.fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   color: var(--text-3);
 }
 
-.fact.lamp {
-  color: var(--lamp);
-}
-
-.rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: auto;
-  padding-top: 6px;
-  color: var(--text-2);
-  font-size: 12px;
-}
-
 .rating .iconify {
-  color: var(--lamp);
+  font-size: 13px;
+  color: var(--amber);
 }
 
-.rating.none {
+.chev {
+  flex-shrink: 0;
+  font-size: 20px;
   color: var(--text-3);
 }
 
 .sk {
   display: block;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
+  background: var(--surface-3);
 }
 
 .sk-line {
   height: 12px;
   border-radius: 6px;
   margin-top: 4px;
+  width: 70%;
 }
 
 .sk-line.short {
-  width: 60%;
-}
-
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
-  }
+  width: 40%;
 }
 
 .end {

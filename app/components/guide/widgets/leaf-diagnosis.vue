@@ -237,13 +237,13 @@ function reset() {
 .n {
   display: inline-grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--surface-3);
   font-size: 12px;
   font-weight: 600;
-  color: var(--leaf);
-  box-shadow: inset 0 0 0 1px var(--accent-line);
+  color: var(--text);
 }
 
 .leaf .chip {
@@ -263,9 +263,9 @@ function reset() {
   gap: 12px;
   min-height: 48px;
   padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #0b0d10;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
   color: var(--text-2);
   font: inherit;
   font-size: 14px;
@@ -276,22 +276,23 @@ function reset() {
 }
 
 .opt[aria-pressed="true"] {
-  border-color: var(--accent-line);
+  border-color: transparent;
   background: var(--accent-soft);
   color: var(--text);
 }
 
 .radio {
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1.5px var(--line-strong);
-  transition: box-shadow var(--dur-fast) ease;
+  border: 2px solid var(--line-strong);
+  transition: border var(--dur-fast) ease;
 }
 
 .opt[aria-pressed="true"] .radio {
-  box-shadow: inset 0 0 0 5px var(--leaf);
+  border: 6px solid var(--green);
 }
 
 .causes {
@@ -339,15 +340,15 @@ function reset() {
   width: 12px;
   height: 4px;
   border-radius: 2px;
-  background: var(--dark-arc);
+  background: var(--track);
 }
 
 .r1 {
-  --rc: var(--leaf);
+  --rc: var(--green);
 }
 
 .r2 {
-  --rc: var(--lamp);
+  --rc: var(--amber);
 }
 
 .r3 {
@@ -384,7 +385,7 @@ function reset() {
 .first {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: var(--lamp-soft);
   font-size: 13px;
   line-height: 1.5;

@@ -9,7 +9,7 @@ export default {
     cs: 'Vytvaruj rostlinu do rovné a rovnoměrné koruny s víc vrcholovými palicemi: LST, topping, FIM, SCROG, defoliace, lollipopping a supercropping.'
   },
   glyph: 'train',
-  color: '#9be36b',
+  color: '#3dd173',
   lessons: [
     {
       id: 'training-lst',

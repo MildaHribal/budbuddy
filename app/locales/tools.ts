@@ -3,6 +3,7 @@ export default {
     title: 'Tools',
     subtitle: 'Calculators for the grow room',
     tabs: { nutrients: 'Nutrients', vpd: 'Air', dli: 'Light', convert: 'Convert' },
+    desc: { nutrients: 'Millilitres per can from the bottle dose', vpd: 'Temperature and humidity check (VPD)', dli: 'Daily light from PPFD and hours', convert: 'Gallons, litres, °F and °C' },
     whatFor: 'What is this for?',
     learnMore: 'Learn more',
     mix: {
@@ -117,6 +118,7 @@ export default {
     title: 'Nástroje',
     subtitle: 'Kalkulačky pro pěstírnu',
     tabs: { nutrients: 'Živiny', vpd: 'Vzduch', dli: 'Světlo', convert: 'Převody' },
+    desc: { nutrients: 'Mililitry do konve podle dávky na lahvi', vpd: 'Kontrola teploty a vlhkosti (VPD)', dli: 'Denní dávka světla z PPFD a hodin', convert: 'Galony, litry, °F a °C' },
     whatFor: 'K čemu to je?',
     learnMore: 'Víc informací',
     mix: {

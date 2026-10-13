@@ -20,7 +20,7 @@ describe('czech labels', () => {
     locale.value = 'cs'
     expect(stages().map(s => s.label)).toEqual(['Klíčení', 'Sazenice', 'Vegetace', 'Kvetení', 'Sušení', 'Zrání'])
     expect(stageInfo('flowering').range).toBe('7–11 týdnů')
-    expect(stageInfo('flowering').color).toBe('#c9a2ff')
+    expect(stageInfo('flowering').color).toBe('#b58cf5')
     expect(STAGES[0]!.label).toBe('Germination')
     locale.value = 'en'
     expect(stageInfo('curing').label).toBe('Curing')

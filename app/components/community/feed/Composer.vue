@@ -554,9 +554,8 @@ async function submit() {
   align-items: flex-start;
   margin: 0;
   padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--lamp-soft);
-  border: 1px solid rgba(255, 210, 138, 0.26);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
   color: var(--text-2);
   font-size: 12px;
   line-height: 1.45;
@@ -566,7 +565,7 @@ async function submit() {
   flex-shrink: 0;
   margin-top: 1px;
   font-size: 16px;
-  color: var(--lamp);
+  color: var(--text-3);
 }
 
 .cats,
@@ -597,9 +596,9 @@ async function submit() {
   margin: 4px 0 0;
   padding: 12px 14px;
   list-style: none;
-  border-radius: 14px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: var(--surface);
+  background: var(--surface-2);
   font-size: 13px;
   color: var(--text-2);
 }
@@ -620,7 +619,7 @@ async function submit() {
 }
 
 .checklist li.ok .iconify {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .check-title {
@@ -641,16 +640,16 @@ async function submit() {
 .photos {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 2px;
 }
 
 .thumb {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--line-strong);
-  background: #0b0d10;
+  border: 0;
+  background: var(--well);
 }
 
 .thumb img {
@@ -684,7 +683,7 @@ async function submit() {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--leaf-deep), var(--leaf));
+  background: var(--green);
   transition: width var(--dur) var(--ease-out);
 }
 
@@ -697,9 +696,9 @@ async function submit() {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border: 1px solid rgba(255, 95, 109, 0.4);
-  background: rgba(7, 8, 10, 0.75);
-  color: #ff9aa3;
+  border: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--red);
   font-size: 20px;
 }
 
@@ -723,8 +722,7 @@ async function submit() {
   height: 24px;
   padding: 4px;
   border-radius: 50%;
-  background: rgba(7, 8, 10, 0.75);
-  border: 1px solid var(--line-strong);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .thumb.add {
@@ -733,9 +731,9 @@ async function submit() {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-style: dashed;
-  background: var(--surface);
-  color: var(--leaf);
+  border: 1px dashed var(--line-strong);
+  background: var(--surface-2);
+  color: var(--green);
   font-size: 12px;
   font-weight: 600;
 }

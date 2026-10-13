@@ -69,7 +69,6 @@ const drops: [number, number][] = [[86, 124], [120, 146], [156, 122], [188, 146]
       d="M210 138q14 2 18 16q3 9-5 14"
       :stroke="ART.pale"
       stroke-width="2.2"
-      class="ga-glow"
       :style="{ color: ART.pale }"
     />
     <g

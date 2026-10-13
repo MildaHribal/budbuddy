@@ -88,7 +88,7 @@ const bubbles = [[142, 168, 2.2], [156, 158, 2.6], [148, 140, 2], [162, 128, 2.4
     />
     <path
       d="M134 56h36l-5 36h-26z"
-      fill="#0b0d10"
+      fill="var(--well)"
       :stroke="ART.text"
       stroke-opacity="0.9"
     />

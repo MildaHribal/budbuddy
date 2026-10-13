@@ -46,9 +46,8 @@ const { t } = useI18n()
   align-items: center;
   gap: 12px;
   min-height: 64px;
-  padding: calc(14px + var(--safe-top)) 20px 12px;
-  /* opaque gradient: a backdrop blur re-renders on every scroll frame */
-  background: linear-gradient(180deg, #07080a 0%, rgba(7, 8, 10, 0.97) 62%, rgba(7, 8, 10, 0.88) 84%, rgba(7, 8, 10, 0) 100%);
+  padding: calc(12px + var(--safe-top)) 16px 12px;
+  background: var(--bg);
 }
 
 .header-text {
@@ -60,7 +59,7 @@ h1 {
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

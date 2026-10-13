@@ -14,6 +14,14 @@ watch(celebrate, (b) => {
 watch(open, (v) => {
   if (!v && celebrate.value && user.value) markCelebrated(user.value.id, celebrate.value.id)
 })
+useBackHandler(open, () => (open.value = false))
+
+const ctaBtn = ref<HTMLButtonElement | null>(null)
+watch(open, async (v) => {
+  if (!v) return
+  await nextTick()
+  ctaBtn.value?.focus({ preventScroll: true })
+})
 
 const pinned = computed(() => profile.value?.pinned_badges ?? [])
 const canPin = computed(() => !!celebrate.value && !pinned.value.includes(celebrate.value.id) && pinned.value.length < MAX_PINNED)
@@ -40,107 +48,115 @@ function viewAll() {
 </script>
 
 <template>
-  <BottomSheet
-    v-model:open="open"
-    :title="t('profile.badges.celebrate.title')"
+  <Teleport
+    to="#overlays"
+    defer
   >
-    <div
-      v-if="celebrate"
-      class="cel"
-      :style="{ '--c': badgeColor(celebrate.tier) }"
-    >
+    <Transition name="cel">
       <div
-        class="stage"
-        aria-hidden="true"
+        v-if="open && celebrate"
+        class="cel-backdrop"
+        @click.self="open = false"
       >
-        <span class="bloom" />
-        <CommunityBadgeMedal
-          :key="celebrate.id"
-          :glyph="badgeGlyph(celebrate)"
-          :tier="celebrate.tier"
-          :size="104"
-          draw
-          class="medal-in"
-        />
+        <div
+          class="cel card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cel-title"
+          :style="{ '--c': badgeColor(celebrate.tier) }"
+        >
+          <h2
+            id="cel-title"
+            class="cel-title"
+          >
+            {{ t('profile.badges.celebrate.title') }}
+          </h2>
+          <CommunityBadgeMedal
+            :key="celebrate.id"
+            :glyph="badgeGlyph(celebrate)"
+            :tier="celebrate.tier"
+            :size="72"
+          />
+          <p class="lead">
+            {{ t('profile.badges.celebrate.lead', { name: badgeName(celebrate) }) }}
+          </p>
+          <p class="desc">
+            {{ badgeDesc(celebrate) }}
+          </p>
+          <p class="date num">
+            {{ t('profile.badges.earnedOn', { date: formatDate(celebrate.earned_at.slice(0, 10)) }) }}
+          </p>
+          <div class="actions">
+            <button
+              v-if="canPin"
+              type="button"
+              class="btn btn-block"
+              :disabled="pinning"
+              @click="pin"
+            >
+              <UIcon name="i-tabler-pin" /> {{ t('profile.badges.celebrate.pin') }}
+            </button>
+            <button
+              ref="ctaBtn"
+              type="button"
+              class="btn btn-primary btn-block"
+              @click="open = false"
+            >
+              {{ t('profile.badges.celebrate.cta') }}
+            </button>
+            <button
+              type="button"
+              class="link view"
+              @click="viewAll"
+            >
+              {{ t('profile.badges.celebrate.view') }}
+            </button>
+          </div>
+        </div>
       </div>
-      <p class="lead">
-        {{ t('profile.badges.celebrate.lead', { name: badgeName(celebrate) }) }}
-      </p>
-      <p class="desc">
-        {{ badgeDesc(celebrate) }}
-      </p>
-      <p class="date num">
-        {{ t('profile.badges.earnedOn', { date: formatDate(celebrate.earned_at.slice(0, 10)) }) }}
-      </p>
-      <button
-        type="button"
-        class="link view"
-        @click="viewAll"
-      >
-        {{ t('profile.badges.celebrate.view') }}
-      </button>
-    </div>
-    <template #footer>
-      <button
-        v-if="canPin"
-        type="button"
-        class="btn btn-lamp"
-        :disabled="pinning"
-        @click="pin"
-      >
-        <UIcon name="i-tabler-pin" /> {{ t('profile.badges.celebrate.pin') }}
-      </button>
-      <button
-        type="button"
-        class="btn btn-primary"
-        @click="open = false"
-      >
-        {{ t('profile.badges.celebrate.cta') }}
-      </button>
-    </template>
-  </BottomSheet>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
+.cel-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 4, 5, 0.74);
+}
+
 .cel {
+  width: 100%;
+  max-width: 340px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
+  padding: 20px 20px 16px;
   text-align: center;
-  padding: 4px 0 8px;
+  box-shadow: var(--shadow-float);
 }
 
-.stage {
-  position: relative;
-  width: 180px;
-  height: 150px;
-  display: grid;
-  place-items: center;
-}
-
-.bloom {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 34%, transparent), rgba(255, 210, 138, 0.1) 55%, transparent 100%);
-  opacity: 0;
-  transform: scale(0.6);
-  animation: bloom 900ms var(--ease-out) 120ms forwards;
-}
-
-.medal-in {
-  animation: medal-in 520ms var(--ease-out) both;
+.cel-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .lead {
-  margin: 6px 0 0;
-  font-size: 20px;
+  margin: 8px 0 0;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.02em;
 }
 
 .desc {
-  margin: 6px 0 0;
+  margin: 0;
   max-width: 32ch;
   font-size: 14px;
   line-height: 1.45;
@@ -148,41 +164,45 @@ function viewAll() {
 }
 
 .date {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 12px;
-  color: var(--lamp);
+  color: var(--text-3);
+}
+
+.actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .view {
+  align-self: center;
   min-height: 44px;
-  margin-top: 6px;
-  border: 0;
-  background: none;
 }
 
-@keyframes bloom {
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.cel-enter-active,
+.cel-leave-active {
+  transition: opacity var(--dur) var(--ease-out);
 }
 
-@keyframes medal-in {
-  from {
-    opacity: 0;
-    transform: scale(0.82) translateY(6px);
-  }
+.cel-enter-active .cel {
+  transition: transform var(--dur-slow) var(--ease-out), opacity var(--dur) var(--ease-out);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bloom {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
+.cel-leave-active .cel {
+  transition: transform var(--dur-fast) ease, opacity var(--dur-fast) ease;
+}
 
-  .medal-in {
-    animation: none;
-  }
+.cel-enter-from,
+.cel-leave-to {
+  opacity: 0;
+}
+
+.cel-enter-from .cel,
+.cel-leave-to .cel {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
 }
 </style>

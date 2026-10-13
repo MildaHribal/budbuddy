@@ -78,26 +78,26 @@ const label = computed(() => (unread.value ? t('notifications.bellUnread', { n: 
 }
 
 .bell.live .iconify {
-  color: var(--lamp);
+  color: var(--green);
 }
 
 .count {
   position: absolute;
   top: -4px;
   right: -4px;
-  min-width: 20px;
-  height: 20px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--pink);
-  color: #1a0710;
+  background: var(--red);
+  color: var(--text);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
-  box-shadow: 0 0 0 2px var(--bg);
+  border: 2px solid var(--bg);
 }
 
 .pop-enter-active {
@@ -105,7 +105,7 @@ const label = computed(() => (unread.value ? t('notifications.bellUnread', { n: 
 }
 
 .pop-enter-from {
-  transform: scale(0.4);
+  transform: scale(0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {

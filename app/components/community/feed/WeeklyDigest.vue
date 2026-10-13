@@ -218,17 +218,7 @@ const empty = computed(() => !diaries.value && !waiting.value && !tip.value && !
 .week {
   position: relative;
   overflow: hidden;
-  padding: 14px 6px 6px 16px;
-}
-
-/* lamp light falling on the top edge */
-.week::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: 70px;
-  background: radial-gradient(120% 100% at 30% 0%, rgba(255, 210, 138, 0.1), transparent 70%);
-  pointer-events: none;
+  padding: 12px 6px 4px 14px;
 }
 
 .w-head {
@@ -255,14 +245,13 @@ const empty = computed(() => !diaries.value && !waiting.value && !tip.value && !
 .w-close {
   border-color: transparent;
   background: transparent;
-  box-shadow: none;
   color: var(--text-3);
   font-size: 18px;
 }
 
 .w-quiet {
   margin: 4px 10px 10px 0;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.45;
   color: var(--text-2);
 }
@@ -300,15 +289,15 @@ const empty = computed(() => !diaries.value && !waiting.value && !tip.value && !
 .w-glyph {
   flex-shrink: 0;
   font-size: 20px;
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .w-glyph.lamp {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .w-glyph.attention {
-  color: var(--pink);
+  color: var(--red);
 }
 
 .w-text {
@@ -317,13 +306,13 @@ const empty = computed(() => !diaries.value && !waiting.value && !tip.value && !
   display: flex;
   flex-direction: column;
   gap: 1px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.4;
   color: var(--text-2);
 }
 
 .w-label {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
 }
@@ -340,8 +329,7 @@ const empty = computed(() => !diaries.value && !waiting.value && !tip.value && !
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--accent-soft);
-  border: 1px solid var(--accent-line);
-  color: var(--leaf);
+  color: var(--green);
   font-size: 12px;
   font-weight: 600;
 }

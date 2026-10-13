@@ -21,7 +21,7 @@ export default {
       lightsOn: 'Lights on at',
       hours: 'Hours of light',
       invalid: 'Enter a whole number from 0 to 24.',
-      hint: 'Drives the light ring on the dashboard.'
+      hint: 'Drives the light card on the dashboard.'
     },
     data: {
       title: 'Your data',
@@ -95,7 +95,7 @@ export default {
       lightsOn: 'Rozsvícení v',
       hours: 'Hodin světla',
       invalid: 'Zadej celé číslo od 0 do 24.',
-      hint: 'Řídí světelný kruh na přehledu.'
+      hint: 'Řídí kartu světla na přehledu.'
     },
     data: {
       title: 'Tvoje data',

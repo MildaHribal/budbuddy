@@ -13,7 +13,6 @@ const props = withDefaults(defineProps<{
 }>(), { unit: '' })
 
 const active = ref<number | null>(null)
-const intro = ref(true)
 const root = ref<HTMLElement | null>(null)
 
 const STEPS = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000]
@@ -43,12 +42,7 @@ watch(() => props.bars.length, () => {
   active.value = null
 })
 
-onMounted(() => {
-  document.addEventListener('pointerdown', onOutside)
-  setTimeout(() => {
-    intro.value = false
-  }, 1400)
-})
+onMounted(() => document.addEventListener('pointerdown', onOutside))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 </script>
 
@@ -56,7 +50,6 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
   <figure
     ref="root"
     class="chart"
-    :class="{ intro }"
     role="img"
     :aria-label="label"
   >
@@ -81,7 +74,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
         :key="i"
         class="col"
         :class="{ active: active === i, dim: active !== null && active !== i, first: i === 0, last: i === bars.length - 1 }"
-        :style="{ '--h': `${b.value ? Math.max(3, pct(b.value)) : 0}%`, '--i': i }"
+        :style="{ '--h': `${b.value ? Math.max(3, pct(b.value)) : 0}%` }"
         @pointerenter="onEnter($event, i)"
         @pointerleave="onLeave"
         @click="onTap(i)"
@@ -127,11 +120,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--line);
 }
 
 .gridline.base {
-  border-top: 1px solid var(--line-strong);
+  border-top-color: var(--line-strong);
 }
 
 .gridline span {
@@ -165,34 +158,20 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 }
 
 .bar {
-  width: min(14px, 46%);
+  width: min(16px, 46%);
   height: 100%;
-  background: color-mix(in srgb, var(--leaf) 52%, transparent);
+  background: var(--accent-line);
   clip-path: inset(calc(100% - var(--h)) 0 0 0 round 4px 4px 0 0);
   transition: clip-path var(--dur-slow) var(--ease-out), background var(--dur) ease, opacity var(--dur) ease;
 }
 
-.bar.highlight {
-  background: var(--leaf);
-}
-
+.bar.highlight,
 .col.active .bar {
-  background: var(--leaf);
+  background: var(--green);
 }
 
 .col.dim .bar {
-  opacity: 0.45;
-}
-
-.intro .bar {
-  animation: bar-grow 0.8s var(--ease-out) both;
-  animation-delay: calc(var(--i) * 45ms + 80ms);
-}
-
-@keyframes bar-grow {
-  from {
-    clip-path: inset(100% 0 0 0 round 4px 4px 0 0);
-  }
+  opacity: 0.5;
 }
 
 .label {
@@ -207,7 +186,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 }
 
 .label.highlight {
-  color: var(--leaf);
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -222,10 +201,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
   align-items: center;
   gap: 1px;
   padding: 6px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   border: 1px solid var(--line-strong);
-  box-shadow: inset 0 1px 0 var(--highlight), 0 8px 18px -6px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-float);
   white-space: nowrap;
   pointer-events: none;
   animation: tip-in var(--dur-fast) var(--ease-out) both;
@@ -245,7 +224,6 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 .tip strong {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text);
 }
 
 .tip span {
@@ -256,12 +234,6 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside))
 @keyframes tip-in {
   from {
     opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .intro .bar {
-    animation: none;
   }
 }
 </style>

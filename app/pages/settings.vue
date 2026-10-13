@@ -257,19 +257,34 @@ async function erase() {
           </h2>
         </div>
         <div
-          class="segmented"
-          role="group"
+          class="card list"
+          role="radiogroup"
           aria-labelledby="h-lang"
         >
           <button
             v-for="opt in LOCALES"
             :key="opt.value"
             type="button"
+            role="radio"
+            class="row"
             :lang="opt.value"
-            :aria-pressed="state.settings.language === opt.value"
+            :aria-checked="state.settings.language === opt.value"
             @click="setLanguage(opt.value)"
           >
-            {{ opt.label }}
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-language"
+                class="size-5"
+              />
+            </span>
+            <span class="row-text">
+              <strong>{{ opt.label }}</strong>
+            </span>
+            <UIcon
+              v-if="state.settings.language === opt.value"
+              name="i-tabler-check"
+              class="size-5 trail on"
+            />
           </button>
         </div>
       </section>
@@ -289,7 +304,6 @@ async function erase() {
             :hours="state.settings.lightHours"
             :size="96"
           />
-          <div class="divider" />
           <div
             class="chips presets"
             role="group"
@@ -356,18 +370,24 @@ async function erase() {
             {{ t('settings.reminders.title') }}
           </h2>
         </div>
-        <div class="card pad form-stack">
+        <div class="card list">
           <button
             type="button"
             role="switch"
-            class="switch-row"
+            class="row"
             :aria-checked="state.settings.reminders"
             :disabled="!remindersNative"
             @click="toggleReminders"
           >
-            <span class="switch-text">
-              <span class="switch-label">{{ t('settings.reminders.toggle') }}</span>
-              <span class="field-hint">{{ remindersNative ? t('settings.reminders.hint') : t('settings.reminders.appOnly') }}</span>
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-bell"
+                class="size-5"
+              />
+            </span>
+            <span class="row-text">
+              <strong>{{ t('settings.reminders.toggle') }}</strong>
+              <span>{{ remindersNative ? t('settings.reminders.hint') : t('settings.reminders.appOnly') }}</span>
             </span>
             <span
               class="switch"
@@ -375,31 +395,46 @@ async function erase() {
             />
           </button>
           <template v-if="remindersNative && state.settings.reminders">
-            <div class="divider" />
-            <div class="form-grid">
-              <div class="field">
-                <label
-                  class="field-label"
-                  for="s-reminder-time"
-                >{{ t('settings.reminders.time') }}</label>
-                <input
-                  id="s-reminder-time"
-                  v-model="reminderTime"
-                  type="time"
-                  class="input num"
-                  required
-                >
-              </div>
-              <div class="field test-field">
-                <button
-                  type="button"
-                  class="btn btn-soft"
-                  @click="sendTestReminder()"
-                >
-                  {{ t('settings.reminders.test') }}
-                </button>
-              </div>
-            </div>
+            <label
+              class="row"
+              for="s-reminder-time"
+            >
+              <span class="row-tile">
+                <UIcon
+                  name="i-tabler-clock"
+                  class="size-5"
+                />
+              </span>
+              <span class="row-text">
+                <strong>{{ t('settings.reminders.time') }}</strong>
+              </span>
+              <input
+                id="s-reminder-time"
+                v-model="reminderTime"
+                type="time"
+                class="input num row-input"
+                required
+              >
+            </label>
+            <button
+              type="button"
+              class="row"
+              @click="sendTestReminder()"
+            >
+              <span class="row-tile">
+                <UIcon
+                  name="i-tabler-send"
+                  class="size-5"
+                />
+              </span>
+              <span class="row-text">
+                <strong>{{ t('settings.reminders.test') }}</strong>
+              </span>
+              <UIcon
+                name="i-tabler-chevron-right"
+                class="size-5 trail"
+              />
+            </button>
           </template>
         </div>
       </section>
@@ -464,10 +499,19 @@ async function erase() {
           >{{ usage }}</span>
         </div>
         <div class="card list">
-          <div class="stats-row num">
-            <span><strong>{{ state.plants.length }}</strong> {{ t('settings.data.plants', { n: state.plants.length }) }}</span>
-            <span><strong>{{ state.entries.length }}</strong> {{ t('settings.data.entries', { n: state.entries.length }) }}</span>
-            <span><strong>{{ photoCount }}</strong> {{ t('settings.data.photos', { n: photoCount }) }}</span>
+          <div class="stats-row">
+            <span class="stat-cell">
+              <strong class="num">{{ state.plants.length }}</strong>
+              <span>{{ t('settings.data.plants', { n: state.plants.length }) }}</span>
+            </span>
+            <span class="stat-cell">
+              <strong class="num">{{ state.entries.length }}</strong>
+              <span>{{ t('settings.data.entries', { n: state.entries.length }) }}</span>
+            </span>
+            <span class="stat-cell">
+              <strong class="num">{{ photoCount }}</strong>
+              <span>{{ t('settings.data.photos', { n: photoCount }) }}</span>
+            </span>
           </div>
           <button
             type="button"
@@ -475,14 +519,20 @@ async function erase() {
             :disabled="!!busy"
             @click="exportData"
           >
+            <span class="row-tile">
+              <UIcon
+                :name="busy === 'export' ? 'i-tabler-loader-2' : 'i-tabler-download'"
+                class="size-5"
+                :class="{ 'animate-spin': busy === 'export' }"
+              />
+            </span>
             <span class="row-text">
               <strong>{{ t('settings.data.export') }}</strong>
               <span>{{ t('settings.data.exportHint') }}</span>
             </span>
             <UIcon
-              :name="busy === 'export' ? 'i-tabler-loader-2' : 'i-tabler-download'"
+              name="i-tabler-chevron-right"
               class="size-5 trail"
-              :class="{ 'animate-spin': busy === 'export' }"
             />
           </button>
           <button
@@ -491,20 +541,32 @@ async function erase() {
             :disabled="!!busy"
             @click="importData"
           >
+            <span class="row-tile">
+              <UIcon
+                :name="busy === 'import' ? 'i-tabler-loader-2' : 'i-tabler-upload'"
+                class="size-5"
+                :class="{ 'animate-spin': busy === 'import' }"
+              />
+            </span>
             <span class="row-text">
               <strong>{{ t('settings.data.restore') }}</strong>
               <span>{{ t('settings.data.restoreHint') }}</span>
             </span>
             <UIcon
-              :name="busy === 'import' ? 'i-tabler-loader-2' : 'i-tabler-upload'"
+              name="i-tabler-chevron-right"
               class="size-5 trail"
-              :class="{ 'animate-spin': busy === 'import' }"
             />
           </button>
           <NuxtLink
             to="/stats"
             class="row"
           >
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-chart-bar"
+                class="size-5"
+              />
+            </span>
             <span class="row-text">
               <strong>{{ t('settings.data.stats') }}</strong>
               <span>{{ t('settings.data.statsHint') }}</span>
@@ -524,23 +586,29 @@ async function erase() {
         <div class="section-head">
           <h2
             id="h-danger"
-            class="section-title danger-title"
+            class="section-title"
           >
             {{ t('settings.danger.title') }}
           </h2>
         </div>
-        <div class="card list danger-card">
+        <div class="card list">
           <button
             type="button"
             class="row"
             @click="demo"
           >
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-flask-2"
+                class="size-5"
+              />
+            </span>
             <span class="row-text">
               <strong>{{ t('settings.danger.demo') }}</strong>
               <span>{{ t('settings.danger.demoHint') }}</span>
             </span>
             <UIcon
-              name="i-tabler-flask-2"
+              name="i-tabler-chevron-right"
               class="size-5 trail"
             />
           </button>
@@ -549,12 +617,18 @@ async function erase() {
             class="row danger"
             @click="erase"
           >
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-trash"
+                class="size-5"
+              />
+            </span>
             <span class="row-text">
               <strong>{{ t('settings.danger.erase') }}</strong>
               <span>{{ t('settings.danger.eraseHint') }}</span>
             </span>
             <UIcon
-              name="i-tabler-trash"
+              name="i-tabler-chevron-right"
               class="size-5 trail"
             />
           </button>
@@ -605,20 +679,6 @@ async function erase() {
   padding: 16px;
 }
 
-.section-head {
-  padding: 0 2px;
-}
-
-.divider {
-  height: 1px;
-  margin: 0 -16px;
-  background: var(--line);
-}
-
-.presets {
-  margin: -4px 0;
-}
-
 .presets .chip {
   flex: 1;
   justify-content: center;
@@ -626,54 +686,82 @@ async function erase() {
   padding: 0 10px;
 }
 
+/* Grouped list cards */
 .list {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+}
+
+.list > * + * {
+  border-top: 1px solid var(--line);
 }
 
 .stats-row {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px;
-  font-size: 13px;
-  color: var(--text-3);
+  padding: 14px 0;
 }
 
-.stats-row strong {
-  display: block;
-  font-size: 24px;
-  font-weight: 300;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  color: var(--text);
+.stat-cell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 14px;
+}
+
+.stat-cell + .stat-cell {
+  border-left: 1px solid var(--line);
+}
+
+.stat-cell strong {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.stat-cell span {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .row {
   width: 100%;
-  min-height: 64px;
+  min-height: 56px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 8px 12px 8px 14px;
   border: 0;
-  border-top: 1px solid var(--line);
   background: transparent;
   color: var(--text);
   text-align: left;
   text-decoration: none;
-  transition: background var(--dur) var(--ease-out);
-}
-
-.list > .row:first-child {
-  border-top: 0;
+  transition: background var(--dur-fast) ease;
 }
 
 .row:active:not(:disabled) {
-  background: var(--highlight);
+  background: var(--surface-2);
 }
 
 .row:disabled {
   opacity: 0.5;
+}
+
+.row-tile {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-2);
 }
 
 .row-text {
@@ -686,46 +774,43 @@ async function erase() {
 
 .row-text strong {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .row-text span {
-  font-size: 13px;
-  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+
+.row-input {
+  width: auto;
+  min-height: 40px;
+  padding: 6px 10px;
 }
 
 .trail {
   flex-shrink: 0;
   color: var(--text-3);
-  transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.row:active:not(:disabled) .trail {
-  transform: translateX(2px);
+.trail.on {
+  color: var(--green);
 }
 
-.danger-title {
-  color: var(--danger);
-}
-
-.danger-card {
-  border-color: rgba(255, 95, 109, 0.22);
-  background: linear-gradient(180deg, rgba(255, 95, 109, 0.06) 0%, var(--surface-2) 100%);
-}
-
-.row.danger strong,
-.row.danger .trail {
-  color: #ff9aa3;
-}
-
-.row.danger:active {
+.row.danger .row-tile {
   background: var(--danger-soft);
+  color: var(--red);
+}
+
+.row.danger strong {
+  color: var(--red);
 }
 
 .note {
   margin: 10px 2px 0;
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--text-3);
 }
 
@@ -735,13 +820,45 @@ async function erase() {
   margin: 0;
   font-size: 13px;
   line-height: 1.45;
-  color: #ff9aa3;
+  color: var(--red);
 }
 
 .test-result.ok {
-  color: var(--leaf);
+  color: var(--green);
 }
 
+/* Standard toggle */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 51px;
+  height: 31px;
+  border-radius: 999px;
+  background: var(--track);
+  transition: background var(--dur) ease;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.row[aria-checked="true"] .switch {
+  background: var(--green);
+}
+
+.row[aria-checked="true"] .switch::after {
+  transform: translateX(20px);
+}
+
+/* About */
 .about {
   display: flex;
   flex-direction: column;
@@ -754,7 +871,7 @@ async function erase() {
 }
 
 .about img {
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   margin-bottom: 8px;
 }
 
@@ -805,76 +922,10 @@ async function erase() {
   color: var(--text-3);
 }
 
-.switch-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  min-height: 48px;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: left;
-}
-
-.switch-row:disabled {
-  opacity: 0.6;
-}
-
-.switch-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.switch-label {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.switch {
-  position: relative;
-  flex-shrink: 0;
-  width: 52px;
-  height: 30px;
-  border-radius: 999px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-  transition: background var(--dur) var(--ease-out), box-shadow var(--dur) ease;
-}
-
-.switch::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--text-3);
-  transition: transform var(--dur-slow) var(--ease-out), background var(--dur) ease;
-}
-
-.switch-row[aria-checked="true"] .switch {
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent-line), var(--glow-leaf);
-}
-
-.switch-row[aria-checked="true"] .switch::after {
-  transform: translateX(22px);
-  background: var(--leaf);
-}
-
-.test-field {
-  justify-content: flex-end;
-}
-
-/* the optional community sign-in must not outshout the core settings below it */
+/* the optional community sign-in is a plain button, not the page's primary action */
 .account-quiet :deep(.btn-primary) {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--leaf);
-  box-shadow: none;
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  color: var(--text);
 }
 </style>

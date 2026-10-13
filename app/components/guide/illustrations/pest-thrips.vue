@@ -49,7 +49,7 @@ const body = 'M0-14c2 0 2.6 3 2.4 6l1.2 4c.6 6 .2 14-3.6 20c-3.8-6-4.2-14-3.6-20
           :cx="s[0]"
           :cy="s[1]"
           r="1.4"
-          fill="#0b0d10"
+          fill="var(--well)"
           :stroke="ART.muted"
           stroke-width="0.5"
         />
@@ -82,7 +82,7 @@ const body = 'M0-14c2 0 2.6 3 2.4 6l1.2 4c.6 6 .2 14-3.6 20c-3.8-6-4.2-14-3.6-20
       cx="264"
       cy="56"
       r="42"
-      fill="#0b0d10"
+      fill="var(--well)"
       :stroke="ART.muted"
       stroke-opacity="0.8"
     />

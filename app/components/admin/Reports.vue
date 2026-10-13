@@ -152,7 +152,7 @@ const when = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nume
       <li
         v-for="g in groups"
         :key="g.key"
-        class="item card"
+        class="item"
         :class="{ busy: busy === g.key }"
       >
         <div class="item-head">
@@ -251,7 +251,7 @@ const when = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nume
 
 .count {
   flex-shrink: 0;
-  color: var(--pink);
+  color: var(--red);
 }
 
 .reasons {
@@ -272,7 +272,7 @@ const when = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nume
   align-items: center;
   font-size: 13px;
   font-weight: 600;
-  color: var(--leaf);
+  color: var(--green);
   cursor: pointer;
 }
 
@@ -287,8 +287,8 @@ const when = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nume
 
 .who li {
   padding: 8px 10px;
-  border-radius: 10px;
-  background: #0b0d10;
+  border-radius: var(--radius-sm);
+  background: var(--well);
 }
 
 .who-name {

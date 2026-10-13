@@ -105,7 +105,7 @@ const progress = computed(() => {
 .now-name {
   font-size: 20px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .now-rep {
@@ -161,7 +161,6 @@ const progress = computed(() => {
 
 .here .dot {
   background: var(--c);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
 }
 
 .rung-text {
@@ -191,7 +190,7 @@ const progress = computed(() => {
 }
 
 .you {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .rung-perk {
@@ -205,8 +204,7 @@ const progress = computed(() => {
   gap: 10px;
   margin: 0;
   padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-control);
   background: var(--accent-soft);
   font-size: 13px;
   line-height: 1.45;
@@ -217,6 +215,6 @@ const progress = computed(() => {
   flex-shrink: 0;
   margin-top: 1px;
   font-size: 18px;
-  color: var(--leaf);
+  color: var(--green);
 }
 </style>

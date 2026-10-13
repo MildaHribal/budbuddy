@@ -10,14 +10,12 @@ defineProps<{
 
 <template>
   <div class="empty">
-    <GrowIcon
-      :name="icon"
-      draw
-      glow
-      :stroke-width="1.1"
-      class="empty-glyph"
+    <span
+      class="empty-tile"
       aria-hidden="true"
-    />
+    >
+      <GrowIcon :name="icon" />
+    </span>
     <p class="empty-title">
       {{ title }}
     </p>
@@ -40,14 +38,20 @@ defineProps<{
   padding: 28px 20px 30px;
   text-align: center;
   border-radius: var(--radius);
-  background: radial-gradient(70% 60% at 50% 0%, rgba(155, 227, 107, 0.07), transparent 75%);
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
-.empty-glyph {
-  margin-bottom: 8px;
-  font-size: 64px;
-  color: var(--leaf);
+.empty-tile {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 10px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--green);
+  font-size: 32px;
 }
 
 .empty-title {

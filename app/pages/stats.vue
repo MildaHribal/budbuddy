@@ -161,11 +161,10 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
           :aria-label="t('stats.streak.aria', { lit: litDays, total: STREAK_DAYS, streak: t('stats.days', { n: streak }) })"
         >
           <span
-            v-for="(d, i) in streakDays"
+            v-for="d in streakDays"
             :key="d.date"
             class="day"
             :class="{ lit: d.lit, run: d.run, today: d.today }"
-            :style="{ '--i': i }"
             :title="formatDate(d.date, { weekday: 'short', day: 'numeric', month: 'short' })"
           />
         </div>
@@ -188,7 +187,11 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
               {{ t('stats.activity.logged', { n: rangeTotal }) }}
             </p>
           </div>
-          <div class="segmented small">
+          <div
+            class="segmented small"
+            role="group"
+            :aria-label="t('stats.activity.title')"
+          >
             <button
               type="button"
               :aria-pressed="range === 'week'"
@@ -333,11 +336,12 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
             class="achievement"
             :class="{ done: a.done }"
           >
-            <GrowIcon
-              :name="a.glyph"
-              :glow="a.done"
-              class="ach-glyph"
-            />
+            <span class="ach-tile">
+              <GrowIcon
+                :name="a.glyph"
+                class="ach-glyph"
+              />
+            </span>
             <span class="ach-text">
               <strong>{{ a.title }}</strong>
               <span>{{ a.text }}</span>
@@ -365,11 +369,11 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 
 <style scoped>
 .block {
-  padding: 18px 16px;
+  padding: 16px;
 }
 
 .block-title {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .section-meta {
@@ -380,7 +384,7 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 .ledger {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding: 18px 0;
+  padding: 14px 0;
 }
 
 .figure {
@@ -396,26 +400,25 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 }
 
 .big {
-  font-size: 28px;
+  font-size: 24px;
   white-space: nowrap;
-  font-weight: 300;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--text);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 .big small,
 .streak-value small,
 .yield strong small {
-  margin-left: 3px;
-  font-size: 14px;
+  margin-left: 5px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0;
   color: var(--text-3);
 }
 
 .figure span {
-  margin-top: 4px;
+  margin-top: 2px;
   font-size: 12px;
   color: var(--text-2);
 }
@@ -428,18 +431,19 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 /* Streak */
 .streak-head {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .streak-value {
-  font-size: 40px;
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--leaf);
+  flex-shrink: 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--green);
 }
 
 .days {
@@ -450,38 +454,21 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 
 .day {
   height: 28px;
-  border-radius: 5px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: 4px;
+  background: var(--track);
 }
 
 .day.lit {
-  background: color-mix(in srgb, var(--leaf) 34%, #0b0d10);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  animation: lamp-on 0.5s var(--ease-out) both;
-  animation-delay: calc(var(--i) * 45ms + 200ms);
+  background: var(--accent-line);
 }
 
 .day.run {
-  background: linear-gradient(180deg, var(--leaf), var(--leaf-deep));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 12px rgba(155, 227, 107, 0.3);
+  background: var(--green);
 }
 
 .day.today {
   outline: 1px solid var(--line-strong);
   outline-offset: 2px;
-}
-
-@keyframes lamp-on {
-  0% {
-    opacity: 0.15;
-    filter: brightness(0.4);
-  }
-
-  40% {
-    opacity: 1;
-    filter: brightness(1.5);
-  }
 }
 
 .days-axis {
@@ -517,19 +504,19 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 .meter {
   height: 6px;
   border-radius: 999px;
-  background: #0b0d10;
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--track);
   overflow: hidden;
 }
 
 .meter span {
   display: block;
   height: 100%;
+  min-width: 4px;
   border-radius: inherit;
 }
 
 .meter.lamp span {
-  background: linear-gradient(90deg, #d9a76a, var(--lamp));
+  background: var(--amber);
 }
 
 .types {
@@ -563,45 +550,49 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 .type-count {
   text-align: right;
   font-weight: 600;
-  color: var(--text);
 }
 
 /* Harvests */
 .yield {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 16px;
-  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  margin: 0 -16px 12px;
+  padding: 0 0 12px;
   border-bottom: 1px solid var(--line);
+}
+
+.yield-main,
+.yield-side > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 16px;
+}
+
+.yield-side {
+  display: contents;
+}
+
+.yield-side > div {
+  border-left: 1px solid var(--line);
 }
 
 .yield strong {
   display: block;
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--lamp);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .yield-main strong {
-  font-size: 48px;
-  text-shadow: 0 0 24px rgba(255, 210, 138, 0.25);
-}
-
-.yield-side {
-  display: flex;
-  gap: 18px;
-}
-
-.yield-side strong {
-  font-size: 24px;
+  color: var(--amber);
 }
 
 .yield span {
   display: block;
-  margin-top: 6px;
   font-size: 12px;
   color: var(--text-2);
 }
@@ -614,20 +605,18 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
   flex-direction: column;
 }
 
+.harvest-list li + li {
+  border-top: 1px solid var(--line);
+}
+
 .harvest-row {
   display: grid;
   grid-template-columns: 1fr 64px 58px;
   align-items: center;
   gap: 12px;
-  min-height: 52px;
+  min-height: 56px;
   color: inherit;
   text-decoration: none;
-  border-radius: 10px;
-  transition: background var(--dur) ease;
-}
-
-.harvest-row:active {
-  background: var(--highlight);
 }
 
 .harvest-name {
@@ -637,8 +626,8 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 }
 
 .harvest-name strong {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -652,12 +641,12 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 .harvest-weight {
   text-align: right;
   font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
+  font-weight: 600;
 }
 
 .harvest-weight.pending {
   font-size: 12px;
+  font-weight: 500;
   color: var(--text-3);
 }
 
@@ -671,13 +660,14 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 .strains th {
   text-align: left;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--text-3);
+  font-weight: 600;
+  color: var(--text-2);
   padding: 0 0 8px;
 }
 
 .strains td {
-  padding: 11px 0;
+  height: 44px;
+  padding: 0;
   border-top: 1px solid var(--line);
 }
 
@@ -688,42 +678,47 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 }
 
 .strains td.yielded {
-  color: var(--lamp);
+  font-weight: 600;
 }
 
 /* Achievements */
 .achievements {
   list-style: none;
   margin: 0;
-  padding: 4px 16px;
+  padding: 0 16px;
 }
 
 .achievement {
-  display: grid;
-  grid-template-columns: 30px 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 60px;
-  padding: 10px 0;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 0;
 }
 
 .achievement + .achievement {
   border-top: 1px solid var(--line);
 }
 
-.ach-glyph {
-  font-size: 28px;
+.ach-tile {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
   color: var(--text-3);
-  opacity: 0.55;
+  font-size: 20px;
 }
 
 .ach-glyph :deep(.tint) {
   opacity: 0;
 }
 
-.achievement.done .ach-glyph {
-  color: var(--leaf);
-  opacity: 1;
+.achievement.done .ach-tile {
+  background: var(--accent-soft);
+  color: var(--green);
 }
 
 .achievement.done .ach-glyph :deep(.tint) {
@@ -731,14 +726,15 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 }
 
 .ach-text {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
 .ach-text strong {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-2);
 }
 
@@ -756,17 +752,12 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
 }
 
 .ach-state {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--leaf);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .day.lit {
-    animation: none;
-  }
+  color: var(--green);
 }
 </style>

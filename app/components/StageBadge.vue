@@ -20,6 +20,6 @@ const info = computed(() => stageInfo(props.stage))
 
 <style scoped>
 .stage-badge {
-  background: color-mix(in srgb, currentColor 14%, rgba(7, 8, 10, 0.88));
+  background: color-mix(in srgb, currentColor 16%, var(--surface));
 }
 </style>

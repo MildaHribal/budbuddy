@@ -6,8 +6,7 @@ const props = withDefaults(defineProps<{
   tier?: number
   earned?: boolean
   size?: number
-  draw?: boolean
-}>(), { tier: 1, earned: true, size: 48, draw: false })
+}>(), { tier: 1, earned: true, size: 48 })
 
 const color = computed(() => badgeColor(props.tier))
 </script>
@@ -21,8 +20,6 @@ const color = computed(() => badgeColor(props.tier))
   >
     <GrowIcon
       :name="glyph"
-      :draw="draw"
-      :stroke-width="1.5"
     />
     <UIcon
       v-if="!earned"
@@ -46,27 +43,16 @@ const color = computed(() => badgeColor(props.tier))
 
 .medal.earned {
   color: var(--c);
-  background:
-    radial-gradient(70% 70% at 50% 18%, color-mix(in srgb, var(--c) 30%, transparent), transparent 72%),
-    #0c100d;
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 0 calc(var(--s) * 0.35) color-mix(in srgb, var(--c) 22%, transparent);
-}
-
-.medal.earned .grow-icon {
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent));
+  background: color-mix(in srgb, var(--c) 14%, transparent);
 }
 
 .medal.locked {
   color: var(--text-3);
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  background: var(--surface-3);
 }
 
 .medal.locked .grow-icon {
-  opacity: 0.45;
+  opacity: 0.5;
 }
 
 .lock {
@@ -77,8 +63,8 @@ const color = computed(() => badgeColor(props.tier))
   height: max(14px, calc(var(--s) * 0.32));
   padding: 2px;
   border-radius: 50%;
+  border: 2px solid var(--surface);
   background: var(--surface-3);
   color: var(--text-2);
-  box-shadow: 0 0 0 2px var(--bg);
 }
 </style>

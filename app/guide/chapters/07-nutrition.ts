@@ -9,7 +9,7 @@ export default {
     cs: 'Co rostlina jí, jak udržet pH a EC v rozmezí, kdy čím hnojit a jak poznat, že jsi to přehnal.'
   },
   glyph: 'feed',
-  color: '#c9a2ff',
+  color: '#b58cf5',
   lessons: [
     {
       id: 'nutrition-npk',

@@ -18,12 +18,6 @@ const leaving = ref(false)
 const busy = ref(false)
 
 const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-const leafShown = ref(reduced)
-let leafTimer: ReturnType<typeof setTimeout> | undefined
-onMounted(() => {
-  if (!reduced) leafTimer = setTimeout(() => (leafShown.value = true), 350)
-})
-onBeforeUnmount(() => clearTimeout(leafTimer))
 
 const heading = ref<HTMLElement | null>(null)
 function go(to: number) {
@@ -33,10 +27,6 @@ function go(to: number) {
 }
 const next = () => go(index.value + 1)
 const prev = () => go(index.value - 1)
-const welcomed = ref(false)
-watch(index, (i) => {
-  if (i > 0) welcomed.value = true
-})
 const focusHeading = () => heading.value?.focus({ preventScroll: true })
 
 useBackHandler(computed(() => index.value > 0 && !leaving.value), prev)
@@ -98,8 +88,10 @@ function setReminderTime(e: Event) {
   if (/^\d{2}:\d{2}$/.test(v)) updateSettings({ reminderTime: v })
 }
 
+const choice = ref<'demo' | 'empty' | null>(null)
 async function finish(mode: 'demo' | 'empty') {
   if (leaving.value || busy.value) return
+  choice.value = mode
   busy.value = true
   try {
     if (mode === 'empty') {
@@ -113,7 +105,7 @@ async function finish(mode: 'demo' | 'empty') {
     busy.value = false
   }
   leaving.value = true
-  setTimeout(() => updateSettings({ onboarded: true }), reduced ? 0 : 640)
+  setTimeout(() => updateSettings({ onboarded: true }), reduced ? 0 : 220)
 }
 </script>
 
@@ -127,11 +119,6 @@ async function finish(mode: 'demo' | 'empty') {
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
   >
-    <div
-      class="g-light"
-      aria-hidden="true"
-    />
-
     <header class="g-top">
       <p class="sr-only">
         {{ t('onboarding.step', { n: index + 1, total: steps.length }) }}
@@ -165,61 +152,55 @@ async function finish(mode: 'demo' | 'empty') {
         <section
           v-if="step === 'welcome'"
           key="welcome"
-          class="step welcome"
-          :class="{ again: welcomed }"
+          class="step"
         >
-          <div
-            class="hero-leaf"
-            aria-hidden="true"
+          <img
+            src="/icon.webp"
+            alt=""
+            width="72"
+            height="72"
+            class="app-icon"
           >
-            <GrowIcon
-              v-if="leafShown"
-              name="vegetative"
-              draw
-              glow
-              :stroke-width="1.2"
-            />
-          </div>
           <h1
             ref="heading"
             tabindex="-1"
-            class="brand"
+            class="s-title"
           >
             BudBuddy
           </h1>
-          <p class="tagline">
+          <p class="s-lead">
             {{ t('onboarding.welcome.tagline') }}
           </p>
-          <ul class="values">
+          <ul class="card values">
             <li>
-              <UIcon
-                name="i-tabler-cloud-off"
-                class="v-icon v-lamp"
-              />
-              <div>
+              <span class="v-tile">
+                <UIcon
+                  name="i-tabler-cloud-off"
+                  class="size-5"
+                />
+              </span>
+              <span class="v-text">
                 <strong>{{ t('onboarding.welcome.offline') }}</strong>
                 <span>{{ t('onboarding.welcome.offlineHint') }}</span>
-              </div>
+              </span>
             </li>
             <li>
-              <GrowIcon
-                name="harvest"
-                class="v-icon leaf"
-              />
-              <div>
+              <span class="v-tile">
+                <GrowIcon name="harvest" />
+              </span>
+              <span class="v-text">
                 <strong>{{ t('onboarding.welcome.lifecycle') }}</strong>
                 <span>{{ t('onboarding.welcome.lifecycleHint') }}</span>
-              </div>
+              </span>
             </li>
             <li>
-              <GrowIcon
-                name="spark"
-                class="v-icon leaf"
-              />
-              <div>
+              <span class="v-tile">
+                <GrowIcon name="spark" />
+              </span>
+              <span class="v-text">
                 <strong>{{ t('onboarding.welcome.ai') }}</strong>
                 <span>{{ t('onboarding.welcome.aiHint') }}</span>
-              </div>
+              </span>
             </li>
           </ul>
         </section>
@@ -295,11 +276,11 @@ async function finish(mode: 'demo' | 'empty') {
           <p class="s-lead">
             {{ t('onboarding.light.lead') }}
           </p>
-          <div class="ring-panel">
+          <div class="card ring-panel">
             <PhotoperiodRing
               :lights-on="state.settings.lightsOn"
               :hours="state.settings.lightHours"
-              :size="132"
+              :size="128"
             />
           </div>
           <div class="field">
@@ -354,16 +335,6 @@ async function finish(mode: 'demo' | 'empty') {
           <p class="s-lead">
             {{ t('onboarding.reminders.lead') }}
           </p>
-          <div
-            class="bell"
-            :class="{ on: state.settings.reminders }"
-            aria-hidden="true"
-          >
-            <GrowIcon
-              name="water"
-              :glow="state.settings.reminders"
-            />
-          </div>
           <template v-if="native">
             <button
               v-if="!state.settings.reminders"
@@ -372,6 +343,10 @@ async function finish(mode: 'demo' | 'empty') {
               :disabled="busy"
               @click="enableReminders"
             >
+              <UIcon
+                name="i-tabler-bell"
+                class="size-5"
+              />
               {{ t('onboarding.reminders.enable') }}
             </button>
             <template v-else>
@@ -379,7 +354,10 @@ async function finish(mode: 'demo' | 'empty') {
                 class="status-on"
                 role="status"
               >
-                <UIcon name="i-tabler-check" />
+                <UIcon
+                  name="i-tabler-circle-check"
+                  class="size-5"
+                />
                 {{ t('onboarding.reminders.enabled') }}
               </p>
               <label class="field">
@@ -406,7 +384,7 @@ async function finish(mode: 'demo' | 'empty') {
           >
             <UIcon
               name="i-tabler-info-circle"
-              class="note-icon"
+              class="note-icon size-5"
             />
             {{ t('onboarding.reminders.web') }}
           </p>
@@ -427,43 +405,49 @@ async function finish(mode: 'demo' | 'empty') {
           <p class="s-lead">
             {{ t('onboarding.start.lead') }}
           </p>
-          <div class="choices">
+          <div
+            class="choices"
+            role="radiogroup"
+            :aria-label="t('onboarding.start.title')"
+          >
             <button
               type="button"
-              class="choice primary"
+              role="radio"
+              class="card choice"
+              :aria-checked="choice === 'demo'"
               :disabled="busy || leaving"
               @click="finish('demo')"
             >
-              <GrowIcon
-                name="flowering"
-                class="c-icon"
-              />
+              <span class="c-tile">
+                <GrowIcon name="flowering" />
+              </span>
               <span class="c-text">
                 <strong>{{ t('onboarding.start.demo') }}</strong>
                 <span>{{ t('onboarding.start.demoHint') }}</span>
               </span>
-              <UIcon
-                name="i-tabler-chevron-right"
-                class="c-go"
+              <span
+                class="radio"
+                aria-hidden="true"
               />
             </button>
             <button
               type="button"
-              class="choice"
+              role="radio"
+              class="card choice"
+              :aria-checked="choice === 'empty'"
               :disabled="busy || leaving"
               @click="finish('empty')"
             >
-              <GrowIcon
-                name="germination"
-                class="c-icon"
-              />
+              <span class="c-tile">
+                <GrowIcon name="germination" />
+              </span>
               <span class="c-text">
                 <strong>{{ t('onboarding.start.empty') }}</strong>
                 <span>{{ t('onboarding.start.emptyHint') }}</span>
               </span>
-              <UIcon
-                name="i-tabler-chevron-right"
-                class="c-go"
+              <span
+                class="radio"
+                aria-hidden="true"
               />
             </button>
           </div>
@@ -491,11 +475,6 @@ async function finish(mode: 'demo' | 'empty') {
         <UIcon name="i-tabler-chevron-right" />
       </button>
     </footer>
-
-    <div
-      class="flood"
-      aria-hidden="true"
-    />
   </div>
 </template>
 
@@ -503,40 +482,18 @@ async function finish(mode: 'demo' | 'empty') {
 .guide {
   position: absolute;
   inset: 0;
-  /* below the app lamp (60) so its single bar stays on top */
   z-index: 55;
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  padding: calc(var(--safe-top) + 14px) 20px calc(var(--safe-bottom) + 20px);
+  padding: calc(var(--safe-top) + 12px) 16px calc(var(--safe-bottom) + 16px);
   overflow: hidden;
+  transition: opacity var(--dur) ease;
 }
 
-.g-light {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 75%;
-  z-index: 0;
-  background: radial-gradient(90% 60% at 50% 0%, rgba(255, 210, 138, 0.12) 0%, rgba(155, 227, 107, 0.05) 45%, transparent 75%);
-  pointer-events: none;
+.leaving {
   opacity: 0;
-  transform: scaleY(0.4);
-  transform-origin: top;
-  animation: g-fall 1.4s 0.6s var(--ease-out) forwards;
-}
-
-@keyframes g-fall {
-  to {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-}
-
-.g-top,
-.g-body,
-.g-foot {
-  position: relative;
-  z-index: 1;
+  pointer-events: none;
 }
 
 .g-top {
@@ -555,21 +512,21 @@ async function finish(mode: 'demo' | 'empty') {
 }
 
 .dots li {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--surface-3);
-  transition: background var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+  background: var(--track);
+  transition: background var(--dur) ease, width var(--dur) var(--ease-out);
 }
 
 .dots li.done {
-  background: var(--leaf-deep);
+  background: var(--accent-line);
 }
 
 .dots li.on {
-  background: var(--lamp);
-  box-shadow: 0 0 10px 2px rgba(255, 210, 138, 0.45);
-  transform: scale(1.15);
+  width: 20px;
+  border-radius: 4px;
+  background: var(--green);
 }
 
 .skip {
@@ -592,7 +549,7 @@ async function finish(mode: 'demo' | 'empty') {
   flex-direction: column;
   gap: 18px;
   min-height: 100%;
-  padding-top: 28px;
+  padding-top: 24px;
 }
 
 .step h1,
@@ -600,123 +557,80 @@ async function finish(mode: 'demo' | 'empty') {
   outline: none;
 }
 
-.welcome {
-  align-items: center;
-  justify-content: center;
-  padding: 0 0 24px;
-  text-align: center;
-  gap: 0;
+.app-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius);
 }
 
-.hero-leaf {
-  height: 128px;
-  font-size: 120px;
-  line-height: 1;
-  color: var(--leaf);
-}
-
-.brand {
-  margin: 20px 0 0;
-  font-size: 40px;
+.s-title {
+  margin: 0;
+  font-size: 22px;
   font-weight: 600;
-  letter-spacing: -0.035em;
-  opacity: 0;
-  animation: g-rise var(--dur-slow) 0.55s var(--ease-out) forwards;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
-.tagline {
-  max-width: 28ch;
-  margin: 8px 0 0;
-  font-size: 16px;
+.s-lead {
+  margin: -10px 0 0;
+  font-size: 15px;
   line-height: 1.45;
   color: var(--text-2);
-  opacity: 0;
-  animation: g-rise var(--dur-slow) 0.65s var(--ease-out) forwards;
 }
 
 .values {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  margin: 36px 0 0;
-  padding: 0;
+  margin: 6px 0 0;
+  padding: 0 14px;
   list-style: none;
-  text-align: left;
 }
 
 .values li {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  opacity: 0;
-  animation: g-rise var(--dur-slow) var(--ease-out) forwards;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 0;
 }
 
-.values li:nth-child(1) { animation-delay: 0.8s; }
-.values li:nth-child(2) { animation-delay: 0.9s; }
-.values li:nth-child(3) { animation-delay: 1s; }
-
-.v-icon {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  font-size: 24px;
-  margin-top: 1px;
+.values li + li {
+  border-top: 1px solid var(--line);
 }
 
-.v-icon.leaf {
-  color: var(--leaf);
+.v-tile,
+.c-tile {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--green);
+  font-size: 20px;
 }
 
-.v-icon.v-lamp {
-  color: var(--lamp);
+.v-text,
+.c-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.values strong {
-  display: block;
+.v-text strong,
+.c-text strong {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
-.values span {
-  display: block;
-  margin-top: 2px;
-  font-size: 13px;
+.v-text span,
+.c-text span {
+  font-size: 12px;
+  line-height: 1.4;
   color: var(--text-3);
-}
-
-.welcome.again .brand,
-.welcome.again .tagline,
-.welcome.again .values li {
-  animation-delay: 0s;
-}
-
-@keyframes g-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.s-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-}
-
-.s-lead {
-  margin: -8px 0 0;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--text-2);
 }
 
 .segmented.tall button {
@@ -724,31 +638,14 @@ async function finish(mode: 'demo' | 'empty') {
 }
 
 .hello {
-  margin: 6px 0 0;
-  font-size: 30px;
-  font-weight: 300;
-  letter-spacing: -0.03em;
-  color: var(--lamp);
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .ring-panel {
-  padding: 18px 16px;
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight), var(--panel-shadow);
-}
-
-.bell {
-  align-self: center;
-  font-size: 88px;
-  line-height: 1;
-  color: var(--text-3);
-  transition: color var(--dur-slow) var(--ease-out);
-}
-
-.bell.on {
-  color: var(--leaf);
+  padding: 16px;
 }
 
 .status-on {
@@ -758,17 +655,13 @@ async function finish(mode: 'demo' | 'empty') {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .note {
   display: flex;
   gap: 10px;
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: var(--surface);
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-2);
@@ -777,27 +670,22 @@ async function finish(mode: 'demo' | 'empty') {
 .note-icon {
   flex: none;
   margin-top: 2px;
-  font-size: 18px;
-  color: var(--lamp);
+  color: var(--text-3);
 }
 
 .choices {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 10px;
 }
 
 .choice {
   display: flex;
   align-items: center;
-  gap: 16px;
-  min-height: 88px;
-  padding: 18px;
-  border-radius: 22px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  box-shadow: inset 0 1px 0 var(--highlight), var(--panel-shadow);
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
   color: var(--text);
   text-align: left;
   transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur) ease;
@@ -808,51 +696,24 @@ async function finish(mode: 'demo' | 'empty') {
 }
 
 .choice:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
-.choice.primary {
-  border-color: var(--accent-line);
-  background:
-    radial-gradient(120% 90% at 50% -20%, rgba(155, 227, 107, 0.14), transparent 70%),
-    var(--panel);
+.choice[aria-checked="true"] {
+  border-color: var(--green);
 }
 
-.c-icon {
-  flex: none;
-  font-size: 36px;
-  color: var(--text-2);
+.radio {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  transition: border var(--dur-fast) ease;
 }
 
-.choice.primary .c-icon {
-  color: var(--leaf);
-  filter: drop-shadow(0 0 8px rgba(155, 227, 107, 0.45));
-}
-
-.c-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.c-text strong {
-  display: block;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.c-text span {
-  display: block;
-  margin-top: 3px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-3);
-}
-
-.c-go {
-  flex: none;
-  font-size: 20px;
-  color: var(--text-3);
+.choice[aria-checked="true"] .radio {
+  border: 7px solid var(--green);
 }
 
 .g-foot {
@@ -868,7 +729,7 @@ async function finish(mode: 'demo' | 'empty') {
 
 .step-fwd-enter-active,
 .step-back-enter-active {
-  transition: opacity var(--dur) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+  transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
 }
 
 .step-fwd-leave-active,
@@ -879,71 +740,12 @@ async function finish(mode: 'demo' | 'empty') {
 .step-fwd-enter-from,
 .step-back-leave-to {
   opacity: 0;
-  transform: translateX(28px);
+  transform: translateX(16px);
 }
 
 .step-fwd-leave-to,
 .step-back-enter-from {
   opacity: 0;
-  transform: translateX(-28px);
-}
-
-/* Exit: the light floods the tent, then the guide dissolves into the dashboard. */
-.flood {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: radial-gradient(120% 80% at 50% 0%, rgba(255, 228, 180, 0.5) 0%, rgba(155, 227, 107, 0.12) 50%, transparent 85%);
-  opacity: 0;
-  transform: scaleY(0.2);
-  transform-origin: top;
-}
-
-.leaving .flood {
-  animation: g-flood 0.64s var(--ease-out) forwards;
-}
-
-.leaving {
-  animation: g-out 0.64s var(--ease-in) forwards;
-  pointer-events: none;
-}
-
-@keyframes g-flood {
-  50% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-
-  to {
-    opacity: 0.6;
-    transform: scaleY(1.2);
-  }
-}
-
-@keyframes g-out {
-  0%, 35% {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .g-light,
-  .brand,
-  .tagline,
-  .values li {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-
-  .leaving,
-  .leaving .flood {
-    animation: none;
-  }
+  transform: translateX(-16px);
 }
 </style>

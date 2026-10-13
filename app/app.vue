@@ -17,10 +17,6 @@ watch(() => state.settings.onboarded, (v) => {
   if (v) pageWarm.value = true
 })
 
-// Lights-on boot: the lamp flickers on, then light falls down the tent.
-const lit = ref(false)
-onMounted(() => requestAnimationFrame(() => (lit.value = true)))
-
 // supabase-js lives in the sign-in sheet's chunk: mount it only where sign-in can be asked for
 // (community, settings, on request) or at idle when a session is stored (badge toasts, sync).
 const route = useRoute()
@@ -54,7 +50,7 @@ useHead({
   titleTemplate: chunk => (chunk ? `${chunk} · BudBuddy` : 'BudBuddy – grow journal'),
   meta: [
     { name: 'description', content: 'BudBuddy is an offline grow journal: track plants, watering, feeding, training, photos and harvests, with VPD, DLI and nutrient calculators.' },
-    { name: 'theme-color', content: '#07080a' },
+    { name: 'theme-color', content: '#0e100f' },
     { property: 'og:title', content: 'BudBuddy – grow journal' },
     { property: 'og:description', content: 'Track every plant from seed to jar.' },
     { property: 'og:type', content: 'website' }
@@ -68,18 +64,7 @@ useHead({
 
 <template>
   <div class="device-stage">
-    <div
-      class="device tent"
-      :class="{ lit }"
-    >
-      <div
-        class="lamp-bar"
-        aria-hidden="true"
-      />
-      <div
-        class="lamp-light"
-        aria-hidden="true"
-      />
+    <div class="device">
       <OnboardingGuide v-if="ready && !state.settings.onboarded" />
       <div id="overlays" />
       <Transition name="splash">
@@ -135,62 +120,6 @@ useHead({
   transform: translateZ(0);
 }
 
-.lamp-bar {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  z-index: 60;
-  width: 150px;
-  height: 3px;
-  margin-left: -75px;
-  border-radius: 0 0 8px 8px;
-  background: var(--lamp);
-  box-shadow: var(--glow-lamp);
-  pointer-events: none;
-  opacity: 0;
-}
-
-.lamp-light {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 70%;
-  z-index: -1;
-  background: radial-gradient(90% 55% at 50% 0%, rgba(255, 210, 138, 0.1) 0%, rgba(155, 227, 107, 0.04) 45%, transparent 75%);
-  pointer-events: none;
-  opacity: 0;
-  transform: scaleY(0.4);
-  transform-origin: top;
-}
-
-.lit .lamp-bar {
-  animation: lamp-on 0.9s steps(1, end) forwards, lamp-glow 1.2s 0.9s var(--ease-out) forwards;
-}
-
-.lit .lamp-light {
-  animation: light-fall 1.4s 0.55s var(--ease-out) forwards;
-}
-
-@keyframes lamp-on {
-  0% { opacity: 0; }
-  12% { opacity: 0.7; }
-  20% { opacity: 0.1; }
-  34% { opacity: 0.9; }
-  42% { opacity: 0.3; }
-  60%, 100% { opacity: 1; }
-}
-
-@keyframes lamp-glow {
-  from { opacity: 1; filter: brightness(1.4); }
-  to { opacity: 1; filter: brightness(1); }
-}
-
-@keyframes light-fall {
-  to {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-}
-
 #overlays {
   position: absolute;
   inset: 0;
@@ -219,14 +148,13 @@ useHead({
 
 .splash-logo {
   border-radius: 26px;
-  box-shadow: 0 0 60px rgba(255, 210, 138, 0.18);
 }
 
 .load-error {
   padding: calc(10px + var(--safe-top)) 16px 10px;
   background: var(--danger-soft);
-  border-bottom: 1px solid rgba(255, 95, 109, 0.4);
-  color: #ffb4bb;
+  border-bottom: 1px solid var(--line);
+  color: var(--red);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -239,24 +167,13 @@ useHead({
   opacity: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lit .lamp-bar,
-  .lit .lamp-light {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-}
-
 /* On desktop the app is shown inside a phone frame (used for the portfolio embed). */
 @media (pointer: fine) and (min-width: 640px) and (min-height: 640px) {
   .device-stage {
     display: flex;
     align-items: center;
     justify-content: center;
-    background:
-      radial-gradient(60% 50% at 50% 0%, rgba(255, 210, 138, 0.08), transparent 70%),
-      #040506;
+    background: #060707;
   }
 
   .device {
@@ -264,10 +181,7 @@ useHead({
     height: min(844px, calc(100vh - 40px));
     border-radius: 48px;
     border: 10px solid #15171a;
-    box-shadow:
-      0 0 0 1px #2a2e33,
-      0 40px 80px -20px rgba(0, 0, 0, 0.9),
-      0 -20px 80px -30px rgba(255, 210, 138, 0.18);
+    box-shadow: 0 0 0 1px #2a2e33, 0 30px 60px -20px rgba(0, 0, 0, 0.8);
     --safe-top: 18px;
     --safe-bottom: 10px;
   }

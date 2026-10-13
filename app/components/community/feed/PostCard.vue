@@ -53,7 +53,7 @@ async function remove() {
         <CommunityUserAvatar
           :url="post.author.avatar_url"
           :name="name"
-          :size="40"
+          :size="32"
         />
         <span class="who-text">
           <span class="who-line">
@@ -97,12 +97,8 @@ async function remove() {
       </span>
       <span
         v-if="help === 'open'"
-        class="badge badge-attention help"
+        class="badge badge-attention"
       >
-        <span
-          class="pulse"
-          aria-hidden="true"
-        />
         {{ t('feed.help.needs') }}
       </span>
       <span
@@ -237,7 +233,7 @@ async function remove() {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 14px 14px 6px 16px;
+  padding: 12px 12px 4px 14px;
 }
 
 .removed {
@@ -245,10 +241,9 @@ async function remove() {
   gap: 8px;
   align-items: flex-start;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: var(--danger-soft);
-  border: 1px solid rgba(255, 95, 109, 0.3);
-  color: #ffb4bb;
+  color: var(--red);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -280,19 +275,19 @@ async function remove() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .who-line {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .who-name {
   min-width: 5ch;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -339,67 +334,28 @@ async function remove() {
 }
 
 .cat-question {
-  color: var(--info);
+  color: var(--blue);
 }
 
 .cat-harvest {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .cat-problem {
-  color: #ff9aa3;
+  color: var(--red);
 }
 
 .cat-plants,
 .cat-outdoor {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .solved {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .solved .iconify {
   font-size: 13px;
-}
-
-.help {
-  gap: 6px;
-}
-
-.pulse {
-  position: relative;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.pulse::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: currentColor;
-  animation: pulse 2.4s var(--ease-out) infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  70%,
-  100% {
-    transform: scale(2.6);
-    opacity: 0;
-  }
-}
-
-.tag-first {
-  height: auto;
-  padding: 3px 9px 3px 7px;
-  line-height: 1.4;
 }
 
 .symptom {
@@ -426,14 +382,13 @@ async function remove() {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   line-height: 1.3;
   text-wrap: pretty;
 }
 
 .detail .title {
   font-size: 19px;
-  letter-spacing: -0.02em;
 }
 
 .body {
@@ -472,9 +427,9 @@ async function remove() {
   gap: 10px;
   min-height: 52px;
   padding: 6px 10px 6px 6px;
-  border-radius: 14px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
   color: inherit;
   text-decoration: none;
   transition: transform var(--dur-fast) var(--ease-out);
@@ -491,8 +446,8 @@ async function remove() {
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 10px;
-  background: #0b0d10;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
   font-size: 22px;
 }
 
@@ -511,7 +466,7 @@ async function remove() {
 }
 
 .plant-text strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -527,16 +482,16 @@ async function remove() {
 }
 
 .plant-chev {
-  color: var(--leaf);
+  color: var(--text-3);
 }
 
 .actions {
   display: flex;
   align-items: center;
   gap: 2px;
-  margin: 0 -8px 0 -10px;
+  margin: 0 -6px 0 -8px;
   border-top: 1px solid var(--line);
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 .spacer {
@@ -551,7 +506,7 @@ async function remove() {
   min-height: 44px;
   padding: 0 10px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: none;
   color: var(--text-3);
   font-size: 13px;
@@ -570,12 +525,6 @@ async function remove() {
 }
 
 .act.on {
-  color: var(--leaf);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pulse::after {
-    animation: none;
-  }
+  color: var(--green);
 }
 </style>

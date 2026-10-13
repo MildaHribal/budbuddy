@@ -44,7 +44,7 @@ function saveEdit() {
       <CommunityUserAvatar
         :url="comment.author.avatar_url"
         :name="name"
-        :size="reply ? 28 : 34"
+        :size="reply ? 28 : 32"
       />
     </NuxtLink>
     <span
@@ -187,9 +187,8 @@ function saveEdit() {
 .comment.accepted {
   margin: 0 -12px;
   padding: 12px 12px 2px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(155, 227, 107, 0.09), rgba(155, 227, 107, 0.03));
-  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
 }
 
 .avatar-link {
@@ -207,16 +206,15 @@ function saveEdit() {
 }
 
 .ai-avatar {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--lamp-soft);
-  border: 1px solid rgba(255, 210, 138, 0.3);
-  color: var(--lamp);
-  font-size: 18px;
+  color: var(--amber);
+  font-size: 17px;
 }
 
 .ai-avatar.sm {
@@ -239,7 +237,7 @@ function saveEdit() {
 }
 
 .name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -248,7 +246,7 @@ function saveEdit() {
 }
 
 .ai-badge {
-  color: var(--lamp);
+  color: var(--amber);
 }
 
 .time {
@@ -268,22 +266,26 @@ function saveEdit() {
   margin: 0 0 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #ffb4bb;
+  color: var(--red);
 }
 
 .best {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 0 0 4px;
-  font-size: 12px;
+  margin: 0 0 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  font-size: 11px;
   font-weight: 600;
-  color: var(--leaf);
+  line-height: 1.4;
+  color: var(--green);
 }
 
 .body {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.45;
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -326,7 +328,7 @@ function saveEdit() {
   min-width: 44px;
   padding: 0 10px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: none;
   color: var(--text-3);
   font-size: 12px;
@@ -344,24 +346,11 @@ function saveEdit() {
 }
 
 .act.on {
-  color: var(--leaf);
+  color: var(--green);
 }
 
 .act.nudge {
-  color: var(--leaf);
+  color: var(--green);
   background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent-line);
-  animation: nudge 1.6s var(--ease-out) 3;
-}
-
-@keyframes nudge {
-  0%, 100% { box-shadow: inset 0 0 0 1px var(--accent-line), 0 0 0 0 rgba(155, 227, 107, 0.4); }
-  50% { box-shadow: inset 0 0 0 1px var(--accent-line), 0 0 0 6px rgba(155, 227, 107, 0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .act.nudge {
-    animation: none;
-  }
 }
 </style>

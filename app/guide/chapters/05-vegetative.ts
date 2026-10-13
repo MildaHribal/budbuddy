@@ -9,7 +9,7 @@ export default {
     cs: 'Vypěstuj velkou a zdravou rostlinu: světlo a klima ve vegetaci, zálivka a hnojení, přesazování a rozpoznání samců od samic.'
   },
   glyph: 'vegetative',
-  color: '#9be36b',
+  color: '#3dd173',
   lessons: [
     {
       id: 'vegetative-light-climate',

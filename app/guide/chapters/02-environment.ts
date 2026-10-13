@@ -9,7 +9,7 @@ export default {
     cs: 'Uvnitř ve stanu, venku pod sluncem, nebo ve skleníku: jak nastavit světlo, vzduch a klima, aby se rostlinám dařilo.'
   },
   glyph: 'lamp',
-  color: '#6fe0c8',
+  color: '#5fd9c4',
   lessons: [
     {
       id: 'environment-choose',

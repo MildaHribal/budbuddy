@@ -17,7 +17,7 @@ const { t } = useI18n()
 
 <style scoped>
 .admin-link {
-  color: var(--leaf);
+  color: var(--green);
   text-decoration: none;
 }
 </style>
