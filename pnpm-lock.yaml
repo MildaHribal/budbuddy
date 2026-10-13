@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@capacitor-community/bluetooth-le':
+        specifier: ~7.3.2
+        version: 7.3.2(@capacitor/core@7.5.0)
       '@capacitor/android':
         specifier: ^7.4.4
         version: 7.5.0(@capacitor/core@7.5.0)
@@ -268,6 +271,11 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@capacitor-community/bluetooth-le@7.3.2':
+    resolution: {integrity: sha512-7dgtglFXGmyS849XtIZ62iA997aE3yqNsq7XsC8yjR8dqe/agh852+nW1Zk/8QlG58dPu/K5fxVzlWZvZFb80g==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
 
   '@capacitor/android@7.5.0':
     resolution: {integrity: sha512-VjESuJYzQQH4vxvrOQV0yXuDv3Gx1bfb6YpAkoGfUHe0kiw0LY5nh5Kn7I5bI9hlht9SJ8YmSsCgFeMNyzKoWQ==}
@@ -5421,6 +5429,11 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@capacitor-community/bluetooth-le@7.3.2(@capacitor/core@7.5.0)':
+    dependencies:
+      '@capacitor/core': 7.5.0
+      '@types/web-bluetooth': 0.0.20
 
   '@capacitor/android@7.5.0(@capacitor/core@7.5.0)':
     dependencies:

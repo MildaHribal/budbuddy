@@ -10,6 +10,7 @@ import { photoStore, type StoredPhoto } from '~/utils/photoStore'
 import { wateringBase } from '~/utils/reminders'
 import { isGrowing } from '~/utils/stages'
 import { resetPhotoUrls, THUMB_SUFFIX } from './useUi'
+import { emptyEnvironment } from '~/utils/env/schema'
 import { emptyData, migrateLegacy, normalizeData, normalizePlant, type LegacyInput } from '~/utils/schema'
 
 const STORAGE_KEY = 'budbuddy:data'
@@ -57,6 +58,7 @@ function replaceState(data: GrowData) {
   state.costs = data.costs
   state.inventory = data.inventory
   state.legal = data.legal
+  state.environment = data.environment
 }
 
 async function readLegacy(): Promise<LegacyInput | null> {
@@ -364,6 +366,14 @@ function cleanupPhotos() {
   collectGarbagePhotos().catch(() => {})
 }
 
+// ── Environment ────────────────────────────────────────────────────
+
+/** Mutable environment collection, created on first use (see useEnvironment). */
+function environmentData() {
+  state.environment ??= emptyEnvironment()
+  return state.environment
+}
+
 // ── Backup / reset ─────────────────────────────────────────────────
 
 /**
@@ -461,6 +471,7 @@ export function useGrow() {
     restoreTask,
     savePhoto,
     cleanupPhotos,
+    environmentData,
     loadError,
     exportBackup,
     importBackup,

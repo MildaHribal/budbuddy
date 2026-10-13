@@ -1,4 +1,5 @@
 import type { CostsData, FeedingData, FeedLine, InventoryData, LegalData } from './kit'
+import type { EnvironmentData } from './environment'
 
 export type StageId
   = | 'germination'
@@ -171,4 +172,6 @@ export interface GrowData {
   costs?: CostsData
   inventory?: InventoryData
   legal?: LegalData
+  /** Environment area (weather, sensors, light meter); absent in saves made before it existed */
+  environment?: EnvironmentData
 }

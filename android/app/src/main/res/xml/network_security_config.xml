@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home Assistant usually runs on plain http in the LAN (http://192.168.x.x:8123).
+     The app only allows http for private/LAN hosts (app/utils/env/homeAssistant.ts → normalizeHaUrl). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

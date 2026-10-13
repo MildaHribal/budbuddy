@@ -274,6 +274,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
       </header>
 
       <KitLegalWatch />
+      <EnvironmentHomeAlert />
 
       <section aria-labelledby="tasks-title">
         <div class="section-head">

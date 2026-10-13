@@ -5,9 +5,10 @@ const ROUTES: [RegExp, LazyNamespace[]][] = [
   [/^\/guide(\/|$)/, ['guide', 'guideWidgets', 'guideArt']],
   [/^\/(community|u|plant|strains|challenges|auth|auth-callback|admin)(\/|$)/, COMMUNITY],
   // plant detail: sharing chip and sign-in; settings: account section and AI
-  [/^\/(plants\/[^/]+|my_trees\/[^/]+)\/?$/, ['plant', 'auth']],
+  [/^\/(plants\/[^/]+|my_trees\/[^/]+)\/?$/, ['plant', 'auth', 'environment']],
   [/^\/settings(\/|$)/, ['settings', 'ai', ...COMMUNITY]],
-  [/^\/tools(\/|$)/, ['tools']],
+  [/^\/tools(\/|$)/, ['tools', 'environment']],
+  [/^\/environment(\/|$)/, ['environment']],
   [/^\/stats(\/|$)/, ['stats']],
   [/^\/(feeding|costs|inventory|legal)(\/|$)/, ['manage']],
   [/^\/ai-assistant(\/|$)/, ['ai']],

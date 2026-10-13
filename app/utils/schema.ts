@@ -21,6 +21,7 @@ import type {
 import { isValidISODate, toISODate, todayISO } from './date'
 import { blankEntry } from './entries'
 import { normalizeAlignMap } from './review/align'
+import { normalizeEnvironment } from './env/schema'
 import { createId } from './id'
 import { isStageId } from './stages'
 import { normalizeCosts, normalizeFeedLines, normalizeFeeding, normalizeInventory, normalizeLegal } from './kitSchema'
@@ -221,6 +222,8 @@ export function normalizeData(raw: unknown): GrowData {
   if (r.costs) data.costs = normalizeCosts(r.costs, ids)
   if (r.inventory) data.inventory = normalizeInventory(r.inventory)
   if (r.legal) data.legal = normalizeLegal(r.legal)
+  const env = normalizeEnvironment(r.environment, ids)
+  if (env) data.environment = env
   return data
 }
 

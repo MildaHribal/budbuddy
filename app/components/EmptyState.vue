@@ -2,7 +2,7 @@
 import type { GlyphName } from '~/utils/glyphs'
 
 defineProps<{
-  icon: GlyphName
+  icon: GlyphName | `i-${string}`
   title: string
   text?: string
 }>()

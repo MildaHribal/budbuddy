@@ -1143,6 +1143,7 @@ function duplicate() {
         :plant="plant"
         @log="log('feed')"
       />
+      <EnvironmentPlantCard :plant="plant" />
 
       <section>
         <h2 class="section-title block-title">
