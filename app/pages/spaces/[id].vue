@@ -33,6 +33,8 @@ function bulkLog(type: EntryType) {
 const editOpen = ref(false)
 const lightOpen = ref(false)
 const assignOpen = ref(false)
+const feedOpen = ref(false)
+const growingIds = computed(() => growing.value.map(p => p.id))
 const assignPicked = ref<string[]>([])
 const assignable = computed(() => grow.state.plants.filter(p => !p.archived))
 
@@ -258,6 +260,15 @@ function waterHint(p: Plant) {
         </div>
       </section>
 
+      <button
+        v-if="growing.length"
+        type="button"
+        class="btn btn-block"
+        @click="feedOpen = true"
+      >
+        <GrowIcon name="feed" /> {{ t('organize.space.feeding') }}
+      </button>
+
       <NuxtLink
         v-if="plants.length"
         :to="{ path: '/labels', query: { space: space.id } }"
@@ -324,6 +335,10 @@ function waterHint(p: Plant) {
         </button>
       </template>
     </BottomSheet>
+    <KitAssignSheet
+      v-model:open="feedOpen"
+      :plant-ids="growingIds"
+    />
     <EntrySheet
       v-if="sheetIds.length"
       v-model:open="sheetOpen"

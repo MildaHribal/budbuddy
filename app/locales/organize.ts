@@ -58,6 +58,7 @@ export default {
       emptyTitle: 'This tent is empty',
       emptyText: 'Choose which of your plants stand here.',
       labels: 'Print QR labels for this tent',
+      feeding: 'Feeding schedule for this tent',
       notFound: 'Tent not found',
       notFoundText: 'It may have been deleted.'
     },
@@ -211,6 +212,7 @@ export default {
       emptyTitle: 'Stan je prázdný',
       emptyText: 'Vyber, které rostliny tu stojí.',
       labels: 'Vytisknout QR štítky pro stan',
+      feeding: 'Krmný plán pro celý stan',
       notFound: 'Stan nenalezen',
       notFoundText: 'Možná byl smazán.'
     },

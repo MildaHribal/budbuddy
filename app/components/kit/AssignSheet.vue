@@ -38,6 +38,16 @@ function suggestedSchedule(medium?: string): string {
 
 const schedule = computed(() => feeding.getSchedule(sid.value))
 const hasAuto = computed(() => picked.value.some(id => grow.getPlant(id)?.type === 'autoflower'))
+// a tent chip picks all its growing plants at once
+const tents = computed(() => (grow.state.spaces ?? [])
+  .map(s => ({ space: s, ids: growing.value.filter(p => p.spaceId === s.id).map(p => p.id) }))
+  .filter(x => x.ids.length))
+const tentPicked = (ids: string[]) => ids.every(id => picked.value.includes(id))
+function toggleTent(ids: string[]) {
+  picked.value = tentPicked(ids)
+    ? picked.value.filter(id => !ids.includes(id))
+    : [...new Set([...picked.value, ...ids])]
+}
 const toggle = (id: string) => {
   picked.value = picked.value.includes(id) ? picked.value.filter(x => x !== id) : [...picked.value, id]
 }
@@ -92,7 +102,29 @@ function save() {
           {{ t('kit.assign.noPlants') }}
         </p>
         <div
-          v-else
+          v-if="tents.length"
+          class="pick-list"
+          role="group"
+          :aria-label="t('kit.assign.tents')"
+        >
+          <button
+            v-for="x in tents"
+            :key="x.space.id"
+            type="button"
+            class="chip"
+            :aria-pressed="tentPicked(x.ids)"
+            :aria-label="`${t('kit.assign.tents')}: ${x.space.name}`"
+            @click="toggleTent(x.ids)"
+          >
+            <UIcon
+              name="i-tabler-tent"
+              class="size-4"
+            />
+            {{ x.space.name }} · <span class="num">{{ x.ids.length }}</span>
+          </button>
+        </div>
+        <div
+          v-if="growing.length"
           class="pick-list"
           role="group"
           aria-labelledby="as-plants"
