@@ -63,7 +63,8 @@ describe('schema with tents and hunts', () => {
     const old = normalizeData(JSON.parse(JSON.stringify({ ...demo, spaces: undefined, hunts: undefined })))
     expect(old.spaces).toEqual([])
     expect(old.hunts).toEqual([])
-    expect(old.plants).toEqual(demo.plants)
+    // tent links without their tents are dropped
+    expect(old.plants).toEqual(demo.plants.map(({ spaceId: _, ...p }) => p))
   })
 })
 
