@@ -25,6 +25,12 @@ const summary = (doses: Dose[]) => {
   return doses.length > 3 ? `${head} · ${t('kit.week.more', { n: doses.length - 3 })}` : head
 }
 
+// mid-sentence: "Fed yesterday", not "Fed Yesterday"; dates keep their capital month
+const fedWhen = (iso: string) => {
+  const rel = formatRelativeDay(iso, today.value)
+  return iso > addDays(today.value, -7) ? rel.charAt(0).toLocaleLowerCase() + rel.slice(1) : rel
+}
+
 const logPlant = ref<string | null>(null)
 const logOpen = ref(false)
 function log(id: string) {
@@ -81,7 +87,7 @@ function log(id: string) {
           <span
             v-if="r.fed && r.last"
             class="faint"
-          >{{ t('kit.week.fed', { when: formatRelativeDay(r.last.date) }) }}</span>
+          >{{ t('kit.week.fed', { when: fedWhen(r.last.date) }) }}</span>
         </NuxtLink>
         <button
           type="button"
