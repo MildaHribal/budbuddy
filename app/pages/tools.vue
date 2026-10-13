@@ -171,6 +171,8 @@ function fromC() {
           />
         </NuxtLink>
       </nav>
+
+      <ReviewToolLinks />
     </div>
 
     <div

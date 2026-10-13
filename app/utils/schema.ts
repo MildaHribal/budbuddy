@@ -20,6 +20,7 @@ import type {
 } from '../types/grow'
 import { isValidISODate, toISODate, todayISO } from './date'
 import { blankEntry } from './entries'
+import { normalizeAlignMap } from './review/align'
 import { createId } from './id'
 import { isStageId } from './stages'
 
@@ -163,7 +164,8 @@ export function normalizeEntry(raw: Record<string, unknown>): JournalEntry {
     humidity: num(raw.humidity),
     photoIds: Array.isArray(raw.photoIds) ? raw.photoIds.filter((p): p is string => typeof p === 'string') : [],
     stage: isStageId(raw.stage) ? raw.stage : null,
-    createdAt: str(raw.createdAt, new Date().toISOString())
+    createdAt: str(raw.createdAt, new Date().toISOString()),
+    ...normalizeAlignMap(raw.align, raw.photoIds)
   }
 }
 

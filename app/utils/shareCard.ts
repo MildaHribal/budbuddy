@@ -280,3 +280,6 @@ export function blobToBase64(blob: Blob): Promise<string> {
     r.readAsDataURL(blob)
   })
 }
+
+/** Canvas helpers shared with the other share images (timelapse, Grow Wrapped, report). */
+export const cardKit = { C, FONT, ensureFonts, loadImage, drawGlyph, roundRect, fitText, toPng }

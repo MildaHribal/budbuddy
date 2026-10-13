@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { EntryType, JournalEntry, StageId, TrainingMethod } from '~/types/grow'
+import type { EntryType, JournalEntry, PhotoAlign, StageId, TrainingMethod } from '~/types/grow'
+import { isIdentity, withoutKey } from '~/utils/review/align'
+import { ghostFrame } from '~/utils/review/timelapse'
 
 const open = defineModel<boolean>('open', { default: false })
 const props = defineProps<{
@@ -32,6 +34,7 @@ interface Form {
   tempC: number | '' | null
   humidity: number | '' | null
   photoIds: string[]
+  align: Record<string, PhotoAlign>
 }
 
 const form = reactive<Form>(emptyForm())
@@ -48,7 +51,7 @@ const loggable = computed(() => entryTypes().filter(x => x.loggable))
 const plant = computed(() => grow.getPlant(props.plantId))
 
 function emptyForm(): Form {
-  return { date: todayISO(), note: '', amountMl: null, ph: null, ec: null, nutrients: '', method: null, product: '', heightCm: null, tempC: null, humidity: null, photoIds: [] }
+  return { date: todayISO(), note: '', amountMl: null, ph: null, ec: null, nutrients: '', method: null, product: '', heightCm: null, tempC: null, humidity: null, photoIds: [], align: {} }
 }
 
 const blank = (v: unknown) => v === null || v === ''
@@ -78,7 +81,7 @@ watch(open, (v) => {
     Object.assign(form, {
       date: e.date, note: e.note, amountMl: e.amountMl, ph: e.ph, ec: e.ec, nutrients: e.nutrients,
       method: e.method, product: e.product, heightCm: e.heightCm, tempC: e.tempC, humidity: e.humidity,
-      photoIds: [...e.photoIds]
+      photoIds: [...e.photoIds], align: { ...e.align }
     })
     return
   }
@@ -162,6 +165,50 @@ async function addPhoto() {
 
 function removePhoto(id: string) {
   form.photoIds = form.photoIds.filter(p => p !== id)
+  form.align = withoutKey(form.align, id)
+}
+
+// ── Ghost: line new photos up with the previous one (timelapse) ─────
+const ghost = computed(() => (plant.value ? ghostFrame(plant.value, grow.state.entries, form.date, form.photoIds) : null))
+const ghostDay = computed(() => (ghost.value ? t('ghost.day', { n: ghost.value.day }) : ''))
+const cameraOk = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
+const alignId = ref<string | null>(null)
+const alignOpen = ref(false)
+const cameraOpen = ref(false)
+const ghostUsed = ref(false)
+
+function lineUp(id: string) {
+  alignId.value = id
+  ghostUsed.value = true
+  alignOpen.value = true
+}
+
+function openGhostCamera() {
+  ghostUsed.value = true
+  cameraOpen.value = true
+}
+
+function onAligned(a: PhotoAlign) {
+  const id = alignId.value
+  if (!id) return
+  form.align = isIdentity(a) ? withoutKey(form.align, id) : { ...form.align, [id]: a }
+}
+
+async function onCaptured(blob: Blob) {
+  busy.value = true
+  try {
+    form.photoIds.push(await grow.savePhoto(blob))
+  } catch (err) {
+    console.error(err)
+    notify(t('entry.imageError'), { tone: 'error' })
+  } finally {
+    busy.value = false
+  }
+}
+
+function alignFor(ids: string[]): Record<string, PhotoAlign> | undefined {
+  const out = Object.fromEntries(ids.filter(id => form.align[id]).map(id => [id, form.align[id]!]))
+  return Object.keys(out).length ? out : undefined
 }
 
 function save() {
@@ -180,7 +227,8 @@ function save() {
     heightCm: has('measure') ? toNum(form.heightCm) : null,
     tempC: has('measure') ? toNum(form.tempC) : null,
     humidity: has('measure') ? toNum(form.humidity) : null,
-    photoIds: form.photoIds
+    photoIds: form.photoIds,
+    align: alignFor(form.photoIds)
   }
   let saved: JournalEntry
   if (props.entry) {
@@ -512,6 +560,19 @@ function save() {
               stage="vegetative"
             />
             <button
+              v-if="ghost"
+              type="button"
+              class="photo-align"
+              :class="{ on: form.align[id] }"
+              :aria-label="t('ghost.lineUp')"
+              @click="lineUp(id)"
+            >
+              <UIcon
+                name="i-tabler-layers-intersect"
+                class="size-4"
+              />
+            </button>
+            <button
               type="button"
               class="photo-remove"
               :aria-label="t('entry.removePhoto')"
@@ -536,7 +597,24 @@ function save() {
             />
             <span>{{ busy ? t('entry.savingPhoto') : t('entry.addPhoto') }}</span>
           </button>
+          <button
+            v-if="ghost && cameraOk"
+            type="button"
+            class="photo add"
+            :disabled="busy"
+            @click="openGhostCamera"
+          >
+            <UIcon
+              name="i-tabler-layers-intersect"
+              class="size-6"
+            />
+            <span>{{ t('ghost.camera') }}</span>
+          </button>
         </div>
+        <span
+          v-if="ghost && form.photoIds.length"
+          class="field-hint"
+        >{{ t('ghost.hint') }}</span>
         <span
           v-if="submitted && errors.photos"
           class="field-error"
@@ -597,6 +675,27 @@ function save() {
       </button>
     </template>
   </BottomSheet>
+
+  <template v-if="ghost && ghostUsed">
+    <LazyReviewGhostAlign
+      v-if="alignId"
+      v-model:open="alignOpen"
+      :photo-id="alignId"
+      :ghost-id="ghost.photoId"
+      :ghost-align="ghost.align"
+      :ghost-label="ghostDay"
+      :initial="form.align[alignId]"
+      @save="onAligned"
+    />
+    <LazyReviewGhostCamera
+      v-model:open="cameraOpen"
+      :ghost-id="ghost.photoId"
+      :ghost-align="ghost.align"
+      :ghost-label="ghostDay"
+      @capture="onCaptured"
+      @fallback="addPhoto"
+    />
+  </template>
 </template>
 
 <style scoped>
@@ -752,6 +851,26 @@ input.num[type="number"] {
   color: #fff;
 }
 
+.photo-align {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 5px;
+  border: 0;
+  background: none;
+  color: #fff;
+}
+
+.photo-align.on {
+  color: var(--green);
+}
+
+.photo-align > *,
 .photo-remove > * {
   box-sizing: content-box;
   padding: 4px;

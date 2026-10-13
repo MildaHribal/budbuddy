@@ -106,6 +106,16 @@ export interface JournalEntry {
   /** stage entries only */
   stage: StageId | null
   createdAt: string
+  /** photoId → how the photo was lined up with the previous one (timelapse ghost) */
+  align?: Record<string, PhotoAlign>
+}
+
+/** Offset as a fraction of the frame size, scale factor and rotation in degrees. */
+export interface PhotoAlign {
+  x: number
+  y: number
+  scale: number
+  rotate: number
 }
 
 export interface Task {

@@ -1257,6 +1257,16 @@ function duplicate() {
             class="size-5"
           /> {{ t('plant.photos.profilePhoto') }}
         </button>
+        <NuxtLink
+          v-if="photos.filter(ph => ph.entryId).length >= 2"
+          :to="`/plants/${plant.id}/timelapse`"
+          class="btn btn-soft photo-timelapse"
+        >
+          <UIcon
+            name="i-tabler-movie"
+            class="size-5"
+          /> {{ t('review.links.timelapse') }}
+        </NuxtLink>
       </div>
       <EmptyState
         v-if="!photos.length"
@@ -1559,6 +1569,36 @@ function duplicate() {
             name="i-tabler-share-2"
             class="size-5"
           /> {{ t('plant.menu.share') }}
+        </button>
+        <button
+          type="button"
+          class="menu-item"
+          @click="moreSheet = false; navigateTo(`/plants/${plant.id}/timelapse`)"
+        >
+          <UIcon
+            name="i-tabler-movie"
+            class="size-5"
+          /> {{ t('review.links.timelapse') }}
+        </button>
+        <button
+          type="button"
+          class="menu-item"
+          @click="moreSheet = false; navigateTo({ path: '/compare', query: { a: plant.id } })"
+        >
+          <UIcon
+            name="i-tabler-arrows-diff"
+            class="size-5"
+          /> {{ t('review.links.compareWith') }}
+        </button>
+        <button
+          type="button"
+          class="menu-item"
+          @click="moreSheet = false; navigateTo(`/plants/${plant.id}/export`)"
+        >
+          <UIcon
+            name="i-tabler-file-export"
+            class="size-5"
+          /> {{ t('review.links.export') }}
         </button>
         <button
           type="button"
@@ -2459,6 +2499,10 @@ h1 {
 .photo-actions .btn {
   font-size: 14px;
   padding: 0 10px;
+}
+
+.photo-timelapse {
+  grid-column: 1 / -1;
 }
 
 .photo-grid {

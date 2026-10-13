@@ -143,6 +143,8 @@ const unlocked = computed(() => achievements.value.filter(a => a.done).length)
         </div>
       </section>
 
+      <ReviewToolLinks variant="stats" />
+
       <section class="card block">
         <div class="streak-head">
           <div>
