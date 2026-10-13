@@ -278,6 +278,26 @@ const TOOL_LINKS = [
       </section>
 
       <NuxtLink
+        to="/problems"
+        class="row-card card"
+      >
+        <span
+          class="tile"
+          aria-hidden="true"
+        >
+          <UIcon name="i-tabler-stethoscope" />
+        </span>
+        <span class="row-text">
+          <span class="row-title">{{ t('guide.hub.atlas') }}</span>
+          <span class="row-sub">{{ t('guide.hub.atlasText') }}</span>
+        </span>
+        <UIcon
+          name="i-tabler-chevron-right"
+          class="chev"
+        />
+      </NuxtLink>
+
+      <NuxtLink
         v-if="problems"
         to="/guide/problems"
         class="row-card card"

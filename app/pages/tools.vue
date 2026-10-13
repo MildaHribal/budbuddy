@@ -48,7 +48,10 @@ const groups = computed<{ id: string, title: string, rows: ToolRow[], link?: { t
     ]
   }
 ])
-const careRows = computed(() => (['curing', 'treatment'] as const).map(calcRow))
+const careRows = computed<ToolRow[]>(() => [
+  { key: 'problems', to: '/problems', icon: 'i-tabler-stethoscope', tone: 'var(--green)', label: t('tools.groups.problems'), desc: t('tools.groups.problemsDesc') },
+  ...(['curing', 'treatment'] as const).map(calcRow)
+])
 const route = useRoute()
 // the open tool lives in the URL so guide links and back navigation keep working
 const tool = computed<Tool | null>(() => {

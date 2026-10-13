@@ -6,6 +6,7 @@ import { DIAG_RELIABLE, evidenceLabel, kbKindLabel } from '~/ai/prompt'
 import { AI_REPORT_REASONS, sendAiReport, type AiReportReason } from '~/ai/report'
 import type { GuideLink } from '~/ai/guideLinks'
 import { getLesson } from '~/guide'
+import { getProblem } from '~/utils/problems'
 import { GENERAL_THREAD, type AssistantMessage } from '~/composables/useAssistant'
 import { locale } from '~/utils/locale'
 import type { Plant } from '~/types/grow'
@@ -416,7 +417,15 @@ onMounted(async () => {
                     class="diag-row"
                   >
                     <div class="diag-line">
-                      <span class="diag-label">{{ d.label }}</span>
+                      <NuxtLink
+                        v-if="getProblem(d.cls)"
+                        :to="`/problems/${d.cls}`"
+                        class="diag-label diag-link"
+                      >{{ d.label }}</NuxtLink>
+                      <span
+                        v-else
+                        class="diag-label"
+                      >{{ d.label }}</span>
                       <span class="diag-p">{{ Math.round(d.p * 100) }} %</span>
                     </div>
                     <div class="progress">
@@ -654,7 +663,15 @@ onMounted(async () => {
                     class="diag-row"
                   >
                     <div class="diag-line">
-                      <span class="diag-label">{{ d.label }}</span>
+                      <NuxtLink
+                        v-if="getProblem(d.cls)"
+                        :to="`/problems/${d.cls}`"
+                        class="diag-label diag-link"
+                      >{{ d.label }}</NuxtLink>
+                      <span
+                        v-else
+                        class="diag-label"
+                      >{{ d.label }}</span>
                       <span class="diag-p">{{ d.p < 0.005 ? '<1' : Math.round(d.p * 100) }} %</span>
                     </div>
                     <div class="progress">
@@ -1419,6 +1436,13 @@ onMounted(async () => {
 
 .diag-label {
   font-weight: 600;
+}
+
+.diag-link {
+  color: var(--green);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-line);
+  text-underline-offset: 3px;
 }
 
 .diag-p {
