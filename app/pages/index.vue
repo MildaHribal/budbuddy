@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { LightboxItem } from '~/components/PhotoLightbox.vue'
 import type { EntryType, JournalEntry, Plant, StageId, Task } from '~/types/grow'
 import { loadNamespaces } from '~/composables/useI18n'
 import { formatDuration, lightState } from '~/utils/light'
+import { milestones, repeatDates } from '~/utils/upcoming'
 
 const { t, locale } = useI18n()
 
@@ -36,6 +38,15 @@ const initial = computed(() => state.settings.growerName?.trim().charAt(0).toUpp
 const growing = computed(() => state.plants.filter(p => isGrowing(p)))
 const postHarvest = computed(() => state.plants.filter(p => !p.archived && !isGrowing(p)))
 const activePlants = computed(() => [...growing.value, ...postHarvest.value])
+
+const summary = computed(() => {
+  const parts: string[] = []
+  if (growing.value.length) parts.push(t('home.summary.growing', { n: growing.value.length }))
+  if (postHarvest.value.length) parts.push(t('home.summary.after', { n: postHarvest.value.length }))
+  const tents = (state.spaces ?? []).length
+  if (tents) parts.push(t('home.summary.tents', { n: tents }))
+  return parts.join(' · ')
+})
 
 const avgHealth = computed(() => {
   const list = growing.value
@@ -172,7 +183,9 @@ function stageHint(p: Plant): string | null {
   const prog = stageProgress(p, today.value)
   const next = nextStage(p.stage)
   if (!next || prog.dayInStage <= prog.stageDays * 1.25) return null
-  return p.stage === 'flowering' ? t('home.garden.readyHarvest') : t('home.garden.readyFor', { stage: stageInfo(next).label.toLowerCase() })
+  if (p.stage === 'flowering') return t('home.garden.readyHarvest')
+  if (next === 'flowering' && p.type === 'photoperiod') return t('home.plants.flipHint')
+  return t('home.garden.readyFor', { stage: stageInfo(next).label.toLowerCase() })
 }
 
 function harvestChip(p: Plant): { text: string, late: boolean } | null {
@@ -197,18 +210,26 @@ function lastReadings(p: Plant): string[] {
   return out
 }
 
-function plantRow(p: Plant) {
+const POST_HARVEST: StageId[] = ['drying', 'curing']
+
+// photo card per active plant: lifecycle rail, stage week and the harvest countdown
+const cards = computed(() => activePlants.value.map((p) => {
   const prog = stageProgress(p, today.value)
   const harvest = harvestChip(p)
+  const rail = isGrowing(p) ? GROWING_STAGES : POST_HARVEST
+  const at = rail.indexOf(p.stage)
   return {
+    plant: p,
     ...prog,
+    growing: isGrowing(p),
     week: Math.max(1, Math.ceil(prog.dayInStage / 7)),
     weeks: Math.max(1, Math.ceil(prog.stageDays / 7)),
     hint: harvest ? null : stageHint(p),
     harvest,
-    readings: lastReadings(p)
+    readings: lastReadings(p),
+    rail: rail.map((id, i) => ({ id, color: stageInfo(id).color, fill: i < at ? 100 : i === at ? Math.max(4, prog.percent) : 0, past: i < at }))
   }
-}
+}))
 
 const sheetOpen = ref(false)
 const sheetPlant = ref<string>('')
@@ -218,6 +239,89 @@ function quickLog(plant: Plant, type: EntryType) {
   sheetPlant.value = plant.id
   sheetType.value = type
   sheetOpen.value = true
+}
+
+// ── Coming up ─────────────────────────────────────────────────────
+const feeding = useFeeding()
+const NuxtLink = resolveComponent('NuxtLink')
+const UPCOMING_DAYS = 7
+type UpKind = 'water' | 'feed' | 'task'
+interface UpEvent { key: string, date: string, kind: UpKind, plant: Plant | null, task: Task | null, sub: string }
+const UP_ORDER: Record<UpKind, number> = { feed: 0, water: 1, task: 2 }
+const UP_COLOR: Record<UpKind, string> = { water: entryInfo('water').color, feed: entryInfo('feed').color, task: 'var(--green)' }
+
+const upcoming = computed<UpEvent[]>(() => {
+  const out: UpEvent[] = []
+  const end = addDays(today.value, UPCOMING_DAYS)
+  for (const p of growing.value) {
+    const feedDays = new Set<string>()
+    const f = feeding.feedingFor(p, today.value)
+    if (f?.current) {
+      const last = grow.lastEntryOf(p.id, ['feed'])
+      const next = last ? addDays(last.date, 7) : today.value
+      for (const d of repeatDates(next, 7, today.value, UPCOMING_DAYS)) {
+        feedDays.add(d)
+        out.push({ key: `f-${p.id}-${d}`, date: d, kind: 'feed', plant: p, task: null, sub: feedWeekLabel(f.current.week.phase, f.current.week.n) })
+      }
+    }
+    const w = grow.wateringStatus(p, today.value)
+    if (w) {
+      for (const d of repeatDates(w.nextDate, w.interval, today.value, UPCOMING_DAYS)) {
+        // a feed is a watering too
+        if (!feedDays.has(d)) out.push({ key: `w-${p.id}-${d}`, date: d, kind: 'water', plant: p, task: null, sub: '' })
+      }
+    }
+  }
+  for (const task of state.tasks) {
+    if (task.done || task.date <= today.value || task.date > end) continue
+    out.push({ key: task.id, date: task.date, kind: 'task', plant: task.plantId ? grow.getPlant(task.plantId) ?? null : null, task, sub: '' })
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date) || UP_ORDER[a.kind] - UP_ORDER[b.kind])
+})
+
+const strip = computed(() => Array.from({ length: UPCOMING_DAYS }, (_, i) => {
+  const date = addDays(today.value, i + 1)
+  const events = upcoming.value.filter(e => e.date === date)
+  return { date, events, kinds: [...new Set(events.map(e => e.kind))] }
+}))
+const pickedDay = ref<string | null>(null)
+const selectedDay = computed(() => strip.value.find(d => d.date === pickedDay.value) ?? strip.value.find(d => d.events.length) ?? strip.value[0]!)
+
+const nextMilestones = computed(() => milestones(activePlants.value, today.value).slice(0, 4).map((m) => {
+  const plant = grow.getPlant(m.plantId)!
+  const title = m.kind === 'harvest'
+    ? t('home.upcoming.harvest')
+    : m.stage === 'flowering' && plant.type === 'photoperiod'
+      ? t('home.upcoming.flip')
+      : t('home.upcoming.stage', { stage: stageInfo(m.stage).label.toLowerCase() })
+  const when = m.inDays >= 14 ? t('home.upcoming.inWeeks', { n: Math.round(m.inDays / 7) }) : t('home.upcoming.inDays', { n: m.inDays })
+  return { ...m, plant, title, when, glyph: m.kind === 'harvest' ? 'harvest' as const : stageInfo(m.stage).glyph, color: m.kind === 'harvest' ? 'var(--amber)' : stageInfo(m.stage).color }
+}))
+
+// ── Recent photos ─────────────────────────────────────────────────
+const recentPhotos = computed<(LightboxItem & { key: string, plant: Plant, label: string })[]>(() => [...state.entries]
+  .filter(e => e.photoIds.length)
+  .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+  .flatMap((e) => {
+    const plant = grow.getPlant(e.plantId)
+    if (!plant) return []
+    const day = t('home.photos.day', { n: Math.max(0, daysBetween(plant.startDate, e.date)) })
+    return e.photoIds.map(id => ({
+      key: `${e.id}-${id}`,
+      photoId: id,
+      plant,
+      label: `${day} · ${formatRelativeDay(e.date)}`,
+      title: plant.name,
+      subtitle: `${formatDate(e.date)} · ${day}${e.note ? ` · ${e.note}` : ''}`,
+      to: `/plants/${plant.id}`
+    }))
+  })
+  .slice(0, 10))
+const photoIndex = ref<number | null>(null)
+const photoOrigin = ref<DOMRect | null>(null)
+function openPhoto(i: number, ev: MouseEvent) {
+  photoOrigin.value = (ev.currentTarget as HTMLElement).getBoundingClientRect()
+  photoIndex.value = i
 }
 
 // ── Recent activity ───────────────────────────────────────────────
@@ -246,7 +350,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 </script>
 
 <template>
-  <div>
+  <div class="home">
     <div class="page dash rise">
       <header class="dash-head">
         <div class="dash-hello">
@@ -256,6 +360,12 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
             </template>
           </p>
           <h1>{{ greeting }}</h1>
+          <p
+            v-if="summary"
+            class="dash-summary num"
+          >
+            {{ summary }}
+          </p>
         </div>
         <NuxtLink
           to="/tools"
@@ -278,6 +388,119 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           />
         </NuxtLink>
       </header>
+
+      <!-- alerts only show when relevant -->
+      <EnvironmentHomeAlert />
+      <KitLegalWatch />
+
+      <section aria-labelledby="plants-title">
+        <div class="section-head">
+          <h2
+            id="plants-title"
+            class="section-title"
+          >
+            {{ t('home.garden.title') }}
+          </h2>
+          <NuxtLink
+            to="/plants"
+            class="link"
+          >
+            {{ t('common.viewAll') }} <UIcon
+              name="i-tabler-chevron-right"
+              class="size-4"
+            />
+          </NuxtLink>
+        </div>
+
+        <EmptyState
+          v-if="!activePlants.length"
+          icon="seedling"
+          :title="t('home.garden.emptyTitle')"
+          :text="t('home.garden.emptyText')"
+        >
+          <NuxtLink
+            to="/plants/new"
+            class="btn btn-primary"
+          >
+            <UIcon
+              name="i-tabler-plus"
+              class="size-4"
+            /> {{ t('home.garden.addPlant') }}
+          </NuxtLink>
+        </EmptyState>
+
+        <div
+          v-else
+          class="garden"
+          :class="{ single: cards.length === 1 }"
+        >
+          <NuxtLink
+            v-for="c in cards"
+            :key="c.plant.id"
+            :to="`/plants/${c.plant.id}`"
+            class="card plant"
+          >
+            <span class="plant-photo">
+              <PlantPhoto
+                :photo-id="c.plant.photoId"
+                :stage="c.plant.stage"
+                :alt="c.plant.name"
+                size="full"
+              />
+              <StageBadge
+                :stage="c.plant.stage"
+                class="photo-badge"
+              />
+              <span class="photo-day num">{{ t('home.plants.day', { n: c.age }) }}</span>
+            </span>
+            <span class="plant-body">
+              <span class="plant-top">
+                <span class="plant-lines">
+                  <span class="plant-name">{{ c.plant.name }}</span>
+                  <span class="plant-sub num">{{ [c.plant.strain, ...c.readings].filter(Boolean).join(' · ') || stageInfo(c.plant.stage).label }}</span>
+                </span>
+                <button
+                  v-if="c.growing"
+                  type="button"
+                  class="plant-log"
+                  :aria-label="t('home.tasks.logWater', { name: c.plant.name })"
+                  @click.prevent.stop="quickLog(c.plant, 'water')"
+                >
+                  <GrowIcon name="water" />
+                </button>
+              </span>
+              <span
+                class="rail"
+                aria-hidden="true"
+              >
+                <span
+                  v-for="seg in c.rail"
+                  :key="seg.id"
+                  class="rail-seg"
+                  :class="{ past: seg.past }"
+                  :style="{ '--seg': seg.color }"
+                >
+                  <span
+                    class="rail-fill"
+                    :style="{ width: `${seg.fill}%` }"
+                  />
+                </span>
+              </span>
+              <span class="plant-foot">
+                <span class="plant-week num">{{ t('home.plants.weekOf', { stage: stageInfo(c.plant.stage).short, week: c.week, weeks: c.weeks }) }}</span>
+                <span
+                  v-if="c.hint || c.harvest"
+                  class="plant-hint"
+                  :class="{ late: c.harvest?.late }"
+                >
+                  <GrowIcon :name="c.harvest ? 'harvest' : stageInfo(nextStage(c.plant.stage) ?? c.plant.stage).glyph" />
+                  {{ c.harvest ? c.harvest.text : c.hint }}
+                </span>
+              </span>
+            </span>
+          </NuxtLink>
+        </div>
+      </section>
 
       <section aria-labelledby="tasks-title">
         <div class="section-head">
@@ -378,8 +601,14 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
                   :aria-label="t('home.tasks.logWater', { name: r.water.plant.name })"
                   @click="quickLog(r.water.plant, 'water')"
                 >
-                  <span class="check-box water">
-                    <GrowIcon name="water" />
+                  <span class="row-thumb">
+                    <PlantPhoto
+                      :photo-id="r.water.plant.photoId"
+                      :stage="r.water.plant.stage"
+                    />
+                    <span class="row-thumb-glyph">
+                      <GrowIcon name="water" />
+                    </span>
                   </span>
                 </button>
                 <NuxtLink
@@ -461,184 +690,240 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
       </section>
 
-      <!-- after today: alerts that only show when relevant, then the light, then this week's feeding -->
-      <EnvironmentHomeAlert />
-      <KitLegalWatch />
-
-      <SpacesHomeLights v-if="hasLitSpaces" />
-      <button
-        v-if="showGlobalLight"
-        type="button"
-        class="card light"
-        aria-haspopup="dialog"
-        :aria-label="`${t('home.editLight')}. ${light.summary}. ${light.headline}`"
-        @click="openLight"
-      >
-        <span
-          class="light-icon"
-          :class="{ dark: !light.isOn }"
-        >
-          <GrowIcon name="lamp" />
-        </span>
-        <span class="light-body">
-          <span class="light-sub">{{ light.summary }}</span>
-          <strong class="light-big num">{{ light.headline }}</strong>
-          <span
-            class="progress light-bar"
-            :class="{ dark: !light.isOn }"
-          >
-            <span
-              class="bar-fill"
-              :style="{ width: `${light.percent}%` }"
-            />
-          </span>
-        </span>
-        <UIcon
-          name="i-tabler-chevron-right"
-          class="size-5 light-go"
-        />
-      </button>
-
       <KitFeedingWeek />
 
-      <section aria-labelledby="plants-title">
+      <section
+        v-if="hasLitSpaces || showGlobalLight"
+        aria-labelledby="tents-title"
+      >
         <div class="section-head">
           <h2
-            id="plants-title"
+            id="tents-title"
             class="section-title"
           >
-            {{ t('home.garden.title') }}
+            {{ hasLitSpaces ? t('home.tents.title') : t('home.tents.light') }}
           </h2>
           <NuxtLink
-            to="/plants"
+            v-if="hasLitSpaces"
+            to="/spaces"
             class="link"
           >
-            {{ t('common.viewAll') }} <UIcon
+            {{ t('home.tents.manage') }} <UIcon
               name="i-tabler-chevron-right"
               class="size-4"
             />
           </NuxtLink>
         </div>
-
-        <EmptyState
-          v-if="!activePlants.length"
-          icon="seedling"
-          :title="t('home.garden.emptyTitle')"
-          :text="t('home.garden.emptyText')"
-        >
-          <NuxtLink
-            to="/plants/new"
-            class="btn btn-primary"
+        <div class="tents">
+          <SpacesHomeLights v-if="hasLitSpaces" />
+          <button
+            v-if="showGlobalLight"
+            type="button"
+            class="card light"
+            aria-haspopup="dialog"
+            :aria-label="`${t('home.editLight')}. ${light.summary}. ${light.headline}`"
+            @click="openLight"
           >
+            <span
+              class="light-icon"
+              :class="{ dark: !light.isOn }"
+            >
+              <GrowIcon name="lamp" />
+            </span>
+            <span class="light-body">
+              <span class="light-sub">{{ light.summary }}</span>
+              <strong class="light-big num">{{ light.headline }}</strong>
+              <span
+                class="progress light-bar"
+                :class="{ dark: !light.isOn }"
+              >
+                <span
+                  class="bar-fill"
+                  :style="{ width: `${light.percent}%` }"
+                />
+              </span>
+            </span>
             <UIcon
-              name="i-tabler-plus"
-              class="size-4"
-            /> {{ t('home.garden.addPlant') }}
-          </NuxtLink>
-        </EmptyState>
-
-        <div
-          v-else
-          class="garden"
-        >
-          <NuxtLink
-            v-for="p in activePlants"
-            :key="p.id"
-            :to="`/plants/${p.id}`"
-            class="card plant"
-          >
-            <span class="plant-photo">
-              <PlantPhoto
-                :photo-id="p.photoId"
-                :stage="p.stage"
-                :alt="p.name"
-              />
-            </span>
-            <span class="plant-body">
-              <span class="plant-top">
-                <span class="plant-name">{{ p.name }}</span>
-                <StageBadge :stage="p.stage" />
-              </span>
-              <span class="plant-lower">
-                <span class="plant-lines">
-                  <span class="plant-sub">
-                    <strong class="num">{{ t('home.garden.day', { n: plantRow(p).age }) }}</strong>
-                    <span
-                      v-for="r in plantRow(p).readings"
-                      :key="r"
-                      class="num"
-                    > · {{ r }}</span>
-                  </span>
-                  <span
-                    v-if="plantRow(p).hint || plantRow(p).harvest"
-                    class="plant-hint"
-                    :class="{ late: plantRow(p).harvest?.late }"
-                  >
-                    <GrowIcon :name="plantRow(p).harvest ? 'harvest' : stageInfo(nextStage(p.stage) ?? p.stage).glyph" />
-                    {{ plantRow(p).harvest ? plantRow(p).harvest!.text : plantRow(p).hint }}
-                  </span>
-                  <span class="progress plant-bar">
-                    <span
-                      class="bar-fill"
-                      :style="{ width: `${plantRow(p).percent}%` }"
-                    />
-                  </span>
-                </span>
-                <button
-                  v-if="isGrowing(p)"
-                  type="button"
-                  class="plant-log"
-                  :aria-label="t('home.tasks.logWater', { name: p.name })"
-                  @click.prevent.stop="quickLog(p, 'water')"
-                >
-                  <GrowIcon name="water" />
-                </button>
-              </span>
-            </span>
-          </NuxtLink>
+              name="i-tabler-chevron-right"
+              class="size-5 light-go"
+            />
+          </button>
         </div>
       </section>
 
-      <div
-        ref="tipsAnchor"
-        class="tips-anchor"
+      <section
+        v-if="upcoming.length || nextMilestones.length"
+        aria-labelledby="upcoming-title"
       >
-        <LazyCommunityTopTips v-if="online && tipsReady" />
-      </div>
+        <div class="section-head">
+          <h2
+            id="upcoming-title"
+            class="section-title"
+          >
+            {{ t('home.upcoming.title') }}
+          </h2>
+        </div>
+        <div class="upcoming-stack">
+          <div
+            v-if="upcoming.length"
+            class="card upcoming"
+          >
+            <div
+              class="days"
+              role="group"
+              :aria-label="t('home.upcoming.title')"
+            >
+              <button
+                v-for="d in strip"
+                :key="d.date"
+                type="button"
+                class="day"
+                :aria-pressed="d.date === selectedDay.date"
+                :aria-label="t('home.upcoming.dayLabel', { day: formatDate(d.date, { weekday: 'long', day: 'numeric', month: 'long' }), n: d.events.length })"
+                @click="pickedDay = d.date"
+              >
+                <span class="day-name">{{ weekdayShort(d.date) }}</span>
+                <span class="day-num num">{{ formatDate(d.date, { day: 'numeric' }) }}</span>
+                <span
+                  class="day-dots"
+                  aria-hidden="true"
+                >
+                  <i
+                    v-for="k in d.kinds"
+                    :key="k"
+                    :style="{ background: UP_COLOR[k] }"
+                  />
+                </span>
+              </button>
+            </div>
+            <ul class="up-list">
+              <li
+                v-if="!selectedDay.events.length"
+                class="up-empty"
+              >
+                {{ t('home.upcoming.nothing') }}
+              </li>
+              <li
+                v-for="e in selectedDay.events"
+                :key="e.key"
+              >
+                <component
+                  :is="e.plant ? NuxtLink : 'div'"
+                  :to="e.plant ? `/plants/${e.plant.id}` : undefined"
+                  class="up-row"
+                >
+                  <span
+                    v-if="e.plant"
+                    class="up-thumb"
+                  >
+                    <PlantPhoto
+                      :photo-id="e.plant.photoId"
+                      :stage="e.plant.stage"
+                    />
+                  </span>
+                  <span
+                    v-else
+                    class="up-thumb up-tile"
+                  >
+                    <GrowIcon name="note" />
+                  </span>
+                  <span class="up-text">
+                    <strong>
+                      <GrowIcon
+                        v-if="e.kind !== 'task'"
+                        :name="e.kind"
+                        :style="{ color: UP_COLOR[e.kind] }"
+                      />
+                      {{ e.kind === 'task' ? e.task!.title : t(`home.upcoming.${e.kind}`) }}
+                    </strong>
+                    <span>{{ [e.plant?.name, e.sub].filter(Boolean).join(' · ') }}</span>
+                  </span>
+                </component>
+              </li>
+            </ul>
+          </div>
 
-      <NuxtLink
-        to="/stats"
-        class="card week"
-        :aria-label="t('home.stats.open')"
+          <template v-if="nextMilestones.length">
+            <p class="sub-head">
+              {{ t('home.upcoming.milestones') }}
+            </p>
+            <div class="card milestones">
+              <NuxtLink
+                v-for="m in nextMilestones"
+                :key="m.plantId"
+                :to="`/plants/${m.plantId}`"
+                class="up-row"
+              >
+                <span class="up-thumb">
+                  <PlantPhoto
+                    :photo-id="m.plant.photoId"
+                    :stage="m.plant.stage"
+                  />
+                </span>
+                <span class="up-text">
+                  <strong>
+                    <GrowIcon
+                      :name="m.glyph"
+                      :style="{ color: m.color }"
+                    />
+                    {{ m.title }}
+                  </strong>
+                  <span>{{ m.plant.name }}</span>
+                </span>
+                <span class="up-when">
+                  <strong class="num">{{ m.when }}</strong>
+                  <span class="num">{{ formatDate(m.date, { day: 'numeric', month: 'short' }) }}</span>
+                </span>
+              </NuxtLink>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <section
+        v-if="recentPhotos.length"
+        aria-labelledby="photos-title"
       >
-        <span class="week-cell">
-          <strong class="num">{{ growing.length }}</strong>
-          <span>{{ t('home.stats.growing') }}</span>
-        </span>
-        <span class="week-cell week-health">
-          <strong>
-            <i
-              v-if="avgHealth"
-              class="health-dot"
-              :style="{ background: healthInfo(avgHealth).color }"
-            />{{ avgHealth ? healthInfo(avgHealth).label : '–' }}
-          </strong>
-          <span>{{ t('home.stats.avgHealth') }}</span>
-        </span>
-        <span class="week-cell">
-          <strong class="num">{{ entriesThisWeek }}</strong>
-          <span>{{ t('home.stats.logs') }}</span>
-        </span>
-        <span
-          class="week-go"
-          aria-hidden="true"
-        >
-          <UIcon
-            name="i-tabler-chevron-right"
-            class="size-5"
-          />
-        </span>
-      </NuxtLink>
+        <div class="section-head">
+          <h2
+            id="photos-title"
+            class="section-title"
+          >
+            {{ t('home.photos.title') }}
+          </h2>
+          <NuxtLink
+            to="/gallery"
+            class="link"
+          >
+            {{ t('home.photos.all') }} <UIcon
+              name="i-tabler-chevron-right"
+              class="size-4"
+            />
+          </NuxtLink>
+        </div>
+        <ul class="photos">
+          <li
+            v-for="(ph, i) in recentPhotos"
+            :key="ph.key"
+          >
+            <button
+              type="button"
+              class="photo"
+              :aria-label="t('home.photos.open', { name: ph.plant.name })"
+              @click="openPhoto(i, $event)"
+            >
+              <span class="photo-img">
+                <PlantPhoto
+                  :photo-id="ph.photoId"
+                  :stage="ph.plant.stage"
+                />
+              </span>
+              <span class="photo-name">{{ ph.plant.name }}</span>
+              <span class="photo-meta num">{{ ph.label }}</span>
+            </button>
+          </li>
+        </ul>
+      </section>
 
       <div class="card tip">
         <button
@@ -652,9 +937,10 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           </span>
           <span class="tip-body">
             <span class="tip-head">
-              <span class="tip-text">{{ tip.text }}</span>
+              <span class="tip-title">{{ t('home.tip.title') }}</span>
               <span class="tip-stage badge">{{ tip.stage.label }}</span>
             </span>
+            <span class="tip-text">{{ tip.text }}</span>
             <span class="tip-next">{{ t('home.tip.next') }}</span>
           </span>
         </button>
@@ -668,6 +954,13 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
             class="size-4"
           />
         </NuxtLink>
+      </div>
+
+      <div
+        ref="tipsAnchor"
+        class="tips-anchor"
+      >
+        <LazyCommunityTopTips v-if="online && tipsReady" />
       </div>
 
       <section
@@ -703,6 +996,41 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           </NuxtLink>
         </div>
       </section>
+
+      <NuxtLink
+        v-if="state.plants.length"
+        to="/stats"
+        class="card week"
+        :aria-label="t('home.stats.open')"
+      >
+        <span class="week-cell">
+          <strong class="num">{{ growing.length }}</strong>
+          <span>{{ t('home.stats.growing') }}</span>
+        </span>
+        <span class="week-cell week-health">
+          <strong>
+            <i
+              v-if="avgHealth"
+              class="health-dot"
+              :style="{ background: healthInfo(avgHealth).color }"
+            />{{ avgHealth ? healthInfo(avgHealth).label : '–' }}
+          </strong>
+          <span>{{ t('home.stats.avgHealth') }}</span>
+        </span>
+        <span class="week-cell">
+          <strong class="num">{{ entriesThisWeek }}</strong>
+          <span>{{ t('home.stats.logs') }}</span>
+        </span>
+        <span
+          class="week-go"
+          aria-hidden="true"
+        >
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="size-5"
+          />
+        </span>
+      </NuxtLink>
     </div>
 
     <NuxtLink
@@ -720,6 +1048,13 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
       :plant-id="sheetPlant"
       :type="sheetType"
       :date="today"
+    />
+
+    <PhotoLightbox
+      v-model:index="photoIndex"
+      :items="recentPhotos"
+      :origin="photoOrigin"
+      readonly
     />
 
     <BottomSheet
@@ -806,6 +1141,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 
 <style scoped>
 .dash {
+  container: home / inline-size;
   padding-top: calc(12px + var(--safe-top));
 }
 
@@ -842,6 +1178,12 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 .demo-tag {
   color: var(--text-2);
   font-weight: 500;
+}
+
+.dash-summary {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
 }
 
 h1 {
@@ -1050,10 +1392,30 @@ h1 {
   transition: background var(--dur) ease, border-color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
 }
 
-.check-box.water {
-  border-color: color-mix(in srgb, var(--blue) 60%, transparent);
+.row-thumb {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.row-thumb-glyph {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--surface);
   color: var(--blue);
   font-size: 13px;
+}
+
+.check:active .row-thumb {
+  transform: scale(0.94);
 }
 
 .check-box svg {
@@ -1138,21 +1500,45 @@ h1 {
   opacity: 0;
 }
 
-/* Garden */
+/* Garden: photo cards, a swipeable row on a phone, a grid when there is room */
 .garden {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 16px;
+  scrollbar-width: none;
+}
+
+.garden::-webkit-scrollbar {
+  display: none;
 }
 
 .plant {
+  flex: 0 0 82%;
+  scroll-snap-align: start;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px;
+  flex-direction: column;
+  overflow: hidden;
   color: inherit;
   text-decoration: none;
   transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.garden.single .plant {
+  flex-basis: 100%;
+}
+
+@container home (min-width: 640px) {
+  .garden {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
 }
 
 .plant:active {
@@ -1160,30 +1546,54 @@ h1 {
 }
 
 .plant-photo {
-  width: 64px;
-  height: 64px;
-  flex-shrink: 0;
-  border-radius: var(--radius-control);
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 2;
+  min-height: 0;
   overflow: hidden;
+  background: var(--surface-2);
+}
+
+.photo-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+
+.photo-day {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .plant-body {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+  padding: 12px 12px 14px 14px;
 }
 
 .plant-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+}
+
+.plant-lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .plant-name {
-  min-width: 0;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -1200,37 +1610,18 @@ h1 {
   text-overflow: ellipsis;
 }
 
-.plant-sub strong {
-  font-weight: 600;
-  color: var(--text);
-}
-
-.plant-lower {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.plant-lines {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .plant-log {
-  width: 40px;
-  height: 40px;
+  position: relative;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
-  margin-bottom: -2px;
   display: grid;
   place-items: center;
   border: 0;
   border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--blue) 14%, transparent);
   color: var(--blue);
-  font-size: 20px;
+  font-size: 22px;
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
@@ -1238,23 +1629,62 @@ h1 {
   transform: scale(0.92);
 }
 
+/* lifecycle rail: one segment per stage, the current one fills */
+.rail {
+  display: flex;
+  gap: 3px;
+}
+
+.rail-seg {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.rail-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--seg);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.rail-seg.past .rail-fill {
+  background: color-mix(in srgb, var(--seg) 70%, var(--track));
+}
+
+.plant-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 18px;
+}
+
+.plant-week {
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .plant-hint {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
   color: var(--amber);
+  white-space: nowrap;
 }
 
 .plant-hint.late {
   color: var(--red);
-}
-
-.plant-bar {
-  display: block;
-  height: 4px;
-  margin-top: 4px;
 }
 
 .bar-fill {
@@ -1270,6 +1700,242 @@ h1 {
 .tips-anchor:empty {
   height: 0;
   margin-top: -24px;
+}
+
+.tents {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Coming up */
+.upcoming-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upcoming {
+  overflow: hidden;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 6px 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.day:active {
+  transform: scale(0.94);
+}
+
+.day[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--green);
+}
+
+.day-name {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.day-num {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.day[aria-pressed="true"] .day-num {
+  color: var(--green);
+}
+
+.day-dots {
+  display: flex;
+  gap: 3px;
+  height: 5px;
+}
+
+.day-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.up-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.up-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.up-empty {
+  padding: 18px 14px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.up-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 14px 8px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.milestones .up-row + .up-row {
+  border-top: 1px solid var(--line);
+}
+
+.up-thumb {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.up-tile {
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--green);
+  font-size: 20px;
+}
+
+.up-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.up-text strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.up-text strong :deep(svg) {
+  flex-shrink: 0;
+}
+
+.up-text > span {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.up-when {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.up-when strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sub-head {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+/* Recent photos */
+.photos {
+  display: flex;
+  gap: 10px;
+  list-style: none;
+  margin: 0 -16px;
+  padding: 0 16px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding: 0 16px;
+  scrollbar-width: none;
+}
+
+.photos::-webkit-scrollbar {
+  display: none;
+}
+
+.photos li {
+  flex: 0 0 128px;
+  scroll-snap-align: start;
+}
+
+.photo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.photo:active {
+  transform: scale(0.97);
+}
+
+.photo-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  margin-bottom: 6px;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.photo-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.photo-meta {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
 }
 
 /* Week strip */
@@ -1449,6 +2115,12 @@ h1 {
 .tip-stage {
   flex-shrink: 0;
   margin-top: 2px;
+  color: var(--text-2);
+}
+
+.tip-title {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-2);
 }
 

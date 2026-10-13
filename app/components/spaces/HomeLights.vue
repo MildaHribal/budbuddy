@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import type { GrowSpace } from '~/types/grow'
+import { vpd, vpdZone } from '~/utils/calc'
+import { addDays } from '~/utils/date'
 import { formatDuration, lightState } from '~/utils/light'
 
-// Home light cards, one per lit grow space.
+// Home tent cards, one per lit grow space: light countdown, the plants inside and the last logged climate.
 const { t } = useI18n()
 const { notify } = useNotify()
+const grow = useGrow()
+const today = useToday()
 const { spaces, updateSpace } = useSpaces()
 const lit = computed(() => spaces.value.filter(s => s.lightHours !== null))
 
@@ -24,13 +28,37 @@ function view(space: GrowSpace) {
     : hours <= 0
       ? `${t('ring.lightsLead')} ${t('ring.off')}`
       : `${s.isOn ? t('ring.offIn') : t('ring.onIn')} ${formatDuration(s.minutesLeft)}`
+  const vars = { name: space.name, on: hours, off: 24 - hours, from: s.onLabel, to: s.offLabel }
   return {
     ...s,
     headline,
     percent: span ? Math.round((1 - s.minutesLeft / span) * 100) : 100,
-    summary: t('organize.home.summary', { name: space.name, on: hours, off: 24 - hours, from: s.onLabel, to: s.offLabel })
+    summary: t('organize.home.summary', vars),
+    schedule: t('organize.home.schedule', vars)
   }
 }
+
+const contents = computed(() => {
+  const from = addDays(today.value, -14)
+  return Object.fromEntries(lit.value.map((s) => {
+    const plants = grow.state.plants.filter(p => !p.archived && p.spaceId === s.id)
+    const ids = new Set(plants.map(p => p.id))
+    // newest temperature / humidity logged for a plant in this tent during the last two weeks
+    let last: { date: string, createdAt: string, tempC: number | null, humidity: number | null } | null = null
+    for (const e of grow.state.entries) {
+      if (!ids.has(e.plantId) || e.date < from || (e.tempC == null && e.humidity == null)) continue
+      if (!last || e.date > last.date || (e.date === last.date && e.createdAt > last.createdAt)) last = e
+    }
+    const v = last?.tempC != null && last.humidity != null ? vpd(last.tempC, last.humidity) : null
+    return [s.id, {
+      plants,
+      climate: last
+        ? t('organize.home.climate', { temp: last.tempC != null ? formatNumber(last.tempC, 1) : '–', rh: last.humidity != null ? formatNumber(last.humidity, 0) : '–' })
+        : null,
+      vpd: v === null ? null : { text: t('organize.home.vpd', { v: formatNumber(v, 1) }), color: vpdZone(v).color }
+    }]
+  }))
+})
 
 const editing = ref<GrowSpace | null>(null)
 const sheetOpen = ref(false)
@@ -47,39 +75,82 @@ function save(v: { lightsOn: string, hours: number | null }) {
 
 <template>
   <div class="lights">
-    <button
+    <div
       v-for="s in lit"
       :key="s.id"
-      type="button"
-      class="card light"
-      aria-haspopup="dialog"
-      :aria-label="`${t('home.editLight')}: ${s.name}. ${view(s).summary}. ${view(s).headline}`"
-      @click="edit(s)"
+      class="card tent"
     >
-      <span
-        class="light-icon"
-        :class="{ dark: !view(s).isOn }"
+      <button
+        type="button"
+        class="light"
+        aria-haspopup="dialog"
+        :aria-label="`${t('home.editLight')}: ${s.name}. ${view(s).summary}. ${view(s).headline}`"
+        @click="edit(s)"
       >
-        <GrowIcon name="lamp" />
-      </span>
-      <span class="light-body">
-        <span class="light-sub">{{ view(s).summary }}</span>
-        <strong class="light-big num">{{ view(s).headline }}</strong>
         <span
-          class="progress light-bar"
+          class="light-icon"
           :class="{ dark: !view(s).isOn }"
         >
-          <span
-            class="bar-fill"
-            :style="{ width: `${view(s).percent}%` }"
-          />
+          <GrowIcon name="lamp" />
         </span>
-      </span>
-      <UIcon
-        name="i-tabler-chevron-right"
-        class="size-5 light-go"
-      />
-    </button>
+        <span class="light-body">
+          <span class="light-top">
+            <span class="light-name">{{ s.name }}</span>
+            <span class="light-sub num">{{ view(s).schedule }}</span>
+          </span>
+          <strong class="light-big num">{{ view(s).headline }}</strong>
+          <span
+            class="progress light-bar"
+            :class="{ dark: !view(s).isOn }"
+          >
+            <span
+              class="bar-fill"
+              :style="{ width: `${view(s).percent}%` }"
+            />
+          </span>
+        </span>
+      </button>
+      <NuxtLink
+        :to="`/spaces/${s.id}`"
+        class="tent-foot"
+        :aria-label="t('organize.home.open', { name: s.name })"
+      >
+        <span
+          v-if="contents[s.id]?.plants.length"
+          class="thumbs"
+          aria-hidden="true"
+        >
+          <span
+            v-for="p in contents[s.id]!.plants.slice(0, 4)"
+            :key="p.id"
+            class="thumb"
+          >
+            <PlantPhoto
+              :photo-id="p.photoId"
+              :stage="p.stage"
+            />
+          </span>
+        </span>
+        <span class="foot-text">
+          {{ contents[s.id]?.plants.length ? t('organize.home.plants', { n: contents[s.id]!.plants.length }) : t('organize.home.noPlants') }}
+        </span>
+        <span
+          v-if="contents[s.id]?.climate"
+          class="climate num"
+        >
+          {{ contents[s.id]!.climate }}<template v-if="contents[s.id]!.vpd">
+            <i
+              class="vpd-dot"
+              :style="{ background: contents[s.id]!.vpd!.color }"
+            />{{ contents[s.id]!.vpd!.text }}
+          </template>
+        </span>
+        <UIcon
+          name="i-tabler-chevron-right"
+          class="size-4 foot-go"
+        />
+      </NuxtLink>
+    </div>
     <SpacesLightSheet
       v-if="editing"
       v-model:open="sheetOpen"
@@ -93,17 +164,31 @@ function save(v: { lightsOn: string, hours: number | null }) {
 
 <style scoped>
 .lights {
+  display: grid;
+  gap: 10px;
+}
+
+/* two tents side by side once there is room */
+@container home (min-width: 640px) {
+  .lights {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+.tent {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  overflow: hidden;
 }
 
 .light {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   width: 100%;
-  padding: 14px 12px 14px 14px;
+  padding: 14px;
+  border: 0;
+  background: none;
   text-align: left;
   color: inherit;
   transition: transform var(--dur-fast) var(--ease-out);
@@ -138,12 +223,26 @@ function save(v: { lightsOn: string, hours: number | null }) {
   gap: 4px;
 }
 
-.light-sub {
-  font-size: 13px;
-  color: var(--text-2);
+.light-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.light-name {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.light-sub {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .light-big {
@@ -171,7 +270,58 @@ function save(v: { lightsOn: string, hours: number | null }) {
   background: var(--text-3);
 }
 
-.light-go {
+.tent-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 12px 8px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.thumbs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.foot-text {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.climate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.vpd-dot {
+  width: 6px;
+  height: 6px;
+  margin-left: 4px;
+  border-radius: 50%;
+}
+
+.foot-go {
   flex-shrink: 0;
   color: var(--text-3);
 }

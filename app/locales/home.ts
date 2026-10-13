@@ -36,6 +36,40 @@ export default {
       delete: 'Delete task',
       deleted: 'Task deleted'
     },
+    summary: {
+      growing: { one: '{n} plant growing', other: '{n} plants growing' },
+      after: { one: '{n} drying or curing', other: '{n} drying or curing' },
+      tents: { one: '{n} tent', other: '{n} tents' }
+    },
+    plants: {
+      day: 'Day {n}',
+      weekOf: '{stage} week {week} of {weeks}',
+      flipHint: 'Flip to 12/12?'
+    },
+    tents: {
+      title: 'Your tents',
+      light: 'Light',
+      manage: 'Tents'
+    },
+    upcoming: {
+      title: 'Coming up',
+      water: 'Water',
+      feed: 'Feed',
+      nothing: 'Nothing planned for this day',
+      dayLabel: { one: '{day}, {n} item', other: '{day}, {n} items' },
+      milestones: 'Milestones',
+      harvest: 'Harvest window opens',
+      flip: 'Flip to 12/12',
+      stage: 'Ready for {stage}',
+      inDays: { one: 'in {n} day', other: 'in {n} days' },
+      inWeeks: { one: 'in ~{n} week', other: 'in ~{n} weeks' }
+    },
+    photos: {
+      title: 'Recent photos',
+      all: 'Gallery',
+      day: 'Day {n}',
+      open: 'Open photo of {name}'
+    },
     garden: {
       title: 'Your garden',
       emptyTitle: 'No plants yet',
@@ -112,6 +146,40 @@ export default {
       less: 'Méně',
       delete: 'Smazat úkol',
       deleted: 'Úkol smazán'
+    },
+    summary: {
+      growing: { one: '{n} rostlina roste', few: '{n} rostliny rostou', other: '{n} rostlin roste' },
+      after: { one: '{n} se suší nebo zraje', few: '{n} se suší nebo zrají', other: '{n} se suší nebo zraje' },
+      tents: { one: '{n} stan', few: '{n} stany', other: '{n} stanů' }
+    },
+    plants: {
+      day: '{n}. den',
+      weekOf: '{stage}, {week}. týden z {weeks}',
+      flipHint: 'Přepnout na 12/12?'
+    },
+    tents: {
+      title: 'Tvoje stany',
+      light: 'Světlo',
+      manage: 'Stany'
+    },
+    upcoming: {
+      title: 'Co tě čeká',
+      water: 'Zalít',
+      feed: 'Pohnojit',
+      nothing: 'Na tento den nic v plánu',
+      dayLabel: { one: '{day}, {n} položka', few: '{day}, {n} položky', other: '{day}, {n} položek' },
+      milestones: 'Milníky',
+      harvest: 'Otevírá se okno sklizně',
+      flip: 'Přepnout na 12/12',
+      stage: 'Čas na fázi {stage}',
+      inDays: { one: 'za {n} den', few: 'za {n} dny', other: 'za {n} dní' },
+      inWeeks: { one: 'za ~{n} týden', few: 'za ~{n} týdny', other: 'za ~{n} týdnů' }
+    },
+    photos: {
+      title: 'Nové fotky',
+      all: 'Galerie',
+      day: '{n}. den',
+      open: 'Otevřít fotku: {name}'
     },
     garden: {
       title: 'Tvoje zahrada',
