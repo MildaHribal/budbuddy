@@ -316,7 +316,7 @@ onMounted(async () => {
   <div class="assistant">
     <AppHeader
       :title="t('ai.page.title')"
-      :subtitle="plantSummary ?? t('ai.page.subtitleGeneral')"
+      :subtitle="webOnly ? t('ai.web.subtitle') : plantSummary ?? t('ai.page.subtitleGeneral')"
     >
       <template
         v-if="!webOnly"
@@ -352,6 +352,162 @@ onMounted(async () => {
       v-if="webOnly"
       class="web-only"
     >
+      <section
+        class="sample"
+        aria-labelledby="sample-h"
+      >
+        <div class="section-head">
+          <h2
+            id="sample-h"
+            class="section-title"
+          >
+            {{ t('ai.web.sample.title') }}
+          </h2>
+          <span class="badge sample-badge">{{ t('ai.web.sample.badge') }}</span>
+        </div>
+        <p class="sample-intro">
+          {{ t('ai.web.sample.intro') }}
+        </p>
+
+        <div class="messages">
+          <div
+            v-for="m in aiSampleChat(t, locale)"
+            :key="m.id"
+            class="msg"
+            :class="m.role === 'user' ? 'msg-user' : 'msg-bot'"
+          >
+            <div
+              v-if="m.role === 'user'"
+              class="bubble user-bubble"
+            >
+              <img
+                v-if="m.thumb"
+                :src="m.thumb"
+                :alt="t('ai.page.photoAlt')"
+                class="thumb"
+                width="220"
+                height="147"
+              >
+              <p class="user-text">
+                {{ m.text }}
+              </p>
+              <span class="meta">{{ formatTime(m.createdAt) }}</span>
+            </div>
+
+            <template v-else>
+              <span
+                class="avatar"
+                aria-hidden="true"
+              >
+                <GrowIcon name="spark" />
+              </span>
+              <div class="bubble bot-bubble">
+                <div
+                  v-if="m.diag?.length"
+                  class="diag"
+                >
+                  <div class="diag-head">
+                    <GrowIcon name="photo" />
+                    {{ t('ai.page.diagTitle') }}
+                  </div>
+                  <div
+                    v-for="d in m.diag"
+                    :key="d.cls"
+                    class="diag-row"
+                  >
+                    <div class="diag-line">
+                      <span class="diag-label">{{ d.label }}</span>
+                      <span class="diag-p">{{ Math.round(d.p * 100) }} %</span>
+                    </div>
+                    <div class="progress">
+                      <div :style="{ width: `${Math.round(d.p * 100)}%`, background: EVIDENCE_TONE[d.evidence] }" />
+                    </div>
+                    <span
+                      class="badge"
+                      :style="{ color: EVIDENCE_TONE[d.evidence] }"
+                      :title="evidenceLabel(d.evidence)"
+                    >{{ t(`ai.evidenceShort.${d.evidence}`) }}</span>
+                  </div>
+                </div>
+
+                <!-- eslint-disable vue/no-v-html -->
+                <div
+                  class="md"
+                  @click="onAnswerClick($event, m)"
+                  v-html="rendered(m.text)"
+                />
+                <!-- eslint-enable vue/no-v-html -->
+
+                <div
+                  v-if="m.sources?.length"
+                  class="sources"
+                >
+                  <button
+                    type="button"
+                    class="sources-toggle"
+                    :aria-expanded="openSources.has(m.id)"
+                    @click="toggleSources(m.id)"
+                  >
+                    <UIcon
+                      name="i-tabler-books"
+                      class="size-4"
+                    />
+                    {{ t('ai.page.sources', { n: m.sources.length }) }}
+                    <UIcon
+                      name="i-tabler-chevron-down"
+                      class="size-4 chev"
+                      :class="{ open: openSources.has(m.id) }"
+                    />
+                  </button>
+                  <ol
+                    v-if="openSources.has(m.id)"
+                    class="sources-list"
+                  >
+                    <li
+                      v-for="s in m.sources"
+                      :id="`src-${m.id}-${s.n}`"
+                      :key="s.n"
+                      :class="{ flash: highlighted === `${m.id}-${s.n}` }"
+                    >
+                      <span class="src-n">{{ s.n }}</span>
+                      <div class="src-body">
+                        <strong class="src-title">{{ s.title }}</strong>
+                        <span class="src-kind">{{ kbKindLabel(s.kind) }}</span>
+                        <span class="src-snippet">{{ s.snippet }}</span>
+                      </div>
+                    </li>
+                  </ol>
+                </div>
+
+                <nav
+                  v-if="guideChips(m).length"
+                  class="guide-chips"
+                  :aria-label="t('ai.page.guideLinks')"
+                >
+                  <NuxtLink
+                    v-for="g in guideChips(m)"
+                    :key="g!.to"
+                    :to="g!.to"
+                    class="chip guide-chip"
+                  >
+                    <GrowIcon
+                      name="guide"
+                      class="chip-glyph"
+                    />
+                    {{ g!.label }}
+                  </NuxtLink>
+                </nav>
+
+                <span class="meta sample-meta">{{ formatTime(m.createdAt) }} · {{ m.model }}</span>
+              </div>
+            </template>
+          </div>
+        </div>
+        <p class="sample-credit">
+          {{ t('ai.web.sample.credit') }}
+        </p>
+      </section>
+
       <AiGetAppCard />
     </div>
     <template v-else>
@@ -933,7 +1089,32 @@ onMounted(async () => {
 }
 
 .web-only {
-  padding: 8px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 16px 32px;
+}
+
+.sample-badge {
+  background: var(--accent-soft);
+  color: var(--green);
+}
+
+.sample-intro {
+  margin: -4px 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.sample-meta {
+  margin-top: -2px;
+}
+
+.sample-credit {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--text-3);
 }
 
 .chip-glyph {
