@@ -1312,7 +1312,7 @@ h1 {
 }
 
 .week-health {
-  flex: 1.4;
+  flex: 1.2;
 }
 
 .week-cell.week-health strong {
