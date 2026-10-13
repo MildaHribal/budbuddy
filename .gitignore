@@ -43,3 +43,4 @@ android/app/build
 keystore
 *.keystore
 *.p12
+.claude/worktrees/
