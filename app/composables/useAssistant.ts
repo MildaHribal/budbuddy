@@ -9,7 +9,7 @@ import { translate } from '~/composables/useI18n'
 import { parseAnswer } from '~/ai/markers'
 import { buildKbQuery, buildTurnText, isSmallTalk, prepareHistory, summarizePlant, systemInstruction, wantsLongAnswer, type HistoryTurn } from '~/ai/prompt'
 import { pickGuideLinks, type GuideLink } from '~/ai/guideLinks'
-import { retrievePassages } from '~/ai/retrieve'
+import { findPassages, searchRemoteKb } from '~/ai/remoteKb'
 import { AI_PACK_URL, deletePack as removeDownloadedPack, downloadPack, resolveAiSource, storedBytes, type AiSource } from '~/ai/pack'
 import { AiPack, assetPackAvailable, assetPackBase, type AssetPackState } from '~/ai/assetPack'
 import { AI_GENERATION } from '../../shared/aiModels'
@@ -359,16 +359,14 @@ async function ask({ threadKey, question, file = null }: AskInput) {
 
     // null = no search for small talk; [] = searched (or no knowledge pack) and nothing found
     let passages: KbHit[] | null = !file && isSmallTalk(question, history.length > 0) ? null : []
-    const kb = kbMod.value
-    if (kb && passages) {
+    let searched = false
+    if (passages) {
       reply.status = translate('ai.status.kb')
-      try {
-        const previous = file ? null : history.findLast(h => h.role === 'user')?.text ?? null
-        passages = await retrievePassages(kb, buildKbQuery({ question, diagnosis, plant, previous }), 12)
-      } catch (e) {
-        passages = []
-        console.warn('[BudBuddy] knowledge search failed', e)
-      }
+      const previous = file ? null : history.findLast(h => h.role === 'user')?.text ?? null
+      const { url: chatUrl, token } = ai.endpoint
+      const found = await findPassages(buildKbQuery({ question, diagnosis, plant, previous }), kbMod.value, q => searchRemoteKb(q, { chatUrl, token, signal }))
+      passages = found.passages
+      searched = found.via !== null
     }
     reply.sources = toSources(passages ?? [])
     found = passages ?? []
@@ -389,7 +387,7 @@ async function ask({ threadKey, question, file = null }: AskInput) {
         diagnosis,
         photoWithoutClassifier: !!image && !diagnosis,
         passages,
-        kbAvailable: kbState.value === 'ready'
+        kbAvailable: searched || kbState.value === 'ready'
       }),
       image,
       maxOutputTokens: wantsLongAnswer(question) ? AI_GENERATION.maxOutputTokens : undefined,

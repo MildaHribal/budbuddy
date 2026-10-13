@@ -12,5 +12,5 @@ export function useAiSettings() {
     endpoint = { url: String(aiProxyUrl), token: aiAppToken ? String(aiAppToken) : undefined }
   }
   const env = endpoint
-  return { provider: computed(() => getProvider(env)) }
+  return { provider: computed(() => getProvider(env)), endpoint: env }
 }
