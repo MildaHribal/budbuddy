@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useOnlineRetry } from '~/utils/feed/online'
 import type { PublicAuthor } from '~/types/community'
-import type { Strain, StrainStats } from '~/utils/strains'
+import type { Strain, StrainPhoto, StrainStats } from '~/utils/strains'
 
 type Author = PublicAuthor
 interface ReportRow {
@@ -35,6 +35,7 @@ const strain = ref<Strain | null>(null)
 const stats = ref<StrainStats | null>(null)
 const reports = ref<ReportRow[]>([])
 const plants = ref<PlantRow[]>([])
+const photos = ref<StrainPhoto[]>([])
 const state = ref<'loading' | 'ready' | 'missing' | 'offline' | 'error'>('loading')
 
 useHead({ title: () => strain.value?.name ?? t('strains.title') })
@@ -55,7 +56,14 @@ async function load() {
   }
   strain.value = data as unknown as Strain
   state.value = 'ready'
-  await Promise.all([loadStats(), loadReports(), loadPlants()])
+  await Promise.all([loadPhotos(), loadStats(), loadReports(), loadPlants()])
+}
+
+async function loadPhotos() {
+  const s = strain.value
+  if (!s) return
+  const { data } = await sb.from('strain_photos').select(STRAIN_PHOTO_COLUMNS).eq('strain_id', s.id).order('sort')
+  photos.value = data?.length ? data as StrainPhoto[] : legacyPhoto(s)
 }
 
 async function loadStats() {
@@ -91,8 +99,7 @@ onMounted(() => {
   load()
 })
 watch(slug, () => {
-  heroLoaded.value = false
-  heroFailed.value = false
+  photos.value = []
   load()
 })
 
@@ -129,8 +136,6 @@ const typeLabel = computed(() => {
   return [s.dominance && t(`strains.dominance.${s.dominance}`), s.flowering && t(`strains.flowering.${s.flowering}`).toLocaleLowerCase(intlLocale())].filter(Boolean).join(' · ')
 })
 
-const heroLoaded = ref(false)
-const heroFailed = ref(false)
 const authorName = (a: Author | null) => a?.display_name || a?.username || '?'
 
 // ── Report sheet ───────────────────────────────────────────────────
@@ -286,7 +291,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       class="page"
       aria-busy="true"
     >
-      <div class="card hero sk" />
+      <div class="card sk sk-hero" />
       <div class="card sk-block" />
       <div class="card sk-block tall" />
       <span class="sr-only">{{ t('common.loading') }}</span>
@@ -323,33 +328,11 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       v-else
       class="page"
     >
-      <figure class="hero-wrap card">
-        <div
-          class="hero"
-          :class="{ loaded: !strain.image_url || heroLoaded, empty: !strain.image_url }"
-        >
-          <img
-            v-if="strain.image_url && !heroFailed"
-            :src="strain.image_url"
-            :alt="strain.name"
-            decoding="async"
-            referrerpolicy="no-referrer"
-            @load="heroLoaded = true"
-            @error="heroFailed = true"
-          >
-          <GrowIcon
-            v-else
-            :name="strain.flowering === 'auto' ? 'seedling' : 'flowering'"
-            class="placeholder"
-          />
-        </div>
-        <figcaption
-          v-if="strain.image_credit && !heroFailed"
-          class="credit"
-        >
-          {{ t('strains.photoCredit', { credit: strain.image_credit }) }}
-        </figcaption>
-      </figure>
+      <CommunityStrainGallery
+        :photos="photos"
+        :name="strain.name"
+        :auto="strain.flowering === 'auto'"
+      />
 
       <p
         v-if="!strain.approved"
@@ -922,47 +905,6 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 </template>
 
 <style scoped>
-.hero-wrap {
-  margin: 0;
-  overflow: hidden;
-}
-
-.hero {
-  position: relative;
-  display: grid;
-  place-items: center;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  color: var(--text-3);
-  background: var(--surface-3);
-}
-
-.hero img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity var(--dur) ease;
-}
-
-.hero.loaded img {
-  opacity: 1;
-}
-
-.placeholder {
-  font-size: 48px;
-}
-
-.credit {
-  padding: 8px 14px;
-  border-top: 1px solid var(--line);
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 .pending {
   display: flex;
   align-items: center;
@@ -1443,5 +1385,9 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 
 .sk-block.tall {
   height: 160px;
+}
+
+.sk-hero {
+  aspect-ratio: 4 / 3;
 }
 </style>

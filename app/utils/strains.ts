@@ -18,6 +18,25 @@ export interface Strain {
   approved: boolean
 }
 
+export interface StrainPhoto {
+  id: string
+  kind: 'plant' | 'bud'
+  url: string
+  thumb_url: string | null
+  author: string
+  license: string
+  source_url: string
+}
+
+export const STRAIN_PHOTO_COLUMNS = 'id, kind, url, thumb_url, author, license, source_url'
+
+/** Older rows keep a single photo in strains.image_url with a "Author · Licence (Source)" credit. */
+export function legacyPhoto(s: Pick<Strain, 'id' | 'image_url' | 'image_credit'>): StrainPhoto[] {
+  if (!s.image_url) return []
+  const [author = '', license = ''] = (s.image_credit ?? '').replace(/\s*\(.*\)$/, '').split(' · ')
+  return [{ id: s.id, kind: 'bud', url: s.image_url, thumb_url: null, author, license, source_url: s.image_url }]
+}
+
 export interface StrainStats {
   strain_id: string
   reports: number
