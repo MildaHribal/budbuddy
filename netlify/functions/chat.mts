@@ -1,6 +1,7 @@
 // AI proxy: validates the app's Gemini request and streams the answer back.
 // The key comes only from the GEMINI_API_KEY env var.
-import { AI_GENERATION, AI_MODEL, isAllowedModel } from '../../shared/aiModels'
+import { AI_GENERATION, AI_MODEL, isAllowedModel } from '../../shared/aiModels.ts'
+import { env } from '../../shared/env.ts'
 
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models'
 const MAX_BODY_BYTES = 6_000_000
@@ -142,10 +143,10 @@ export default async (req: Request): Promise<Response> => {
   if (req.method !== 'POST') return fail(405, 'bad_request', 'Use POST.', headers)
   if (!isAllowedOrigin(origin)) return fail(403, 'forbidden_origin', 'Origin not allowed.', headers)
 
-  const token = process.env.BUDBUDDY_APP_TOKEN
+  const token = env('BUDBUDDY_APP_TOKEN')
   if (token && req.headers.get('x-budbuddy-token') !== token) return fail(401, 'unauthorized', 'Missing or wrong app token.', headers)
 
-  const key = process.env.GEMINI_API_KEY
+  const key = env('GEMINI_API_KEY')
   if (!key) return fail(503, 'not_configured', 'AI is not configured on the server.', headers)
 
   if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return fail(413, 'too_large', 'Request too large.', headers)

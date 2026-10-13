@@ -1,4 +1,4 @@
-// Gemini via the Netlify proxy (netlify/functions/chat.mts); the key stays on the server.
+// Gemini via the proxy (netlify/functions/chat.mts, served by Supabase Edge Functions); the key stays on the server.
 import { AI_MODEL } from '../../../shared/aiModels'
 import { formatTime } from '../../utils/date'
 import { translate, type Params } from '../../composables/useI18n'

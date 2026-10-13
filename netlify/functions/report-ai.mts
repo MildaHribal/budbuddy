@@ -1,6 +1,7 @@
 // Anonymous AI answer reports: validated, size-capped, rate-limited, then written to public.reports
 // with the service role (SUPABASE_SERVICE_ROLE_KEY env var, never in the app).
-import { normalizeAiReport } from '../../shared/aiReport'
+import { normalizeAiReport } from '../../shared/aiReport.ts'
+import { env } from '../../shared/env.ts'
 import { isAllowedOrigin } from './chat.mts'
 
 const MAX_BODY_BYTES = 16_000
@@ -25,10 +26,10 @@ export default async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers })
   if (req.method !== 'POST') return fail(405, 'bad_request', headers)
   if (!isAllowedOrigin(origin)) return fail(403, 'forbidden_origin', headers)
-  const token = process.env.BUDBUDDY_APP_TOKEN
+  const token = env('BUDBUDDY_APP_TOKEN')
   if (token && req.headers.get('x-budbuddy-token') !== token) return fail(401, 'unauthorized', headers)
 
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const key = env('SUPABASE_SERVICE_ROLE_KEY')
   if (!key) return fail(503, 'not_configured', headers)
 
   if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return fail(413, 'too_large', headers)
@@ -43,7 +44,7 @@ export default async (req: Request): Promise<Response> => {
   const report = normalizeAiReport(raw)
   if ('error' in report) return fail(400, 'bad_request', headers)
 
-  const url = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL
+  const url = env('SUPABASE_URL') || DEFAULT_SUPABASE_URL
   const res = await fetch(`${url}/rest/v1/reports`, {
     method: 'POST',
     headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },

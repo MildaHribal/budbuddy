@@ -45,13 +45,7 @@ async function google() {
 }
 
 // legal pages: the app bundle serves them on web; the APK opens the hosted copy
-const legalBase = computed(() => {
-  try {
-    return new URL(String(config.public.aiProxyUrl)).origin
-  } catch {
-    return ''
-  }
-})
+const legalBase = computed(() => String(config.public.siteUrl ?? ''))
 function openLegal(e: MouseEvent, page: 'privacy' | 'terms') {
   if (!Capacitor.isNativePlatform() || !legalBase.value) return
   e.preventDefault()

@@ -27,6 +27,7 @@ describe('normalizeAiReport', () => {
 
   it('derives the endpoint from the chat URL', () => {
     expect(reportEndpoint('https://x.netlify.app/api/chat')).toBe('https://x.netlify.app/api/report-ai')
+    expect(reportEndpoint('https://x.supabase.co/functions/v1/chat')).toBe('https://x.supabase.co/functions/v1/report-ai')
   })
 })
 

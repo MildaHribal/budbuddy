@@ -20,7 +20,7 @@ export interface AiReportInput {
 /** Old message ids were not UUIDs; those get a fresh one (reports are per message anyway). */
 export const reportTargetId = (id: string) => (UUID.test(id) ? id : crypto.randomUUID())
 
-export const reportEndpoint = (chatUrl: string) => chatUrl.replace(/\/api\/chat\/?$/, '/api/report-ai')
+export const reportEndpoint = (chatUrl: string) => chatUrl.replace(/\/(api|functions\/v1)\/chat\/?$/, '/$1/report-ai')
 
 export type AiReportResult = 'sent' | 'already'
 
