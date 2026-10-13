@@ -31,7 +31,7 @@ export default {
       test: 'Test',
       testOk: 'The server works – model {version} answered.',
       testFailed: 'The test failed.',
-      privacy: 'Questions go through your BudBuddy server (Netlify) to Google Gemini. The question, an attached photo and a summary of the selected plant\'s journal are sent. The API key lives only on the server, not in the app.'
+      privacy: 'Questions go through the BudBuddy server to an AI model (Google Gemini, or Cloudflare Workers AI as a backup). The question, an attached photo and a summary of the selected plant\'s journal are sent. API keys live only on the server, not in the app.'
     },
     page: {
       title: 'AI assistant',
@@ -112,8 +112,8 @@ export default {
       offline: 'You are offline. The assistant needs an internet connection.',
       network: 'Could not reach the AI server. Check your connection and try again.',
       aborted: 'Stopped.',
-      notConfigured: 'The AI server is not set up – GEMINI_API_KEY is missing on Netlify.',
-      serverKey: 'The AI server has an invalid Gemini key. It has to be fixed in the Netlify settings.',
+      notConfigured: 'The AI server is not set up yet.',
+      serverKey: 'The AI server key was rejected. Try again later.',
       unauthorized: 'The AI server rejected this app version (app token mismatch). Update the app.',
       forbiddenOrigin: 'The AI server does not accept requests from this address.',
       quota: 'Too many AI questions in a short time.{wait} Wait a moment and try again.',
@@ -128,7 +128,7 @@ export default {
       badRequest: 'The server rejected the request: {message}',
       badRequestFallback: 'invalid request',
       rateLimit: 'Too many questions per minute. Wait a moment and try again.',
-      notFound: 'AI server not found – the /api/chat function is not deployed on Netlify.',
+      notFound: 'AI server not found. Try again later.',
       overloaded: 'The AI server or Gemini is unavailable right now. Try again shortly.',
       status: 'The AI server returned error {status}.',
       safety: 'Gemini\'s safety filter blocked the answer. Rephrase the question (factual, about growing for personal use) or send another photo.',
@@ -287,7 +287,7 @@ export default {
       test: 'Otestovat',
       testOk: 'Server funguje – odpověděl model {version}.',
       testFailed: 'Test se nepovedl.',
-      privacy: 'Dotazy jdou přes tvůj server BudBuddy (Netlify) do Google Gemini. Odesílá se otázka, případná fotka a souhrn deníku vybrané rostliny. API klíč je jen na serveru, ne v aplikaci.'
+      privacy: 'Dotazy jdou přes server BudBuddy do AI modelu (Google Gemini, záložně Cloudflare Workers AI). Odesílá se otázka, případná fotka a souhrn deníku vybrané rostliny. API klíče jsou jen na serveru, ne v aplikaci.'
     },
     page: {
       title: 'AI asistent',
@@ -368,8 +368,8 @@ export default {
       offline: 'Jsi offline. Odpověď asistenta potřebuje připojení k internetu.',
       network: 'Nepodařilo se spojit se serverem AI. Zkontroluj připojení k internetu a zkus to znovu.',
       aborted: 'Zastaveno.',
-      notConfigured: 'AI server není nastavený – na Netlify chybí proměnná GEMINI_API_KEY.',
-      serverKey: 'AI server má neplatný klíč Gemini. Je potřeba ho opravit v nastavení Netlify.',
+      notConfigured: 'AI server zatím není nastavený.',
+      serverKey: 'AI server odmítl klíč. Zkus to později.',
       unauthorized: 'AI server odmítl tuto verzi aplikace (nesedí token aplikace). Aktualizuj aplikaci.',
       forbiddenOrigin: 'AI server nepřijímá dotazy z této adresy.',
       quota: 'Příliš mnoho dotazů na AI v krátké době.{wait} Chvíli počkej a zkus to znovu.',
@@ -384,7 +384,7 @@ export default {
       badRequest: 'Server dotaz odmítl: {message}',
       badRequestFallback: 'neplatný požadavek',
       rateLimit: 'Příliš mnoho dotazů za minutu. Počkej chvíli a zkus to znovu.',
-      notFound: 'AI server nenalezen – funkce /api/chat není na Netlify nasazená.',
+      notFound: 'AI server nenalezen. Zkus to později.',
       overloaded: 'AI server nebo Gemini je teď nedostupný. Zkus to za chvíli znovu.',
       status: 'AI server vrátil chybu {status}.',
       safety: 'Bezpečnostní filtr Gemini odpověď zablokoval. Zkus otázku přeformulovat (věcně, o pěstování pro vlastní potřebu) nebo poslat jinou fotku.',
