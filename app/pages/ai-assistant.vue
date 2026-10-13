@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Capacitor } from '@capacitor/core'
 import type { DiagHit } from '~/ai/diagnose'
 import { renderMarkdown } from '~/ai/markdown'
 import { DIAG_RELIABLE, evidenceLabel, kbKindLabel } from '~/ai/prompt'
@@ -299,7 +300,11 @@ const offlineNotice = computed(() => {
   return t('ai.notice.missing', { n: missing.length, what: `${what.charAt(0).toUpperCase()}${what.slice(1)}`, provider: ai.provider.value.label })
 })
 
+// the hosted website never talks to the AI proxy; the Android app does
+const webOnly = !Capacitor.isNativePlatform()
+
 onMounted(async () => {
+  if (webOnly) return
   assistant.initOffline(config.app.baseURL)
   await assistant.ready()
   pickInitialThread()
@@ -313,7 +318,10 @@ onMounted(async () => {
       :title="t('ai.page.title')"
       :subtitle="plantSummary ?? t('ai.page.subtitleGeneral')"
     >
-      <template #actions>
+      <template
+        v-if="!webOnly"
+        #actions
+      >
         <button
           type="button"
           class="icon-btn"
@@ -341,567 +349,575 @@ onMounted(async () => {
     </AppHeader>
 
     <div
-      class="plant-bar chips"
-      role="tablist"
-      :aria-label="t('ai.page.conversations')"
+      v-if="webOnly"
+      class="web-only"
     >
-      <button
-        type="button"
-        class="chip"
-        role="tab"
-        :aria-selected="threadKey === GENERAL_THREAD"
-        :class="{ active: threadKey === GENERAL_THREAD }"
-        :disabled="busy"
-        @click="selectThread(GENERAL_THREAD)"
-      >
-        <UIcon
-          name="i-tabler-messages"
-          class="size-4"
-        />
-        {{ t('ai.page.general') }}
-      </button>
-      <button
-        v-for="p in plants"
-        :key="p.id"
-        type="button"
-        class="chip"
-        role="tab"
-        :aria-selected="threadKey === p.id"
-        :class="{ active: threadKey === p.id }"
-        :disabled="busy"
-        @click="selectThread(p.id)"
-      >
-        <GrowIcon
-          :name="stageInfo(p.stage).glyph"
-          class="chip-glyph"
-          :style="{ color: stageInfo(p.stage).color }"
-        />
-        {{ p.name }}
-      </button>
+      <AiGetAppCard />
     </div>
-
-    <div class="chat">
-      <p
-        v-if="offlineNotice"
-        class="offline-note"
-      >
-        <UIcon
-          name="i-tabler-cloud-off"
-          class="size-4 shrink-0"
-        />
-        {{ offlineNotice }}
-      </p>
+    <template v-else>
       <div
-        v-if="!messages.length"
-        class="welcome"
-      >
-        <span
-          class="welcome-mark"
-          aria-hidden="true"
-        >
-          <GrowIcon name="spark" />
-        </span>
-        <h2>{{ plant ? t('ai.page.welcomePlant', { name: plant.name }) : t('ai.page.welcome') }}</h2>
-        <p>
-          <template v-if="plant">
-            {{ t('ai.page.introPlant') }}
-          </template>
-          <template v-else>
-            {{ t('ai.page.introGeneral') }}
-          </template>
-        </p>
-        <div class="quick rise">
-          <button
-            v-for="q in quickQuestions"
-            :key="q.text"
-            type="button"
-            class="btn quick-btn"
-            :disabled="busy"
-            @click="send(q.text)"
-          >
-            <UIcon
-              :name="q.icon"
-              class="size-5 quick-icon"
-            />
-            <span>{{ q.text }}</span>
-            <UIcon
-              name="i-tabler-chevron-right"
-              class="size-4 quick-go"
-            />
-          </button>
-        </div>
-      </div>
-
-      <div
-        v-else
-        class="messages"
-      >
-        <div
-          v-for="m in messages"
-          :key="m.id"
-          class="msg"
-          :class="m.role === 'user' ? 'msg-user' : 'msg-bot'"
-        >
-          <template v-if="m.role === 'user'">
-            <div class="bubble user-bubble">
-              <img
-                v-if="m.thumb"
-                :src="m.thumb"
-                :alt="t('ai.page.photoAlt')"
-                class="thumb"
-              >
-              <p
-                v-if="m.text"
-                class="user-text"
-              >
-                {{ m.text }}
-              </p>
-              <span class="meta">{{ formatTime(m.createdAt) }}</span>
-            </div>
-          </template>
-
-          <template v-else>
-            <span
-              class="avatar"
-              :class="{ thinking: m.pending }"
-              aria-hidden="true"
-            >
-              <GrowIcon name="spark" />
-            </span>
-            <div class="bubble bot-bubble">
-              <div
-                v-if="m.diag?.length"
-                class="diag"
-              >
-                <div class="diag-head">
-                  <GrowIcon name="photo" />
-                  {{ t('ai.page.diagTitle') }}
-                </div>
-                <div
-                  v-for="d in m.diag"
-                  :key="d.cls"
-                  class="diag-row"
-                >
-                  <div class="diag-line">
-                    <span class="diag-label">{{ d.label }}</span>
-                    <span class="diag-p">{{ d.p < 0.005 ? '<1' : Math.round(d.p * 100) }} %</span>
-                  </div>
-                  <div class="progress">
-                    <div :style="{ width: `${Math.round(d.p * 100)}%`, background: EVIDENCE_TONE[d.evidence] }" />
-                  </div>
-                  <span
-                    class="badge"
-                    :style="{ color: EVIDENCE_TONE[d.evidence] }"
-                    :title="evidenceLabel(d.evidence)"
-                  >{{ t(`ai.evidenceShort.${d.evidence}`) }}</span>
-                </div>
-                <p
-                  v-if="lowConfidence(m)"
-                  class="diag-note"
-                >
-                  {{ t('ai.page.diagUnsure') }}
-                </p>
-                <p
-                  v-if="m.unsupported?.length"
-                  class="diag-note"
-                >
-                  {{ t('ai.page.unsupported', { list: m.unsupported.join(', ') }) }}
-                </p>
-              </div>
-
-              <div
-                v-if="m.pending && !m.text"
-                class="pending"
-                role="status"
-              >
-                <span class="dots"><span /><span /><span /></span>
-                <span>{{ m.status }}</span>
-              </div>
-
-              <!-- renderMarkdown escapes all input and only emits its own tags -->
-              <!-- eslint-disable vue/no-v-html -->
-              <div
-                v-if="m.text"
-                class="md"
-                :class="{ streaming: m.pending }"
-                @click="onAnswerClick($event, m)"
-                v-html="rendered(m.text)"
-              />
-              <!-- eslint-enable vue/no-v-html -->
-
-              <div
-                v-if="m.error"
-                class="error"
-                role="alert"
-              >
-                <UIcon
-                  name="i-tabler-alert-triangle"
-                  class="size-5 shrink-0"
-                />
-                <div>
-                  <p>{{ m.error }}</p>
-                  <div class="error-actions">
-                    <button
-                      v-if="m === messages[messages.length - 1] && assistant.canRetry(threadKey)"
-                      type="button"
-                      class="btn btn-soft btn-sm"
-                      :disabled="busy"
-                      @click="assistant.retry(threadKey)"
-                    >
-                      <UIcon
-                        name="i-tabler-refresh"
-                        class="size-4"
-                      />
-                      {{ t('ai.page.retry') }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                v-if="m.fallback?.length"
-                class="fallback"
-              >
-                <div class="fallback-head">
-                  <UIcon
-                    name="i-tabler-books"
-                    class="size-4"
-                  />
-                  {{ t('ai.page.fallbackTitle') }}
-                </div>
-                <p
-                  v-if="m.fallback.some(f => f.lang !== locale)"
-                  class="fallback-note"
-                >
-                  {{ t('ai.page.fallbackLang') }}
-                </p>
-                <article
-                  v-for="(f, i) in m.fallback"
-                  :key="i"
-                  class="fallback-card"
-                >
-                  <strong>{{ f.title }}</strong>
-                  <p>{{ f.text }}</p>
-                </article>
-              </div>
-
-              <div
-                v-if="m.sources?.length && !m.pending && !m.fallback?.length"
-                class="sources"
-              >
-                <button
-                  type="button"
-                  class="sources-toggle"
-                  :aria-expanded="openSources.has(m.id)"
-                  @click="toggleSources(m.id)"
-                >
-                  <UIcon
-                    name="i-tabler-books"
-                    class="size-4"
-                  />
-                  {{ citedSources(m).length ? t('ai.page.sources', { n: citedSources(m).length }) : t('ai.page.allSources', { n: m.sources.length }) }}
-                  <UIcon
-                    name="i-tabler-chevron-down"
-                    class="size-4 chev"
-                    :class="{ open: openSources.has(m.id) }"
-                  />
-                </button>
-                <ol
-                  v-if="openSources.has(m.id)"
-                  class="sources-list"
-                >
-                  <li
-                    v-for="s in shownSources(m)"
-                    :id="`src-${m.id}-${s.n}`"
-                    :key="s.n"
-                    :class="{ unused: citedSet(m).size && !citedSet(m).has(s.n), flash: highlighted === `${m.id}-${s.n}` }"
-                  >
-                    <span class="src-n">{{ s.n }}</span>
-                    <div class="src-body">
-                      <a
-                        v-if="s.url"
-                        :href="s.url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="src-title"
-                      >{{ s.title }}</a>
-                      <strong
-                        v-else
-                        class="src-title"
-                      >{{ s.title }}</strong>
-                      <span class="src-kind">{{ kbKindLabel(s.kind) }}<template v-if="citedSet(m).size && !citedSet(m).has(s.n)">{{ t('ai.page.unused') }}</template></span>
-                      <span class="src-snippet">{{ s.snippet }}</span>
-                    </div>
-                  </li>
-                  <li
-                    v-if="citedSources(m).length && citedSources(m).length < m.sources.length"
-                    class="sources-more"
-                  >
-                    <button
-                      type="button"
-                      class="link"
-                      @click="allSources.has(m.id) ? allSources.delete(m.id) : allSources.add(m.id)"
-                    >
-                      {{ allSources.has(m.id) ? t('ai.page.citedSources') : t('ai.page.allSources', { n: m.sources.length }) }}
-                    </button>
-                  </li>
-                </ol>
-              </div>
-
-              <nav
-                v-if="!m.pending && guideChips(m).length"
-                class="guide-chips"
-                :aria-label="t('ai.page.guideLinks')"
-              >
-                <NuxtLink
-                  v-for="g in guideChips(m)"
-                  :key="g!.to"
-                  :to="g!.to"
-                  class="chip guide-chip"
-                >
-                  <GrowIcon
-                    name="guide"
-                    class="chip-glyph"
-                  />
-                  {{ g!.label }}
-                </NuxtLink>
-              </nav>
-
-              <div
-                v-if="isLast(m) && !m.pending && (m.replies?.length || m.askPhoto)"
-                class="reply-chips"
-              >
-                <button
-                  v-if="m.askPhoto"
-                  type="button"
-                  class="chip active"
-                  :disabled="busy"
-                  @click="attachMenu = true"
-                >
-                  <UIcon
-                    name="i-tabler-camera-plus"
-                    class="size-4"
-                  />
-                  {{ t('ai.page.attachPhoto') }}
-                </button>
-                <button
-                  v-for="r in m.replies"
-                  :key="r"
-                  type="button"
-                  class="chip"
-                  :disabled="busy"
-                  @click="send(r)"
-                >
-                  {{ r }}
-                </button>
-              </div>
-
-              <div
-                v-if="!m.pending && m.text"
-                class="bot-meta"
-              >
-                <span class="meta">{{ formatTime(m.createdAt) }}<template v-if="m.model"> · {{ m.model }}</template></span>
-                <button
-                  type="button"
-                  class="meta-btn"
-                  :aria-label="t('ai.page.copy')"
-                  @click="copy(m)"
-                >
-                  <UIcon
-                    name="i-tabler-copy"
-                    class="size-4"
-                  />
-                </button>
-                <button
-                  type="button"
-                  class="meta-btn"
-                  :aria-label="m.reported ? t('ai.report.done') : t('ai.report.action')"
-                  :title="m.reported ? t('ai.report.done') : t('ai.report.action')"
-                  :disabled="m.reported"
-                  @click="openReport(m)"
-                >
-                  <UIcon
-                    :name="m.reported ? 'i-tabler-flag-check' : 'i-tabler-flag'"
-                    class="size-4"
-                  />
-                </button>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-
-      <div ref="bottom" />
-    </div>
-
-    <div class="composer">
-      <div
-        v-if="attachMenu"
-        class="attach-scrim"
-        @click="attachMenu = false"
-      />
-      <div
-        v-if="attachMenu"
-        class="attach-menu"
-        role="menu"
+        class="plant-bar chips"
+        role="tablist"
+        :aria-label="t('ai.page.conversations')"
       >
         <button
           type="button"
-          role="menuitem"
-          @click="attachPhoto('camera')"
+          class="chip"
+          role="tab"
+          :aria-selected="threadKey === GENERAL_THREAD"
+          :class="{ active: threadKey === GENERAL_THREAD }"
+          :disabled="busy"
+          @click="selectThread(GENERAL_THREAD)"
         >
           <UIcon
-            name="i-tabler-camera"
-            class="size-5"
-          />
-          {{ t('ai.page.takePhoto') }}
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          @click="attachPhoto('gallery')"
-        >
-          <UIcon
-            name="i-tabler-photo"
-            class="size-5"
-          />
-          {{ t('ai.page.fromGallery') }}
-        </button>
-      </div>
-      <div
-        v-if="photoPreview"
-        class="preview"
-      >
-        <img
-          :src="photoPreview"
-          :alt="t('ai.page.selectedPhoto')"
-        >
-        <button
-          type="button"
-          class="preview-remove"
-          :aria-label="t('ai.page.removePhoto')"
-          @click="photo = null"
-        >
-          <UIcon
-            name="i-tabler-x"
+            name="i-tabler-messages"
             class="size-4"
           />
+          {{ t('ai.page.general') }}
+        </button>
+        <button
+          v-for="p in plants"
+          :key="p.id"
+          type="button"
+          class="chip"
+          role="tab"
+          :aria-selected="threadKey === p.id"
+          :class="{ active: threadKey === p.id }"
+          :disabled="busy"
+          @click="selectThread(p.id)"
+        >
+          <GrowIcon
+            :name="stageInfo(p.stage).glyph"
+            class="chip-glyph"
+            :style="{ color: stageInfo(p.stage).color }"
+          />
+          {{ p.name }}
         </button>
       </div>
-      <div class="composer-row">
-        <button
-          type="button"
-          class="icon-btn composer-btn"
-          :aria-label="t('ai.page.takePhoto')"
-          :disabled="busy"
-          @click="attachPhoto('camera')"
+
+      <div class="chat">
+        <p
+          v-if="offlineNotice"
+          class="offline-note"
         >
           <UIcon
-            name="i-tabler-camera"
-            class="size-5"
+            name="i-tabler-cloud-off"
+            class="size-4 shrink-0"
           />
-        </button>
-        <button
-          type="button"
-          class="icon-btn composer-btn"
-          :aria-label="t('ai.page.fromGallery')"
-          :disabled="busy"
-          @click="attachPhoto('gallery')"
-        >
-          <UIcon
-            name="i-tabler-photo"
-            class="size-5"
-          />
-        </button>
-        <textarea
-          ref="textarea"
-          v-model="input"
-          class="composer-input"
-          rows="1"
-          :placeholder="plant ? t('ai.page.placeholderPlant') : t('ai.page.placeholder')"
-          :aria-label="t('ai.page.question')"
-          enterkeyhint="enter"
-          @input="autosize"
-          @keydown="onKeydown"
-          @focus="onComposerFocus"
-        />
-        <button
-          v-if="busy"
-          type="button"
-          class="btn send-btn stop"
-          :aria-label="t('ai.page.stop')"
-          @click="assistant.stop()"
-        >
-          <UIcon
-            name="i-tabler-player-stop-filled"
-            class="size-5"
-          />
-        </button>
-        <button
-          v-else
-          type="button"
-          class="btn btn-primary send-btn"
-          :disabled="!canSend"
-          :aria-label="t('ai.page.send')"
-          @click="send()"
-        >
-          <UIcon
-            name="i-tabler-send"
-            class="size-5"
-          />
-        </button>
-      </div>
-    </div>
-    <BottomSheet
-      v-model:open="reportOpen"
-      :title="t('ai.report.title')"
-    >
-      <form
-        class="form-stack"
-        @submit.prevent="submitReport"
-      >
-        <p class="muted">
-          {{ t('ai.report.why') }}
+          {{ offlineNotice }}
         </p>
         <div
-          class="report-reasons"
-          role="radiogroup"
-          :aria-label="t('ai.report.why')"
+          v-if="!messages.length"
+          class="welcome"
+        >
+          <span
+            class="welcome-mark"
+            aria-hidden="true"
+          >
+            <GrowIcon name="spark" />
+          </span>
+          <h2>{{ plant ? t('ai.page.welcomePlant', { name: plant.name }) : t('ai.page.welcome') }}</h2>
+          <p>
+            <template v-if="plant">
+              {{ t('ai.page.introPlant') }}
+            </template>
+            <template v-else>
+              {{ t('ai.page.introGeneral') }}
+            </template>
+          </p>
+          <div class="quick rise">
+            <button
+              v-for="q in quickQuestions"
+              :key="q.text"
+              type="button"
+              class="btn quick-btn"
+              :disabled="busy"
+              @click="send(q.text)"
+            >
+              <UIcon
+                :name="q.icon"
+                class="size-5 quick-icon"
+              />
+              <span>{{ q.text }}</span>
+              <UIcon
+                name="i-tabler-chevron-right"
+                class="size-4 quick-go"
+              />
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-else
+          class="messages"
+        >
+          <div
+            v-for="m in messages"
+            :key="m.id"
+            class="msg"
+            :class="m.role === 'user' ? 'msg-user' : 'msg-bot'"
+          >
+            <template v-if="m.role === 'user'">
+              <div class="bubble user-bubble">
+                <img
+                  v-if="m.thumb"
+                  :src="m.thumb"
+                  :alt="t('ai.page.photoAlt')"
+                  class="thumb"
+                >
+                <p
+                  v-if="m.text"
+                  class="user-text"
+                >
+                  {{ m.text }}
+                </p>
+                <span class="meta">{{ formatTime(m.createdAt) }}</span>
+              </div>
+            </template>
+
+            <template v-else>
+              <span
+                class="avatar"
+                :class="{ thinking: m.pending }"
+                aria-hidden="true"
+              >
+                <GrowIcon name="spark" />
+              </span>
+              <div class="bubble bot-bubble">
+                <div
+                  v-if="m.diag?.length"
+                  class="diag"
+                >
+                  <div class="diag-head">
+                    <GrowIcon name="photo" />
+                    {{ t('ai.page.diagTitle') }}
+                  </div>
+                  <div
+                    v-for="d in m.diag"
+                    :key="d.cls"
+                    class="diag-row"
+                  >
+                    <div class="diag-line">
+                      <span class="diag-label">{{ d.label }}</span>
+                      <span class="diag-p">{{ d.p < 0.005 ? '<1' : Math.round(d.p * 100) }} %</span>
+                    </div>
+                    <div class="progress">
+                      <div :style="{ width: `${Math.round(d.p * 100)}%`, background: EVIDENCE_TONE[d.evidence] }" />
+                    </div>
+                    <span
+                      class="badge"
+                      :style="{ color: EVIDENCE_TONE[d.evidence] }"
+                      :title="evidenceLabel(d.evidence)"
+                    >{{ t(`ai.evidenceShort.${d.evidence}`) }}</span>
+                  </div>
+                  <p
+                    v-if="lowConfidence(m)"
+                    class="diag-note"
+                  >
+                    {{ t('ai.page.diagUnsure') }}
+                  </p>
+                  <p
+                    v-if="m.unsupported?.length"
+                    class="diag-note"
+                  >
+                    {{ t('ai.page.unsupported', { list: m.unsupported.join(', ') }) }}
+                  </p>
+                </div>
+
+                <div
+                  v-if="m.pending && !m.text"
+                  class="pending"
+                  role="status"
+                >
+                  <span class="dots"><span /><span /><span /></span>
+                  <span>{{ m.status }}</span>
+                </div>
+
+                <!-- renderMarkdown escapes all input and only emits its own tags -->
+                <!-- eslint-disable vue/no-v-html -->
+                <div
+                  v-if="m.text"
+                  class="md"
+                  :class="{ streaming: m.pending }"
+                  @click="onAnswerClick($event, m)"
+                  v-html="rendered(m.text)"
+                />
+                <!-- eslint-enable vue/no-v-html -->
+
+                <div
+                  v-if="m.error"
+                  class="error"
+                  role="alert"
+                >
+                  <UIcon
+                    name="i-tabler-alert-triangle"
+                    class="size-5 shrink-0"
+                  />
+                  <div>
+                    <p>{{ m.error }}</p>
+                    <div class="error-actions">
+                      <button
+                        v-if="m === messages[messages.length - 1] && assistant.canRetry(threadKey)"
+                        type="button"
+                        class="btn btn-soft btn-sm"
+                        :disabled="busy"
+                        @click="assistant.retry(threadKey)"
+                      >
+                        <UIcon
+                          name="i-tabler-refresh"
+                          class="size-4"
+                        />
+                        {{ t('ai.page.retry') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="m.fallback?.length"
+                  class="fallback"
+                >
+                  <div class="fallback-head">
+                    <UIcon
+                      name="i-tabler-books"
+                      class="size-4"
+                    />
+                    {{ t('ai.page.fallbackTitle') }}
+                  </div>
+                  <p
+                    v-if="m.fallback.some(f => f.lang !== locale)"
+                    class="fallback-note"
+                  >
+                    {{ t('ai.page.fallbackLang') }}
+                  </p>
+                  <article
+                    v-for="(f, i) in m.fallback"
+                    :key="i"
+                    class="fallback-card"
+                  >
+                    <strong>{{ f.title }}</strong>
+                    <p>{{ f.text }}</p>
+                  </article>
+                </div>
+
+                <div
+                  v-if="m.sources?.length && !m.pending && !m.fallback?.length"
+                  class="sources"
+                >
+                  <button
+                    type="button"
+                    class="sources-toggle"
+                    :aria-expanded="openSources.has(m.id)"
+                    @click="toggleSources(m.id)"
+                  >
+                    <UIcon
+                      name="i-tabler-books"
+                      class="size-4"
+                    />
+                    {{ citedSources(m).length ? t('ai.page.sources', { n: citedSources(m).length }) : t('ai.page.allSources', { n: m.sources.length }) }}
+                    <UIcon
+                      name="i-tabler-chevron-down"
+                      class="size-4 chev"
+                      :class="{ open: openSources.has(m.id) }"
+                    />
+                  </button>
+                  <ol
+                    v-if="openSources.has(m.id)"
+                    class="sources-list"
+                  >
+                    <li
+                      v-for="s in shownSources(m)"
+                      :id="`src-${m.id}-${s.n}`"
+                      :key="s.n"
+                      :class="{ unused: citedSet(m).size && !citedSet(m).has(s.n), flash: highlighted === `${m.id}-${s.n}` }"
+                    >
+                      <span class="src-n">{{ s.n }}</span>
+                      <div class="src-body">
+                        <a
+                          v-if="s.url"
+                          :href="s.url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="src-title"
+                        >{{ s.title }}</a>
+                        <strong
+                          v-else
+                          class="src-title"
+                        >{{ s.title }}</strong>
+                        <span class="src-kind">{{ kbKindLabel(s.kind) }}<template v-if="citedSet(m).size && !citedSet(m).has(s.n)">{{ t('ai.page.unused') }}</template></span>
+                        <span class="src-snippet">{{ s.snippet }}</span>
+                      </div>
+                    </li>
+                    <li
+                      v-if="citedSources(m).length && citedSources(m).length < m.sources.length"
+                      class="sources-more"
+                    >
+                      <button
+                        type="button"
+                        class="link"
+                        @click="allSources.has(m.id) ? allSources.delete(m.id) : allSources.add(m.id)"
+                      >
+                        {{ allSources.has(m.id) ? t('ai.page.citedSources') : t('ai.page.allSources', { n: m.sources.length }) }}
+                      </button>
+                    </li>
+                  </ol>
+                </div>
+
+                <nav
+                  v-if="!m.pending && guideChips(m).length"
+                  class="guide-chips"
+                  :aria-label="t('ai.page.guideLinks')"
+                >
+                  <NuxtLink
+                    v-for="g in guideChips(m)"
+                    :key="g!.to"
+                    :to="g!.to"
+                    class="chip guide-chip"
+                  >
+                    <GrowIcon
+                      name="guide"
+                      class="chip-glyph"
+                    />
+                    {{ g!.label }}
+                  </NuxtLink>
+                </nav>
+
+                <div
+                  v-if="isLast(m) && !m.pending && (m.replies?.length || m.askPhoto)"
+                  class="reply-chips"
+                >
+                  <button
+                    v-if="m.askPhoto"
+                    type="button"
+                    class="chip active"
+                    :disabled="busy"
+                    @click="attachMenu = true"
+                  >
+                    <UIcon
+                      name="i-tabler-camera-plus"
+                      class="size-4"
+                    />
+                    {{ t('ai.page.attachPhoto') }}
+                  </button>
+                  <button
+                    v-for="r in m.replies"
+                    :key="r"
+                    type="button"
+                    class="chip"
+                    :disabled="busy"
+                    @click="send(r)"
+                  >
+                    {{ r }}
+                  </button>
+                </div>
+
+                <div
+                  v-if="!m.pending && m.text"
+                  class="bot-meta"
+                >
+                  <span class="meta">{{ formatTime(m.createdAt) }}<template v-if="m.model"> · {{ m.model }}</template></span>
+                  <button
+                    type="button"
+                    class="meta-btn"
+                    :aria-label="t('ai.page.copy')"
+                    @click="copy(m)"
+                  >
+                    <UIcon
+                      name="i-tabler-copy"
+                      class="size-4"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    class="meta-btn"
+                    :aria-label="m.reported ? t('ai.report.done') : t('ai.report.action')"
+                    :title="m.reported ? t('ai.report.done') : t('ai.report.action')"
+                    :disabled="m.reported"
+                    @click="openReport(m)"
+                  >
+                    <UIcon
+                      :name="m.reported ? 'i-tabler-flag-check' : 'i-tabler-flag'"
+                      class="size-4"
+                    />
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div ref="bottom" />
+      </div>
+
+      <div class="composer">
+        <div
+          v-if="attachMenu"
+          class="attach-scrim"
+          @click="attachMenu = false"
+        />
+        <div
+          v-if="attachMenu"
+          class="attach-menu"
+          role="menu"
         >
           <button
-            v-for="r in AI_REPORT_REASONS"
-            :key="r"
             type="button"
-            role="radio"
-            class="chip"
-            :aria-checked="reportReason === r"
-            :class="{ active: reportReason === r }"
-            @click="reportReason = r"
+            role="menuitem"
+            @click="attachPhoto('camera')"
           >
-            {{ t(`ai.report.reasons.${r}`) }}
+            <UIcon
+              name="i-tabler-camera"
+              class="size-5"
+            />
+            {{ t('ai.page.takePhoto') }}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            @click="attachPhoto('gallery')"
+          >
+            <UIcon
+              name="i-tabler-photo"
+              class="size-5"
+            />
+            {{ t('ai.page.fromGallery') }}
           </button>
         </div>
-        <label class="field">
-          <span class="field-label">{{ t('ai.report.note') }}</span>
-          <textarea
-            v-model="reportNote"
-            class="input"
-            maxlength="500"
-            rows="3"
-          />
-        </label>
-        <p class="field-hint">
-          {{ t('ai.report.privacy') }}
-        </p>
-        <button
-          type="submit"
-          class="btn btn-danger btn-block"
-          :disabled="!reportReason || reportBusy"
+        <div
+          v-if="photoPreview"
+          class="preview"
         >
-          {{ t('ai.report.send') }}
-        </button>
-      </form>
-    </BottomSheet>
+          <img
+            :src="photoPreview"
+            :alt="t('ai.page.selectedPhoto')"
+          >
+          <button
+            type="button"
+            class="preview-remove"
+            :aria-label="t('ai.page.removePhoto')"
+            @click="photo = null"
+          >
+            <UIcon
+              name="i-tabler-x"
+              class="size-4"
+            />
+          </button>
+        </div>
+        <div class="composer-row">
+          <button
+            type="button"
+            class="icon-btn composer-btn"
+            :aria-label="t('ai.page.takePhoto')"
+            :disabled="busy"
+            @click="attachPhoto('camera')"
+          >
+            <UIcon
+              name="i-tabler-camera"
+              class="size-5"
+            />
+          </button>
+          <button
+            type="button"
+            class="icon-btn composer-btn"
+            :aria-label="t('ai.page.fromGallery')"
+            :disabled="busy"
+            @click="attachPhoto('gallery')"
+          >
+            <UIcon
+              name="i-tabler-photo"
+              class="size-5"
+            />
+          </button>
+          <textarea
+            ref="textarea"
+            v-model="input"
+            class="composer-input"
+            rows="1"
+            :placeholder="plant ? t('ai.page.placeholderPlant') : t('ai.page.placeholder')"
+            :aria-label="t('ai.page.question')"
+            enterkeyhint="enter"
+            @input="autosize"
+            @keydown="onKeydown"
+            @focus="onComposerFocus"
+          />
+          <button
+            v-if="busy"
+            type="button"
+            class="btn send-btn stop"
+            :aria-label="t('ai.page.stop')"
+            @click="assistant.stop()"
+          >
+            <UIcon
+              name="i-tabler-player-stop-filled"
+              class="size-5"
+            />
+          </button>
+          <button
+            v-else
+            type="button"
+            class="btn btn-primary send-btn"
+            :disabled="!canSend"
+            :aria-label="t('ai.page.send')"
+            @click="send()"
+          >
+            <UIcon
+              name="i-tabler-send"
+              class="size-5"
+            />
+          </button>
+        </div>
+      </div>
+      <BottomSheet
+        v-model:open="reportOpen"
+        :title="t('ai.report.title')"
+      >
+        <form
+          class="form-stack"
+          @submit.prevent="submitReport"
+        >
+          <p class="muted">
+            {{ t('ai.report.why') }}
+          </p>
+          <div
+            class="report-reasons"
+            role="radiogroup"
+            :aria-label="t('ai.report.why')"
+          >
+            <button
+              v-for="r in AI_REPORT_REASONS"
+              :key="r"
+              type="button"
+              role="radio"
+              class="chip"
+              :aria-checked="reportReason === r"
+              :class="{ active: reportReason === r }"
+              @click="reportReason = r"
+            >
+              {{ t(`ai.report.reasons.${r}`) }}
+            </button>
+          </div>
+          <label class="field">
+            <span class="field-label">{{ t('ai.report.note') }}</span>
+            <textarea
+              v-model="reportNote"
+              class="input"
+              maxlength="500"
+              rows="3"
+            />
+          </label>
+          <p class="field-hint">
+            {{ t('ai.report.privacy') }}
+          </p>
+          <button
+            type="submit"
+            class="btn btn-danger btn-block"
+            :disabled="!reportReason || reportBusy"
+          >
+            {{ t('ai.report.send') }}
+          </button>
+        </form>
+      </BottomSheet>
+    </template>
   </div>
 </template>
 
@@ -914,6 +930,10 @@ onMounted(async () => {
 
 .plant-bar {
   padding: 0 16px 8px;
+}
+
+.web-only {
+  padding: 8px 16px 24px;
 }
 
 .chip-glyph {

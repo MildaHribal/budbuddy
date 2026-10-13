@@ -1,10 +1,12 @@
 import { ref } from 'vue'
 
 export type Locale = 'en' | 'cs'
-export const LOCALES: { value: Locale, label: string }[] = [
-  { value: 'cs', label: 'Čeština' },
-  { value: 'en', label: 'English' }
-]
+/** Czech is hidden for now; flip to bring it back. */
+export const CZECH_ENABLED = false
+
+export const LOCALES: { value: Locale, label: string }[] = CZECH_ENABLED
+  ? [{ value: 'cs', label: 'Čeština' }, { value: 'en', label: 'English' }]
+  : [{ value: 'en', label: 'English' }]
 
 // Reactive so utils (stageInfo, formatDate…) re-render on switch.
 export const locale = ref<Locale>('en')
@@ -14,6 +16,7 @@ export function isLocale(v: unknown): v is Locale {
 }
 
 export function detectLocale(): Locale {
+  if (!CZECH_ENABLED) return 'en'
   const lang = typeof navigator === 'undefined' ? '' : navigator.language ?? ''
   return lang.toLowerCase().startsWith('cs') || lang.toLowerCase().startsWith('sk') ? 'cs' : 'en'
 }

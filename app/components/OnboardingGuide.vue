@@ -217,7 +217,10 @@ async function finish(mode: 'demo' | 'empty') {
           >
             {{ t('onboarding.you.title') }}
           </h2>
-          <div class="field">
+          <div
+            v-if="LOCALES.length > 1"
+            class="field"
+          >
             <span
               id="ob-lang"
               class="field-label"

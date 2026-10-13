@@ -1,6 +1,15 @@
 // AI assistant strings: UI, errors, and the plant context sent to the model.
 export default {
   en: {
+    web: {
+      title: 'The AI assistant lives in the app',
+      text: 'On the website the assistant is switched off. Get the free Android app to ask about your plants.',
+      point1: 'Answers built on the BudBuddy grow guide',
+      point2: 'Photo checks for pests and deficiencies',
+      point3: 'Works offline once the AI pack is installed',
+      download: 'Download from GitHub',
+      note: 'Open the latest release and install the .apk file on your Android phone.'
+    },
     settings: {
       title: 'AI assistant',
       test: 'Test',
@@ -232,6 +241,15 @@ export default {
     location: { indoor: 'indoors', outdoor: 'outdoors', greenhouse: 'greenhouse' }
   },
   cs: {
+    web: {
+      title: 'AI asistent je v aplikaci',
+      text: 'Na webu je asistent vypnutý. Stáhni si zdarma aplikaci pro Android a ptej se na své rostliny.',
+      point1: 'Odpovědi postavené na průvodci BudBuddy',
+      point2: 'Kontrola fotek kvůli škůdcům a nedostatkům',
+      point3: 'S AI balíčkem funguje i offline',
+      download: 'Stáhnout z GitHubu',
+      note: 'Otevři nejnovější verzi a nainstaluj soubor .apk do telefonu s Androidem.'
+    },
     settings: {
       title: 'AI asistent',
       test: 'Otestovat',

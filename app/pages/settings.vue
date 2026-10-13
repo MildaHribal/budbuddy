@@ -45,6 +45,7 @@ function syncLight() {
 }
 
 const remindersNative = remindersSupported()
+const isNative = Capacitor.isNativePlatform()
 const reminderTime = ref(state.settings.reminderTime)
 watch(reminderTime, (v) => {
   if (/^\d{2}:\d{2}$/.test(v)) grow.updateSettings({ reminderTime: v })
@@ -252,7 +253,10 @@ async function erase() {
         </div>
       </section>
 
-      <section aria-labelledby="h-lang">
+      <section
+        v-if="LOCALES.length > 1"
+        aria-labelledby="h-lang"
+      >
         <div class="section-head">
           <h2
             id="h-lang"
@@ -538,7 +542,11 @@ async function erase() {
             {{ t('ai.settings.title') }}
           </h2>
         </div>
-        <div class="card pad form-stack">
+        <AiGetAppCard v-if="!isNative" />
+        <div
+          v-else
+          class="card pad form-stack"
+        >
           <button
             type="button"
             class="btn btn-soft"
@@ -566,7 +574,10 @@ async function erase() {
           </p>
           <AiPackRow />
         </div>
-        <p class="note">
+        <p
+          v-if="isNative"
+          class="note"
+        >
           {{ t('ai.settings.privacy') }}
         </p>
       </section>

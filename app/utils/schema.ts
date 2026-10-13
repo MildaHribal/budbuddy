@@ -1,6 +1,6 @@
 // Validation / normalisation of persisted data and migration from the
 // pre-2.0 storage format (separate keys per plant journal, base64 photos inline).
-import { detectLocale, isLocale } from './locale'
+import { CZECH_ENABLED, detectLocale, isLocale } from './locale'
 import type {
   EntryType,
   GrowData,
@@ -226,7 +226,7 @@ export function normalizeData(raw: unknown): GrowData {
     initialized: s.initialized !== false,
     lightsOn: isHHMM(s.lightsOn) ? s.lightsOn : '06:00',
     lightHours: Number.isFinite(lightHours) && lightHours >= 0 && lightHours <= 24 ? Math.round(lightHours) : 18,
-    language: isLocale(s.language) ? s.language : detectLocale(),
+    language: CZECH_ENABLED && isLocale(s.language) ? s.language : detectLocale(),
     reminders: s.reminders === true,
     reminderTime: isHHMM(s.reminderTime) ? s.reminderTime : '18:00',
     nag: s.nag !== false,

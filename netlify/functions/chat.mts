@@ -12,15 +12,15 @@ const MAX_IMAGES = 3
 const MAX_TEXT = 60_000
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
 
-const FIXED_ORIGINS = new Set(['https://localhost', 'http://localhost', 'capacitor://localhost', 'https://budbuddy.hribal.site'])
+// only the Android app (and local dev); the hosted websites must not spend the Gemini quota
+const FIXED_ORIGINS = new Set(['https://localhost', 'http://localhost', 'capacitor://localhost'])
 
 export type ErrorReason = 'not_configured' | 'unauthorized' | 'forbidden_origin' | 'bad_request' | 'too_large' | 'quota' | 'server_key' | 'model' | 'upstream' | 'timeout'
 
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return true
   if (FIXED_ORIGINS.has(origin)) return true
-  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true
-  return [process.env.URL, process.env.DEPLOY_PRIME_URL, process.env.DEPLOY_URL].includes(origin)
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
 }
 
 function cors(origin: string | null): Record<string, string> {
