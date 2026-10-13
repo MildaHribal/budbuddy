@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import type { NutrientLine } from '~/utils/calc'
+import { isIssueId } from '~/utils/treatment'
 
 const { t } = useI18n()
 
 const { state } = useGrow()
 
-type Tool = 'nutrients' | 'vpd' | 'dli' | 'convert'
-const TOOL_IDS: Tool[] = ['nutrients', 'vpd', 'dli', 'convert']
+type Tool = 'nutrients' | 'vpd' | 'dli' | 'convert' | 'curing' | 'treatment'
+const TOOL_IDS: Tool[] = ['nutrients', 'vpd', 'dli', 'convert', 'curing', 'treatment']
 const TOOL_META: Record<Tool, { icon: string, tone: string }> = {
   nutrients: { icon: 'feed', tone: 'var(--green)' },
   vpd: { icon: 'i-tabler-wind', tone: 'var(--blue)' },
   dli: { icon: 'lamp', tone: 'var(--amber)' },
-  convert: { icon: 'i-tabler-arrows-exchange', tone: 'var(--text-2)' }
+  convert: { icon: 'i-tabler-arrows-exchange', tone: 'var(--text-2)' },
+  curing: { icon: 'curing', tone: 'var(--amber)' },
+  treatment: { icon: 'pest', tone: '#f0905a' }
 }
 const tools = computed(() => TOOL_IDS.map(id => ({ id, ...TOOL_META[id], label: t(`tools.tabs.${id}`), desc: t(`tools.desc.${id}`) })))
 const route = useRoute()
@@ -76,8 +79,8 @@ function logMix() {
 }
 
 // "What is this for?" + "Learn more" per tool
-const aboutNs: Record<Tool, string> = { nutrients: 'mix', vpd: 'vpd', dli: 'dli', convert: 'convert' }
-const learnKeys: Record<Tool, string[]> = { nutrients: ['a', 'b', 'c', 'd'], vpd: ['a', 'b', 'c', 'd'], dli: ['a', 'b', 'c', 'd'], convert: ['a', 'b', 'c'] }
+const aboutNs: Record<Tool, string> = { nutrients: 'mix', vpd: 'vpd', dli: 'dli', convert: 'convert', curing: 'curing', treatment: 'treatment' }
+const learnKeys: Record<Tool, string[]> = { nutrients: ['a', 'b', 'c', 'd'], vpd: ['a', 'b', 'c', 'd'], dli: ['a', 'b', 'c', 'd'], convert: ['a', 'b', 'c'], curing: ['a', 'b', 'c'], treatment: ['a', 'b', 'c'] }
 
 // ── VPD ───────────────────────────────────────────────────────────
 const temp = useLocalStorage('budbuddy:vpd-temp', 25)
@@ -728,7 +731,7 @@ function fromC() {
       </template>
 
       <!-- Convert -->
-      <template v-else>
+      <template v-else-if="tool === 'convert'">
         <section>
           <div class="section-head">
             <h2 class="section-title">
@@ -859,6 +862,12 @@ function fromC() {
           </div>
         </section>
       </template>
+
+      <CareCuringTool v-else-if="tool === 'curing'" />
+      <CareTreatmentList
+        v-else-if="tool === 'treatment'"
+        :start-issue="isIssueId(route.query.issue) ? route.query.issue : null"
+      />
     </div>
 
     <EntrySheet

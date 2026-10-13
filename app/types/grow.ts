@@ -153,4 +153,80 @@ export interface GrowData {
   tasks: Task[]
   settings: Settings
   guide: GuideProgress
+  /** drying checks and curing jars (optional: older saves have none) */
+  cure?: CureData
+  /** treatment plans after a diagnosis */
+  treatments?: TreatmentPlan[]
+}
+
+// ── Drying & curing ───────────────────────────────────────────────
+
+/** stem test while drying: bends = still wet, cracks = almost, snaps = ready to jar */
+export type StemTest = 'bends' | 'cracks' | 'snaps'
+
+export interface DryCheck {
+  id: string
+  plantId: string
+  /** YYYY-MM-DD */
+  date: string
+  tempC: number | null
+  humidity: number | null
+  stem: StemTest | null
+  note: string
+}
+
+export interface JarReading {
+  /** ISO datetime */
+  at: string
+  humidity: number
+}
+
+export interface CureJar {
+  id: string
+  plantId: string
+  label: string
+  /** grams of dry buds in the jar */
+  weightG: number | null
+  /** YYYY-MM-DD the jar was filled */
+  startDate: string
+  readings: JarReading[]
+  /** ISO datetimes the jar was opened */
+  burps: string[]
+  /** YYYY-MM-DD the cure was finished, null = still curing */
+  doneDate: string | null
+}
+
+export interface CureData {
+  checks: DryCheck[]
+  jars: CureJar[]
+}
+
+// ── Treatment plans ───────────────────────────────────────────────
+
+export interface TreatmentStep {
+  /** template step key */
+  key: string
+  done: boolean
+}
+
+export interface TreatmentPlan {
+  id: string
+  plantId: string
+  /** template id (app/utils/treatment.ts) */
+  issue: string
+  /** YYYY-MM-DD */
+  startDate: string
+  steps: TreatmentStep[]
+  /** photo entry with the "before" picture */
+  beforeEntryId: string | null
+  /** photo entries added as follow-up checks */
+  checkEntryIds: string[]
+  /** tasks created for this plan (follow-up check, repeat treatments) */
+  taskIds: string[]
+  /** journal entry the plan was started from, if any */
+  sourceEntryId: string | null
+  status: 'active' | 'resolved' | 'stopped'
+  /** YYYY-MM-DD */
+  closedDate: string | null
+  note: string
 }

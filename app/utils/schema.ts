@@ -19,9 +19,11 @@ import type {
   TrainingMethod
 } from '../types/grow'
 import { isValidISODate, toISODate, todayISO } from './date'
+import { emptyCure, normalizeCure } from './curing'
 import { blankEntry } from './entries'
 import { createId } from './id'
 import { isStageId } from './stages'
+import { normalizeTreatments } from './treatment'
 
 const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback)
 
@@ -56,7 +58,9 @@ export function emptyData(): GrowData {
     entries: [],
     tasks: [],
     settings: { growerName: '', initialized: false, lightsOn: '06:00', lightHours: 18, language: detectLocale(), reminders: false, reminderTime: '18:00', onboarded: false, demo: false },
-    guide: emptyGuide()
+    guide: emptyGuide(),
+    cure: emptyCure(),
+    treatments: []
   }
 }
 
@@ -207,6 +211,8 @@ export function normalizeData(raw: unknown): GrowData {
     demo: s.demo === true
   }
   data.guide = normalizeGuide(r.guide)
+  data.cure = normalizeCure(r.cure, ids)
+  data.treatments = normalizeTreatments(r.treatments, ids)
   return data
 }
 

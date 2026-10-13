@@ -624,6 +624,10 @@ function duplicate() {
           />
         </button>
         <div class="head-actions">
+          <VoiceLogButton
+            v-if="!plant.archived"
+            :plant-id="plant.id"
+          />
           <NuxtLink
             :to="{ path: '/ai-assistant', query: { plant: plant.id } }"
             class="icon-btn accent"
@@ -918,6 +922,8 @@ function duplicate() {
           </button>
         </div>
       </section>
+
+      <CarePlantCarePanel :plant="plant" />
 
       <section
         v-if="weekDue && publicId"

@@ -2,12 +2,12 @@ import { COMMUNITY_NAMESPACES, loadNamespaces, type LazyNamespace } from '~/comp
 
 const COMMUNITY = [...COMMUNITY_NAMESPACES]
 const ROUTES: [RegExp, LazyNamespace[]][] = [
-  [/^\/guide(\/|$)/, ['guide', 'guideWidgets', 'guideArt']],
+  [/^\/guide(\/|$)/, ['guide', 'guideWidgets', 'guideArt', 'care']],
   [/^\/(community|u|plant|strains|challenges|auth|auth-callback|admin)(\/|$)/, COMMUNITY],
   // plant detail: sharing chip and sign-in; settings: account section and AI
-  [/^\/(plants\/[^/]+|my_trees\/[^/]+)\/?$/, ['plant', 'auth']],
+  [/^\/(plants\/[^/]+|my_trees\/[^/]+)\/?$/, ['plant', 'auth', 'care']],
   [/^\/settings(\/|$)/, ['settings', 'ai', ...COMMUNITY]],
-  [/^\/tools(\/|$)/, ['tools']],
+  [/^\/tools(\/|$)/, ['tools', 'care']],
   [/^\/stats(\/|$)/, ['stats']],
   [/^\/ai-assistant(\/|$)/, ['ai']]
 ]

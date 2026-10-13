@@ -53,6 +53,8 @@ function replaceState(data: GrowData) {
   state.tasks = data.tasks
   state.settings = data.settings
   state.guide = data.guide
+  state.cure = data.cure
+  state.treatments = data.treatments
 }
 
 async function readLegacy(): Promise<LegacyInput | null> {
@@ -217,6 +219,8 @@ function deletePlant(id: string) {
   state.plants = state.plants.filter(p => p.id !== id)
   state.entries = state.entries.filter(e => e.plantId !== id)
   state.tasks = state.tasks.filter(t => t.plantId !== id)
+  if (state.cure) state.cure = { checks: state.cure.checks.filter(c => c.plantId !== id), jars: state.cure.jars.filter(j => j.plantId !== id) }
+  if (state.treatments) state.treatments = state.treatments.filter(p => p.plantId !== id)
   collectGarbagePhotos().catch(() => {})
 }
 
@@ -361,11 +365,15 @@ function cleanupPhotos() {
  * Streams the backup as JSON chunks so large photo libraries never have to sit
  * in memory as one giant string (important in the Android WebView).
  */
-async function exportBackup(write: (chunk: string) => Promise<void>): Promise<{ photos: number }> {
+async function exportBackup(write: (chunk: string) => Promise<void>, opts: { photos?: boolean } = {}): Promise<{ photos: number }> {
   if (demoSeedDue || demoSeed) await seedDemoNow()
   await collectGarbagePhotos()
   const data = JSON.parse(JSON.stringify(state)) as GrowData
   const head = JSON.stringify({ app: 'budbuddy', exportedAt: new Date().toISOString(), ...data })
+  if (opts.photos === false) {
+    await write(`${head.slice(0, -1)},"photosIncluded":false,"photos":[]}`)
+    return { photos: 0 }
+  }
   await write(`${head.slice(0, -1)},"photos":[`)
   const photos = (await photoStore.all()).filter(p => !p.id.endsWith(THUMB_SUFFIX))
   for (const [i, p] of photos.entries()) {
@@ -403,7 +411,8 @@ async function importBackup(json: string): Promise<{ plants: number, entries: nu
       skipped++
     }
   }
-  await photoStore.replaceAll(photos)
+  // a backup made without photos keeps the photos already on this device
+  if (raw.photosIncluded !== false) await photoStore.replaceAll(photos)
   replaceState(data)
   await writeNow()
   return { plants: data.plants.length, entries: data.entries.length, photos: photos.length, skipped }
@@ -458,6 +467,8 @@ export function useGrow() {
     eraseAll,
     loadDemo,
     updateSettings: (patch: Partial<GrowData['settings']>) => Object.assign(state.settings, patch),
-    updateGuide: (patch: Partial<GrowData['guide']>) => Object.assign(state.guide, patch)
+    updateGuide: (patch: Partial<GrowData['guide']>) => Object.assign(state.guide, patch),
+    /** write access for feature modules that keep their own slice of GrowData (curing, treatments) */
+    mutate: <T>(fn: (data: GrowData) => T): T => fn(state)
   }
 }

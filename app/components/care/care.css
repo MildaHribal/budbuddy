@@ -1,0 +1,250 @@
+.care {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+}
+
+.care-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.care-tile {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--tone, #d9a06a) 14%, transparent);
+  color: var(--tone, #d9a06a);
+  font-size: 24px;
+}
+
+.care-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.care-title h2,
+.care-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.care-title p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.care-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.care-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.care-actions .btn {
+  flex: 1 1 auto;
+}
+
+.targets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+.targets > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 10px 9px;
+  min-width: 0;
+}
+
+.targets > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.targets dt {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.targets dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.targets span {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.targets [data-state="in"] dd {
+  color: var(--green);
+}
+
+.targets [data-state="out"] dd {
+  color: var(--amber);
+}
+
+.advice {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.advice li {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.advice li .iconify {
+  margin-top: 1px;
+  color: var(--text-3);
+}
+
+.advice li.warn .iconify {
+  color: var(--amber);
+}
+
+.advice li.good {
+  color: var(--text);
+}
+
+.advice li.good .iconify {
+  color: var(--green);
+}
+
+.history summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+.history summary::-webkit-details-marker {
+  display: none;
+}
+
+.history summary .num {
+  color: var(--text-3);
+}
+
+.history .chev {
+  margin-left: auto;
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.history[open] .chev {
+  transform: rotate(180deg);
+}
+
+.history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.history li + li {
+  border-top: 1px solid var(--line);
+}
+
+.history li button {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  font-size: 14px;
+}
+
+.h-date {
+  flex-shrink: 0;
+  width: 84px;
+  color: var(--text-2);
+}
+
+.h-vals {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unit-input {
+  position: relative;
+}
+
+.unit-input .input {
+  padding-right: 48px;
+}
+
+.unit {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+input.num[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.num::-webkit-outer-spin-button,
+.num::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.sheet-icon-btn {
+  flex: 0 0 48px !important;
+  padding: 0;
+}
