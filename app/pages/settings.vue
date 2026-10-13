@@ -207,6 +207,9 @@ async function erase() {
   if (!ok) return
   await grow.eraseAll()
   await useAssistant().clearAll()
+  // device-only extras of the environment area (token, cached forecasts)
+  await useHomeAssistant().disconnect()
+  await clearWeatherCache()
   name.value = ''
   syncLight()
   notify(t('settings.toast.erased'), { tone: 'info' })

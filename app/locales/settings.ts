@@ -76,7 +76,7 @@ export default {
       demoMessage: 'Your current data will be replaced with example plants. Export a backup first if you want to keep it.',
       demoLabel: 'Load demo',
       eraseTitle: 'Erase everything?',
-      eraseMessage: 'This deletes all plants, journal entries, tasks, photos and AI chats from this device. It cannot be undone.',
+      eraseMessage: 'This deletes all plants, journal entries, tasks, photos, tents, feeding plans, costs, stock, sensors and AI chats from this device. Backups in your folder stay. It cannot be undone.',
       eraseLabel: 'Erase all'
     }
   },
@@ -157,7 +157,7 @@ export default {
       demoMessage: 'Tvoje současná data se nahradí ukázkovými rostlinami. Jestli si je chceš nechat, nejdřív si udělej zálohu.',
       demoLabel: 'Načíst ukázku',
       eraseTitle: 'Smazat všechno?',
-      eraseMessage: 'Z tohoto zařízení se smažou všechny rostliny, záznamy, úkoly, fotky i AI chaty. Nejde to vrátit.',
+      eraseMessage: 'Z tohoto zařízení se smažou všechny rostliny, záznamy, úkoly, fotky, stany, krmné plány, náklady, sklad, čidla i AI chaty. Zálohy ve složce zůstanou. Nejde to vrátit.',
       eraseLabel: 'Smazat vše'
     }
   }

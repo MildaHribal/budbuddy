@@ -11,7 +11,8 @@ export default defineNuxtPlugin(() => {
     await initGrow()
     const { state, loadError } = useGrow()
     // never back up an unreadable or demo garden over a real backup
-    if (loadError.value || state.settings.demo) return
+    // nor an empty one (after "erase all") that would prune the real backups
+    if (loadError.value || state.settings.demo || !state.plants.length) return
     await backup.load()
     if (!isDue(backup.config.value)) return
     await backup.runBackup().catch(e => console.warn('[BudBuddy] automatic backup failed', e))

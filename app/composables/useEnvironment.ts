@@ -34,6 +34,12 @@ function saveCache() {
   Preferences.set({ key: CACHE_KEY, value: JSON.stringify(forecasts) }).catch(() => {})
 }
 
+/** "Erase all data": forecasts hold the places' coordinates too. */
+export async function clearWeatherCache() {
+  for (const k of Object.keys(forecasts)) Reflect.deleteProperty(forecasts, k)
+  await Preferences.remove({ key: CACHE_KEY }).catch(() => {})
+}
+
 export function useEnvironment() {
   const grow = useGrow()
   const { state } = grow
