@@ -2,8 +2,8 @@ export default {
   en: {
     title: 'Tools',
     subtitle: 'Calculators for the grow room',
-    tabs: { nutrients: 'Nutrients', vpd: 'Air', dli: 'Light', convert: 'Convert' },
-    desc: { nutrients: 'Millilitres per can from the bottle dose', vpd: 'Temperature and humidity check (VPD)', dli: 'Daily light from PPFD and hours', convert: 'Gallons, litres, °F and °C' },
+    tabs: { nutrients: 'Nutrients', vpd: 'Air', dli: 'Light', convert: 'Convert', curing: 'Drying & curing', treatment: 'Treatment plans' },
+    desc: { nutrients: 'Millilitres per can from the bottle dose', vpd: 'Temperature and humidity check (VPD)', dli: 'Daily light from PPFD and hours', convert: 'Gallons, litres, °F and °C', curing: 'Daily drying checks and jar burping', treatment: 'Steps and a follow-up photo for a problem' },
     whatFor: 'What is this for?',
     learnMore: 'Learn more',
     mix: {
@@ -112,13 +112,29 @@ export default {
       fahrenheit: 'Fahrenheit (°F)',
       celsius: 'Celsius (°C)',
       potSizes: 'Common pot sizes'
+    },
+    curing: {
+      what: 'Guides the slow finish after harvest: daily checks while the branches hang, then jars with a burp schedule that tapers off.',
+      learn: {
+        a: 'Dry in the dark at 18–21 °C and 55–62 % humidity. It usually takes 7–14 days.',
+        b: 'Jar when small stems snap instead of bending. Fill jars about three quarters full.',
+        c: 'Keep 58–62 % in the jar. Week 1: open 3× a day, week 2: daily, then less and less.'
+      }
+    },
+    treatment: {
+      what: 'Turns a problem into a short plan: concrete steps, reminders and a follow-up photo to compare before and after.',
+      learn: {
+        a: 'Most leaf problems start with pH or EC. Measure them first.',
+        b: 'Damaged leaves do not recover. Judge the plan by the new growth.',
+        c: 'Use only products allowed for your plants and follow the label. Never spray buds in flower.'
+      }
     }
   },
   cs: {
     title: 'Nástroje',
     subtitle: 'Kalkulačky pro pěstírnu',
-    tabs: { nutrients: 'Živiny', vpd: 'Vzduch', dli: 'Světlo', convert: 'Převody' },
-    desc: { nutrients: 'Mililitry do konve podle dávky na lahvi', vpd: 'Kontrola teploty a vlhkosti (VPD)', dli: 'Denní dávka světla z PPFD a hodin', convert: 'Galony, litry, °F a °C' },
+    tabs: { nutrients: 'Živiny', vpd: 'Vzduch', dli: 'Světlo', convert: 'Převody', curing: 'Sušení a zrání', treatment: 'Léčebné plány' },
+    desc: { nutrients: 'Mililitry do konve podle dávky na lahvi', vpd: 'Kontrola teploty a vlhkosti (VPD)', dli: 'Denní dávka světla z PPFD a hodin', convert: 'Galony, litry, °F a °C', curing: 'Denní kontrola sušení a odvětrávání sklenic', treatment: 'Kroky a kontrolní fotka při problému' },
     whatFor: 'K čemu to je?',
     learnMore: 'Víc informací',
     mix: {
@@ -227,6 +243,22 @@ export default {
       fahrenheit: 'Fahrenheit (°F)',
       celsius: 'Celsius (°C)',
       potSizes: 'Běžné velikosti květináčů'
+    },
+    curing: {
+      what: 'Provede pomalým dokončením po sklizni: denní kontroly, dokud větve visí, a pak sklenice s rozpisem odvětrávání, který postupně řídne.',
+      learn: {
+        a: 'Suš ve tmě při 18–21 °C a vlhkosti 55–62 %. Obvykle to trvá 7–14 dní.',
+        b: 'Do sklenic, až se tenké stonky lámou místo ohýbání. Sklenice plň zhruba do tří čtvrtin.',
+        c: 'Ve sklenici drž 58–62 %. 1. týden otevírej 3× denně, 2. týden denně, pak čím dál méně.'
+      }
+    },
+    treatment: {
+      what: 'Udělá z problému krátký plán: konkrétní kroky, připomínky a kontrolní fotku pro porovnání před a po.',
+      learn: {
+        a: 'Většina problémů s listy začíná u pH nebo EC. Změř je jako první.',
+        b: 'Poškozené listy se nevzpamatují. Plán posuzuj podle nových přírůstků.',
+        c: 'Používej jen přípravky povolené pro tvoje rostliny a řiď se etiketou. Nikdy nestříkej na palice v květu.'
+      }
     }
   }
 }

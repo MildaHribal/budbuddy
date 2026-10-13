@@ -295,6 +295,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
               v-if="todaysTasks.length"
               class="section-meta num"
             >{{ t('home.tasks.doneOf', { done: doneCount, total: todaysTasks.length }) }}</span>
+            <VoiceLogButton v-if="activePlants.length" />
             <button
               type="button"
               class="icon-btn accent"

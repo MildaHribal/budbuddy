@@ -1,0 +1,164 @@
+.sheet-glyph {
+  font-size: 26px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.issue-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+.issue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px 10px 10px 14px;
+  border: 0;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  transition: background var(--dur-fast) ease;
+}
+
+.issue + .issue {
+  border-top: 1px solid var(--line);
+}
+
+.issue:active {
+  background: var(--surface-2);
+}
+
+.issue-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.issue-text strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.issue-text span {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+
+.issue-go {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.back {
+  align-self: flex-start;
+  min-height: 44px;
+}
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.steps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  padding-left: 24px;
+  position: relative;
+  counter-increment: step;
+}
+
+.steps li::before {
+  content: counter(step) ".";
+  position: absolute;
+  left: 0;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.step-day {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.check-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.before {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.before-thumb {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.before-actions {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.before-actions .btn {
+  flex: 1 1 auto;
+}
+
+.safety {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--radius-control);
+  background: var(--lamp-soft);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.safety .iconify {
+  margin-top: 1px;
+  color: var(--amber);
+}

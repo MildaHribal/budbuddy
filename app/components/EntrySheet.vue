@@ -15,7 +15,7 @@ const props = defineProps<{
   /** entry being edited (null = create) */
   entry?: JournalEntry | null
   /** values for a new entry, e.g. a mix from the nutrient calculator */
-  prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note' | 'method' | 'feedLines'>> | null
+  prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note' | 'method' | 'feedLines' | 'product' | 'heightCm' | 'tempC' | 'humidity'>> | null
   /** bulk logging: one entry for each of these plants (plantId is the first one) */
   plantIds?: string[] | null
 }>()

@@ -19,6 +19,7 @@ import type {
   TrainingMethod
 } from '../types/grow'
 import { isValidISODate, toISODate, todayISO } from './date'
+import { emptyCure, normalizeCure } from './curing'
 import { blankEntry } from './entries'
 import { normalizeAlignMap } from './review/align'
 import { normalizeEnvironment } from './env/schema'
@@ -27,6 +28,7 @@ import { normalizeHunt } from './pheno'
 import { normalizeSpace } from './spaces'
 import { isStageId } from './stages'
 import { normalizeCosts, normalizeFeedLines, normalizeFeeding, normalizeInventory, normalizeLegal } from './kitSchema'
+import { normalizeTreatments } from './treatment'
 
 const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback)
 
@@ -63,7 +65,9 @@ export function emptyData(): GrowData {
     settings: { growerName: '', initialized: false, lightsOn: '06:00', lightHours: 18, language: detectLocale(), reminders: false, reminderTime: '18:00', onboarded: false, demo: false },
     guide: emptyGuide(),
     spaces: [],
-    hunts: []
+    hunts: [],
+    cure: emptyCure(),
+    treatments: []
   }
 }
 
@@ -241,6 +245,8 @@ export function normalizeData(raw: unknown): GrowData {
   const spaceIds = new Set(data.spaces.map(sp => sp.id))
   for (const p of data.plants) if (p.spaceId && !spaceIds.has(p.spaceId)) delete p.spaceId
   data.hunts = objects(r.hunts).map(h => normalizeHunt(h, ids))
+  data.cure = normalizeCure(r.cure, ids)
+  data.treatments = normalizeTreatments(r.treatments, ids)
   return data
 }
 

@@ -128,6 +128,7 @@ async function exportData() {
       a.click()
       setTimeout(() => URL.revokeObjectURL(url), 1000)
       notify(t('settings.toast.downloaded'))
+      useAutoBackup().markManualBackup()
     }
   } catch (e) {
     console.error(e)
@@ -139,6 +140,7 @@ async function exportData() {
   if (uri) {
     try {
       await Share.share({ title: t('settings.shareTitle'), files: [uri] })
+      useAutoBackup().markManualBackup()
     } catch (e) {
       // Closing the share sheet rejects too – that is not an error.
       if (!/cancel/i.test(String(e))) {
@@ -590,6 +592,8 @@ async function erase() {
           {{ t('settings.data.note') }}
         </p>
       </section>
+
+      <BackupAutoBackupSection @restored="name = state.settings.growerName; syncLight()" />
 
       <section aria-labelledby="h-danger">
         <div class="section-head">

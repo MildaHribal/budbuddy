@@ -1,6 +1,6 @@
 import type { EntryType } from '~/types/grow'
 
-export type GuideTool = 'vpd' | 'nutrients' | 'dli' | 'convert'
+export type GuideTool = 'vpd' | 'nutrients' | 'dli' | 'convert' | 'curing' | 'treatment'
 
 /** Ways to put a lesson into practice: open a calculator, log a journal entry, add a plant, update a plant's stage. */
 export type GuideAction
@@ -36,16 +36,20 @@ const ACTIONS: Record<string, GuideAction[]> = {
   'nutrition-ph-ec': [log('feed')],
   'nutrition-schedule': [tool('nutrients'), log('feed')],
   'nutrition-calmag': [tool('nutrients')],
+  'nutrition-overfeeding': [tool('treatment')],
   'nutrition-runoff': [log('water')],
   'nutrition-flush': [log('water')],
   'flowering-flip': [{ kind: 'stage' }],
   'flowering-climate': [tool('vpd'), log('measure')],
   'flowering-when-to-harvest': [log('photo')],
   'harvest-chop-day': [{ kind: 'stage' }],
-  'harvest-drying': [tool('vpd'), { kind: 'stage' }],
-  'harvest-curing': [log('note')],
-  'problems-diagnose': [log('photo')],
-  'problems-pests': [log('pest')]
+  'harvest-drying': [tool('curing'), tool('vpd'), { kind: 'stage' }],
+  'harvest-curing': [tool('curing'), log('note')],
+  'problems-diagnose': [log('photo'), tool('treatment')],
+  'problems-deficiencies': [tool('treatment')],
+  'problems-burn-lockout': [tool('treatment')],
+  'problems-pests': [log('pest'), tool('treatment')],
+  'problems-mould': [tool('treatment')]
 }
 
 export function lessonActions(lessonId: string): GuideAction[] {

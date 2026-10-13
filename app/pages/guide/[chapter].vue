@@ -249,7 +249,7 @@ const logOpen = ref(false)
 
 const actionLabel = (a: GuideAction) => t(`guide.chapter.actions.${a.kind === 'tool' ? a.tool : a.kind === 'log' ? a.entry : a.kind}`)
 const actionGlyph = (a: GuideAction) => {
-  if (a.kind === 'tool') return a.tool === 'vpd' ? 'i-tabler-droplet-half-2' : a.tool === 'nutrients' ? 'feed' : a.tool === 'dli' ? 'lamp' : 'measure'
+  if (a.kind === 'tool') return a.tool === 'vpd' ? 'i-tabler-droplet-half-2' : a.tool === 'nutrients' ? 'feed' : a.tool === 'dli' ? 'lamp' : a.tool === 'curing' ? 'curing' : a.tool === 'treatment' ? 'pest' : 'measure'
   if (a.kind === 'log') return entryInfo(a.entry).glyph
   return a.kind === 'plant' ? 'plants' : 'stage'
 }
