@@ -5,7 +5,12 @@
 begin;
 -- profiles first (cascades to posts, comments, reactions, follows, plants, updates, tips, reports, entries, votes,
 -- badges, notifications); deleting auth.users directly trips the reputation trigger on other demo profiles
-delete from public.profiles where id in (select id from auth.users where email like '%@demo.budbuddy.invalid');
+do $$ declare u uuid; begin
+  -- one row per command: each delete's reputation trigger updates the other demo profiles
+  for u in select id from auth.users where email like '%@demo.budbuddy.invalid' loop
+    delete from public.profiles where id = u;
+  end loop;
+end $$;
 delete from auth.users where email like '%@demo.budbuddy.invalid';
 delete from private.rate_log where user_id::text like 'de3a0000-%';
 commit;

@@ -24,14 +24,6 @@
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Young_cannabis_plant_in_the_vegetative_stage_01.jpg"
   },
   {
-    "file": "veg-tent.jpg",
-    "title": "Two hydroponic cannabis plants.jpg",
-    "author": "Plantlady223",
-    "license": "CC BY-SA 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Two_hydroponic_cannabis_plants.jpg"
-  },
-  {
     "file": "canopy-scrog.jpg",
     "title": "Indoor cannabis plants.jpg",
     "author": "Plantlady223",
@@ -46,14 +38,6 @@
     "license": "CC0",
     "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Freakshow_Flowering_Cola.jpg"
-  },
-  {
-    "file": "flower-cola.jpg",
-    "title": "Flowering Early Skunk Cannabis Sativa.jpg",
-    "author": "Botanica",
-    "license": "CC BY 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Flowering_Early_Skunk_Cannabis_Sativa.jpg"
   },
   {
     "file": "trichomes.jpg",
@@ -72,11 +56,43 @@
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cannabis_Drying_the_weed_(16991199408).jpg"
   },
   {
-    "file": "jar.jpg",
-    "title": "Dried cannabis bud in glass cup.jpg",
-    "author": "Dj701",
+    "file": "nl-veg.jpg",
+    "title": "Northern lights.JPG",
+    "author": "Sativaindica",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Northern_lights.JPG"
+  },
+  {
+    "file": "nl-flower.jpg",
+    "title": "Cannabis flowering28.jpg",
+    "author": "Rotbuche",
+    "license": "Public domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cannabis_flowering28.jpg"
+  },
+  {
+    "file": "ww-bloom.jpg",
+    "title": "White Widow (Dutch Passion), 29 day of bloom, v. 2.jpg",
+    "author": "Yuri Che",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:White_Widow_(Dutch_Passion),_29_day_of_bloom,_v._2.jpg"
+  },
+  {
+    "file": "ww-flower.jpg",
+    "title": "White Widow (Green House Seeds) 01.jpg",
+    "author": "Yuri Che",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:White_Widow_(Green_House_Seeds)_01.jpg"
+  },
+  {
+    "file": "ww-cured.jpg",
+    "title": "White Widow.jpg",
+    "author": "Coaster420",
     "license": "Public domain",
     "licenseUrl": null,
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dried_cannabis_bud_in_glass_cup.jpg"
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:White_Widow.jpg"
   }
 ]

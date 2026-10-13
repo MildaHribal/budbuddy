@@ -12,7 +12,8 @@ export interface PhotoCredit {
 /** Wikimedia Commons attributions for the bundled demo photos. */
 export const DEMO_PHOTO_CREDITS: PhotoCredit[] = credits
 
-export type DemoPhoto = 'seedling-led' | 'seedling-sprout' | 'veg-coco' | 'veg-tent' | 'canopy-scrog'
-  | 'flower-plant' | 'flower-cola' | 'trichomes' | 'drying' | 'jar'
+// generic shots plus real photos of the demo strains (nl-*, ww-*) from the strain catalogue
+export type DemoPhoto = 'seedling-led' | 'seedling-sprout' | 'veg-coco' | 'canopy-scrog' | 'flower-plant' | 'trichomes' | 'drying'
+  | 'nl-veg' | 'nl-flower' | 'ww-bloom' | 'ww-flower' | 'ww-cured'
 
 export const demoPhotoId = (slug: DemoPhoto) => `demo-${slug}`

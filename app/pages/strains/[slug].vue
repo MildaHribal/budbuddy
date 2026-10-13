@@ -106,7 +106,8 @@ watch(slug, () => {
 const shownReports = computed(() => reports.value.filter(r => !isBlocked(r.user_id)))
 const shownPlants = computed(() => plants.value.filter(p => !isBlocked(p.owner_id)))
 const growerCount = computed(() => new Set(shownPlants.value.map(p => p.owner_id)).size)
-const growerPhotos = computed<StrainPhoto[]>(() => shownPlants.value.filter(p => p.cover_url).slice(0, 6).map(p => ({
+// covers copied from the catalogue (demo growers) are already in the gallery with their real credit
+const growerPhotos = computed<StrainPhoto[]>(() => shownPlants.value.filter(p => p.cover_url && !p.cover_url.includes('/catalog/')).slice(0, 6).map(p => ({
   id: `plant-${p.id}`,
   kind: 'plant',
   url: p.cover_url!,

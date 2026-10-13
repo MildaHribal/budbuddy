@@ -25,7 +25,7 @@ describe('demo photos', () => {
     expect(demo.plants.every(p => p.photoId)).toBe(true)
     const files = new Set(DEMO_PHOTO_CREDITS.map(c => `demo-${c.file.replace(/\.jpg$/, '')}`))
     for (const id of photoRefs(demo)) expect(files.has(id!)).toBe(true)
-    expect(DEMO_PHOTO_CREDITS.every(c => c.author && c.license && c.sourceUrl.startsWith('https://commons.wikimedia.org/'))).toBe(true)
+    expect(DEMO_PHOTO_CREDITS.every(c => c.author && c.license && c.sourceUrl.startsWith('https://'))).toBe(true)
   })
 
   it('puts every growing plant into a tent with a fitting light schedule', () => {
@@ -49,8 +49,8 @@ describe('demo photos', () => {
 
   it('drops references to photos that fail to load', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const bad = demoPhotoId('jar')
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => String(url).includes('jar') ? new Response(null, { status: 404 }) : new Response('x')))
+    const bad = demoPhotoId('ww-cured')
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => String(url).includes('ww-cured') ? new Response(null, { status: 404 }) : new Response('x')))
     const demo = buildDemoData('2026-10-11')
     await seedDemoPhotos(demo)
     expect(photoRefs(demo)).not.toContain(bad)

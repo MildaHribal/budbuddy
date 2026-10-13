@@ -38,7 +38,7 @@ export function buildDemoData(today = todayISO()): GrowData {
   })
 
   const nl = plant(
-    { name: 'Northern Lights #1', strain: 'Northern Lights', stage: 'flowering', startDate: ago(68), health: 5, photoId: pid('flower-cola'), notes: t('Topped once at node 5, very even canopy.', 'Jeden topping nad 5. nodem, krásně vyrovnaný porost.') },
+    { name: 'Northern Lights #1', strain: 'Northern Lights', stage: 'flowering', startDate: ago(68), health: 5, photoId: pid('nl-flower'), notes: t('Topped once at node 5, very even canopy.', 'Jeden topping nad 5. nodem, krásně vyrovnaný porost.') },
     [['germination', 68], ['seedling', 63], ['vegetative', 45], ['flowering', 19]]
   )
   const sd = plant(
@@ -56,7 +56,7 @@ export function buildDemoData(today = todayISO()): GrowData {
       stage: 'curing',
       startDate: ago(140),
       archived: true,
-      photoId: pid('jar'),
+      photoId: pid('ww-cured'),
       harvest: { date: ago(30), wetWeight: 412, dryWeight: 96, notes: t('Dense buds, slight foxtailing on the top cola.', 'Husté palice, na vrcholové palici lehký foxtailing.') }
     },
     [['germination', 140], ['seedling', 134], ['vegetative', 115], ['flowering', 88], ['drying', 30], ['curing', 19]]
@@ -97,10 +97,10 @@ export function buildDemoData(today = todayISO()): GrowData {
     entry(nl.id, 1, { type: 'feed', amountMl: 1500, nutrients: 'Bio-Bloom 3 ml/L', ph: 6.2, ec: 1.9 }),
     entry(nl.id, 0, { type: 'note', note: t('First amber trichomes? Not yet, all cloudy and clear.', 'První jantarové trichomy? Zatím ne, všechny mléčné a čiré.'), photoIds: [pid('trichomes')] }),
     entry(nl.id, 62, { type: 'photo', note: t('First true leaves.', 'První pravé lístky.'), photoIds: [pid('seedling-sprout')] }),
-    entry(nl.id, 38, { type: 'photo', note: t('Week 5 – filling the tent.', '5. týden – zaplňuje stan.'), photoIds: [pid('veg-tent')] }),
+    entry(nl.id, 38, { type: 'photo', note: t('Week 5 – bushing out nicely.', '5. týden – pěkně se košatí.'), photoIds: [pid('nl-veg')] }),
     entry(nl.id, 24, { type: 'photo', note: t('Canopy flat under the net, ready to flip.', 'Porost srovnaný pod sítí, připraveno na přepnutí.'), photoIds: [pid('canopy-scrog')] }),
     entry(nl.id, 9, { type: 'photo', note: t('Flower week 2 – stacking nicely.', '2. týden květu – pěkně nasazuje.'), photoIds: [pid('flower-plant')] }),
-    entry(nl.id, 2, { type: 'photo', note: t('Top cola frosting up.', 'Vrcholová palice se pokrývá pryskyřicí.'), photoIds: [pid('flower-cola')] }),
+    entry(nl.id, 2, { type: 'photo', note: t('Flower week 3 – pistils everywhere.', '3. týden květu – samé pestíky.'), photoIds: [pid('nl-flower')] }),
 
     entry(sd.id, 20, { type: 'water', amountMl: 300, ph: 5.9 }),
     entry(sd.id, 14, { type: 'feed', amountMl: 600, nutrients: 'CANNA Coco A 2 ml/L, CANNA Coco B 2 ml/L', ph: 5.8, ec: 1.2 }),
@@ -117,7 +117,9 @@ export function buildDemoData(today = todayISO()): GrowData {
 
     entry(wh.id, 30, { type: 'harvest', note: t('Chopped, wet weight 412 g.', 'Sklizeno, mokrá váha 412 g.') }),
     entry(wh.id, 27, { type: 'photo', note: t('Hanging whole branches, 18 °C / 55 %.', 'Visí celé větve, 18 °C / 55 %.'), photoIds: [pid('drying')] }),
-    entry(wh.id, 15, { type: 'photo', note: t('Jarred, burping daily.', 'Ve sklenicích, denně větrám.'), photoIds: [pid('jar')] }),
+    entry(wh.id, 15, { type: 'photo', note: t('Jarred, burping daily.', 'Ve sklenicích, denně větrám.'), photoIds: [pid('ww-cured')] }),
+    entry(wh.id, 59, { type: 'photo', note: t('Day 29 of flower.', '29. den květu.'), photoIds: [pid('ww-bloom')] }),
+    entry(wh.id, 45, { type: 'photo', note: t('Frost everywhere, almost there.', 'Všude pryskyřice, už to bude.'), photoIds: [pid('ww-flower')] }),
     entry(wh.id, 60, { type: 'feed', amountMl: 2000, nutrients: 'Bio-Bloom 3 ml/L', ph: 6.3, ec: 1.8 }),
     entry(wh.id, 40, { type: 'water', amountMl: 2000, note: t('Flush started.', 'Začal proplach.') })
   )
