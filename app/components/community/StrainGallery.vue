@@ -83,7 +83,15 @@ function onFail(id: string) {
       v-if="current"
       class="caption"
     >
+      <NuxtLink
+        v-if="current.source_url.startsWith('/')"
+        :to="current.source_url"
+        class="credit"
+      >
+        {{ t('strains.photoCredit', { credit: `${current.author} · ${current.license}` }) }}
+      </NuxtLink>
       <a
+        v-else
         :href="current.source_url"
         target="_blank"
         rel="noopener noreferrer"

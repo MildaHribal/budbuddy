@@ -106,6 +106,16 @@ watch(slug, () => {
 const shownReports = computed(() => reports.value.filter(r => !isBlocked(r.user_id)))
 const shownPlants = computed(() => plants.value.filter(p => !isBlocked(p.owner_id)))
 const growerCount = computed(() => new Set(shownPlants.value.map(p => p.owner_id)).size)
+const growerPhotos = computed<StrainPhoto[]>(() => shownPlants.value.filter(p => p.cover_url).slice(0, 6).map(p => ({
+  id: `plant-${p.id}`,
+  kind: 'plant',
+  url: p.cover_url!,
+  thumb_url: null,
+  author: `@${p.owner?.username ?? '?'}`,
+  license: t('strains.fromGrower'),
+  source_url: `/plant/${p.id}`
+})))
+const galleryPhotos = computed(() => [...photos.value, ...growerPhotos.value])
 
 const description = computed(() => (strain.value ? strainDescription(strain.value) : null))
 const descInEnglish = computed(() => locale.value === 'cs' && !!description.value && !strain.value?.description_cs?.trim())
@@ -329,7 +339,7 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       class="page"
     >
       <CommunityStrainGallery
-        :photos="photos"
+        :photos="galleryPhotos"
         :name="strain.name"
         :auto="strain.flowering === 'auto'"
       />
