@@ -18,7 +18,9 @@ const rows = computed(() => grow.state.plants
     const fed = !!last && last.date > addDays(today.value, -7)
     return { plant: p, f, current: f.current, fed, last }
   })
-  .filter(r => r !== null))
+  .filter(r => r !== null)
+  // still to feed first; the card hides once everything is fed this week
+  .sort((a, b) => Number(a.fed) - Number(b.fed)))
 
 const summary = (doses: Dose[]) => {
   const head = doses.slice(0, 3).map(d => `${d.name} ${formatNumber(d.perLitre, 2)}`).join(' · ')
@@ -41,7 +43,7 @@ function log(id: string) {
 
 <template>
   <section
-    v-if="rows.length"
+    v-if="rows.some(r => !r.fed)"
     aria-labelledby="feeding-week-title"
   >
     <div class="section-head">

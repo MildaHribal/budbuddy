@@ -279,9 +279,6 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </NuxtLink>
       </header>
 
-      <KitLegalWatch />
-      <EnvironmentHomeAlert />
-
       <section aria-labelledby="tasks-title">
         <div class="section-head">
           <h2
@@ -464,7 +461,9 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
       </section>
 
-      <KitFeedingWeek />
+      <!-- after today: alerts that only show when relevant, then the light, then this week's feeding -->
+      <EnvironmentHomeAlert />
+      <KitLegalWatch />
 
       <SpacesHomeLights v-if="hasLitSpaces" />
       <button
@@ -499,6 +498,8 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           class="size-5 light-go"
         />
       </button>
+
+      <KitFeedingWeek />
 
       <section aria-labelledby="plants-title">
         <div class="section-head">
