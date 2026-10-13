@@ -12,6 +12,7 @@ const sheetOpen = ref(false)
 const sheetPlant = ref('')
 const sheetType = ref<EntryType>('water')
 function quickLog(plant: Plant, type: EntryType) {
+  sheetIds.value = null
   sheetPlant.value = plant.id
   sheetType.value = type
   sheetOpen.value = true
@@ -24,6 +25,40 @@ const view = ref<View>('active')
 const query = ref('')
 const stageFilter = ref<StageId | null>(null)
 const sort = ref<Sort>('recent')
+
+// tents, multi-select and bulk actions
+const { spaces } = useSpaces()
+const { hunts } = useHunts()
+const spaceFilter = ref<string | null>(null)
+const selecting = ref(false)
+const selected = ref<string[]>([])
+const scanOpen = ref(false)
+const moveOpen = ref(false)
+const NuxtLinkComp = resolveComponent('NuxtLink')
+function toggleSelecting() {
+  selecting.value = !selecting.value
+  selected.value = []
+}
+function toggleSelected(id: string) {
+  selected.value = selected.value.includes(id) ? selected.value.filter(x => x !== id) : [...selected.value, id]
+}
+function bulkLog() {
+  const ids = selected.value.filter(id => state.plants.some(p => p.id === id && isGrowing(p)))
+  if (!ids.length) return
+  sheetPlant.value = ids[0]!
+  sheetIds.value = ids
+  sheetType.value = 'water'
+  sheetOpen.value = true
+}
+const sheetIds = ref<string[] | null>(null)
+watch(sheetOpen, (v) => {
+  if (!v && sheetIds.value) {
+    sheetIds.value = null
+    selecting.value = false
+    selected.value = []
+  }
+})
+const selectedGrowing = computed(() => selected.value.filter(id => state.plants.some(p => p.id === id && isGrowing(p))).length)
 
 const counts = computed(() => ({
   active: state.plants.filter(p => !p.archived).length,
@@ -40,6 +75,7 @@ const list = computed(() => {
   const items = state.plants.filter(p =>
     p.archived === (view.value === 'archive')
     && (!stageFilter.value || p.stage === stageFilter.value)
+    && (!spaceFilter.value || (spaceFilter.value === 'none' ? !p.spaceId : p.spaceId === spaceFilter.value))
     && (!q || p.name.toLowerCase().includes(q) || p.strain.toLowerCase().includes(q))
   )
   const sorted = [...items]
@@ -56,6 +92,8 @@ const totalDry = computed(() => {
 
 watch(view, () => {
   stageFilter.value = null
+  selecting.value = false
+  selected.value = []
 })
 
 function waterLabel(plant: Plant) {
@@ -85,6 +123,31 @@ function rowStyle(index: number) {
       :subtitle="t('plants.list.subtitle', { active: counts.active, archived: counts.archive })"
     >
       <template #actions>
+        <button
+          type="button"
+          class="icon-btn"
+          :aria-label="t('organize.scan.open')"
+          @click="scanOpen = true"
+        >
+          <UIcon
+            name="i-tabler-scan"
+            class="size-5"
+          />
+        </button>
+        <button
+          v-if="view === 'active' && counts.active"
+          type="button"
+          class="icon-btn"
+          :class="{ accent: selecting }"
+          :aria-pressed="selecting"
+          :aria-label="selecting ? t('organize.select.done') : t('organize.select.start')"
+          @click="toggleSelecting"
+        >
+          <UIcon
+            :name="selecting ? 'i-tabler-x' : 'i-tabler-checkbox'"
+            class="size-5"
+          />
+        </button>
         <NuxtLink
           to="/gallery"
           class="icon-btn"
@@ -149,6 +212,82 @@ function rowStyle(index: number) {
               {{ t('plants.list.sortOldest') }}
             </option>
           </select>
+        </div>
+
+        <nav
+          class="chips shortcuts"
+          :aria-label="t('organize.shortcuts')"
+        >
+          <NuxtLink
+            to="/spaces"
+            class="chip"
+          >
+            <UIcon
+              name="i-tabler-tent"
+              class="size-4"
+            /> {{ t('organize.spaces.title') }}<span
+              v-if="spaces.length"
+              class="count num"
+            >{{ spaces.length }}</span>
+          </NuxtLink>
+          <NuxtLink
+            to="/hunts"
+            class="chip"
+          >
+            <UIcon
+              name="i-tabler-dna-2"
+              class="size-4"
+            /> {{ t('organize.hunts') }}<span
+              v-if="hunts.length"
+              class="count num"
+            >{{ hunts.length }}</span>
+          </NuxtLink>
+          <NuxtLink
+            to="/labels"
+            class="chip"
+          >
+            <UIcon
+              name="i-tabler-qrcode"
+              class="size-4"
+            /> {{ t('organize.labels') }}
+          </NuxtLink>
+        </nav>
+
+        <div
+          v-if="spaces.length"
+          class="chips"
+          role="group"
+          :aria-label="t('organize.spaceFilter')"
+        >
+          <button
+            type="button"
+            class="chip"
+            :aria-pressed="spaceFilter === null"
+            @click="spaceFilter = null"
+          >
+            {{ t('organize.allSpaces') }}
+          </button>
+          <button
+            v-for="s in spaces"
+            :key="s.id"
+            type="button"
+            class="chip"
+            :aria-pressed="spaceFilter === s.id"
+            @click="spaceFilter = spaceFilter === s.id ? null : s.id"
+          >
+            <UIcon
+              name="i-tabler-tent"
+              class="size-4"
+            /> {{ s.name }}
+          </button>
+          <button
+            type="button"
+            class="chip"
+            :aria-pressed="spaceFilter === 'none'"
+            @click="spaceFilter = spaceFilter === 'none' ? null : 'none'"
+          >
+            {{ t('organize.noSpace') }}
+          </button>
         </div>
 
         <div
@@ -222,9 +361,12 @@ function rowStyle(index: number) {
             :key="p.id"
             :style="rowStyle(i)"
           >
-            <NuxtLink
-              :to="`/plants/${p.id}`"
+            <component
+              :is="selecting ? 'button' : NuxtLinkComp"
+              v-bind="selecting ? { 'type': 'button', 'role': 'checkbox', 'aria-checked': selected.includes(p.id) } : { to: `/plants/${p.id}` }"
               class="card plant"
+              :class="{ picked: selecting && selected.includes(p.id) }"
+              @click="selecting && toggleSelected(p.id)"
             >
               <span class="plant-photo">
                 <PlantPhoto
@@ -281,8 +423,15 @@ function rowStyle(index: number) {
                       />
                     </span>
                   </span>
+                  <span
+                    v-if="selecting"
+                    class="plant-check"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.3 2.3 4.7-5" /></svg>
+                  </span>
                   <button
-                    v-if="view === 'active' && isGrowing(p)"
+                    v-else-if="view === 'active' && isGrowing(p)"
                     type="button"
                     class="plant-log"
                     :aria-label="t('home.tasks.logWater', { name: p.name })"
@@ -292,14 +441,65 @@ function rowStyle(index: number) {
                   </button>
                 </span>
               </span>
-            </NuxtLink>
+            </component>
           </li>
         </TransitionGroup>
       </section>
     </div>
 
+    <div
+      v-if="selecting"
+      class="select-bar"
+      role="toolbar"
+      :aria-label="t('organize.select.toolbar')"
+    >
+      <span class="select-count num">{{ t('organize.select.count', { n: selected.length }) }}</span>
+      <button
+        type="button"
+        class="icon-btn"
+        :aria-label="t('organize.select.move')"
+        :disabled="!selected.length"
+        @click="moveOpen = true"
+      >
+        <UIcon
+          name="i-tabler-tent"
+          class="size-5"
+        />
+      </button>
+      <NuxtLink
+        :to="selected.length ? { path: '/labels', query: { ids: selected.join(',') } } : '/labels'"
+        class="icon-btn"
+        :class="{ off: !selected.length }"
+        :aria-label="t('organize.select.labels')"
+      >
+        <UIcon
+          name="i-tabler-qrcode"
+          class="size-5"
+        />
+      </NuxtLink>
+      <NuxtLink
+        :to="selected.length > 1 ? { path: '/hunts', query: { new: selected.join(',') } } : '/hunts'"
+        class="icon-btn"
+        :class="{ off: selected.length < 2 }"
+        :aria-label="t('organize.select.hunt')"
+      >
+        <UIcon
+          name="i-tabler-dna-2"
+          class="size-5"
+        />
+      </NuxtLink>
+      <button
+        type="button"
+        class="btn btn-primary select-log"
+        :disabled="!selectedGrowing"
+        @click="bulkLog"
+      >
+        <GrowIcon name="water" /> {{ t('organize.select.log') }}
+      </button>
+    </div>
+
     <NuxtLink
-      v-if="view === 'active'"
+      v-if="view === 'active' && !selecting"
       to="/plants/new"
       class="fab"
       :aria-label="t('plants.list.addPlant')"
@@ -311,9 +511,16 @@ function rowStyle(index: number) {
       v-if="sheetPlant"
       v-model:open="sheetOpen"
       :plant-id="sheetPlant"
+      :plant-ids="sheetIds"
       :type="sheetType"
       :date="today"
     />
+    <SpacesMoveSheet
+      v-model:open="moveOpen"
+      :plant-ids="selected"
+      @moved="selecting = false; selected = []"
+    />
+    <ScanSheet v-model:open="scanOpen" />
   </div>
 </template>
 
@@ -365,6 +572,93 @@ function rowStyle(index: number) {
 
 .chip-glyph {
   font-size: 16px;
+}
+
+.shortcuts .chip {
+  text-decoration: none;
+}
+
+.shortcuts .count {
+  margin-left: 2px;
+}
+
+button.plant {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+}
+
+.plant.picked {
+  border-color: var(--accent-line);
+  background: color-mix(in srgb, var(--green) 6%, var(--surface));
+}
+
+.plant-check {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin: 0 8px 6px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line-strong);
+  border-radius: 6px;
+  transition: background var(--dur) ease, border-color var(--dur) ease;
+}
+
+.plant-check svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--on-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.picked .plant-check {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.picked .plant-check svg {
+  opacity: 1;
+}
+
+.select-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  box-shadow: var(--shadow-float);
+}
+
+.select-count {
+  flex: 1;
+  min-width: 0;
+  padding-left: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.select-bar .icon-btn:disabled,
+.select-bar .icon-btn.off {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.select-log {
+  min-height: 44px;
+  padding: 0 14px;
 }
 
 .section-meta strong {

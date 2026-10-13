@@ -53,6 +53,10 @@ export interface Plant {
   updatedAt: string
   /** set while the plant is shared to the community */
   sharing?: PlantSharing | null
+  /** grow space (tent) the plant stands in */
+  spaceId?: string | null
+  /** watering reminders follow the interval learned from the journal */
+  wateringAuto?: boolean
 }
 
 export interface PlantSharing {
@@ -146,6 +150,50 @@ export interface GuideProgress {
   medium: Exclude<Medium, 'other'> | null
 }
 
+export interface GrowSpace {
+  id: string
+  name: string
+  location: Location
+  /** free text, e.g. "80 × 80 × 160 cm" */
+  size: string
+  /** free text, e.g. "LED 240 W" */
+  light: string
+  /** HH:MM */
+  lightsOn: string
+  /** hours of light per day; null = natural light only */
+  lightHours: number | null
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type PhenoCriterion = 'vigour' | 'structure' | 'smell' | 'resin' | 'yield' | 'resistance'
+
+export interface PhenoCandidate {
+  plantId: string
+  /** short pheno label, e.g. "#3" */
+  tag: string
+  /** 1–5 per criterion; missing = not scored yet */
+  scores: Partial<Record<PhenoCriterion, number>>
+  notes: string
+}
+
+export interface PhenoHunt {
+  id: string
+  name: string
+  strain: string
+  /** seed pack / breeder / lot */
+  source: string
+  candidates: PhenoCandidate[]
+  /** 1–3 importance per criterion, default 1 */
+  weights: Partial<Record<PhenoCriterion, number>>
+  keeper: { plantId: string, role: 'mother' | 'clone' } | null
+  done: boolean
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface GrowData {
   version: 2
   plants: Plant[]
@@ -153,4 +201,7 @@ export interface GrowData {
   tasks: Task[]
   settings: Settings
   guide: GuideProgress
+  /** grow spaces / tents (optional: older saves have none) */
+  spaces?: GrowSpace[]
+  hunts?: PhenoHunt[]
 }

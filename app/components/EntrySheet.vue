@@ -12,6 +12,8 @@ const props = defineProps<{
   entry?: JournalEntry | null
   /** values for a new entry, e.g. a mix from the nutrient calculator */
   prefill?: Partial<Pick<JournalEntry, 'amountMl' | 'nutrients' | 'ph' | 'ec' | 'note' | 'method'>> | null
+  /** bulk logging: one entry for each of these plants (plantId is the first one) */
+  plantIds?: string[] | null
 }>()
 const emit = defineEmits<{ saved: [entry: JournalEntry] }>()
 
@@ -46,6 +48,8 @@ const info = computed(() => entryInfo(kind.value))
 const isEdit = computed(() => !!props.entry)
 const loggable = computed(() => entryTypes().filter(x => x.loggable))
 const plant = computed(() => grow.getPlant(props.plantId))
+const bulkIds = computed(() => (!props.entry && props.plantIds && props.plantIds.length > 1 ? props.plantIds : null))
+const bulkPicked = ref<string[]>([])
 
 function emptyForm(): Form {
   return { date: todayISO(), note: '', amountMl: null, ph: null, ec: null, nutrients: '', method: null, product: '', heightCm: null, tempC: null, humidity: null, photoIds: [] }
@@ -72,6 +76,7 @@ watch(open, (v) => {
   submitted.value = false
   done.value = false
   picked.value = props.type
+  bulkPicked.value = [...(bulkIds.value ?? [])]
   Object.assign(form, emptyForm())
   if (props.entry) {
     const e = props.entry
@@ -112,6 +117,7 @@ const errors = computed(() => {
   if (amount !== null && amount < 0) e.amountMl = t('entry.errors.amount')
   if (kind.value === 'note' && !form.note.trim()) e.note = t('entry.errors.note')
   if (kind.value === 'photo' && !form.photoIds.length) e.photos = t('entry.errors.photos')
+  if (bulkIds.value && !bulkPicked.value.length) e.plants = t('organize.bulk.nonePicked')
   if (kind.value === 'measure' && [form.heightCm, form.tempC, form.humidity, form.ph, form.ec].every(v => toNum(v) === null)) {
     e.measure = t('entry.errors.measure')
   }
@@ -186,10 +192,15 @@ function save() {
   if (props.entry) {
     grow.updateEntry(props.entry.id, data)
     saved = { ...props.entry, ...data }
+  } else if (bulkIds.value) {
+    const ids = bulkPicked.value
+    saved = ids.map(plantId => grow.addEntry({ ...data, photoIds: [...data.photoIds], plantId, type: kind.value }))[0]!
   } else {
     saved = grow.addEntry({ ...data, plantId: props.plantId, type: kind.value })
   }
-  notify(isEdit.value ? t('entry.updated') : t(`entry.types.${kind.value}.logged`), { icon: info.value.icon })
+  notify(bulkIds.value
+    ? t('organize.bulk.logged', { n: bulkPicked.value.length, what: info.value.label })
+    : isEdit.value ? t('entry.updated') : t(`entry.types.${kind.value}.logged`), { icon: info.value.icon })
   emit('saved', saved)
   // show the "logged" state briefly before the sheet drops away
   done.value = true
@@ -240,6 +251,13 @@ function save() {
           {{ x.label }}
         </button>
       </div>
+
+      <SpacesBulkPlants
+        v-if="bulkIds"
+        v-model="bulkPicked"
+        :plant-ids="bulkIds"
+        :error="submitted ? errors.plants : undefined"
+      />
 
       <template v-if="has('water', 'feed')">
         <div class="field">

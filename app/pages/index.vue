@@ -80,6 +80,10 @@ const light = computed(() => {
   }
 })
 
+// tents carry their own schedule; the global one stays for plants without a lit tent
+const hasLitSpaces = computed(() => (state.spaces ?? []).some(s => s.lightHours !== null))
+const showGlobalLight = computed(() => needsGlobalLight(state.plants, state.spaces ?? []))
+
 function openLight() {
   draftOn.value = state.settings.lightsOn
   draftHours.value = state.settings.lightHours
@@ -136,12 +140,14 @@ const daysLabel = (n: number) => t('common.days', { n })
 interface WaterDue {
   plant: Plant
   overdueBy: number
+  /** learned interval when the plant is on smart watering */
+  smart: number | null
 }
 
 const waterDue = computed<WaterDue[]>(() => activePlants.value
   .flatMap((p) => {
     const w = grow.wateringStatus(p, today.value)
-    return w && w.dueIn <= 0 ? [{ plant: p, overdueBy: -w.dueIn }] : []
+    return w && w.dueIn <= 0 ? [{ plant: p, overdueBy: -w.dueIn, smart: w.smart ? w.interval : null }] : []
   })
   .sort((a, b) => b.overdueBy - a.overdueBy))
 
@@ -383,7 +389,7 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
                   <span
                     class="row-meta"
                     :class="{ late: r.water.overdueBy }"
-                  >{{ r.water.overdueBy ? t('home.tasks.overdueBy', { days: daysLabel(r.water.overdueBy) }) : t('home.tasks.dueToday') }}</span>
+                  >{{ r.water.overdueBy ? t('home.tasks.overdueBy', { days: daysLabel(r.water.overdueBy) }) : t('home.tasks.dueToday') }}<template v-if="r.water.smart"> · {{ t('organize.water.smartMeta', { n: r.water.smart }) }}</template></span>
                 </NuxtLink>
                 <button
                   type="button"
@@ -454,7 +460,9 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
         </div>
       </section>
 
+      <SpacesHomeLights v-if="hasLitSpaces" />
       <button
+        v-if="showGlobalLight"
         type="button"
         class="card light"
         aria-haspopup="dialog"

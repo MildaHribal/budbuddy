@@ -9,6 +9,8 @@ const ROUTES: [RegExp, LazyNamespace[]][] = [
   [/^\/settings(\/|$)/, ['settings', 'ai', ...COMMUNITY]],
   [/^\/tools(\/|$)/, ['tools']],
   [/^\/stats(\/|$)/, ['stats']],
+  [/^\/hunts(\/|$)/, ['hunts']],
+  [/^\/labels(\/|$)/, ['labels']],
   [/^\/ai-assistant(\/|$)/, ['ai']]
 ]
 

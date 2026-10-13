@@ -21,6 +21,8 @@ import type {
 import { isValidISODate, toISODate, todayISO } from './date'
 import { blankEntry } from './entries'
 import { createId } from './id'
+import { normalizeHunt } from './pheno'
+import { normalizeSpace } from './spaces'
 import { isStageId } from './stages'
 
 const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback)
@@ -56,7 +58,9 @@ export function emptyData(): GrowData {
     entries: [],
     tasks: [],
     settings: { growerName: '', initialized: false, lightsOn: '06:00', lightHours: 18, language: detectLocale(), reminders: false, reminderTime: '18:00', onboarded: false, demo: false },
-    guide: emptyGuide()
+    guide: emptyGuide(),
+    spaces: [],
+    hunts: []
   }
 }
 
@@ -132,8 +136,17 @@ export function normalizePlant(raw: Record<string, unknown>): Plant {
     archived: raw.archived === true,
     createdAt: str(raw.createdAt, now),
     updatedAt: str(raw.updatedAt, now),
-    ...withSharing(raw.sharing)
+    ...withSharing(raw.sharing),
+    ...withGrouping(raw)
   }
+}
+
+// optional keys stay absent on plants that never used them
+function withGrouping(raw: Record<string, unknown>): Pick<Plant, 'spaceId' | 'wateringAuto'> {
+  const out: Pick<Plant, 'spaceId' | 'wateringAuto'> = {}
+  if (typeof raw.spaceId === 'string' && raw.spaceId) out.spaceId = raw.spaceId
+  if (raw.wateringAuto === true) out.wateringAuto = true
+  return out
 }
 
 // only shared plants carry the key
@@ -207,6 +220,10 @@ export function normalizeData(raw: unknown): GrowData {
     demo: s.demo === true
   }
   data.guide = normalizeGuide(r.guide)
+  data.spaces = objects(r.spaces).map(sp => normalizeSpace(sp, data.settings))
+  const spaceIds = new Set(data.spaces.map(sp => sp.id))
+  for (const p of data.plants) if (p.spaceId && !spaceIds.has(p.spaceId)) delete p.spaceId
+  data.hunts = objects(r.hunts).map(h => normalizeHunt(h, ids))
   return data
 }
 
