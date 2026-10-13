@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Capacitor } from '@capacitor/core'
 import { COMMUNITY_NAMESPACES, loadNamespaces } from '~/composables/useI18n'
 import { authUiWanted } from '~/utils/authUi'
 
@@ -46,24 +47,23 @@ watch(ready, (v) => {
   else setTimeout(show, 2500)
 }, { immediate: true })
 
+// meta, og tags and icons are static in nuxt.config.ts
 useHead({
-  titleTemplate: chunk => (chunk ? `${chunk} · BudBuddy` : 'BudBuddy – grow journal'),
-  meta: [
-    { name: 'description', content: 'BudBuddy is an offline grow journal: track plants, watering, feeding, training, photos and harvests, with VPD, DLI and nutrient calculators.' },
-    { name: 'theme-color', content: '#0e100f' },
-    { property: 'og:title', content: 'BudBuddy – grow journal' },
-    { property: 'og:description', content: 'Track every plant from seed to jar.' },
-    { property: 'og:type', content: 'website' }
-  ],
-  link: [
-    { rel: 'icon', type: 'image/webp', href: '/icon.webp' },
-    { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }
-  ]
+  titleTemplate: chunk => (chunk ? `${chunk} · BudBuddy` : 'BudBuddy – free grow journal for home growers')
 })
+
+// Wide desktop web: a short product presentation beside the phone frame.
+const native = Capacitor.isNativePlatform()
+const wide = useMediaQuery('(pointer: fine) and (min-width: 1100px) and (min-height: 640px)')
+const showcase = computed(() => !native && wide.value)
 </script>
 
 <template>
-  <div class="device-stage">
+  <div
+    class="device-stage"
+    :class="{ 'has-showcase': showcase }"
+  >
+    <LazyDesktopShowcase v-if="showcase && ready" />
     <div class="device">
       <OnboardingGuide v-if="ready && !state.settings.onboarded" />
       <div id="overlays" />
@@ -184,6 +184,14 @@ useHead({
     box-shadow: 0 0 0 1px #2a2e33, 0 30px 60px -20px rgba(0, 0, 0, 0.8);
     --safe-top: 18px;
     --safe-bottom: 10px;
+    flex-shrink: 0;
+  }
+
+  .device-stage.has-showcase {
+    gap: clamp(48px, 7vw, 112px);
+    padding: 20px 32px;
+    align-items: safe center;
+    overflow-y: auto;
   }
 }
 </style>

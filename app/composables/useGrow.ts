@@ -1,8 +1,10 @@
+import { Capacitor } from '@capacitor/core'
 import { Preferences } from '@capacitor/preferences'
 import { reactive, readonly, ref, watch } from 'vue'
 import type { GrowData, Harvest, JournalEntry, Plant, StageId, Task } from '~/types/grow'
 import { addDays, daysBetween, todayISO } from '~/utils/date'
 import { buildDemoData } from '~/utils/demo'
+import { skipsOnboarding } from '~/utils/firstVisit'
 import { blankEntry } from '~/utils/entries'
 import { createId } from '~/utils/id'
 import { blobToDataUrl, compressImage, dataUrlToBlob } from '~/utils/image'
@@ -176,6 +178,7 @@ export function initGrow() {
   if (!initPromise) {
     initPromise = load()
       .then(() => {
+        if (skipsOnboarding(state.settings, Capacitor.isNativePlatform())) state.settings.onboarded = true
         watch(state, scheduleSave, { deep: true })
         collectGarbagePhotos().catch(() => {})
       })
@@ -466,6 +469,13 @@ async function eraseAll() {
   await writeNow()
 }
 
+/** Leaves the demo garden for an empty one, like "Start empty" in the onboarding. */
+async function startOwnGarden() {
+  const { growerName, language, lightsOn } = state.settings
+  await eraseAll()
+  Object.assign(state.settings, { growerName, language, lightsOn, onboarded: true })
+}
+
 async function loadDemo() {
   await photoStore.clear()
   const demo = buildDemoData()
@@ -508,6 +518,7 @@ export function useGrow() {
     importBackup,
     eraseAll,
     loadDemo,
+    startOwnGarden,
     updateSettings: (patch: Partial<GrowData['settings']>) => Object.assign(state.settings, patch),
     updateGuide: (patch: Partial<GrowData['guide']>) => Object.assign(state.guide, patch),
     /** write access for feature modules that keep their own slice of GrowData (curing, treatments) */
