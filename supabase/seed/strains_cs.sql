@@ -3,7 +3,7 @@ update public.strains as s set description_cs = v.cs
 from (values
   ('acapulco-gold', 'Mexická krajová sativa pojmenovaná podle zlatavého nádechu, který můžou palice dostat. Vysoká a vzdušná s dlouhým kvetením; daří se jí v teplém slunném podnebí a pod silným světlem uvnitř.'),
   ('afghani-kush', 'Afghánská indika z pohoří Hindúkuš, kde se po generace pěstovala na hašiš. Nízká a zavalitá se širokými tmavými listy a silnou vrstvou pryskyřice. Dozrává rychle a dobře snáší chladnější noci.'),
-  ('ak-47', 'Hybrid z několika krajových linií – kolumbijské, mexické, thajské a afghánské. Dorůstá střední výšky s množstvím bočních větví a tvoří kompaktní, lepkavé palice. V pozdním kvetení silně voní.'),
+  ('ak-47', 'Hybrid F1 od Serious Seeds z roku 1992, vzešlý z kolumbijských, mexických, thajských a afghánských linií, zhruba 65:35 ve prospěch sativy. Středně vysoký, tvarem připomíná vánoční stromek a má vysoký podíl kalichů vůči listům, takže tvoří kompaktní pryskyřičné palice, které se rychle střihají. Hodí se i pro začátečníky; v pozdním kvetení kořenitě nasládle voní.'),
   ('amnesia-haze', 'Oblíbenkyně holandských coffeeshopů s převahou Haze a citrusově zemitou vůní. Hodně vysoká a pomalu dozrává; hodí se pro pěstitele, kteří mají dost místa nad rostlinou a trpělivost.'),
   ('amnesia-haze-auto', 'Samonakvétací verze klasické Haze. Vyšší a pomalejší než většina autovek, od semínka často 11–12 týdnů. Zasaď ji rovnou do finálního květináče, ať se vyhneš stresu z přesazování.'),
   ('blue-dream', 'Kalifornské křížení Blueberry × Haze. Vysoká a bujná s dlouhými větvemi, které dobře reagují na zaštipování a SCROG. Sladká borůvková vůně; chce hodně světla a prostoru.'),

@@ -17,7 +17,7 @@ values
    'One of the first stabilised hybrids (Afghani × Acapulco Gold × Colombian Gold), parent of countless modern strains. Uniform, vigorous and fast, with a strong earthy aroma that calls for good carbon filtering.',
    null, null, null, true),
   ('ak-47', 'AK-47', 'Serious Seeds', 'hybrid', 'photo', 8, 9,
-   'A multi-landrace hybrid mixing Colombian, Mexican, Thai and Afghani lines. Grows to medium height with plenty of side branching and produces compact, sticky colas. Strong odour in late bloom.',
+   'Serious Seeds’ 1992 F1 hybrid of Colombian, Mexican, Thai and Afghani stock, roughly 65:35 sativa/indica. Medium height with a Christmas-tree shape and a high calyx-to-leaf ratio, giving compact, resinous buds that are quick to trim. Easy for beginners; spicy-sweet odour in late bloom.',
    null, null, null, true),
   ('blue-dream', 'Blue Dream', 'Various', 'sativa', 'photo', 9, 10,
    'A Californian Blueberry × Haze cross. Tall and vigorous with long branches that respond well to topping and SCROG. Sweet berry aroma; likes plenty of light and space.',

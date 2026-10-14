@@ -14,6 +14,8 @@ export interface Strain {
   description_cs?: string | null
   image_url: string | null
   image_credit: string | null
+  original_breeder?: boolean
+  breeder_url?: string | null
   created_by: string | null
   approved: boolean
 }
@@ -26,9 +28,11 @@ export interface StrainPhoto {
   author: string
   license: string
   source_url: string
+  /** 'contain' = breeder permission forbids cropping the plant or bud */
+  fit?: 'cover' | 'contain'
 }
 
-export const STRAIN_PHOTO_COLUMNS = 'id, kind, url, thumb_url, author, license, source_url'
+export const STRAIN_PHOTO_COLUMNS = 'id, kind, url, thumb_url, author, license, source_url, fit'
 
 /** Older rows keep a single photo in strains.image_url with a "Author · Licence (Source)" credit. */
 export function legacyPhoto(s: Pick<Strain, 'id' | 'image_url' | 'image_credit'>): StrainPhoto[] {
@@ -46,7 +50,7 @@ export interface StrainStats {
   avg_rating: number | null
 }
 
-const BASE_COLUMNS = 'id, slug, name, breeder, dominance, flowering, flowering_weeks_min, flowering_weeks_max, description, image_url, image_credit, created_by, approved'
+const BASE_COLUMNS = 'id, slug, name, breeder, dominance, flowering, flowering_weeks_min, flowering_weeks_max, description, image_url, image_credit, original_breeder, breeder_url, created_by, approved'
 export const STRAIN_COLUMNS = BASE_COLUMNS
 
 let hasCs = true

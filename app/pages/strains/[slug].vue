@@ -364,7 +364,20 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
         <dl class="card facts">
           <div>
             <dt>{{ t('strains.breeder') }}</dt>
-            <dd>{{ breederLabel || '–' }}</dd>
+            <dd>
+              {{ breederLabel || '–' }}
+              <template v-if="strain?.original_breeder">
+                ·
+                <a
+                  v-if="strain.breeder_url"
+                  :href="strain.breeder_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="breeder-link"
+                >{{ t('strains.originalBreeder') }}</a>
+                <span v-else>{{ t('strains.originalBreeder') }}</span>
+              </template>
+            </dd>
           </div>
           <div>
             <dt>{{ t('strains.type') }}</dt>
@@ -967,6 +980,13 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
   font-weight: 600;
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+.breeder-link {
+  padding: 12px 0;
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .facts .lamp {

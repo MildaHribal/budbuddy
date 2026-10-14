@@ -60,6 +60,7 @@ function onFail(id: string) {
         <img
           :src="p.url"
           :alt="`${name} – ${t(`strains.photoKind.${p.kind}`)}`"
+          :class="{ contain: p.fit === 'contain' }"
           :loading="i === 0 ? 'eager' : 'lazy'"
           decoding="async"
           referrerpolicy="no-referrer"
@@ -157,6 +158,10 @@ function onFail(id: string) {
   object-fit: cover;
   opacity: 0;
   transition: opacity var(--dur) ease;
+}
+
+.slide img.contain {
+  object-fit: contain;
 }
 
 .slide.loaded img {
