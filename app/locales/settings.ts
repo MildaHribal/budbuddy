@@ -53,7 +53,10 @@ export default {
     about: {
       tagline: 'Grow journal · made with Nuxt & Capacitor',
       legal: 'Only grow where it is legal for you to do so.',
-      credits: 'Demo garden photos (Wikimedia Commons)'
+      credits: 'Demo garden photos (Wikimedia Commons)',
+      privacy: 'Privacy policy',
+      terms: 'Terms',
+      contact: 'Delete account / contact'
     },
     toast: {
       downloaded: 'Backup downloaded',
@@ -65,7 +68,8 @@ export default {
       notBackup: 'That file is not a BudBuddy backup',
       skipped: { one: '{n} damaged photo was skipped', other: '{n} damaged photos were skipped' },
       demoLoaded: 'Demo garden loaded',
-      erased: 'All data erased'
+      erased: 'All data erased',
+      eraseBlocked: 'Your data could not be read, so nothing was erased. Restore a backup first.'
     },
     shareTitle: 'BudBuddy backup',
     confirm: {
@@ -134,7 +138,10 @@ export default {
     about: {
       tagline: 'Pěstitelský deník · vytvořeno v Nuxtu a Capacitoru',
       legal: 'Pěstuj jen tam, kde je to pro tebe legální.',
-      credits: 'Fotky ukázkové zahrady (Wikimedia Commons)'
+      credits: 'Fotky ukázkové zahrady (Wikimedia Commons)',
+      privacy: 'Ochrana osobních údajů',
+      terms: 'Podmínky',
+      contact: 'Smazání účtu / kontakt'
     },
     toast: {
       downloaded: 'Záloha stažena',
@@ -146,7 +153,8 @@ export default {
       notBackup: 'Tohle není záloha BudBuddy',
       skipped: { one: '{n} poškozenou fotku jsme přeskočili', few: '{n} poškozené fotky jsme přeskočili', other: '{n} poškozených fotek jsme přeskočili' },
       demoLoaded: 'Ukázková zahrada načtena',
-      erased: 'Všechna data smazána'
+      erased: 'Všechna data smazána',
+      eraseBlocked: 'Data se nepodařilo načíst, proto se nic nesmazalo. Nejdřív obnov zálohu.'
     },
     shareTitle: 'Záloha BudBuddy',
     confirm: {

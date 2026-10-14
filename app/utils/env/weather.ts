@@ -10,8 +10,8 @@ export const FORECAST_TTL = 60 * 60 * 1000
 /** a forecast older than this is shown as outdated */
 export const FORECAST_STALE = 12 * 60 * 60 * 1000
 
-/** ~1 km: enough for a forecast, never a precise position */
-export const roundCoord = (n: number) => Math.round(n * 100) / 100
+/** ~10 km: enough for a forecast, never a precise position */
+export const roundCoord = (n: number) => Math.round(n * 10) / 10
 
 export function validCoords(lat: number, lon: number): boolean {
   return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180

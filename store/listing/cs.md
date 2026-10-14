@@ -36,7 +36,7 @@ ANDROID
 • Záloha do souboru JSON a obnovení v jiném zařízení
 
 VOLITELNĚ, ONLINE
-• AI asistent: zeptej se na rostlinu, klidně i s fotkou. Otázka, fotka a souhrn deníku dané rostliny se pošlou přes náš server do Google Gemini, který vytvoří odpověď. Na naší straně se nic neukládá.
+• AI asistent: zeptej se na rostlinu, klidně i s fotkou. Vyžaduje přihlášení přes Google a má denní limit. Otázka, fotka a souhrn deníku dané rostliny se pošlou přes náš server do AI modelu (Google Gemini), který vytvoří odpověď. Otázky ani fotky na naší straně neukládáme a každou odpověď můžeš nahlásit.
 • Komunita: dotazy, tipy, veřejné rostliny, reporty odrůd a měsíční foto výzvy. Vyžaduje přihlášení přes Google. Obsah můžeš nahlásit, uživatele zablokovat a účet smažeš v Nastavení. Komunitní obsah je v angličtině.
 
 Bez reklam. Bez analytických a sledovacích nástrojů.

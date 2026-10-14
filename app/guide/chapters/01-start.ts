@@ -286,7 +286,7 @@ export default {
               }
             },
             {
-              title: { en: 'Buy from a reputable seed bank', cs: 'Kupuj od ověřené seedbanky' },
+              title: { en: 'Get seeds from a reputable breeder where this is legal', cs: 'Semínka od ověřeného šlechtitele, kde je to legální' },
               md: {
                 en: 'Known breeders have stable genetics and better germination. Store seeds dark, cool and dry until you plant them.',
                 cs: 'Zavedení šlechtitelé mají stabilní genetiku a lepší klíčivost. Do zasazení skladuj semínka v temnu, chladu a suchu.'

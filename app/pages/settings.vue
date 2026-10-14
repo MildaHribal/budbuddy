@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Browser } from '@capacitor/browser'
 import { Capacitor } from '@capacitor/core'
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
@@ -16,6 +17,19 @@ const { notify } = useNotify()
 const { confirm } = useConfirm()
 const config = useRuntimeConfig()
 const route = useRoute()
+
+// web serves the legal pages from the bundle; the APK opens the hosted copy
+const LEGAL_PAGES = [
+  { page: 'privacy', label: 'settings.about.privacy' },
+  { page: 'terms', label: 'settings.about.terms' },
+  { page: 'delete-account', label: 'settings.about.contact' }
+] as const
+function openLegal(e: MouseEvent, page: string) {
+  const base = String(config.public.siteUrl ?? '')
+  if (!Capacitor.isNativePlatform() || !base) return
+  e.preventDefault()
+  Browser.open({ url: `${base}/${page}.html` }).catch(() => {})
+}
 
 const name = ref(state.settings.growerName)
 watch(name, v => grow.updateSettings({ growerName: v.trim().slice(0, 30) }))
@@ -206,6 +220,10 @@ async function erase() {
     danger: true
   })
   if (!ok) return
+  if (grow.loadError.value) {
+    notify(t('settings.toast.eraseBlocked'), { tone: 'error' })
+    return
+  }
   await grow.eraseAll()
   await useAssistant().clearAll()
   // device-only extras of the environment area (token, cached forecasts)
@@ -744,6 +762,16 @@ async function erase() {
         <strong>BudBuddy <span class="num">{{ config.public.version }}</span></strong>
         <span>{{ t('settings.about.tagline') }}</span>
         <span class="legal">{{ t('settings.about.legal') }}</span>
+        <nav class="legal-links">
+          <a
+            v-for="l in LEGAL_PAGES"
+            :key="l.page"
+            :href="`/${l.page}.html`"
+            target="_blank"
+            rel="noopener"
+            @click="openLegal($event, l.page)"
+          >{{ t(l.label) }}</a>
+        </nav>
         <details class="credits">
           <summary>{{ t('settings.about.credits') }}</summary>
           <ul>
@@ -1019,6 +1047,22 @@ async function erase() {
   margin-top: 6px;
   font-size: 12px;
   color: var(--text-3);
+}
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 16px;
+  margin-top: 4px;
+}
+
+.legal-links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-2);
+  text-underline-offset: 3px;
 }
 
 /* the optional community sign-in is a plain button, not the page's primary action */

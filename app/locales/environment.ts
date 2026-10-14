@@ -55,7 +55,7 @@ export default {
       yesterday: 'Yesterday',
       rainChance: '{p} %',
       source: 'Forecast: Open-Meteo.com (CC BY 4.0)',
-      privacy: 'Only the place rounded to about 1 km is sent to Open-Meteo. No account, no tracking, no GPS.',
+      privacy: 'Only the place rounded to about 10 km is sent to Open-Meteo. No account, no tracking, no GPS.',
       kinds: { clear: 'Clear', partly: 'Partly cloudy', cloudy: 'Cloudy', fog: 'Fog', drizzle: 'Drizzle', rain: 'Rain', snow: 'Snow', storm: 'Thunderstorm' }
     },
     place: {
@@ -324,7 +324,7 @@ export default {
       yesterday: 'Včera',
       rainChance: '{p} %',
       source: 'Předpověď: Open-Meteo.com (CC BY 4.0)',
-      privacy: 'Do Open-Meteo se posílá jen místo zaokrouhlené zhruba na 1 km. Bez účtu, bez sledování, bez GPS.',
+      privacy: 'Do Open-Meteo se posílá jen místo zaokrouhlené zhruba na 10 km. Bez účtu, bez sledování, bez GPS.',
       kinds: { clear: 'Jasno', partly: 'Polojasno', cloudy: 'Zataženo', fog: 'Mlha', drizzle: 'Mrholení', rain: 'Déšť', snow: 'Sníh', storm: 'Bouřka' }
     },
     place: {

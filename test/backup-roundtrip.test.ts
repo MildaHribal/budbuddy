@@ -99,7 +99,7 @@ function fullData(): GrowData {
   data.legal = { country: 'de', adults: 2, stored: { p3: 40 } }
   const now = Date.now()
   data.environment = {
-    places: [{ id: 'pl1', name: 'Home', detail: 'CZ', lat: 50.08, lon: 14.42 }],
+    places: [{ id: 'pl1', name: 'Home', detail: 'CZ', lat: 50.1, lon: 14.4 }],
     plantPlaces: { p1: 'pl1' },
     sensors: [
       { id: 'se1', name: 'Tent', kind: 'ble', model: 'pvvx', address: 'AA:BB', haTemp: '', haHumidity: '', target: { type: 'tent' }, createdAt: at, lastSeen: at, battery: 80 },

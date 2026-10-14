@@ -16,7 +16,7 @@
 | Sdílí polohu uživatele | Ne | |
 | Digitální nákupy | Ne | |
 | Webový prohlížeč nebo vyhledávač | Ne | |
-| Generativní AI obsah | Ano (chat asistent, text) | nahlášení AI odpovědi v aplikaci zatím chybí, viz checklist |
+| Generativní AI obsah | Ano (chat asistent, text) | AI vyžaduje přihlášení, odpověď jde nahlásit přímo v aplikaci |
 
 Kvůli drogám počítej s ratingem typu PEGI 18 / ESRB Mature 17+ / USK 18. To je v pořádku, sedí to s 18+.
 
@@ -24,11 +24,11 @@ Kvůli drogám počítej s ratingem typu PEGI 18 / ESRB Mature 17+ / USK 18. To 
 - **Cílové věkové skupiny:** jen **18 a více**.
 - **Může aplikace zaujmout děti?** Ne (tmavý technický design, bez postaviček a her).
 - **Reklamy:** Ne.
-- **App access:** „Většina funkcí bez omezení. Komunita vyžaduje přihlášení libovolným Google účtem, testovací údaje nejsou potřeba.“
+- **App access:** „The grow journal, guide, tools and reminders work without an account. The community and the AI assistant require Sign in with Google: tap Community (or AI) → Sign in with Google, use any Google account, then choose a username and confirm you are 18+ and accept the terms. No test credentials are needed.“
 - **Government app, Financial features, Health, News, COVID-19:** ne.
 - **Data safety:** viz `DATA_SAFETY.md`.
 - **Smazání účtu (URL):** https://budbuddy.hribal.site/delete-account.html
 - **Privacy policy:** https://budbuddy.hribal.site/privacy.html
 
 ## Věková brána v aplikaci
-Při prvním přihlášení do komunity uživatel potvrzuje „18+“ a podmínky. Deník, AI a čtení komunity fungují bez brány. Play u aplikací pro 18+ bránu nevyžaduje. Pokud by recenze kvůli marihuaně namítla nedostatečné omezení věku, přidej potvrzení 18+ do onboardingu.
+Při prvním přihlášení (komunita nebo AI) uživatel volí přezdívku a potvrzuje „18+“ a podmínky. Deník a průvodce fungují bez brány, AI asistent jen po přihlášení. Play u aplikací pro 18+ bránu nevyžaduje. Pokud by recenze kvůli marihuaně namítla nedostatečné omezení věku, přidej potvrzení 18+ do onboardingu.

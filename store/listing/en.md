@@ -36,7 +36,7 @@ ANDROID
 • Backup to a JSON file and restore on another device
 
 OPTIONAL, ONLINE
-• AI assistant: ask about a plant, optionally with a photo. The question, the photo and a summary of that plant's journal are sent to Google Gemini through our server to generate the answer. Nothing is stored on our side.
+• AI assistant: ask about a plant, optionally with a photo. Requires signing in with Google and has a daily limit. The question, the photo and a summary of that plant's journal are sent through our server to an AI model (Google Gemini) to generate the answer. Questions and photos are not stored on our side, and you can report any answer.
 • Community: questions, tips, public plants, strain grow reports and monthly photo challenges. Requires signing in with Google. You can report content and block users, and you can delete your account in Settings.
 
 No ads. No analytics or tracking SDKs.

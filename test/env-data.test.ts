@@ -117,7 +117,7 @@ describe('environment schema', () => {
       light: [{ lux: 30000, lightType: 'hps', plantId: 'a' }, { lux: 'x' }],
       rainHandled: ['p:2026-10-12', 'p:2026-10-12', 3]
     }, new Set(['a', 'b']))!
-    expect(env.places).toEqual([{ id: 'p', name: 'Balcony', detail: '', lat: 50.09, lon: 14.42 }])
+    expect(env.places).toEqual([{ id: 'p', name: 'Balcony', detail: '', lat: 50.1, lon: 14.4 }])
     expect(env.plantPlaces).toEqual({ a: 'p' })
     expect(env.sensors[0]!.target).toEqual({ type: 'tent' })
     expect(env.readings).toHaveLength(1)

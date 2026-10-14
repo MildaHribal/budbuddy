@@ -22,10 +22,10 @@ const RAW = {
 }
 
 describe('Open-Meteo requests', () => {
-  it('rounds coordinates to ~1 km', () => {
+  it('rounds coordinates to ~10 km', () => {
     const url = new URL(forecastUrl(50.087451, 14.420671))
-    expect(url.searchParams.get('latitude')).toBe('50.09')
-    expect(url.searchParams.get('longitude')).toBe('14.42')
+    expect(url.searchParams.get('latitude')).toBe('50.1')
+    expect(url.searchParams.get('longitude')).toBe('14.4')
     expect(url.searchParams.get('past_days')).toBe('1')
   })
   it('builds a geocoding search', () => {
@@ -35,7 +35,7 @@ describe('Open-Meteo requests', () => {
   })
   it('parses geocoding results', () => {
     expect(parseGeocode({ results: [{ name: 'Brno', latitude: 49.19522, longitude: 16.60796, admin1: 'Jihomoravský kraj', country: 'Česko' }, { name: 'x' }] }))
-      .toEqual([{ name: 'Brno', detail: 'Jihomoravský kraj, Česko', lat: 49.2, lon: 16.61 }])
+      .toEqual([{ name: 'Brno', detail: 'Jihomoravský kraj, Česko', lat: 49.2, lon: 16.6 }])
     expect(parseGeocode({})).toEqual([])
   })
 })

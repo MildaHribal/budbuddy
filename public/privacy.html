@@ -6,6 +6,7 @@
 body{background:var(--bg)}
 main{max-width:720px;margin:0 auto;padding:32px 20px 64px}
 header{display:flex;align-items:center;gap:14px;margin-bottom:24px}header img{width:56px;height:56px;border-radius:14px}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}th{color:var(--text);font-weight:600}td{color:var(--muted)}.scroll{overflow-x:auto}
 h1{font-size:28px;line-height:1.2;margin:0}h2{font-size:19px;margin:32px 0 8px}h3{font-size:16px;margin:20px 0 4px;color:var(--lamp)}
 p,li{color:var(--muted)}strong{color:var(--text)}a{color:var(--leaf)}ul{padding-left:20px}
 nav{display:flex;gap:10px;margin:0 0 28px}nav a{padding:8px 14px;border:1px solid var(--line);border-radius:999px;text-decoration:none;background:var(--panel)}
@@ -15,55 +16,149 @@ hr{border:0;border-top:1px solid var(--line);margin:48px 0}.meta{font-size:14px}
 <nav><a href="#en">English</a><a href="#cs">Čeština</a></nav>
 
 <section id="en">
-<p>BudBuddy is a grow journal for Android and the web, made by Miloslav Hříbal (“we”). This policy explains what data the app handles and why.</p>
+<p>BudBuddy is a grow journal for Android and the web, made by Miloslav Hříbal (“we”). This policy explains what data the app handles, who else is involved and why.</p>
+
 <h2>1. Data stored only on your device</h2>
-<p>Your plants, journal entries, tasks, photos, settings and guide progress are stored <strong>locally on your device</strong>. We do not receive them unless you choose to share something publicly (see 3). Backups you export are files you control. On Android, the system’s own backup (Google account backup) may include the app’s local data if you have it turned on; we have no access to it.</p>
-<h2>2. AI assistant</h2>
-<p>When you ask the AI assistant, your question, an optional photo and a short summary of the selected plant’s journal are sent through our server (a <strong>Supabase</strong> Edge Function, EU region) to an AI model that writes the answer: normally <strong>Google Gemini</strong>; if it is unavailable, <strong>Cloudflare Workers AI</strong> or a model running on our own computer. No account ID is sent and we do not store these requests; our server briefly uses your IP address to limit abuse. Google and Cloudflare process requests under their own terms, and Google may use requests sent through its free tier to improve its services. To find relevant passages, the question text is also searched in our grow knowledge database. The photo check can run on your device. If you report an answer, the question, the answer and your optional note are stored in our database for moderation (with your account ID when signed in; no photo or journal).</p>
-<h2>3. Account and community (optional)</h2>
-<p>Community features (feed, profiles, comments, likes, tips) require signing in with <strong>Google</strong>. We then store, via our database provider <strong>Supabase</strong> (EU region):</p>
+<p>Your plants, journal entries, tasks, photos, settings, guide progress and AI chat history are stored <strong>locally on your device</strong>. We do not receive them unless you choose to share something publicly (see 3). Backups you export are files you control. On Android, the system’s own backup (Google account backup) may include the app’s local data if you have it turned on; we have no access to it.</p>
+<p>Bluetooth thermo-hygrometers are read directly on your device. If you connect <strong>Home Assistant</strong>, the app talks directly to the server address you enter; we never see that traffic. On Android 11 and older, the system requires the location permission for any Bluetooth scan; BudBuddy does not use it to determine your location.</p>
+
+<h2>2. Account (optional)</h2>
+<p>The journal works without an account. The community and the AI assistant require signing in with <strong>Google</strong> (through <strong>Supabase</strong> authentication, EU region). We then store:</p>
 <ul><li>your Google account ID and email address (never shown publicly),</li>
 <li>your public profile: the username you pick, the name and picture taken from your Google account (you can change them), and any profile details you add,</li>
-<li>content you publish: posts (a question can include a summary of the plant’s recent journal), comments, likes, reactions, saves, follows, tips, strain grow reports, challenge entries and votes, and plants you mark as <strong>public</strong> (private plants never leave your device),</li>
+<li>when you confirmed that you are 18 or older and accepted the terms.</li></ul>
+
+<h2>3. Community</h2>
+<p>When you use the community, we store via <strong>Supabase</strong> (EU region):</p>
+<ul><li>content you publish: posts (a question can include a summary of the plant’s recent journal), comments, likes, reactions, saves, follows, tips, strain grow reports, challenge entries and votes, and plants you mark as <strong>public</strong> (private plants never leave your device),</li>
+<li>photos you upload with that content and your profile picture,</li>
 <li>badges, reputation and notifications the app creates for you,</li>
-<li>reports and moderation records needed to keep the community safe.</li></ul>
+<li>reports, blocks and moderation records needed to keep the community safe.</li></ul>
 <p>Photos are re-compressed before upload, which removes location and other metadata (EXIF). Public content is visible to other users and on the web.</p>
-<h2>4. Notifications and widgets</h2>
+
+<h2>4. AI assistant</h2>
+<p>The AI assistant requires signing in and has a daily limit per account. When you ask it, your question, the earlier messages of the conversation, an optional photo (downscaled, without metadata) and a short summary of the selected plant’s journal are sent through our server (a <strong>Supabase</strong> Edge Function, EU region) to an AI model that writes the answer:</p>
+<ul><li>normally <strong>Google Gemini API</strong>, a paid service. Under Google’s terms for paid services, Google does not use prompts or answers to improve its products; it may keep them for a limited time to detect abuse and meet legal obligations,</li>
+<li>if Gemini is unavailable, <strong>Cloudflare Workers AI</strong>,</li>
+<li>if both are unavailable, a model running on a computer operated by the developer.</li></ul>
+<p>Your account ID is not sent to these models. Questions and photos are processed only to produce the answer and <strong>are not stored by us</strong>; the conversation stays on your device. To find relevant passages, the question text is also searched in our grow knowledge database. To prevent abuse, our server keeps your IP address and account ID briefly in memory and stores a daily request count for your account ID (no content). The photo check can run on your device. If you report an answer, the question, the answer and your optional note are stored in our database for moderation, together with your account ID (no photo or journal).</p>
+
+<h2>5. Weather (optional)</h2>
+<p>If you add an outdoor place, the place name you search for is sent to <strong>Open-Meteo</strong> geocoding, and the forecast is requested from <strong>Open-Meteo</strong> with the place’s coordinates <strong>rounded to 0.1° (about 10 km)</strong>. No account ID is sent. The app does not use GPS for this; you pick the place yourself.</p>
+
+<h2>6. Voice input and QR codes</h2>
+<p><strong>Voice input</strong> uses the speech recognition service on your device (on most Android phones provided by Google; in a browser, the browser’s speech service, which in Chrome is Google). Your speech is processed by that service under its provider’s terms; the app receives only the recognised text.</p>
+<p><strong>QR code scanning</strong> on Android uses the Google code scanner (Google ML Kit through Google Play services). The scan happens on your device and the camera image is not sent anywhere, but ML Kit sends Google diagnostic and usage data, such as device model and OS version, app and SDK version, performance metrics and a per-installation identifier. See <a href="https://developers.google.com/ml-kit/android-data-disclosure" rel="noopener">Google’s ML Kit data disclosure</a>.</p>
+
+<h2>7. Images and website</h2>
+<p>Strain photos in the strain library are loaded from <strong>Wikimedia Commons</strong>, and profile pictures taken from Google accounts are loaded from <strong>Google</strong>’s servers. Like any web request, this reveals your IP address and basic device information to those services. The website and web app at budbuddy.hribal.site are served by <strong>Cloudflare</strong>, which processes your IP address to deliver the pages and protect them from attacks.</p>
+
+<h2>8. Notifications and widgets</h2>
 <p>Reminders and home-screen widgets are created on your device from your local data. No data is sent anywhere for them.</p>
-<h2>5. What we don’t do</h2>
-<ul><li>No ads, no tracking or analytics SDKs, no selling or sharing of personal data.</li><li>No location tracking.</li></ul>
-<h2>6. Your rights</h2>
-<p>You can delete any content you published, and delete your account with all its data from the app’s settings or by contacting us (<a href="/delete-account.html">how to delete your account</a>). You can request a copy of your data. If you are in the EU, you have rights under the GDPR, including the right to complain to your data protection authority (in Czechia: ÚOOÚ).</p>
-<h2>7. Age</h2>
+
+<h2>9. Who processes data</h2>
+<div class="scroll"><table>
+<tr><th>Service</th><th>What</th><th>When</th></tr>
+<tr><td>Supabase (EU)</td><td>account, profile, community content and photos, AI request forwarding, AI usage counter, AI reports, contact and deletion requests</td><td>signed in, AI, contact form</td></tr>
+<tr><td>Google (sign-in)</td><td>Google sign-in</td><td>when you sign in</td></tr>
+<tr><td>Google Gemini API (paid)</td><td>AI question, conversation, optional photo, plant summary</td><td>AI assistant</td></tr>
+<tr><td>Cloudflare Workers AI</td><td>the same, only as a fallback</td><td>AI assistant</td></tr>
+<tr><td>Developer’s own computer</td><td>the same, only as a second fallback</td><td>AI assistant</td></tr>
+<tr><td>Open-Meteo</td><td>place search text, coordinates rounded to 0.1°</td><td>weather</td></tr>
+<tr><td>Google ML Kit</td><td>diagnostics and usage data, per-installation ID</td><td>QR scanning (Android)</td></tr>
+<tr><td>Speech service (usually Google)</td><td>your voice</td><td>voice input</td></tr>
+<tr><td>Wikimedia Commons, Google</td><td>IP address when loading images</td><td>strain library, community</td></tr>
+<tr><td>Cloudflare</td><td>IP address</td><td>website and web app</td></tr>
+</table></div>
+<p>These services act on our behalf or provide the function you use. Some of them (Google, Cloudflare) may process data outside the EU under the European Commission’s standard contractual clauses.</p>
+
+<h2>10. What we don’t do</h2>
+<ul><li>No ads, no analytics or crash-reporting tools of our own. The only diagnostics are those ML Kit sends to Google (see 6).</li><li>No selling of personal data and no sharing for advertising.</li><li>No location tracking.</li></ul>
+
+<h2>11. Legal basis and retention</h2>
+<p>We process account, community and AI data to provide the service you asked for, and IP addresses, usage counters and reports to prevent abuse and keep the community safe (legitimate interest). Account and community data are kept until you delete them or your account. AI questions and photos are not stored. AI reports and moderation records are kept as long as needed for moderation. Contact and deletion requests are kept only as long as needed to handle them.</p>
+
+<h2>12. Your rights</h2>
+<p>You can delete any content you published, and delete your account with all its data in the app (Settings → Account) or with the <a href="/delete-account.html#form">web form</a>. You can also ask for a copy of your data or a correction. If you are in the EU, you have rights under the GDPR, including the right to complain to your data protection authority (in Czechia: ÚOOÚ).</p>
+
+<h2>13. Age</h2>
 <p>BudBuddy is intended for adults (18+). Grow only where it is legal for you to do so.</p>
-<h2>8. Contact</h2>
-<p>Questions or requests: <a href="https://github.com/MildaHribal/budbuddy/issues">github.com/MildaHribal/budbuddy/issues</a></p>
+
+<h2>14. Contact</h2>
+<p>Questions or requests: use the <a href="/delete-account.html#form">contact and deletion form</a>.</p>
 </section>
 <hr>
 <section id="cs" lang="cs">
 <h2 style="margin-top:0">Zásady ochrany osobních údajů</h2>
-<p>BudBuddy je pěstitelský deník pro Android a web, jehož autorem je Miloslav Hříbal („my“). Tyto zásady vysvětlují, s jakými daty aplikace pracuje a proč.</p>
+<p>BudBuddy je pěstitelský deník pro Android a web, jehož autorem je Miloslav Hříbal („my“). Tyto zásady vysvětlují, s jakými daty aplikace pracuje, kdo další se na tom podílí a proč.</p>
+
 <h3>1. Data uložená jen ve tvém zařízení</h3>
-<p>Rostliny, záznamy v deníku, úkoly, fotky, nastavení a postup v průvodci se ukládají <strong>pouze ve tvém zařízení</strong>. Nedostaneme je, pokud něco sám nezveřejníš (viz bod 3). Exportované zálohy jsou soubory, které máš pod kontrolou ty. Na Androidu může lokální data aplikace zahrnout i systémová záloha (záloha Google účtu), pokud ji máš zapnutou; k ní přístup nemáme.</p>
-<h3>2. AI asistent</h3>
-<p>Když se zeptáš AI asistenta, tvoje otázka, případná fotka a krátký souhrn deníku vybrané rostliny se pošlou přes náš server (<strong>Supabase</strong> Edge Function, region EU) do AI modelu, který napíše odpověď: běžně <strong>Google Gemini</strong>, když není dostupný, tak <strong>Cloudflare Workers AI</strong> nebo model na našem vlastním počítači. Neposílá se žádné ID účtu a dotazy neukládáme; náš server krátce využije tvou IP adresu k ochraně proti zneužití. Google a Cloudflare zpracovávají dotazy podle svých podmínek a Google může dotazy z bezplatné úrovně použít ke zlepšování svých služeb. Text otázky se také prohledá v naší databázi znalostí o pěstování, aby se našly vhodné podklady. Kontrola fotky může běžet v zařízení. Když odpověď nahlásíš, uložíme kvůli moderaci otázku, odpověď a tvou případnou poznámku (u přihlášení i s ID účtu; bez fotky a deníku).</p>
-<h3>3. Účet a komunita (volitelné)</h3>
-<p>Komunitní funkce (feed, profily, komentáře, lajky, tipy) vyžadují přihlášení přes <strong>Google</strong>. Poté u poskytovatele databáze <strong>Supabase</strong> (region EU) ukládáme:</p>
+<p>Rostliny, záznamy v deníku, úkoly, fotky, nastavení, postup v průvodci a historie chatu s AI se ukládají <strong>pouze ve tvém zařízení</strong>. Nedostaneme je, pokud něco sám nezveřejníš (viz bod 3). Exportované zálohy jsou soubory, které máš pod kontrolou ty. Na Androidu může lokální data aplikace zahrnout i systémová záloha (záloha Google účtu), pokud ji máš zapnutou; k ní přístup nemáme.</p>
+<p>Bluetooth teploměry a vlhkoměry se čtou přímo v zařízení. Když připojíš <strong>Home Assistant</strong>, aplikace komunikuje přímo se serverem, jehož adresu zadáš; my tu komunikaci nevidíme. Android 11 a starší vyžaduje ke každému hledání Bluetooth zařízení oprávnění k poloze; BudBuddy ho k zjišťování polohy nepoužívá.</p>
+
+<h3>2. Účet (volitelný)</h3>
+<p>Deník funguje bez účtu. Komunita a AI asistent vyžadují přihlášení přes <strong>Google</strong> (pomocí přihlašování <strong>Supabase</strong>, region EU). Poté ukládáme:</p>
 <ul><li>ID tvého Google účtu a e-mail (nikdy se veřejně nezobrazují),</li>
 <li>veřejný profil: uživatelské jméno, které si zvolíš, jméno a obrázek z Google účtu (můžeš je změnit) a údaje, které do profilu doplníš,</li>
-<li>obsah, který zveřejníš: příspěvky (dotaz může obsahovat souhrn posledních záznamů rostliny), komentáře, lajky, reakce, uložené příspěvky, sledování, tipy, reporty odrůd, příspěvky a hlasy ve výzvách a rostliny označené jako <strong>veřejné</strong> (soukromé rostliny tvoje zařízení nikdy neopustí),</li>
+<li>kdy jsi potvrdil, že ti je 18 let nebo víc, a souhlasil s podmínkami.</li></ul>
+
+<h3>3. Komunita</h3>
+<p>Když používáš komunitu, ukládáme u <strong>Supabase</strong> (region EU):</p>
+<ul><li>obsah, který zveřejníš: příspěvky (dotaz může obsahovat souhrn posledních záznamů rostliny), komentáře, lajky, reakce, uložené příspěvky, sledování, tipy, reporty odrůd, příspěvky a hlasy ve výzvách a rostliny označené jako <strong>veřejné</strong> (soukromé rostliny tvoje zařízení nikdy neopustí),</li>
+<li>fotky, které k tomu obsahu nahraješ, a profilový obrázek,</li>
 <li>odznaky, reputaci a upozornění, které ti aplikace vytvoří,</li>
-<li>nahlášení a záznamy moderace potřebné pro bezpečnost komunity.</li></ul>
+<li>nahlášení, blokování a záznamy moderace potřebné pro bezpečnost komunity.</li></ul>
 <p>Fotky se před nahráním znovu zkomprimují, čímž se odstraní poloha a další metadata (EXIF). Veřejný obsah vidí ostatní uživatelé i návštěvníci webu.</p>
-<h3>4. Notifikace a widgety</h3>
+
+<h3>4. AI asistent</h3>
+<p>AI asistent vyžaduje přihlášení a má denní limit na účet. Když se ho zeptáš, tvoje otázka, předchozí zprávy konverzace, případná fotka (zmenšená, bez metadat) a krátký souhrn deníku vybrané rostliny se pošlou přes náš server (<strong>Supabase</strong> Edge Function, region EU) do AI modelu, který napíše odpověď:</p>
+<ul><li>běžně <strong>Google Gemini API</strong>, placená služba. Podle podmínek Googlu pro placené služby Google dotazy ani odpovědi nepoužívá ke zlepšování svých produktů; po omezenou dobu je může uchovat kvůli odhalování zneužití a plnění zákonných povinností,</li>
+<li>když Gemini není dostupný, <strong>Cloudflare Workers AI</strong>,</li>
+<li>když nejsou dostupné ani ty, model na počítači, který provozuje autor aplikace.</li></ul>
+<p>ID tvého účtu se těmto modelům neposílá. Otázky a fotky se zpracují jen kvůli odpovědi a <strong>neukládáme je</strong>; konverzace zůstává v tvém zařízení. Text otázky se také prohledá v naší databázi znalostí o pěstování, aby se našly vhodné podklady. Kvůli ochraně proti zneužití si náš server krátce drží v paměti tvou IP adresu a ID účtu a ukládá denní počet dotazů k ID účtu (bez obsahu). Kontrola fotky může běžet v zařízení. Když odpověď nahlásíš, uložíme kvůli moderaci otázku, odpověď a tvou případnou poznámku spolu s ID účtu (bez fotky a deníku).</p>
+
+<h3>5. Počasí (volitelné)</h3>
+<p>Když přidáš venkovní místo, hledaný název místa se pošle do geokódování <strong>Open-Meteo</strong> a předpověď se u <strong>Open-Meteo</strong> vyžádá se souřadnicemi <strong>zaokrouhlenými na 0,1° (zhruba 10 km)</strong>. Neposílá se žádné ID účtu. Aplikace k tomu nepoužívá GPS, místo si vybereš sám.</p>
+
+<h3>6. Hlasové zadávání a QR kódy</h3>
+<p><strong>Hlasové zadávání</strong> používá službu rozpoznávání řeči ve tvém zařízení (na většině telefonů s Androidem od Googlu; v prohlížeči jeho službu pro řeč, v Chromu tedy Google). Tvůj hlas zpracuje tato služba podle podmínek svého poskytovatele; aplikace dostane jen rozpoznaný text.</p>
+<p><strong>Skenování QR kódů</strong> na Androidu používá skener kódů Google (Google ML Kit přes služby Google Play). Skenuje se v zařízení a obraz z fotoaparátu se nikam neposílá, ML Kit ale Googlu posílá diagnostická data a údaje o používání, třeba model zařízení a verzi systému, verzi aplikace a SDK, údaje o výkonu a identifikátor instalace. Viz <a href="https://developers.google.com/ml-kit/android-data-disclosure" rel="noopener">popis dat ML Kit od Googlu</a>.</p>
+
+<h3>7. Obrázky a web</h3>
+<p>Fotky v knihovně odrůd se načítají z <strong>Wikimedia Commons</strong> a profilové obrázky z Google účtů ze serverů <strong>Googlu</strong>. Jako u každého webového požadavku tím tyto služby uvidí tvou IP adresu a základní údaje o zařízení. Web a webovou aplikaci na budbuddy.hribal.site doručuje <strong>Cloudflare</strong>, který zpracovává tvou IP adresu kvůli doručení stránek a ochraně před útoky.</p>
+
+<h3>8. Notifikace a widgety</h3>
 <p>Připomínky a widgety na ploše vznikají v zařízení z tvých lokálních dat. Nikam se kvůli nim nic neposílá.</p>
-<h3>5. Co neděláme</h3>
-<ul><li>Žádné reklamy, sledovací ani analytické nástroje, žádný prodej ani sdílení osobních údajů.</li><li>Žádné sledování polohy.</li></ul>
-<h3>6. Tvoje práva</h3>
-<p>Zveřejněný obsah můžeš kdykoli smazat a účet se všemi daty zrušíš v nastavení aplikace nebo na požádání (<a href="/delete-account.html#cs">jak smazat účet</a>). Můžeš požádat o kopii svých dat. Podle GDPR máš i právo podat stížnost u Úřadu pro ochranu osobních údajů (ÚOOÚ).</p>
-<h3>7. Věk</h3>
+
+<h3>9. Kdo data zpracovává</h3>
+<div class="scroll"><table>
+<tr><th>Služba</th><th>Co</th><th>Kdy</th></tr>
+<tr><td>Supabase (EU)</td><td>účet, profil, obsah a fotky v komunitě, předávání dotazů na AI, počítadlo dotazů, nahlášení AI odpovědí, žádosti přes kontaktní formulář</td><td>po přihlášení, AI, formulář</td></tr>
+<tr><td>Google (přihlášení)</td><td>přihlášení přes Google</td><td>při přihlášení</td></tr>
+<tr><td>Google Gemini API (placené)</td><td>otázka pro AI, konverzace, případná fotka, souhrn rostliny</td><td>AI asistent</td></tr>
+<tr><td>Cloudflare Workers AI</td><td>totéž, jen jako záloha</td><td>AI asistent</td></tr>
+<tr><td>Počítač autora aplikace</td><td>totéž, jen jako druhá záloha</td><td>AI asistent</td></tr>
+<tr><td>Open-Meteo</td><td>hledaný název místa, souřadnice zaokrouhlené na 0,1°</td><td>počasí</td></tr>
+<tr><td>Google ML Kit</td><td>diagnostika a údaje o používání, identifikátor instalace</td><td>skenování QR (Android)</td></tr>
+<tr><td>Služba rozpoznávání řeči (obvykle Google)</td><td>tvůj hlas</td><td>hlasové zadávání</td></tr>
+<tr><td>Wikimedia Commons, Google</td><td>IP adresa při načítání obrázků</td><td>knihovna odrůd, komunita</td></tr>
+<tr><td>Cloudflare</td><td>IP adresa</td><td>web a webová aplikace</td></tr>
+</table></div>
+<p>Tyto služby jednají naším jménem nebo zajišťují funkci, kterou používáš. Některé z nich (Google, Cloudflare) mohou data zpracovávat i mimo EU na základě standardních smluvních doložek Evropské komise.</p>
+
+<h3>10. Co neděláme</h3>
+<ul><li>Žádné reklamy, žádné vlastní analytické nástroje ani hlášení pádů. Jediná diagnostika je ta, kterou ML Kit posílá Googlu (viz bod 6).</li><li>Žádný prodej osobních údajů a žádné sdílení pro reklamu.</li><li>Žádné sledování polohy.</li></ul>
+
+<h3>11. Právní základ a doba uložení</h3>
+<p>Data účtu, komunity a AI zpracováváme, abychom ti poskytli službu, o kterou stojíš. IP adresy, počítadla dotazů a nahlášení zpracováváme kvůli ochraně před zneužitím a bezpečnosti komunity (oprávněný zájem). Data účtu a komunity uchováváme, dokud je nebo celý účet nesmažeš. Otázky a fotky pro AI neukládáme. Nahlášení AI odpovědí a záznamy moderace uchováváme, dokud jsou potřeba pro moderaci. Žádosti z kontaktního formuláře uchováváme jen po dobu potřebnou k jejich vyřízení.</p>
+
+<h3>12. Tvoje práva</h3>
+<p>Zveřejněný obsah můžeš kdykoli smazat a účet se všemi daty zrušíš v aplikaci (Nastavení → Účet) nebo přes <a href="/delete-account.html#formular">webový formulář</a>. Můžeš také požádat o kopii svých dat nebo o opravu. Podle GDPR máš i právo podat stížnost u Úřadu pro ochranu osobních údajů (ÚOOÚ).</p>
+
+<h3>13. Věk</h3>
 <p>BudBuddy je určen dospělým (18+). Pěstuj jen tam, kde je to pro tebe legální.</p>
-<h3>8. Kontakt</h3>
-<p>Dotazy a žádosti: <a href="https://github.com/MildaHribal/budbuddy/issues">github.com/MildaHribal/budbuddy/issues</a></p>
+
+<h3>14. Kontakt</h3>
+<p>Dotazy a žádosti: použij <a href="/delete-account.html#formular">formulář pro kontakt a smazání účtu</a>.</p>
 </section>
 </main></body></html>
