@@ -6,6 +6,8 @@ import type {
   GrowData,
   GuideProgress,
   Harvest,
+  HarvestRating,
+  HarvestScoreKey,
   HealthLevel,
   JournalEntry,
   Location,
@@ -118,7 +120,7 @@ export function normalizePlant(raw: Record<string, unknown>): Plant {
 
   const h = raw.harvest as Record<string, unknown> | null | undefined
   const harvest: Harvest | null = h && typeof h === 'object'
-    ? { date: isoDate(h.date, todayISO()), wetWeight: num(h.wetWeight), dryWeight: num(h.dryWeight), notes: str(h.notes) }
+    ? { date: isoDate(h.date, todayISO()), wetWeight: num(h.wetWeight), dryWeight: num(h.dryWeight), notes: str(h.notes), ...withRating(h.rating) }
     : null
 
   const health = Math.round(num(raw.health) ?? 4)
@@ -168,6 +170,34 @@ function tagLegacyDemo(data: GrowData) {
   const stamps = new Set(data.plants.filter(p => p.photoId?.startsWith('demo-') || seen.get(p.createdAt)! > 1).map(p => p.createdAt))
   for (const p of data.plants) if (stamps.has(p.createdAt)) p.demo = true
   if (data.plants.some(p => !p.demo)) data.settings.demo = false
+}
+
+const SCORE_KEYS: HarvestScoreKey[] = ['structure', 'frost', 'trimCure', 'health']
+
+// only rated harvests carry the key
+function withRating(v: unknown): { rating?: HarvestRating } {
+  if (!v || typeof v !== 'object') return {}
+  const r = v as Record<string, unknown>
+  const s = (r.scores ?? {}) as Record<string, unknown>
+  const scores = Object.fromEntries(SCORE_KEYS.map(k => [k, Math.min(10, Math.max(1, Math.round(num(s[k]) ?? 5)))])) as Record<HarvestScoreKey, number>
+  const texts = (x: unknown) => (Array.isArray(x) ? x.filter((t): t is string => typeof t === 'string').slice(0, 5) : [])
+  const aroma = num(r.aroma)
+  return {
+    rating: {
+      ratedAt: str(r.ratedAt) || new Date().toISOString(),
+      photoIds: texts(r.photoIds),
+      scores,
+      aroma: aroma === 1 || aroma === 2 || aroma === 3 ? aroma : null,
+      stars: Math.min(5, Math.max(1, Math.round(num(r.stars) ?? 1))),
+      points: Math.max(0, Math.round(num(r.points) ?? 0)),
+      bonuses: Array.isArray(r.bonuses)
+        ? r.bonuses.filter(b => b && typeof b === 'object').map(b => ({ key: str((b as Record<string, unknown>).key), points: Math.round(num((b as Record<string, unknown>).points) ?? 0) })).filter(b => b.key)
+        : [],
+      summary: str(r.summary),
+      good: texts(r.good),
+      improve: texts(r.improve)
+    }
+  }
 }
 
 // only shared plants carry the key

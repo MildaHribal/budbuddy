@@ -18,6 +18,8 @@ export interface LlmRequest {
   /** includes plant context, diagnosis and numbered passages */
   userText: string
   image?: LlmImage | null
+  /** several photos (the proxy accepts up to 3); sent before `image` */
+  images?: LlmImage[]
   /** default is the server's short limit */
   maxOutputTokens?: number
   signal?: AbortSignal

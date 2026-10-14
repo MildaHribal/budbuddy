@@ -30,6 +30,26 @@ export interface Harvest {
   /** grams */
   dryWeight: number | null
   notes: string
+  /** AI look at the finished buds (utils/harvestScore) */
+  rating?: HarvestRating
+}
+
+export type HarvestScoreKey = 'structure' | 'frost' | 'trimCure' | 'health'
+
+export interface HarvestRating {
+  ratedAt: string
+  /** photos sent to the AI, kept in a journal photo entry */
+  photoIds: string[]
+  /** 1–10 from the AI */
+  scores: Record<HarvestScoreKey, number>
+  /** grower's own nose: 1 faint … 3 loud */
+  aroma: 1 | 2 | 3 | null
+  stars: number
+  points: number
+  bonuses: { key: string, points: number }[]
+  summary: string
+  good: string[]
+  improve: string[]
 }
 
 export interface Plant {

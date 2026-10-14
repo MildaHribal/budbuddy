@@ -3,12 +3,13 @@ import { addDays, daysBetween, todayISO } from './date'
 import { blankEntry } from './entries'
 import { demoPhotoId as pid } from './demoCredits'
 import { addDemoKit } from './demoKit'
+import { scoreHarvest } from './harvestScore'
 import { createId } from './id'
 import { locale } from './locale'
 import { emptyData } from './schema'
 
 /** Bumped when the demo content changes, so saved demo gardens get the new version. */
-export const DEMO_VERSION = 2
+export const DEMO_VERSION = 3
 
 /** Example garden shown on first launch so the app does not open empty. */
 export function buildDemoData(today = todayISO()): GrowData {
@@ -143,6 +144,14 @@ export function buildDemoData(today = todayISO()): GrowData {
     { id: createId(), title: t('Refill reservoir & calibrate pH pen', 'Doplnit nádrž a zkalibrovat pH metr'), date: today, plantId: null, done: true, createdAt: now },
     { id: createId(), title: t('Burp White Widow jars', 'Vyvětrat sklenice s White Widow'), date: today, plantId: wh.id, done: false, createdAt: now }
   ]
+
+  // a sample AI rating, so the web demo shows what the Android app gives after a harvest
+  wh.harvest!.rating = scoreHarvest(wh, data.entries.filter(e => e.plantId === wh.id), {
+    scores: { structure: 8, frost: 9, trimCure: 7, health: 9 },
+    summary: t('Dense, very frosty buds with a clean cure. The top cola stretched a little in late flower.', 'Husté, hodně ojíněné palice a čisté zrání. Vrcholová palice se na konci květu trochu vytáhla.'),
+    good: [t('Heavy trichome cover down to the sugar leaves', 'Hustá vrstva trichomů až na cukrové listy'), t('No mould or burnt tips', 'Bez plísně a spálených špiček'), t('Slow dry kept the colour green-gold', 'Pomalé sušení zachovalo zelenozlatou barvu')],
+    improve: [t('Keep late-flower heat under 26 °C to stop foxtailing', 'Na konci květu drž teplotu pod 26 °C, ať palice nefoxtailují'), t('A tighter trim around the top buds', 'Pečlivější trim kolem vrcholových palic')]
+  }, { photoIds: [pid('ww-cured'), pid('ww-flower')], aroma: 3 }, today, new Date(`${ago(2)}T18:00:00`))
 
   addDemoKit(data, { nl, sd, gg, wh }, ago, cs)
   return data

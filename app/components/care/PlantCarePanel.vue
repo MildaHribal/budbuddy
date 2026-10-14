@@ -14,5 +14,9 @@ defineProps<{ plant: Plant }>()
     v-if="plant.stage === 'curing' && !plant.archived"
     :plant="plant"
   />
+  <CareHarvestRatingCard
+    v-if="plant.harvest"
+    :plant="plant"
+  />
   <CareTreatmentList :plant="plant" />
 </template>

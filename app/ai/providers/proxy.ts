@@ -21,10 +21,10 @@ export interface GeminiContent {
   parts: GeminiPart[]
 }
 
-export function toGeminiContents(history: readonly ChatTurn[], userText: string, image?: LlmImage | null): GeminiContent[] {
+export function toGeminiContents(history: readonly ChatTurn[], userText: string, image?: LlmImage | null, images: readonly LlmImage[] = []): GeminiContent[] {
   const contents: GeminiContent[] = history.map(t => ({ role: t.role === 'assistant' ? 'model' : 'user', parts: [{ text: t.text }] }))
   const parts: GeminiPart[] = []
-  if (image) parts.push({ inlineData: { mimeType: image.mimeType, data: image.base64 } })
+  for (const img of [...images, ...(image ? [image] : [])]) parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } })
   parts.push({ text: userText })
   const last = contents[contents.length - 1]
   if (last?.role === 'user') last.parts.push(...parts)
@@ -186,7 +186,7 @@ export function createProxyProvider(endpoint: ProxyEndpoint): LlmProvider {
         body: JSON.stringify({
           model: AI_MODEL,
           systemInstruction: { parts: [{ text: req.system }] },
-          contents: toGeminiContents(req.history, req.userText, req.image),
+          contents: toGeminiContents(req.history, req.userText, req.image, req.images),
           ...(req.maxOutputTokens ? { generationConfig: { maxOutputTokens: req.maxOutputTokens } } : {})
         }),
         signal: req.signal
