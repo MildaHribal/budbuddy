@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type Target = 'post' | 'comment' | 'tip' | 'profile' | 'plant' | 'strain' | 'entry'
+type Target = 'post' | 'comment' | 'tip' | 'profile' | 'plant' | 'strain' | 'entry' | 'strain_photo'
 
 const props = defineProps<{
   targetType: Target

@@ -30,9 +30,18 @@ export interface StrainPhoto {
   source_url: string
   /** 'contain' = breeder permission forbids cropping the plant or bud */
   fit?: 'cover' | 'contain'
+  /** set on photos uploaded by a BudBuddy user */
+  user_id?: string | null
+  status?: 'pending' | 'approved' | 'rejected'
+  reject_reason?: string | null
+  sort?: number
+  created_at?: string
+  /** shared plant cover shown in the gallery */
+  grower?: boolean
 }
 
-export const STRAIN_PHOTO_COLUMNS = 'id, kind, url, thumb_url, author, license, source_url, fit'
+export const STRAIN_PHOTO_LEGACY_COLUMNS = 'id, kind, url, thumb_url, author, license, source_url, fit'
+export const STRAIN_PHOTO_COLUMNS = `${STRAIN_PHOTO_LEGACY_COLUMNS}, user_id, status, sort, created_at`
 
 /** Older rows keep a single photo in strains.image_url with a "Author · Licence (Source)" credit. */
 export function legacyPhoto(s: Pick<Strain, 'id' | 'image_url' | 'image_credit'>): StrainPhoto[] {

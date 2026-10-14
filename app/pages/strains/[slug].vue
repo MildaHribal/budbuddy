@@ -2,6 +2,7 @@
 import { useOnlineRetry } from '~/utils/feed/online'
 import type { PublicAuthor } from '~/types/community'
 import type { Strain, StrainPhoto, StrainStats } from '~/utils/strains'
+import { mediaPathOf, orderStrainPhotos } from '~/utils/strainPhotos'
 
 type Author = PublicAuthor
 interface ReportRow {
@@ -24,7 +25,7 @@ interface MyPlant { id: string, name: string, stage: string, cover_url: string |
 
 const route = useRoute()
 const { t, locale } = useI18n()
-const { user, requireAuth } = useAuth()
+const { user, session, requireAuth } = useAuth()
 const { isBlocked, load: loadBlocks } = useBlocks()
 const { notify } = useNotify()
 const { confirm } = useConfirm()
@@ -62,8 +63,13 @@ async function load() {
 async function loadPhotos() {
   const s = strain.value
   if (!s) return
-  const { data } = await sb.from('strain_photos').select(STRAIN_PHOTO_COLUMNS).eq('strain_id', s.id).order('sort')
-  photos.value = data?.length ? data as StrainPhoto[] : legacyPhoto(s)
+  const run = (cols: string) => sb.from('strain_photos').select(cols).eq('strain_id', s.id).order('sort')
+  // reject_reason is readable only with a session (the uploader sees why a photo was turned down)
+  let res = await run(session.value ? `${STRAIN_PHOTO_COLUMNS}, reject_reason` : STRAIN_PHOTO_COLUMNS)
+  if (res.error) res = await run(STRAIN_PHOTO_LEGACY_COLUMNS)
+  if (strain.value?.id !== s.id) return
+  const rows = orderStrainPhotos((res.data ?? []) as unknown as StrainPhoto[])
+  photos.value = rows.some(p => !p.user_id) ? rows : [...legacyPhoto(s), ...rows]
 }
 
 async function loadStats() {
@@ -114,9 +120,29 @@ const growerPhotos = computed<StrainPhoto[]>(() => shownPlants.value.filter(p =>
   thumb_url: null,
   author: `@${p.owner?.username ?? '?'}`,
   license: t('strains.fromGrower'),
-  source_url: `/plant/${p.id}`
+  source_url: `/plant/${p.id}`,
+  grower: true
 })))
-const galleryPhotos = computed(() => [...photos.value, ...growerPhotos.value])
+const galleryPhotos = computed(() => [...photos.value.filter(p => !p.user_id || !isBlocked(p.user_id)), ...growerPhotos.value])
+
+// ── User photos ────────────────────────────────────────────────────
+const photoOpen = ref(false)
+
+function openPhoto() {
+  if (!requireAuth()) return
+  photoOpen.value = true
+}
+
+async function deletePhoto(p: StrainPhoto) {
+  const ok = await confirm({ title: t('strains.userPhoto.deleteConfirm'), message: t('strains.userPhoto.deleteText'), confirmLabel: t('common.delete'), danger: true })
+  if (!ok) return
+  const { error } = await sb.from('strain_photos').delete().eq('id', p.id)
+  if (error) return notify(t('strains.failed'), { tone: 'error' })
+  const paths = [p.url, p.thumb_url].map(mediaPathOf).filter((x): x is string => !!x && x.startsWith(`${user.value?.id}/`))
+  if (paths.length) sb.storage.from('media').remove(paths).catch(() => {})
+  photos.value = photos.value.filter(x => x.id !== p.id)
+  notify(t('strains.userPhoto.deleted'), { tone: 'info' })
+}
 
 const description = computed(() => (strain.value ? strainDescription(strain.value) : null))
 const descInEnglish = computed(() => locale.value === 'cs' && !!description.value && !strain.value?.description_cs?.trim())
@@ -339,11 +365,23 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       v-else
       class="page"
     >
-      <CommunityStrainGallery
-        :photos="galleryPhotos"
-        :name="strain.name"
-        :auto="strain.flowering === 'auto'"
-      />
+      <div class="gallery-block">
+        <CommunityStrainGallery
+          :photos="galleryPhotos"
+          :name="strain.name"
+          :auto="strain.flowering === 'auto'"
+          :breeder-strain="!!strain.original_breeder"
+          @delete="deletePhoto"
+        />
+        <button
+          v-if="strain.approved"
+          type="button"
+          class="btn btn-ghost add-photo"
+          @click="openPhoto"
+        >
+          <UIcon name="i-tabler-camera-plus" />{{ t('strains.userPhoto.add') }}
+        </button>
+      </div>
 
       <p
         v-if="!strain.approved"
@@ -851,6 +889,14 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
       </template>
     </BottomSheet>
 
+    <CommunityStrainPhotoSheet
+      v-if="strain"
+      v-model:open="photoOpen"
+      :strain-id="strain.id"
+      :strain-name="strain.name"
+      @sent="loadPhotos"
+    />
+
     <BottomSheet
       v-model:open="growOpen"
       :title="t('strains.growingTitle')"
@@ -929,6 +975,19 @@ useOnlineRetry(() => state.value === 'offline' || state.value === 'error', load)
 </template>
 
 <style scoped>
+.gallery-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.add-photo {
+  align-self: flex-start;
+  margin-left: -6px;
+  padding: 0 12px 0 6px;
+  font-size: 14px;
+}
+
 .pending {
   display: flex;
   align-items: center;

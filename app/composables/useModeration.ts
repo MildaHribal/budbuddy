@@ -1,4 +1,4 @@
-export type ModTarget = 'post' | 'comment' | 'tip' | 'profile' | 'plant' | 'strain' | 'entry'
+export type ModTarget = 'post' | 'comment' | 'tip' | 'profile' | 'plant' | 'strain' | 'entry' | 'strain_photo'
 export type ModHideable = 'post' | 'comment' | 'tip' | 'plant' | 'entry'
 
 export interface ModPreview {
@@ -29,7 +29,8 @@ export const MOD_TARGETS: Record<ModTarget, Spec> = {
   profile: { table: 'profiles', select: 'id, username, display_name, bio, avatar_url, created_at', author: 'id', hideable: false, map: r => ({ title: s(r.display_name) ?? s(r.username), text: s(r.bio), image: s(r.avatar_url) }) },
   plant: { table: 'public_plants', select: 'id, name, strain, cover_url, owner_id, is_hidden, created_at', author: 'owner_id', hideable: true, map: r => ({ title: s(r.name), text: s(r.strain), image: s(r.cover_url) }) },
   strain: { table: 'strains', select: 'id, name, description, image_url, created_by, created_at', author: 'created_by', hideable: false, map: r => ({ title: s(r.name), text: s(r.description), image: s(r.image_url) }) },
-  entry: { table: 'challenge_entries', select: 'id, caption, image_url, user_id, is_hidden, created_at', author: 'user_id', hideable: true, map: r => ({ title: null, text: s(r.caption), image: s(r.image_url) }) }
+  entry: { table: 'challenge_entries', select: 'id, caption, image_url, user_id, is_hidden, created_at', author: 'user_id', hideable: true, map: r => ({ title: null, text: s(r.caption), image: s(r.image_url) }) },
+  strain_photo: { table: 'strain_photos', select: 'id, url, thumb_url, user_id, status, created_at', author: 'user_id', hideable: false, map: r => ({ title: null, text: null, image: s(r.thumb_url) ?? s(r.url) }) }
 }
 
 export const MOD_HIDEABLE: ModHideable[] = ['post', 'comment', 'tip', 'plant', 'entry']
@@ -51,7 +52,8 @@ export interface ModAuthor { id: string, username: string, display_name: string 
 const MEDIA_COLS: Partial<Record<ModTarget, string>> = {
   post: 'images',
   plant: 'cover_url, timeline',
-  entry: 'image_url'
+  entry: 'image_url',
+  strain_photo: 'url, thumb_url'
 }
 
 /** Storage paths of media URLs found in a row (post images, plant cover + timeline photos, entry image). */

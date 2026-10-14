@@ -5,7 +5,7 @@ useHead({ title: () => t('admin.title') })
 const { profile, ready, signedIn, requireAuth } = useAuth()
 const isAdmin = computed(() => profile.value?.is_admin === true)
 
-const TABS = ['reports', 'ai', 'hidden', 'strains', 'challenges', 'users'] as const
+const TABS = ['reports', 'photos', 'ai', 'hidden', 'strains', 'challenges', 'users'] as const
 type Tab = typeof TABS[number]
 const route = useRoute()
 const router = useRouter()
@@ -69,6 +69,7 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
         <div role="tabpanel">
           <KeepAlive>
             <AdminReports v-if="tab === 'reports'" />
+            <AdminStrainPhotos v-else-if="tab === 'photos'" />
             <AdminAiReports v-else-if="tab === 'ai'" />
             <AdminHidden v-else-if="tab === 'hidden'" />
             <AdminStrains v-else-if="tab === 'strains'" />

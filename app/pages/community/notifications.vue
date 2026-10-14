@@ -197,6 +197,13 @@ function line(i: Item): string {
       const rank = meta(r, 'rank')
       return rank ? t('notifications.types.challengeRank', { rank }) : t('notifications.types.challenge')
     }
+    case 'moderation': {
+      if (meta(r, 'target_type') !== 'strain_photo') return t('notifications.types.moderation')
+      const strain = meta(r, 'strain') || '?'
+      const reason = meta(r, 'reason')
+      if (meta(r, 'status') === 'approved') return t('notifications.types.photoApproved', { strain })
+      return reason ? t('notifications.types.photoRejectedWhy', { strain, reason }) : t('notifications.types.photoRejected', { strain })
+    }
     case 'update': {
       const week = meta(r, 'week_no') || meta(r, 'week')
       const plant = meta(r, 'plant_name') || meta(r, 'plant')
@@ -228,6 +235,7 @@ function link(i: Item): string | null {
     case 'solve_ping':
       return r.post_id ? `/community/post/${r.post_id}?solve=1` : null
     case 'moderation':
+      if (meta(r, 'target_type') === 'strain_photo') return meta(r, 'slug') ? `/strains/${meta(r, 'slug')}` : null
       return r.post_id ? `/community/post/${r.post_id}${r.comment_id ? `#c-${r.comment_id}` : ''}` : null
     default:
       return r.post_id ? `/community/post/${r.post_id}${r.comment_id ? `#c-${r.comment_id}` : ''}` : null

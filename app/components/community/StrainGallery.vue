@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import type { StrainPhoto } from '~/utils/strains'
+import { isGrowerPhoto, photoReviewState } from '~/utils/strainPhotos'
 
 const props = defineProps<{
   photos: StrainPhoto[]
   name: string
   auto?: boolean
+  /** strain from its original breeder: grower photos must not pass as the breeder's genetics */
+  breederStrain?: boolean
 }>()
+const emit = defineEmits<{ delete: [photo: StrainPhoto] }>()
 
 const { t } = useI18n()
 const track = ref<HTMLElement | null>(null)
@@ -15,6 +19,9 @@ const failed = ref(new Set<string>())
 
 const shown = computed(() => props.photos.filter(p => !failed.value.has(p.id)))
 const current = computed(() => shown.value[active.value] ?? null)
+const credit = (p: StrainPhoto) => (p.user_id ? p.author : `${p.author} · ${p.license}`)
+const showSourceNote = computed(() => !!props.breederStrain && !!current.value && isGrowerPhoto(current.value))
+const review = computed(() => (current.value ? photoReviewState(current.value) : null))
 
 watch(() => props.photos, () => {
   active.value = 0
@@ -68,6 +75,14 @@ function onFail(id: string) {
           @error="onFail(p.id)"
         >
         <span class="kind">{{ t(`strains.photoKind.${p.kind}`) }}</span>
+        <span
+          v-if="photoReviewState(p)"
+          class="review"
+          :class="photoReviewState(p)"
+        >
+          <UIcon :name="photoReviewState(p) === 'pending' ? 'i-tabler-hourglass' : 'i-tabler-circle-x'" />
+          {{ t(`strains.userPhoto.state.${photoReviewState(p)}`) }}
+        </span>
       </div>
     </div>
     <div
@@ -89,7 +104,7 @@ function onFail(id: string) {
         :to="current.source_url"
         class="credit"
       >
-        {{ t('strains.photoCredit', { credit: `${current.author} · ${current.license}` }) }}
+        {{ t('strains.photoCredit', { credit: credit(current) }) }}
       </NuxtLink>
       <a
         v-else
@@ -98,7 +113,7 @@ function onFail(id: string) {
         rel="noopener noreferrer"
         class="credit"
       >
-        {{ t('strains.photoCredit', { credit: `${current.author} · ${current.license}` }) }}
+        {{ t('strains.photoCredit', { credit: credit(current) }) }}
       </a>
       <div
         v-if="shown.length > 1"
@@ -115,6 +130,40 @@ function onFail(id: string) {
           :aria-selected="i === active"
           role="tab"
           @click="go(i)"
+        />
+      </div>
+      <div
+        v-if="showSourceNote || review || current.user_id"
+        class="meta-row"
+      >
+        <div class="notes">
+          <p
+            v-if="review === 'rejected'"
+            class="note rejected"
+          >
+            {{ current.reject_reason ? t('strains.userPhoto.rejectedWhy', { reason: current.reject_reason }) : t('strains.userPhoto.rejectedText') }}
+          </p>
+          <p
+            v-else-if="review === 'pending'"
+            class="note"
+          >
+            {{ t('strains.userPhoto.pendingText') }}
+          </p>
+          <p
+            v-if="showSourceNote"
+            class="note"
+          >
+            {{ t('strains.userPhoto.sourceNote') }}
+          </p>
+        </div>
+        <CommunityReportMenu
+          v-if="current.user_id"
+          target-type="strain_photo"
+          :target-id="current.id"
+          :author-id="current.user_id"
+          :author-name="current.author"
+          no-edit
+          @delete="emit('delete', current)"
         />
       </div>
     </figcaption>
@@ -180,14 +229,65 @@ function onFail(id: string) {
   font-weight: 600;
 }
 
+.review {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(14 16 15 / 0.92);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.review.pending {
+  color: var(--amber);
+}
+
+.review.rejected {
+  color: var(--red);
+}
+
+.meta-row {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: -10px;
+}
+
+.notes {
+  flex: 1;
+  min-width: 0;
+}
+
+.note {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.note + .note {
+  margin-top: 2px;
+}
+
+.note.rejected {
+  color: var(--red);
+}
+
 .placeholder {
   font-size: 48px;
 }
 
 .caption {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 4px 12px;
   padding: 8px 14px;
   border-top: 1px solid var(--line);
 }

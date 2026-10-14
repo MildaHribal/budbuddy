@@ -14,12 +14,12 @@ export default {
       anonymous: 'signed out',
       reasons: { offensive: 'Offensive', dangerous: 'Dangerous advice', wrong: 'Wrong', other: 'Something else' }
     },
-    tabs: { reports: 'Reports', ai: 'AI answers', hidden: 'Hidden', strains: 'Strains', challenges: 'Challenges', users: 'Users' },
+    tabs: { reports: 'Reports', photos: 'Strain photos', ai: 'AI answers', hidden: 'Hidden', strains: 'Strains', challenges: 'Challenges', users: 'Users' },
     retry: 'Try again',
     loadError: 'Couldn’t load this list.',
     failed: 'That didn’t work – check your connection',
     loadMore: 'Load more',
-    types: { post: 'Post', comment: 'Comment', tip: 'Tip', profile: 'Profile', plant: 'Plant', strain: 'Strain', entry: 'Challenge entry' },
+    types: { post: 'Post', comment: 'Comment', tip: 'Tip', profile: 'Profile', plant: 'Plant', strain: 'Strain', entry: 'Challenge entry', strain_photo: 'Strain photo' },
     reports: {
       empty: 'Queue is clear',
       emptyText: 'No open reports. Nice and quiet.',
@@ -49,6 +49,25 @@ export default {
       emptyText: 'Hidden posts, comments, tips, plants and entries show up here.',
       unhide: 'Unhide',
       unhidden: 'Visible again'
+    },
+    photos: {
+      empty: 'No photos waiting',
+      emptyText: 'Photos growers add on strain pages wait here until you approve them.',
+      count: { one: '{n} photo waiting, oldest first', other: '{n} photos waiting, oldest first' },
+      openFull: 'Open the full-size photo',
+      alt: 'Submitted photo of {strain}',
+      trainingYes: 'May also be used to train problem recognition',
+      trainingNo: 'Catalogue only, no training',
+      breederStrain: 'Original-breeder strain: shown with the seed source note',
+      approve: 'Approve',
+      reject: 'Reject',
+      approved: 'Photo approved and live',
+      rejected: 'Photo rejected',
+      rejectTitle: 'Reject this photo',
+      rejectText: 'The grower gets a notification. A short reason helps them send a better one.',
+      reason: 'Reason (optional)',
+      reasonPh: 'For example: blurry, shows a person, not this strain',
+      rejectSend: 'Reject photo'
     },
     strains: {
       empty: 'No pending suggestions',
@@ -145,12 +164,12 @@ export default {
       anonymous: 'bez přihlášení',
       reasons: { offensive: 'Urážlivá', dangerous: 'Nebezpečná rada', wrong: 'Chybná', other: 'Něco jiného' }
     },
-    tabs: { reports: 'Nahlášení', ai: 'Odpovědi AI', hidden: 'Skryté', strains: 'Odrůdy', challenges: 'Výzvy', users: 'Uživatelé' },
+    tabs: { reports: 'Nahlášení', photos: 'Fotky odrůd', ai: 'Odpovědi AI', hidden: 'Skryté', strains: 'Odrůdy', challenges: 'Výzvy', users: 'Uživatelé' },
     retry: 'Zkusit znovu',
     loadError: 'Seznam se nepodařilo načíst.',
     failed: 'Nepovedlo se – zkontroluj připojení',
     loadMore: 'Načíst další',
-    types: { post: 'Příspěvek', comment: 'Komentář', tip: 'Tip', profile: 'Profil', plant: 'Rostlina', strain: 'Odrůda', entry: 'Příspěvek do výzvy' },
+    types: { post: 'Příspěvek', comment: 'Komentář', tip: 'Tip', profile: 'Profil', plant: 'Rostlina', strain: 'Odrůda', entry: 'Příspěvek do výzvy', strain_photo: 'Fotka odrůdy' },
     reports: {
       empty: 'Fronta je prázdná',
       emptyText: 'Žádná otevřená nahlášení. Klid.',
@@ -180,6 +199,25 @@ export default {
       emptyText: 'Tady uvidíš skryté příspěvky, komentáře, tipy, rostliny a příspěvky do výzev.',
       unhide: 'Zobrazit',
       unhidden: 'Znovu viditelné'
+    },
+    photos: {
+      empty: 'Žádné fotky ke kontrole',
+      emptyText: 'Fotky, které pěstitelé přidají na stránky odrůd, tu čekají na schválení.',
+      count: { one: '{n} fotka čeká, nejstarší nahoře', few: '{n} fotky čekají, nejstarší nahoře', other: '{n} fotek čeká, nejstarší nahoře' },
+      openFull: 'Otevřít fotku v plné velikosti',
+      alt: 'Poslaná fotka odrůdy {strain}',
+      trainingYes: 'Smí se použít i k učení rozpoznávání problémů',
+      trainingNo: 'Jen do katalogu, bez učení',
+      breederStrain: 'Odrůda od původního šlechtitele: ukáže se s poznámkou o původu semen',
+      approve: 'Schválit',
+      reject: 'Zamítnout',
+      approved: 'Fotka schválena a zveřejněna',
+      rejected: 'Fotka zamítnuta',
+      rejectTitle: 'Zamítnout fotku',
+      rejectText: 'Pěstitel dostane upozornění. Krátký důvod mu pomůže poslat lepší fotku.',
+      reason: 'Důvod (nepovinné)',
+      reasonPh: 'Třeba: rozmazaná, je na ní člověk, není to tahle odrůda',
+      rejectSend: 'Zamítnout fotku'
     },
     strains: {
       empty: 'Žádné návrhy ke schválení',
