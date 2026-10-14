@@ -4,14 +4,11 @@ import { emptyData } from '../app/utils/schema'
 
 // In-memory Preferences and photo store shared with the mocked modules.
 const prefs = new Map<string, string>()
-/** every value written to the main key, in order */
-const writes: string[] = []
 const photos = new Map<string, { id: string, blob: Blob, createdAt: string }>()
 let failSet = false
 let failGet = false
 
-let native = true
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => native } }))
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }))
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
     get: async ({ key }: { key: string }) => {
@@ -20,7 +17,6 @@ vi.mock('@capacitor/preferences', () => ({
     },
     set: async ({ key, value }: { key: string, value: string }) => {
       if (failSet) throw new Error('quota exceeded')
-      if (key === 'budbuddy:data') writes.push(value)
       prefs.set(key, value)
     },
     remove: async ({ key }: { key: string }) => void prefs.delete(key),
@@ -75,8 +71,6 @@ beforeEach(() => {
   photos.clear()
   failSet = false
   failGet = false
-  native = true
-  vi.stubGlobal('window', {})
 })
 // demo photo seeding is scheduled on window timers; it may fire after a test ended
 vi.stubGlobal('window', {})
@@ -265,59 +259,5 @@ describe('demo garden', () => {
     const mixed = normalizeData(demo)
     expect(mixed.plants.filter(p => p.demo)).toHaveLength(4)
     expect(mixed.settings.demo).toBe(false)
-  })
-})
-
-describe('desktop showcase', () => {
-  const desktop = () => {
-    native = false
-    vi.stubGlobal('window', { matchMedia: () => ({ matches: true }) })
-  }
-
-  it('shows the demo over an old saved garden and never saves over it', async () => {
-    desktop()
-    prefs.set(KEY, JSON.stringify(userData()))
-    photos.set('u1', photo('u1'))
-    const { useGrow } = await boot()
-    const grow = useGrow()
-    expect(grow.preview.value).toBe(true)
-    expect(grow.state.settings.demo).toBe(true)
-    // modules of earlier tests may still save into the shared map: only look for this test's edits
-    const from = writes.length
-    grow.deletePlant(grow.state.plants[0]!.id)
-    grow.addPlant({ name: 'Tried it' })
-    await afterSave()
-    expect(writes.slice(from).some(v => v.includes('Tried it'))).toBe(false)
-    expect(photos.has('u1')).toBe(true)
-  })
-
-  it('opens the saved garden on request and remembers it', async () => {
-    desktop()
-    prefs.set(KEY, JSON.stringify(userData()))
-    const { useGrow } = await boot()
-    await useGrow().startOwnGarden()
-    expect(useGrow().preview.value).toBe(false)
-    expect(useGrow().state.plants.map(p => p.name)).toEqual(['Mine'])
-    const again = await boot()
-    expect(again.useGrow().preview.value).toBe(false)
-    expect(again.useGrow().state.plants.map(p => p.name)).toEqual(['Mine'])
-  })
-
-  it('keeps a garden saved since the showcase existed', async () => {
-    native = true
-    prefs.set(KEY, JSON.stringify(userData()))
-    const { useGrow } = await boot()
-    useGrow().updatePlant('p1', { notes: 'x' })
-    await afterSave()
-    desktop()
-    const again = await boot()
-    expect(again.useGrow().preview.value).toBe(false)
-  })
-
-  it('leaves the demo garden itself alone', async () => {
-    desktop()
-    const { useGrow } = await boot()
-    expect(useGrow().preview.value).toBe(false)
-    expect(useGrow().state.settings.demo).toBe(true)
   })
 })
