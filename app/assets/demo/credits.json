@@ -1,45 +1,5 @@
 [
   {
-    "file": "seedling-sprout.jpg",
-    "title": "Cannabis Baby.jpg",
-    "author": "Grower",
-    "license": "Public domain",
-    "licenseUrl": null,
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cannabis_Baby.jpg"
-  },
-  {
-    "file": "canopy-scrog.jpg",
-    "title": "Indoor cannabis plants.jpg",
-    "author": "Plantlady223",
-    "license": "CC BY-SA 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Indoor_cannabis_plants.jpg"
-  },
-  {
-    "file": "trichomes.jpg",
-    "title": "Super silver haze trichomes.jpg",
-    "author": "Rikva",
-    "license": "Public domain",
-    "licenseUrl": null,
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Super_silver_haze_trichomes.jpg"
-  },
-  {
-    "file": "nl-veg.jpg",
-    "title": "Northern lights.JPG",
-    "author": "Sativaindica",
-    "license": "CC BY 3.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Northern_lights.JPG"
-  },
-  {
-    "file": "nl-flower.jpg",
-    "title": "Cannabis flowering28.jpg",
-    "author": "Rotbuche",
-    "license": "Public domain",
-    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
-    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cannabis_flowering28.jpg"
-  },
-  {
     "file": "ww-bloom.jpg",
     "title": "White Widow (Dutch Passion), 29 day of bloom, v. 2.jpg",
     "author": "Yuri Che",
@@ -80,14 +40,6 @@
     "sourceUrl": "https://www.flickr.com/photos/132327282@N07/33593981171/"
   },
   {
-    "file": "flower-plant.jpg",
-    "title": "Sticky Broccoli Canopy in Reflective Grow Tent at Week 11 — Zamnesia",
-    "author": "Zamnesia",
-    "license": "CC BY 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55505564489/"
-  },
-  {
     "file": "drying.jpg",
     "title": "Buds drying in a grow tent",
     "author": "Cannabis Pictures",
@@ -102,5 +54,133 @@
     "license": "CC BY 4.0",
     "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
     "sourceUrl": "https://www.flickr.com/photos/royal-queen-seeds-official/55473924001/"
+  },
+  {
+    "file": "nl-sprout.webp",
+    "title": "Black Diamond Cannabis Seedling in a Peat Pot with Dew — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55558818405/"
+  },
+  {
+    "file": "nl-seedling.webp",
+    "title": "Side View of a Black Diamond Cannabis Seedling with Early Leaves — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55558526603/"
+  },
+  {
+    "file": "nl-leaves.webp",
+    "title": "Young Black Diamond Cannabis Plant in Soil with Grow Label — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55557407272/"
+  },
+  {
+    "file": "nl-topped.webp",
+    "title": "Potted Black Diamond Cannabis Plant in Vegetative Stage on Black Background — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55576756575/"
+  },
+  {
+    "file": "nl-flip.webp",
+    "title": "Black Diamond Cannabis Plant on Black Background — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55576512239/"
+  },
+  {
+    "file": "nl-stretch.webp",
+    "title": "Black Diamond Cannabis Growing Tips on Black — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55576516759/"
+  },
+  {
+    "file": "nl-early-bud.webp",
+    "title": "Cosmic Noodle Cannabis Canopy With Emerging Buds — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55533478751/"
+  },
+  {
+    "file": "nl-mid-flower.webp",
+    "title": "Cosmic Noodle Central Cannabis Cola and Canopy — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55533592213/"
+  },
+  {
+    "file": "nl-bud.webp",
+    "title": "Cosmic Noodle Flowering Bud Framed by Fan Leaves — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55533634714/"
+  },
+  {
+    "file": "nl-trichome.webp",
+    "title": "Northern Lights Clear Glandular Trichome Heads Rising From a Green Flower Macro — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55533453286/"
+  },
+  {
+    "file": "sd-clone.webp",
+    "title": "Cannabis Clones under light.JPG",
+    "author": "Cannabis Training University",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cannabis_Clones_under_light.JPG"
+  },
+  {
+    "file": "sd-veg.webp",
+    "title": "Young plants in veg.jpg",
+    "author": "Beeblebrox",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Young_plants_in_veg.jpg"
+  },
+  {
+    "file": "sd-topped.webp",
+    "title": "Total Topping.jpg",
+    "author": "Da.WheezeGenetics",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Total_Topping.jpg"
+  },
+  {
+    "file": "gg-germ.webp",
+    "title": "Cannabis Seed Germinating — Royal Queen Seeds",
+    "author": "Royal Queen Seeds",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/royal-queen-seeds-official/55381988782/"
+  },
+  {
+    "file": "gg-sprout.webp",
+    "title": "Black Runtz Cannabis Seedling in Peat Pot on Dark Backdrop — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55558813410/"
+  },
+  {
+    "file": "gg-leaves.webp",
+    "title": "Detail of a Black Runtz Cannabis Seedling's Young Leaves — Zamnesia",
+    "author": "Zamnesia",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "sourceUrl": "https://www.flickr.com/photos/zamnesia/55558421546/"
   }
 ]

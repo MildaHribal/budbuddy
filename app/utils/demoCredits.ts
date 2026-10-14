@@ -9,11 +9,12 @@ export interface PhotoCredit {
   sourceUrl: string
 }
 
-/** Wikimedia Commons attributions for the bundled demo photos. */
+/** Attributions for the bundled demo photos. */
 export const DEMO_PHOTO_CREDITS: PhotoCredit[] = credits
 
-// generic shots plus real photos of the demo strains (nl-*, ww-*) from the strain catalogue
-export type DemoPhoto = 'seedling-led' | 'seedling-sprout' | 'veg-coco' | 'canopy-scrog' | 'flower-plant' | 'trichomes' | 'drying'
-  | 'nl-veg' | 'nl-flower' | 'nl-tent' | 'ww-bloom' | 'ww-flower' | 'ww-cured'
+// cover shots plus a photo diary per demo plant (nl-*, sd-*, gg-*, ww-*)
+export type DemoPhoto = 'seedling-led' | 'veg-coco' | 'drying' | 'nl-tent' | 'ww-bloom' | 'ww-flower' | 'ww-cured'
+  | 'nl-sprout' | 'nl-seedling' | 'nl-leaves' | 'nl-topped' | 'nl-flip' | 'nl-stretch' | 'nl-early-bud' | 'nl-mid-flower' | 'nl-bud' | 'nl-trichome'
+  | 'sd-clone' | 'sd-veg' | 'sd-topped' | 'gg-germ' | 'gg-sprout' | 'gg-leaves'
 
 export const demoPhotoId = (slug: DemoPhoto) => `demo-${slug}`

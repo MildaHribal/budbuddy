@@ -248,7 +248,8 @@ export function normalizeData(raw: unknown): GrowData {
     nagQuiet: s.nagQuiet !== false,
     // existing gardens skip the first-run guide
     onboarded: s.onboarded === true || (s.onboarded === undefined && data.plants.length > 0),
-    demo: s.demo === true
+    demo: s.demo === true,
+    ...(Number.isInteger(s.demoVersion) ? { demoVersion: s.demoVersion as number } : {})
   }
   tagLegacyDemo(data)
   data.guide = normalizeGuide(r.guide)

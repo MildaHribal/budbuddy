@@ -3,9 +3,9 @@ import { photoStore } from './photoStore'
 
 // loaded lazily: the photo URLs must stay out of the entry chunk (they become <link rel=prefetch>)
 
-const assets = import.meta.glob<string>('../assets/demo/*.jpg', { eager: true, query: '?url', import: 'default' })
+const assets = import.meta.glob<string>('../assets/demo/*.{jpg,webp}', { eager: true, query: '?url', import: 'default' })
 const urls: Record<string, string> = Object.fromEntries(
-  Object.entries(assets).map(([path, url]) => [`demo-${path.split('/').pop()!.replace(/\.jpg$/, '')}`, url])
+  Object.entries(assets).map(([path, url]) => [`demo-${path.split('/').pop()!.replace(/\.(jpg|webp)$/, '')}`, url])
 )
 
 export const demoPhotoUrl = (id: string): string | undefined => urls[id]

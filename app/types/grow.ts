@@ -159,6 +159,8 @@ export interface Settings {
   onboarded: boolean
   /** data is the bundled demo garden */
   demo: boolean
+  /** DEMO_VERSION the demo plants were built with; absent = 1 */
+  demoVersion?: number
 }
 
 export interface GuideProgress {

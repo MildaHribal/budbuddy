@@ -5,7 +5,7 @@ import type { EnvironmentData } from '~/types/environment'
 import type { GrowData, Harvest, JournalEntry, Plant, StageId, Task } from '~/types/grow'
 import { pruneChats } from '~/utils/chatStore'
 import { addDays, daysBetween, todayISO } from '~/utils/date'
-import { buildDemoData } from '~/utils/demo'
+import { buildDemoData, DEMO_VERSION, upgradeDemo } from '~/utils/demo'
 import { skipsOnboarding } from '~/utils/firstVisit'
 import { blankEntry } from '~/utils/entries'
 import { createId } from '~/utils/id'
@@ -255,9 +255,14 @@ async function load(): Promise<LoadStatus> {
       seedDemoInBackground()
       return 'recovered'
     }
-    replaceState(data)
-    readingsDirty = migrateReadings
-    if (migrateReadings) await writeNow().catch(e => console.error('[BudBuddy] moving readings failed', e))
+    const upgraded = upgradeDemo(data)
+    replaceState(upgraded ?? data)
+    readingsDirty = migrateReadings || !!upgraded
+    if (readingsDirty) await writeNow().catch(e => console.error('[BudBuddy] saving failed', e))
+    if (upgraded) {
+      pruneChats(state.plants.map(p => p.id)).catch(() => {})
+      seedDemoInBackground()
+    }
     return 'ok'
   }
 
@@ -295,7 +300,7 @@ function seedDemoNow(): Promise<void> {
 
 /**
  * Copies the bundled demo photos into the store once the app is idle; until then photoUrl() serves the bundled files.
- * On first run ~750 KB of photos would otherwise compete with the boot on a slow connection.
+ * On first run ~1.5 MB of photos would otherwise compete with the boot on a slow connection.
  */
 function seedDemoInBackground(delay = 4000) {
   demoSeedDue = true
@@ -644,7 +649,7 @@ async function loadDemo() {
   if (loadError.value) return
   const demo = buildDemoData()
   demo.guide = JSON.parse(JSON.stringify(state.guide))
-  demo.settings = { ...JSON.parse(JSON.stringify(state.settings)), demo: true, initialized: true, onboarded: true }
+  demo.settings = { ...JSON.parse(JSON.stringify(state.settings)), demo: true, demoVersion: DEMO_VERSION, initialized: true, onboarded: true }
   replaceState(demo)
   await writeNow()
   // old photos go, except those a set-aside unreadable copy still refers to
