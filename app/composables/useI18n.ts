@@ -9,12 +9,12 @@ type LocaleModule = { default: Record<Locale, Dict> }
 // Heavy namespaces used only on a few routes load on demand (see middleware/i18n.global.ts).
 // Community, AI and single-page texts load with their routes (middleware/i18n.global.ts) to keep the entry chunk small.
 export const COMMUNITY_NAMESPACES = ['feed', 'profile', 'auth', 'strains', 'admin', 'challenge', 'notifications', 'report', 'tips'] as const
-export const LAZY_NAMESPACES = ['guide', 'guideWidgets', 'guideArt', 'ai', 'plant', 'tools', 'stats', 'settings', 'manage', 'review', 'environment', 'hunts', 'labels', 'care', 'problems', 'game', 'gameDry', 'gameChallenge', 'gameBreed', ...COMMUNITY_NAMESPACES] as const
+export const LAZY_NAMESPACES = ['guide', 'guideWidgets', 'guideArt', 'ai', 'plant', 'tools', 'stats', 'settings', 'manage', 'review', 'environment', 'hunts', 'labels', 'care', 'problems', ...COMMUNITY_NAMESPACES] as const
 export type LazyNamespace = typeof LAZY_NAMESPACES[number]
 
 // glob patterns must be literals, so the list is repeated here
-const eager = import.meta.glob<LocaleModule>(['../locales/*.ts', '!../locales/{guide,guideWidgets,guideArt,ai,plant,tools,stats,settings,manage,review,environment,hunts,labels,care,problems,game,gameDry,gameChallenge,gameBreed,feed,profile,auth,strains,admin,challenge,notifications,report,tips}.ts'], { eager: true })
-const lazy = import.meta.glob<LocaleModule>('../locales/{guide,guideWidgets,guideArt,ai,plant,tools,stats,settings,manage,review,environment,hunts,labels,care,problems,game,gameDry,gameChallenge,gameBreed,feed,profile,auth,strains,admin,challenge,notifications,report,tips}.ts')
+const eager = import.meta.glob<LocaleModule>(['../locales/*.ts', '!../locales/{guide,guideWidgets,guideArt,ai,plant,tools,stats,settings,manage,review,environment,hunts,labels,care,problems,feed,profile,auth,strains,admin,challenge,notifications,report,tips}.ts'], { eager: true })
+const lazy = import.meta.glob<LocaleModule>('../locales/{guide,guideWidgets,guideArt,ai,plant,tools,stats,settings,manage,review,environment,hunts,labels,care,problems,feed,profile,auth,strains,admin,challenge,notifications,report,tips}.ts')
 const dicts: Record<Locale, Dict> = { en: {}, cs: {} }
 const nsOf = (path: string) => path.split('/').pop()!.replace(/\.ts$/, '')
 

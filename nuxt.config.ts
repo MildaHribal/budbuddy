@@ -1,6 +1,4 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { existsSync, readdirSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
 import pkg from './package.json'
 
 export default defineNuxtConfig({
@@ -62,23 +60,6 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2025-01-15',
-
-  // shared/game is also imported by Deno edge functions, which need explicit .ts extensions
-  typescript: {
-    tsConfig: { compilerOptions: { allowImportingTsExtensions: true } },
-    sharedTsConfig: { compilerOptions: { allowImportingTsExtensions: true } },
-    nodeTsConfig: { compilerOptions: { allowImportingTsExtensions: true } }
-  },
-
-  hooks: {
-    // Vite emits onnxruntime's 14 MB wasm into _nuxt, but the app loads it from /ai/ort/ (wasmPaths)
-    'nitro:build:public-assets'(nitro) {
-      const dir = join(nitro.options.output.publicDir, '_nuxt')
-      for (const f of existsSync(dir) ? readdirSync(dir) : []) {
-        if (f.startsWith('ort-wasm-')) rmSync(join(dir, f))
-      }
-    }
-  },
 
   eslint: {
     config: {

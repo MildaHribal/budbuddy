@@ -238,8 +238,6 @@ function fromC() {
 
       <ReviewToolLinks />
 
-      <LazyGameEntryCard with-heading />
-
       <section aria-labelledby="tools-care">
         <div class="section-head">
           <h2

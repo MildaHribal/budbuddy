@@ -319,8 +319,6 @@ const TOOL_LINKS = [
         />
       </NuxtLink>
 
-      <LazyGameEntryCard />
-
       <section aria-labelledby="setup-h">
         <div class="section-head">
           <h2
