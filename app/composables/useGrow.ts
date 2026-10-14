@@ -658,6 +658,16 @@ async function showSavedGarden() {
   collectGarbagePhotos().catch(() => {})
 }
 
+/** Shows the demo over the saved garden without saving anything (app tour replay); showSavedGarden() ends it. */
+async function previewDemo() {
+  if (loadError.value || preview.value) return
+  await writeNow()
+  preview.value = true
+  const demo = buildDemoData()
+  demo.settings = { ...demo.settings, language: state.settings.language, initialized: true, onboarded: true }
+  replaceState(demo)
+}
+
 /** Leaves the demo garden: demo plants go, the grower's own plants and settings stay. */
 async function startOwnGarden() {
   if (loadError.value) return
@@ -749,6 +759,8 @@ export function useGrow() {
     eraseAll,
     loadDemo,
     startOwnGarden,
+    previewDemo,
+    showSavedGarden,
     updateSettings: (patch: Partial<GrowData['settings']>) => Object.assign(state.settings, patch),
     updateGuide: (patch: Partial<GrowData['guide']>) => Object.assign(state.guide, patch),
     /** write access for feature modules that keep their own slice of GrowData (curing, treatments) */

@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { Capacitor } from '@capacitor/core'
-
 const route = useRoute()
 const scroller = ref<HTMLElement | null>(null)
 const hideNav = computed(() => route.meta.hideNav === true)
 
-// Web visitors land in the demo garden; offer the way out at the end of home.
+// Demo garden (web visitors, or the app after its tour): offer the way out at the end of home.
 const { state, preview } = useGrow()
 const { t } = useI18n()
 const startOwnGarden = useOwnGarden()
-const demoNote = computed(() => !Capacitor.isNativePlatform() && (state.settings.demo || state.plants.some(p => p.demo)) && route.path === '/')
+const demoNote = computed(() => (state.settings.demo || state.plants.some(p => p.demo)) && route.path === '/')
 
 // Each page starts at the top – the scroll container is ours, not the window's.
 watch(() => route.path, () => {

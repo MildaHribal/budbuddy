@@ -6,6 +6,7 @@ import { authUiWanted } from '~/utils/authUi'
 
 const { ready, loadError, recovered, state } = useGrow()
 const { t } = useI18n()
+const { active: tourActive } = useAppTour()
 
 // Never over unreadable or set-aside data: its "Start empty" would wipe what is left.
 const onboarding = computed(() => ready.value && !loadError.value && !recovered.value && !state.settings.onboarded)
@@ -92,6 +93,7 @@ const showcase = computed(() => !native && wide.value)
       <NuxtLayout v-if="ready && pageWarm">
         <NuxtPage />
       </NuxtLayout>
+      <LazyAppTour v-if="ready && pageWarm && tourActive" />
       <AppToaster />
       <ConfirmDialog />
       <LazyCommunitySignInSheet v-if="ready && authUi" />

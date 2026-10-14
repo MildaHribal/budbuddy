@@ -212,6 +212,9 @@ async function demo() {
   navigateTo('/')
 }
 
+const appTour = useAppTour()
+const replayTour = () => appTour.replay().catch(e => console.error('[BudBuddy] tour failed', e))
+
 async function erase() {
   const ok = await confirm({
     title: t('settings.confirm.eraseTitle'),
@@ -691,6 +694,27 @@ async function erase() {
               class="size-5 trail"
             />
           </NuxtLink>
+          <button
+            type="button"
+            class="row"
+            :disabled="!!busy || !!grow.loadError.value"
+            @click="replayTour"
+          >
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-route"
+                class="size-5"
+              />
+            </span>
+            <span class="row-text">
+              <strong>{{ t('tour.replay') }}</strong>
+              <span>{{ t('tour.replayHint') }}</span>
+            </span>
+            <UIcon
+              name="i-tabler-chevron-right"
+              class="size-5 trail"
+            />
+          </button>
         </div>
         <p class="note">
           {{ t('settings.data.note') }}

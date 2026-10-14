@@ -2,6 +2,7 @@
 import type { Settings } from '~/types/grow'
 import { czechVocative, LOCALES, type Locale } from '~/utils/locale'
 import { remindersSupported, requestReminderPermission } from '~/composables/useReminders'
+import { isDemoGarden } from '~/utils/appTour'
 
 const { state, updateSettings, eraseAll } = useGrow()
 const { t, locale } = useI18n()
@@ -88,6 +89,10 @@ function setReminderTime(e: Event) {
   if (/^\d{2}:\d{2}$/.test(v)) updateSettings({ reminderTime: v })
 }
 
+// a fresh native install keeps the demo garden for the app tour that follows
+const tour = useAppTour()
+const canTour = native && isDemoGarden(state)
+
 const choice = ref<'demo' | 'empty' | null>(null)
 async function finish(mode: 'demo' | 'empty') {
   if (leaving.value || busy.value) return
@@ -105,7 +110,10 @@ async function finish(mode: 'demo' | 'empty') {
     busy.value = false
   }
   leaving.value = true
-  setTimeout(() => updateSettings({ onboarded: true }), reduced ? 0 : 220)
+  setTimeout(() => {
+    updateSettings({ onboarded: true })
+    if (mode === 'demo' && canTour) tour.startFirstRun({ lightHours: lightTouched.value ? state.settings.lightHours : null })
+  }, reduced ? 0 : 220)
 }
 </script>
 
@@ -425,8 +433,8 @@ async function finish(mode: 'demo' | 'empty') {
                 <GrowIcon name="flowering" />
               </span>
               <span class="c-text">
-                <strong>{{ t('onboarding.start.demo') }}</strong>
-                <span>{{ t('onboarding.start.demoHint') }}</span>
+                <strong>{{ canTour ? t('onboarding.start.tour') : t('onboarding.start.demo') }}</strong>
+                <span>{{ canTour ? t('onboarding.start.tourHint') : t('onboarding.start.demoHint') }}</span>
               </span>
               <span
                 class="radio"

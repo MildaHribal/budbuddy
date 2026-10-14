@@ -50,6 +50,8 @@ export default {
       lead: 'You can change your mind later in Settings.',
       demo: 'Explore the demo garden',
       demoHint: 'Sample plants with a full journal to look around',
+      tour: 'Show me around',
+      tourHint: 'A one-minute tour with a sample garden. Skip it any time.',
       empty: 'Start empty',
       emptyHint: 'A clean tent for your own plants'
     }
@@ -105,6 +107,8 @@ export default {
       lead: 'Rozmyslet si to můžeš později v Nastavení.',
       demo: 'Prozkoumat ukázkovou zahradu',
       demoHint: 'Ukázkové rostliny s vyplněným deníkem',
+      tour: 'Provést aplikací',
+      tourHint: 'Minutová prohlídka s ukázkovou zahradou. Kdykoli ji přeskočíš.',
       empty: 'Začít s prázdnou',
       emptyHint: 'Čistý stan pro tvoje vlastní rostliny'
     }
