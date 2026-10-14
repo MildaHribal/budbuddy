@@ -199,11 +199,35 @@ function harvestChip(p: Plant): { text: string, late: boolean } | null {
     : { text: t('home.garden.harvestDays', { n: mid }), late: false }
 }
 
+const byNewest = (a: JournalEntry, b: JournalEntry) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)
+function keepNewest(list: JournalEntry[], e: JournalEntry, max: number) {
+  if (list.length >= max && byNewest(e, list[list.length - 1]!) >= 0) return
+  list.push(e)
+  list.sort(byNewest)
+  if (list.length > max) list.pop()
+}
+
+// one pass over the journal: newest entries, newest photo entries, each plant's last pH / EC
+const journal = computed(() => {
+  const plantIds = new Set(state.plants.map(p => p.id))
+  const recent: JournalEntry[] = []
+  const photos: JournalEntry[] = []
+  const readings = new Map<string, JournalEntry>()
+  for (const e of state.entries) {
+    keepNewest(recent, e, 4)
+    if (e.photoIds.length && plantIds.has(e.plantId)) keepNewest(photos, e, 10)
+    if (e.ph != null || e.ec != null) {
+      const cur = readings.get(e.plantId)
+      if (!cur || byNewest(e, cur) < 0) readings.set(e.plantId, e)
+    }
+  }
+  return { recent, photos, readings }
+})
+
 // latest pH / EC logged for a plant
 function lastReadings(p: Plant): string[] {
-  const list = state.entries.filter(e => e.plantId === p.id && (e.ph != null || e.ec != null))
-  if (!list.length) return []
-  const last = list.reduce((a, b) => (b.date > a.date || (b.date === a.date && b.createdAt > a.createdAt) ? b : a))
+  const last = journal.value.readings.get(p.id)
+  if (!last) return []
   const out: string[] = []
   if (last.ph != null) out.push(`pH ${formatNumber(last.ph, 1)}`)
   if (last.ec != null) out.push(`EC ${formatNumber(last.ec, 1)}`)
@@ -299,9 +323,7 @@ const nextMilestones = computed(() => milestones(activePlants.value, today.value
 }))
 
 // ── Recent photos ─────────────────────────────────────────────────
-const recentPhotos = computed<(LightboxItem & { key: string, plant: Plant, label: string })[]>(() => [...state.entries]
-  .filter(e => e.photoIds.length)
-  .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+const recentPhotos = computed<(LightboxItem & { key: string, plant: Plant, label: string })[]>(() => journal.value.photos
   .flatMap((e) => {
     const plant = grow.getPlant(e.plantId)
     if (!plant) return []
@@ -325,9 +347,7 @@ function openPhoto(i: number, ev: MouseEvent) {
 }
 
 // ── Recent activity ───────────────────────────────────────────────
-const recent = computed<JournalEntry[]>(() => [...state.entries]
-  .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
-  .slice(0, 4))
+const recent = computed<JournalEntry[]>(() => journal.value.recent)
 
 // ── Tip ───────────────────────────────────────────────────────────
 const tips = computed(() => {
@@ -924,6 +944,8 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           </li>
         </ul>
       </section>
+
+      <LazyGameEntryCard variant="home" />
 
       <div class="card tip">
         <button
