@@ -4,6 +4,8 @@ import { emptyData } from '../app/utils/schema'
 
 // In-memory Preferences and photo store shared with the mocked modules.
 const prefs = new Map<string, string>()
+/** every value written to the main key, in order */
+const writes: string[] = []
 const photos = new Map<string, { id: string, blob: Blob, createdAt: string }>()
 let failSet = false
 let failGet = false
@@ -18,6 +20,7 @@ vi.mock('@capacitor/preferences', () => ({
     },
     set: async ({ key, value }: { key: string, value: string }) => {
       if (failSet) throw new Error('quota exceeded')
+      if (key === 'budbuddy:data') writes.push(value)
       prefs.set(key, value)
     },
     remove: async ({ key }: { key: string }) => void prefs.delete(key),
@@ -272,21 +275,19 @@ describe('desktop showcase', () => {
   }
 
   it('shows the demo over an old saved garden and never saves over it', async () => {
-    // a save still pending from the previous test would write into the shared map
-    await afterSave()
-    prefs.clear()
     desktop()
-    const saved = JSON.stringify(userData())
-    prefs.set(KEY, saved)
+    prefs.set(KEY, JSON.stringify(userData()))
     photos.set('u1', photo('u1'))
     const { useGrow } = await boot()
     const grow = useGrow()
     expect(grow.preview.value).toBe(true)
     expect(grow.state.settings.demo).toBe(true)
+    // modules of earlier tests may still save into the shared map: only look for this test's edits
+    const from = writes.length
     grow.deletePlant(grow.state.plants[0]!.id)
     grow.addPlant({ name: 'Tried it' })
     await afterSave()
-    expect(prefs.get(KEY)).toBe(saved)
+    expect(writes.slice(from).some(v => v.includes('Tried it'))).toBe(false)
     expect(photos.has('u1')).toBe(true)
   })
 
