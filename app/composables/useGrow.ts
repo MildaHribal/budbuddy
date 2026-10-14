@@ -16,7 +16,6 @@ import { isGrowing, stageStartDate } from '~/utils/stages'
 import { suggestWatering, type WateringSuggestion } from '~/utils/watering'
 import { resetPhotoUrls, THUMB_SUFFIX } from './useUi'
 import { emptyEnvironment } from '~/utils/env/schema'
-import { readGameForBackup, restoreGameFromBackup } from '~/utils/gameBackup'
 import { emptyData, migrateLegacy, normalizeData, normalizePlant, type LegacyInput } from '~/utils/schema'
 
 const STORAGE_KEY = 'budbuddy:data'
@@ -556,8 +555,7 @@ async function exportBackup(write: (chunk: string) => Promise<void>, opts: { pho
   if (demoSeedDue || demoSeed) await seedDemoNow()
   await collectGarbagePhotos()
   const data = JSON.parse(JSON.stringify(state)) as GrowData
-  const game = await readGameForBackup().catch(() => null)
-  const head = JSON.stringify({ app: 'budbuddy', exportedAt: new Date().toISOString(), ...data, ...(game ? { game } : {}) })
+  const head = JSON.stringify({ app: 'budbuddy', exportedAt: new Date().toISOString(), ...data })
   if (opts.photos === false) {
     await write(`${head.slice(0, -1)},"photosIncluded":false,"photos":[]}`)
     return { photos: 0 }
@@ -605,8 +603,6 @@ async function importBackup(json: string): Promise<{ plants: number, entries: nu
   // restoring is the way out of unreadable data
   loadError.value = null
   await writeNow()
-  // a backup without a game keeps the game on this device
-  if (raw.game) await restoreGameFromBackup(raw.game).catch(e => console.error('[BudBuddy] game not restored', e))
   startWatching()
   pruneChats(data.plants.map(p => p.id)).catch(() => {})
   return { plants: data.plants.length, entries: data.entries.length, photos: photos.length, skipped }
