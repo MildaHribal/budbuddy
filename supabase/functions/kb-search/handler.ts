@@ -1,6 +1,6 @@
 // Knowledge search for apps without the on-device pack: embeds the query (gte-small) and calls
 // public.kb_search with the service role (SUPABASE_SERVICE_ROLE_KEY, injected by Supabase).
-import { isAllowedOrigin } from '../../../netlify/functions/chat.mts'
+import { isAllowedOrigin, type Rejection } from '../../../netlify/functions/chat.mts'
 import { env } from '../../../shared/env.ts'
 
 export const MAX_QUERY = 600
@@ -10,6 +10,8 @@ const MAX_BODY_BYTES = 4_000
 const DEFAULT_SUPABASE_URL = 'https://mlvpmiwvuxgwjssrtxsq.supabase.co'
 
 export type Embed = (text: string) => Promise<number[]>
+/** sign-in check; null admits the request */
+export type KbGate = (req: Request) => Promise<Rejection | null>
 
 export interface KbPassage {
   id: string
@@ -29,7 +31,7 @@ function cors(origin: string | null): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin) ? origin : 'null',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-BudBuddy-Token',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-BudBuddy-Token',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   }
@@ -71,7 +73,7 @@ export function toPassages(rows: readonly Row[], k: number): KbPassage[] {
   return out
 }
 
-export function createKbSearchHandler(embed: Embed) {
+export function createKbSearchHandler(embed: Embed, gate?: KbGate) {
   return async (req: Request): Promise<Response> => {
     const origin = req.headers.get('origin')
     const headers = cors(origin)
@@ -83,6 +85,9 @@ export function createKbSearchHandler(embed: Embed) {
 
     const key = env('SUPABASE_SERVICE_ROLE_KEY')
     if (!key) return fail(503, 'not_configured', headers)
+
+    const refused = gate ? await gate(req) : null
+    if (refused) return fail(refused.status, refused.reason, headers)
 
     if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return fail(413, 'too_large', headers)
     const text = await req.text()

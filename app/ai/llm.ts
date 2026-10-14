@@ -29,7 +29,8 @@ export interface LlmAnswer {
   modelVersion?: string
 }
 
-export type LlmErrorCode = 'not-configured' | 'quota' | 'rate-limit' | 'safety' | 'offline' | 'model' | 'overloaded' | 'timeout' | 'aborted' | 'empty' | 'unknown'
+/** auth: signed out or the session expired (the page offers sign-in) */
+export type LlmErrorCode = 'not-configured' | 'quota' | 'rate-limit' | 'safety' | 'offline' | 'model' | 'overloaded' | 'timeout' | 'aborted' | 'empty' | 'auth' | 'banned' | 'unknown'
 
 /** Message is localised, ready to show. */
 export class LlmError extends Error {

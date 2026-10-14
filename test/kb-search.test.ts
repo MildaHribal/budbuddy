@@ -19,7 +19,7 @@ describe('kbSearchEndpoint', () => {
 describe('searchRemoteKb', () => {
   it('posts the query with the token and maps passages', async () => {
     const fetch = vi.fn(async () => Response.json({ passages: [{ id: 'a', kind: 'knowledge', title: 'A', text: 't', url: 'https://e.org', lang: 'en', score: 0.03, source: 'x' }, { id: 'b', kind: 'weird', title: 'B', text: 'u' }, { bad: 1 }] }))
-    const hits = await searchRemoteKb('taco leaves', { chatUrl: CHAT, token: 'tok', fetch })
+    const hits = await searchRemoteKb('taco leaves', { chatUrl: CHAT, token: 'tok', accessToken: 'jwt', fetch })
     expect(hits).toEqual([
       { id: 'a', kind: 'knowledge', title: 'A', text: 't', url: 'https://e.org', lang: 'en', score: 0.03 },
       { id: 'b', kind: 'corpus', title: 'B', text: 'u', lang: 'en', score: 0 }
@@ -28,12 +28,19 @@ describe('searchRemoteKb', () => {
     expect(url).toBe('https://x.supabase.co/functions/v1/kb-search')
     expect(JSON.parse(String(init.body))).toEqual({ query: 'taco leaves', k: 12 })
     expect((init.headers as Record<string, string>)['X-BudBuddy-Token']).toBe('tok')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer jwt')
+  })
+
+  it('skips the server when signed out', async () => {
+    const fetch = vi.fn()
+    expect(await searchRemoteKb('q', { chatUrl: CHAT, accessToken: null, fetch })).toEqual([])
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('gives up after the timeout and on HTTP errors', async () => {
     const hang: typeof fetch = (_u, init) => new Promise((_r, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))))
-    await expect(searchRemoteKb('q', { chatUrl: CHAT, fetch: hang, timeoutMs: 20 })).rejects.toThrow('aborted')
-    await expect(searchRemoteKb('q', { chatUrl: CHAT, fetch: async () => new Response('x', { status: 500 }) })).rejects.toThrow('500')
+    await expect(searchRemoteKb('q', { chatUrl: CHAT, accessToken: 'jwt', fetch: hang, timeoutMs: 20 })).rejects.toThrow('aborted')
+    await expect(searchRemoteKb('q', { chatUrl: CHAT, accessToken: 'jwt', fetch: async () => new Response('x', { status: 500 }) })).rejects.toThrow('500')
   })
 })
 
@@ -109,6 +116,16 @@ describe('kb-search edge function', () => {
     const handler = createKbSearchHandler(async () => [0])
     expect((await handler(post({ query: 'x' }, 'https://evil.example'))).status).toBe(403)
     expect((await handler(post({ k: 3 }))).status).toBe(400)
+  })
+
+  it('refuses what the gate refuses before embedding', async () => {
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service')
+    vi.stubEnv('BUDBUDDY_APP_TOKEN', '')
+    const embed = vi.fn(async () => [0])
+    const res = await createKbSearchHandler(embed, async () => ({ status: 401, reason: 'auth_required', message: 'x' }))(post({ query: 'x' }))
+    expect(res.status).toBe(401)
+    expect((await res.json()).error.reason).toBe('auth_required')
+    expect(embed).not.toHaveBeenCalled()
   })
 })
 

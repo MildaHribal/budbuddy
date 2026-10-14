@@ -2,6 +2,7 @@
 import type { KbHit } from './kb'
 import { retrievePassages, type KbSearch } from './retrieve'
 import { selectPassages } from './prompt'
+import { aiAccessToken, authHeader } from './session'
 
 export const REMOTE_KB_TIMEOUT_MS = 4000
 
@@ -14,6 +15,8 @@ export function kbSearchEndpoint(chatUrl: string): string | null {
 export interface RemoteKbOptions {
   chatUrl: string
   token?: string
+  /** signed-in user's token; looked up when omitted */
+  accessToken?: string | null
   k?: number
   timeoutMs?: number
   signal?: AbortSignal
@@ -23,6 +26,9 @@ export interface RemoteKbOptions {
 export async function searchRemoteKb(query: string, o: RemoteKbOptions): Promise<KbHit[]> {
   const url = kbSearchEndpoint(o.chatUrl)
   if (!url || !query.trim()) return []
+  const access = o.accessToken !== undefined ? o.accessToken : await aiAccessToken()
+  // the server only answers signed-in users
+  if (!access) return []
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), o.timeoutMs ?? REMOTE_KB_TIMEOUT_MS)
   const stop = () => ctrl.abort()
@@ -30,7 +36,7 @@ export async function searchRemoteKb(query: string, o: RemoteKbOptions): Promise
   try {
     const res = await (o.fetch ?? globalThis.fetch)(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(o.token ? { 'X-BudBuddy-Token': o.token } : {}) },
+      headers: { 'Content-Type': 'application/json', ...authHeader(access), ...(o.token ? { 'X-BudBuddy-Token': o.token } : {}) },
       body: JSON.stringify({ query, k: o.k ?? 12 }),
       signal: ctrl.signal
     })

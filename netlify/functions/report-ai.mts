@@ -1,8 +1,12 @@
-// Anonymous AI answer reports: validated, size-capped, rate-limited, then written to public.reports
+// AI answer reports: validated, size-capped, rate-limited, then written to public.reports
 // with the service role (SUPABASE_SERVICE_ROLE_KEY env var, never in the app).
+// The Supabase deployment passes a gate that requires sign-in and records the reporter.
 import { normalizeAiReport } from '../../shared/aiReport.ts'
 import { env } from '../../shared/env.ts'
-import { isAllowedOrigin } from './chat.mts'
+import { isAllowedOrigin, type Rejection } from './chat.mts'
+
+/** Who reports: a user id, null for anonymous, or a refusal. */
+export type ReportGate = (req: Request) => Promise<Rejection | { reporterId: string | null }>
 
 const MAX_BODY_BYTES = 16_000
 const DEFAULT_SUPABASE_URL = 'https://mlvpmiwvuxgwjssrtxsq.supabase.co'
@@ -11,7 +15,7 @@ function cors(origin: string | null): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin) ? origin : 'null',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-BudBuddy-Token',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-BudBuddy-Token',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   }
@@ -20,7 +24,7 @@ function cors(origin: string | null): Record<string, string> {
 const fail = (status: number, reason: string, headers: Record<string, string>) =>
   Response.json({ error: { reason } }, { status, headers })
 
-export default async (req: Request): Promise<Response> => {
+export const createReportHandler = (gate?: ReportGate) => async (req: Request): Promise<Response> => {
   const origin = req.headers.get('origin')
   const headers = cors(origin)
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers })
@@ -31,6 +35,9 @@ export default async (req: Request): Promise<Response> => {
 
   const key = env('SUPABASE_SERVICE_ROLE_KEY')
   if (!key) return fail(503, 'not_configured', headers)
+
+  const who = gate ? await gate(req) : { reporterId: null }
+  if ('status' in who) return fail(who.status, who.reason, headers)
 
   if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return fail(413, 'too_large', headers)
   const text = await req.text()
@@ -48,7 +55,7 @@ export default async (req: Request): Promise<Response> => {
   const res = await fetch(`${url}/rest/v1/reports`, {
     method: 'POST',
     headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ reporter_id: null, target_type: 'ai', target_id: report.targetId, reason: report.reason, details: report.details, meta: report.meta })
+    body: JSON.stringify({ reporter_id: who.reporterId, target_type: 'ai', target_id: report.targetId, reason: report.reason, details: report.details, meta: report.meta })
   }).catch(() => null)
   if (!res) return fail(502, 'upstream', headers)
   if (res.status === 409) return fail(409, 'already', headers)
@@ -58,6 +65,8 @@ export default async (req: Request): Promise<Response> => {
   }
   return new Response(null, { status: 204, headers })
 }
+
+export default createReportHandler()
 
 export const config = {
   path: '/api/report-ai',

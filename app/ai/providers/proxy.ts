@@ -1,8 +1,9 @@
-// Gemini via the proxy (netlify/functions/chat.mts, served by Supabase Edge Functions); the key stays on the server.
+// Gemini via the Supabase Edge Function proxy (handler in netlify/functions/chat.mts); the key stays on the server.
 import { AI_MODEL } from '../../../shared/aiModels'
 import { formatTime } from '../../utils/date'
 import { translate, type Params } from '../../composables/useI18n'
 import { LlmError, networkError, type ChatTurn, type LlmAnswer, type LlmImage, type LlmProvider, type LlmRequest } from '../llm'
+import { aiAccessToken, authHeader } from '../session'
 
 export interface ProxyEndpoint {
   url: string
@@ -66,9 +67,24 @@ export function quotaResetLabel(now = new Date()): string {
   return msg(sameDay ? 'resetToday' : 'resetTomorrow', { time: formatTime(reset.toISOString()).replace(/^0(\d)/, '$1') })
 }
 
+/** The server's own daily limit resets at midnight UTC. */
+export function utcResetLabel(now = new Date()): string {
+  const reset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1))
+  const sameDay = reset.toDateString() === now.toDateString()
+  return msg(sameDay ? 'resetToday' : 'resetTomorrow', { time: formatTime(reset.toISOString()).replace(/^0(\d)/, '$1') })
+}
+
+export const signInError = () => new LlmError('auth', msg('signIn'))
+
 export function proxyError(status: number, body: ProxyErrorBody | null, model: string): LlmError {
   const err = body?.error
   switch (err?.reason) {
+    case 'auth_required':
+      return signInError()
+    case 'banned':
+      return new LlmError('banned', msg('banned'))
+    case 'daily_limit':
+      return new LlmError('quota', msg('dailyLimit', { n: err.limit ?? '', when: utcResetLabel() }))
     case 'not_configured':
       return new LlmError('not-configured', msg('notConfigured'))
     case 'server_key':
@@ -94,6 +110,7 @@ export function proxyError(status: number, body: ProxyErrorBody | null, model: s
     case 'bad_request':
       return new LlmError('unknown', msg('badRequest', { message: err.message ?? msg('badRequestFallback') }))
   }
+  if (status === 401) return signInError()
   if (status === 429) return new LlmError('rate-limit', msg('rateLimit'))
   if (status === 404) return new LlmError('not-configured', msg('notFound'))
   if (status >= 500) return new LlmError('overloaded', msg('overloaded'))
@@ -156,11 +173,14 @@ export function createProxyProvider(endpoint: ProxyEndpoint): LlmProvider {
   async function generate(req: LlmRequest): Promise<LlmAnswer> {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) throw networkError(null)
     const answer: RunningAnswer = { text: '' }
+    const access = await aiAccessToken()
+    if (!access) throw signInError()
     try {
       const res = await fetch(endpoint.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeader(access),
           ...(endpoint.token ? { 'X-BudBuddy-Token': endpoint.token } : {})
         },
         body: JSON.stringify({
@@ -176,7 +196,7 @@ export function createProxyProvider(endpoint: ProxyEndpoint): LlmProvider {
         try {
           body = await res.json()
         } catch {
-          // e.g. Netlify's own rate-limit response
+          // e.g. the gateway's own rate-limit response
         }
         throw proxyError(res.status, body, AI_MODEL)
       }

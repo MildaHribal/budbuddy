@@ -3,11 +3,13 @@ import { Capacitor } from '@capacitor/core'
 import type { DiagHit } from '~/ai/diagnose'
 import { renderMarkdown } from '~/ai/markdown'
 import { DIAG_RELIABLE, evidenceLabel, kbKindLabel } from '~/ai/prompt'
-import { AI_REPORT_REASONS, sendAiReport, type AiReportReason } from '~/ai/report'
+import { AI_REPORT_REASONS, AiReportAuthError, sendAiReport, type AiReportReason } from '~/ai/report'
 import type { GuideLink } from '~/ai/guideLinks'
 import { getLesson } from '~/guide'
 import { getProblem } from '~/utils/problems'
 import { GENERAL_THREAD, type AssistantMessage } from '~/composables/useAssistant'
+import { loadNamespaces } from '~/composables/useI18n'
+import { authUiWanted } from '~/utils/authUi'
 import { locale } from '~/utils/locale'
 import type { Plant } from '~/types/grow'
 
@@ -137,6 +139,7 @@ async function attachPhoto(source: 'camera' | 'gallery') {
 
 async function send(text = input.value) {
   if (busy.value) return
+  if (needsSignIn.value) return promptSignIn()
   const question = text.trim()
   if (!question && !photo.value) return
   const file = photo.value
@@ -282,8 +285,14 @@ async function submitReport() {
     assistant.markReported(threadKey.value, m.id)
     reportFor.value = null
     notify(t(result === 'already' ? 'ai.report.already' : 'ai.report.sent'), { tone: 'success' })
-  } catch {
-    notify(t('ai.report.failed'), { tone: 'error' })
+  } catch (e) {
+    if (e instanceof AiReportAuthError) {
+      reportFor.value = null
+      notify(t('ai.report.signIn'), { tone: 'error' })
+      promptSignIn()
+    } else {
+      notify(t('ai.report.failed'), { tone: 'error' })
+    }
   } finally {
     reportBusy.value = false
   }
@@ -304,8 +313,41 @@ const offlineNotice = computed(() => {
 // the hosted website never talks to the AI proxy; the Android app does
 const webOnly = !Capacitor.isNativePlatform()
 
+// ── Sign-in: the assistant needs an account (loaded lazily, it pulls in supabase-js) ──
+type AuthApi = ReturnType<typeof import('~/composables/useAuth')['useAuth']>
+const authApi = shallowRef<AuthApi | null>(null)
+let authLoad: Promise<void> | null = null
+function loadAuth(): Promise<void> {
+  authLoad ??= Promise.all([import('~/composables/useAuth'), loadNamespaces(['auth'])])
+    .then(([a]) => {
+      authApi.value = a.useAuth()
+    })
+    .catch((e) => {
+      authLoad = null
+      throw e
+    })
+  return authLoad
+}
+const authChecked = computed(() => !!authApi.value?.ready.value)
+const needsSignIn = computed(() => !webOnly && authChecked.value && !authApi.value?.signedIn.value)
+
+/** Opens the sign-in sheet; a session the server rejected is dropped first. */
+async function promptSignIn() {
+  try {
+    await loadAuth()
+  } catch {
+    notify(t('ai.errors.network'), { tone: 'error' })
+    return
+  }
+  const auth = authApi.value!
+  if (auth.signedIn.value) await auth.signOut(true)
+  authUiWanted.value = true
+  auth.signInPrompt.value = true
+}
+
 onMounted(async () => {
   if (webOnly) return
+  loadAuth().catch(() => {})
   assistant.initOffline(config.app.baseURL)
   await assistant.ready()
   pickInitialThread()
@@ -730,6 +772,18 @@ onMounted(async () => {
                     <p>{{ m.error }}</p>
                     <div class="error-actions">
                       <button
+                        v-if="m.errorCode === 'auth' && isLast(m)"
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        @click="promptSignIn"
+                      >
+                        <UIcon
+                          name="i-tabler-login"
+                          class="size-4"
+                        />
+                        {{ t('ai.page.signInAction') }}
+                      </button>
+                      <button
                         v-if="m === messages[messages.length - 1] && assistant.canRetry(threadKey)"
                         type="button"
                         class="btn btn-soft btn-sm"
@@ -922,7 +976,42 @@ onMounted(async () => {
         <div ref="bottom" />
       </div>
 
-      <div class="composer">
+      <section
+        v-if="needsSignIn"
+        class="composer signin"
+        aria-labelledby="signin-h"
+      >
+        <UIcon
+          name="i-tabler-user-circle"
+          class="signin-icon size-6"
+        />
+        <div class="signin-text">
+          <h2
+            id="signin-h"
+            class="signin-title"
+          >
+            {{ t('ai.page.signInTitle') }}
+          </h2>
+          <p class="signin-body">
+            {{ t('ai.page.signInBody') }}
+          </p>
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            @click="promptSignIn"
+          >
+            <UIcon
+              name="i-tabler-login"
+              class="size-4"
+            />
+            {{ t('ai.page.signInAction') }}
+          </button>
+        </div>
+      </section>
+      <div
+        v-else
+        class="composer"
+      >
         <div
           v-if="attachMenu"
           class="attach-scrim"
@@ -1785,6 +1874,42 @@ a.src-title {
   padding: 10px 16px 12px;
   background: var(--bg);
   border-top: 1px solid var(--line);
+}
+
+/* Sign-in prompt in place of the composer */
+.signin {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.signin-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.signin-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.signin-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.signin-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
 }
 
 /* covers the strip between the composer and the nav */

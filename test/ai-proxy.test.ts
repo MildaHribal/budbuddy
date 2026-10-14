@@ -1,6 +1,7 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { locale } from '../app/utils/locale'
-import { applyChunk, finishAnswer, parseSse, proxyError, quotaResetLabel, toGeminiContents } from '../app/ai/providers/proxy'
+import { applyChunk, createProxyProvider, finishAnswer, parseSse, proxyError, quotaResetLabel, toGeminiContents, utcResetLabel } from '../app/ai/providers/proxy'
+import { setAiTokenSource } from '../app/ai/session'
 import { loadNamespaces } from '../app/composables/useI18n'
 
 // the ai namespace loads with its route in the app
@@ -75,5 +76,49 @@ describe('proxy provider', () => {
     expect(proxyError(503, { error: { reason: 'not_configured' } }, 'm').message).toContain('not set up')
     expect(proxyError(429, { error: { reason: 'quota', retryAfterSec: 37 } }, 'm').message).toContain('Next try in 37 s')
     expect(finishAnswer({ text: 'x', cutOff: 'timeout' } as never).text).toContain('server time limit')
+  })
+})
+
+describe('proxy provider sign-in', () => {
+  const fetchMock = vi.fn()
+  const provider = createProxyProvider({ url: 'https://x.supabase.co/functions/v1/chat' })
+  const sse = (text: string) => new Response(`data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text }] }, finishReason: 'STOP' }] })}\n\n`)
+
+  beforeEach(() => {
+    locale.value = 'en'
+    vi.stubGlobal('fetch', fetchMock)
+  })
+  afterEach(() => {
+    setAiTokenSource(null)
+    vi.unstubAllGlobals()
+    fetchMock.mockReset()
+  })
+
+  it('asks for sign-in without calling the server when signed out', async () => {
+    setAiTokenSource(async () => null)
+    await expect(provider.generate({ system: 's', history: [], userText: 'q' })).rejects.toMatchObject({ code: 'auth' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends the access token', async () => {
+    setAiTokenSource(async () => 'jwt')
+    fetchMock.mockResolvedValue(sse('Hi'))
+    expect((await provider.generate({ system: 's', history: [], userText: 'q' })).text).toBe('Hi')
+    const init = fetchMock.mock.calls[0]![1] as RequestInit
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer jwt')
+  })
+
+  it('maps sign-in, ban and daily-limit refusals', () => {
+    expect(proxyError(401, { error: { reason: 'auth_required' } }, 'm').code).toBe('auth')
+    expect(proxyError(401, null, 'm').code).toBe('auth')
+    expect(proxyError(403, { error: { reason: 'banned' } }, 'm').code).toBe('banned')
+    const daily = proxyError(429, { error: { reason: 'daily_limit', daily: true, limit: 40 } }, 'm')
+    expect(daily.code).toBe('quota')
+    expect(daily.message).toMatch(/^You have used all 40 AI questions for today\. More (today|tomorrow) around \d{1,2}:\d{2}\.$/)
+  })
+
+  it('resets the daily limit at midnight UTC', () => {
+    const midnight = new Date(Date.UTC(2026, 9, 12))
+    expect(utcResetLabel(new Date(Date.UTC(2026, 9, 11, 13, 0)))).toContain(`${midnight.getHours()}:${String(midnight.getMinutes()).padStart(2, '0')}`)
   })
 })

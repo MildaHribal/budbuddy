@@ -14,12 +14,21 @@ const MAX_CONTENTS = 24
 const MAX_PARTS = 8
 const MAX_IMAGES = 3
 const MAX_TEXT = 60_000
+// all text parts plus the system instruction
+const MAX_TOTAL_TEXT = 100_000
+const MAX_SYSTEM = 12_000
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
 
 // only the Android app (and local dev); the hosted websites must not spend the Gemini quota
 const FIXED_ORIGINS = new Set(['https://localhost', 'http://localhost', 'capacitor://localhost'])
 
 export type ErrorReason = 'not_configured' | 'unauthorized' | 'forbidden_origin' | 'bad_request' | 'too_large' | 'quota' | 'server_key' | 'model' | 'upstream' | 'timeout'
+  | 'auth_required' | 'banned' | 'daily_limit'
+
+/** A refusal from the gate (sign-in, bans, quotas). */
+export interface Rejection { status: number, reason: string, message: string, extra?: Record<string, unknown> }
+/** Runs before the body is read: rejects, or returns a charge step that runs once the request is valid. */
+export type ChatGate = (req: Request) => Promise<Rejection | (() => Promise<Rejection | null>)>
 
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return true
@@ -31,13 +40,13 @@ function cors(origin: string | null): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin) ? origin : 'null',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-BudBuddy-Token',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-BudBuddy-Token',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   }
 }
 
-const fail = (status: number, reason: ErrorReason, message: string, headers: Record<string, string>, extra: Record<string, unknown> = {}) =>
+const fail = (status: number, reason: ErrorReason | string, message: string, headers: Record<string, string>, extra: Record<string, unknown> = {}) =>
   Response.json({ error: { reason, message, ...extra } }, { status, headers })
 
 const clamp = (v: unknown, min: number, max: number, fallback: number) =>
@@ -63,6 +72,7 @@ export function validateChatRequest(raw: unknown): { model: string, body: Gemini
 
   if (!Array.isArray(r.contents) || !r.contents.length || r.contents.length > MAX_CONTENTS) return { error: 'Invalid contents.' }
   let images = 0
+  let total = 0
   const contents: GeminiBody['contents'] = []
   for (const c of r.contents as Record<string, unknown>[]) {
     if (!c || (c.role !== 'user' && c.role !== 'model') || !Array.isArray(c.parts) || !c.parts.length || c.parts.length > MAX_PARTS) {
@@ -72,6 +82,7 @@ export function validateChatRequest(raw: unknown): { model: string, body: Gemini
     for (const p of c.parts as Record<string, unknown>[]) {
       const inline = p?.inlineData as Record<string, unknown> | undefined
       if (typeof p?.text === 'string' && p.text.length <= MAX_TEXT) {
+        total += p.text.length
         parts.push({ text: p.text })
       } else if (inline && typeof inline.mimeType === 'string' && IMAGE_TYPES.has(inline.mimeType)
         && typeof inline.data === 'string' && /^[A-Za-z0-9+/]+=*$/.test(inline.data) && c.role === 'user') {
@@ -87,11 +98,16 @@ export function validateChatRequest(raw: unknown): { model: string, body: Gemini
   const body: GeminiBody = { contents, generationConfig: { maxOutputTokens: AI_GENERATION.defaultOutputTokens, thinkingConfig: { thinkingBudget: AI_GENERATION.thinkingBudget } } }
   const sys = (r.systemInstruction as { parts?: { text?: unknown }[] } | undefined)?.parts
   if (sys !== undefined) {
-    if (!Array.isArray(sys) || sys.length > 4 || sys.some(p => typeof p?.text !== 'string' || p.text.length > MAX_TEXT)) {
+    if (!Array.isArray(sys) || sys.length > 4 || sys.some(p => typeof p?.text !== 'string')) {
       return { error: 'Invalid systemInstruction.' }
     }
+    const sysLength = sys.reduce((n, p) => n + (p.text as string).length, 0)
+    if (sysLength > MAX_SYSTEM) return { error: 'systemInstruction too long.' }
+    total += sysLength
     body.systemInstruction = { parts: sys.map(p => ({ text: p.text as string })) }
   }
+
+  if (total > MAX_TOTAL_TEXT) return { error: 'Too much text.' }
 
   const gen = (r.generationConfig ?? {}) as Record<string, unknown>
   body.generationConfig.maxOutputTokens = clamp(gen.maxOutputTokens, 64, AI_GENERATION.maxOutputTokens, AI_GENERATION.defaultOutputTokens)
@@ -396,7 +412,8 @@ async function callGemini(body: GeminiBody, model: string, signal: AbortSignal, 
   return { error: upstreamError(upstream.status, data), fallthrough: upstream.status === 429 || upstream.status >= 500 }
 }
 
-export default async (req: Request): Promise<Response> => {
+/** gate: sign-in / quota checks of the Supabase deployment; Netlify runs without one. */
+export const createChatHandler = (gate?: ChatGate) => async (req: Request): Promise<Response> => {
   const started = Date.now()
   const origin = req.headers.get('origin')
   const headers = cors(origin)
@@ -411,6 +428,10 @@ export default async (req: Request): Promise<Response> => {
   const providers = providerChain()
   if (!providers.length) return fail(503, 'not_configured', 'AI is not configured on the server.', headers)
 
+  const admitted = gate ? await gate(req) : null
+  const reject = (r: Rejection) => fail(r.status, r.reason, r.message, headers, r.extra)
+  if (admitted && typeof admitted !== 'function') return reject(admitted)
+
   if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return fail(413, 'too_large', 'Request too large.', headers)
   const text = await req.text()
   if (text.length > MAX_BODY_BYTES) return fail(413, 'too_large', 'Request too large.', headers)
@@ -423,6 +444,10 @@ export default async (req: Request): Promise<Response> => {
   }
   const checked = validateChatRequest(raw)
   if ('error' in checked) return fail(400, 'bad_request', checked.error, headers)
+  if (admitted) {
+    const refused = await admitted()
+    if (refused) return reject(refused)
+  }
 
   // The upstream is called before the response starts; the body is then pulled chunk by chunk.
   // Starting the fetch after returning stalled on Netlify.
@@ -486,6 +511,8 @@ export default async (req: Request): Promise<Response> => {
     headers: { ...headers, 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache' }
   })
 }
+
+export default createChatHandler()
 
 export const config = {
   path: '/api/chat',

@@ -72,7 +72,10 @@ export default {
       diagUnsure: 'Not sure – the answer goes by the photo itself.',
       fallbackTitle: 'From the knowledge base (offline)',
       fallbackLang: 'The curated cards are in Czech.',
-      guideLinks: 'Related guide lessons'
+      guideLinks: 'Related guide lessons',
+      signInTitle: 'Sign in to ask the assistant',
+      signInBody: 'The AI assistant needs a free BudBuddy account (Google sign-in) so we can keep it free and stop abuse. Your journal stays on this device.',
+      signInAction: 'Sign in'
     },
     report: {
       action: 'Report answer',
@@ -85,7 +88,8 @@ export default {
       send: 'Send report',
       sent: 'Thanks – the report was sent.',
       already: 'You already reported this answer.',
-      failed: 'The report could not be sent. Check your connection and try again.'
+      failed: 'The report could not be sent. Check your connection and try again.',
+      signIn: 'Sign in to report an answer.'
     },
     pack: {
       title: 'Offline AI',
@@ -138,7 +142,10 @@ export default {
       empty: 'Gemini returned an empty answer. Please try again.',
       emptyReason: 'Gemini returned no text (reason: {reason}). Please try again.',
       photo: 'The photo could not be loaded. Try another one (JPEG or PNG).',
-      generic: 'Something went wrong. Please try again.'
+      generic: 'Something went wrong. Please try again.',
+      signIn: 'Sign in to ask the assistant – your session may have expired.',
+      banned: 'This account can no longer use the assistant.',
+      dailyLimit: 'You have used all {n} AI questions for today. More {when}.'
     },
     notes: {
       timeoutCut: '_(Cut off by the server time limit – ask “continue”.)_',
@@ -328,7 +335,10 @@ export default {
       diagUnsure: 'Nejisté – odpověď vychází hlavně ze samotné fotky.',
       fallbackTitle: 'Ze znalostní báze (offline)',
       fallbackLang: 'Kurátorované karty jsou česky.',
-      guideLinks: 'Související lekce průvodce'
+      guideLinks: 'Související lekce průvodce',
+      signInTitle: 'Pro dotazy na asistenta se přihlas',
+      signInBody: 'AI asistent potřebuje bezplatný účet BudBuddy (přihlášení přes Google), aby mohl zůstat zdarma a nedal se zneužít. Tvůj deník zůstává v tomto zařízení.',
+      signInAction: 'Přihlásit se'
     },
     report: {
       action: 'Nahlásit odpověď',
@@ -341,7 +351,8 @@ export default {
       send: 'Odeslat nahlášení',
       sent: 'Díky – nahlášení odešlo.',
       already: 'Tuhle odpověď už máš nahlášenou.',
-      failed: 'Nahlášení se nepodařilo odeslat. Zkontroluj připojení a zkus to znovu.'
+      failed: 'Nahlášení se nepodařilo odeslat. Zkontroluj připojení a zkus to znovu.',
+      signIn: 'Pro nahlášení odpovědi se přihlas.'
     },
     pack: {
       title: 'Offline AI',
@@ -394,7 +405,10 @@ export default {
       empty: 'Gemini vrátil prázdnou odpověď. Zkus to prosím znovu.',
       emptyReason: 'Gemini nevrátil žádný text (důvod: {reason}). Zkus to prosím znovu.',
       photo: 'Fotku se nepodařilo načíst. Zkus jinou (JPEG nebo PNG).',
-      generic: 'Něco se pokazilo. Zkus to prosím znovu.'
+      generic: 'Něco se pokazilo. Zkus to prosím znovu.',
+      signIn: 'Pro dotazy na asistenta se přihlas – přihlášení možná vypršelo.',
+      banned: 'Tento účet už asistenta používat nemůže.',
+      dailyLimit: 'Dnešních {n} dotazů na AI je vyčerpaných. Další {when}.'
     },
     notes: {
       timeoutCut: '_(Odpověď přerušil časový limit serveru – zeptej se „pokračuj“.)_',

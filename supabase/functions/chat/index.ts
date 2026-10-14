@@ -1,4 +1,5 @@
-import handler from '../../../netlify/functions/chat.mts'
+import { createChatHandler } from '../../../netlify/functions/chat.mts'
 import { limited } from '../_shared/limit.ts'
+import { createChatGate } from './gate.ts'
 
-Deno.serve(limited(handler, 20))
+Deno.serve(limited(createChatHandler(createChatGate()), 20))
