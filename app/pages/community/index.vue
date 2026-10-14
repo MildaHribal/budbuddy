@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Capacitor } from '@capacitor/core'
 import { useOnlineRetry } from '~/utils/feed/online'
 import { useFeedActions } from '~/utils/feed/actions'
 import type { GlyphName } from '~/utils/glyphs'
@@ -13,6 +14,9 @@ const router = useRouter()
 const { user, profile, signedIn, accepted, requireAuth } = useAuth()
 const { isBlocked, load: loadBlocks } = useBlocks()
 const { loadMine } = useFeedActions()
+const { state: grow } = useGrow()
+/** the web demo garden gets sample posts after the real ones */
+const demoCommunity = computed(() => !Capacitor.isNativePlatform() && grow.settings.demo)
 
 type Mode = 'forYou' | 'following' | 'new' | 'popular' | 'unanswered'
 const MODES: Mode[] = ['forYou', 'unanswered', 'following', 'new', 'popular']
@@ -33,6 +37,20 @@ let poolPos = 0
 let poolTail: Cursor | null = null
 let following: string[] | null = null
 const POOL = 100
+const demoShown = ref(false)
+
+async function demoPage(): Promise<Post[]> {
+  if (!demoCommunity.value || mode.value === 'following') return []
+  const { demoFeed } = await import('~/utils/feed/demoFeed')
+  let rows = demoFeed().posts.filter(p => !category.value || p.category === category.value)
+  if (mode.value === 'unanswered') rows = rows.filter(p => HELP_CATEGORIES.includes(p.category) && !p.accepted_comment_id && !p.comments_count)
+  if (mode.value === 'popular') rows.sort((a, b) => b.likes_count - a.likes_count)
+  if (mode.value === 'forYou') {
+    const now = Date.now()
+    rows.sort((a, b) => hotScore(b, now) - hotScore(a, now))
+  }
+  return rows
+}
 
 const visible = computed(() => posts.value.filter(p => !isBlocked(p.author_id)))
 const initial = computed(() => loading.value && !posts.value.length)
@@ -120,8 +138,14 @@ async function loadMore() {
     if (my !== gen) return
     const seen = new Set(posts.value.map(p => p.id))
     posts.value.push(...rows.filter(p => !seen.has(p.id)))
-    if (end) done.value = true
     loadMine(rows.map(p => p.id))
+    if (end) {
+      const demo = await demoPage()
+      if (my !== gen) return
+      posts.value.push(...demo)
+      demoShown.value = demo.length > 0
+      done.value = true
+    }
   } catch {
     if (my === gen) error.value = true
   } finally {
@@ -135,6 +159,7 @@ const { pump } = useInfinite(sentinel, loadMore, () => !loading.value && !done.v
 async function reset() {
   gen++
   posts.value = []
+  demoShown.value = false
   cursor = null
   pool = null
   poolPos = 0
@@ -438,6 +463,13 @@ useOnlineRetry(() => error.value, retry)
         v-else-if="visible.length"
         class="list rise"
       >
+        <p
+          v-if="demoShown"
+          class="demo-feed-note"
+        >
+          <UIcon name="i-tabler-flask-2" />
+          <span>{{ t('feed.demo.note') }}</span>
+        </p>
         <template
           v-for="(p, i) in visible"
           :key="p.id"
@@ -594,6 +626,15 @@ useOnlineRetry(() => error.value, retry)
 </template>
 
 <style scoped>
+.demo-feed-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
 .me {
   padding: 0;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { authorName, relTime, type Comment } from '~/utils/feed/feed'
+import { authorName, isDemoPost, relTime, type Comment } from '~/utils/feed/feed'
 
 const props = defineProps<{
   comment: Comment
@@ -14,6 +14,8 @@ const props = defineProps<{
 const emit = defineEmits<{ like: [], reply: [], delete: [], accept: [], save: [body: string] }>()
 
 const { t } = useI18n()
+const NuxtLink = resolveComponent('NuxtLink')
+const sample = computed(() => isDemoPost(props.comment.post_id))
 const name = computed(() => (props.comment.is_ai ? t('feed.detail.ai') : authorName(props.comment.author)))
 
 const editing = ref(false)
@@ -35,18 +37,18 @@ function saveEdit() {
     class="comment"
     :class="{ accepted, reply, ai: comment.is_ai }"
   >
-    <NuxtLink
+    <component
+      :is="sample ? 'span' : NuxtLink"
       v-if="comment.author && !comment.is_ai"
-      :to="`/u/${comment.author.username}`"
+      v-bind="sample ? {} : { 'to': `/u/${comment.author.username}`, 'aria-label': name }"
       class="avatar-link"
-      :aria-label="name"
     >
       <CommunityUserAvatar
         :url="comment.author.avatar_url"
         :name="name"
         :size="reply ? 28 : 32"
       />
-    </NuxtLink>
+    </component>
     <span
       v-else
       class="ai-avatar"
@@ -76,6 +78,7 @@ function saveEdit() {
         >{{ relTime(comment.created_at) }}</time>
         <span class="grow" />
         <CommunityReportMenu
+          v-if="!sample"
           target-type="comment"
           :target-id="comment.id"
           :author-id="comment.author_id"

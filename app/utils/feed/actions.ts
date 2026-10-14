@@ -3,7 +3,7 @@ import { Share } from '@capacitor/share'
 import { effectScope, watch } from 'vue'
 import { haptic } from '~/utils/haptics'
 import { contentIssue } from './content'
-import { errorKind, shareUrl, storagePath, type Post, type ReactionKind } from './feed'
+import { errorKind, isDemoPost, shareUrl, storagePath, type Post, type ReactionKind } from './feed'
 
 // Shared across the feed, detail and saved pages so state stays in sync.
 const mine = ref(new Map<string, ReadonlySet<ReactionKind>>())
@@ -62,6 +62,7 @@ export function useFeedActions() {
 
   /** Loads my reactions and saves for these posts. */
   async function loadMine(ids: string[]) {
+    ids = ids.filter(id => !isDemoPost(id))
     const uid = user.value?.id
     if (!uid) {
       mine.value = new Map()
@@ -90,6 +91,12 @@ export function useFeedActions() {
 
   const has = (postId: string, kind: ReactionKind) => !!mine.value.get(postId)?.has(kind)
 
+  function sample(post: Post): boolean {
+    if (!isDemoPost(post.id)) return false
+    notify(t('feed.demo.readOnly'), { tone: 'info', icon: 'i-tabler-flask-2' })
+    return true
+  }
+
   function apply(post: Post, kind: ReactionKind, on: boolean) {
     const set = new Set(mine.value.get(post.id) ?? [])
     if (on) set.add(kind)
@@ -106,6 +113,7 @@ export function useFeedActions() {
 
   /** Optimistic toggle with rollback; resolves to the new state. */
   async function toggleReaction(post: Post, kind: ReactionKind): Promise<boolean> {
+    if (sample(post)) return has(post.id, kind)
     if (!requireAuth() || !user.value) return has(post.id, kind)
     const uid = user.value.id
     const on = !has(post.id, kind)
@@ -144,6 +152,7 @@ export function useFeedActions() {
   }
 
   async function toggleSave(post: Post) {
+    if (sample(post)) return
     if (!requireAuth() || !user.value) return
     const on = !saved.value.has(post.id)
     setSaved(post.id, on)
@@ -160,6 +169,7 @@ export function useFeedActions() {
   }
 
   async function share(post: Post) {
+    if (sample(post)) return
     const url = shareUrl(post.id)
     const title = post.title || t('feed.shareTitle')
     try {

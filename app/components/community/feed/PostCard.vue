@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { stageInfo } from '~/utils/stages'
 import { useFeedActions } from '~/utils/feed/actions'
-import { authorName, CATEGORY_GLYPH, isHelp, isSolved, relTime, type Post } from '~/utils/feed/feed'
+import { authorName, CATEGORY_GLYPH, isDemoPost, isHelp, isSolved, relTime, type Post } from '~/utils/feed/feed'
 
 const props = defineProps<{
   post: Post
@@ -16,6 +16,7 @@ const { saved, toggleSave, share, deletePost } = useFeedActions()
 const Link = resolveComponent('NuxtLink')
 const to = computed(() => `/community/post/${props.post.id}`)
 const name = computed(() => authorName(props.post.author))
+const sample = computed(() => isDemoPost(props.post.id))
 const isSaved = computed(() => saved.value.has(props.post.id))
 const plantStage = computed(() => (props.post.plant ? stageInfo(props.post.plant.stage) : null))
 const help = computed(() => (isHelp(props.post) ? (isSolved(props.post) ? 'solved' : 'open') : null))
@@ -57,7 +58,12 @@ async function remove() {
         />
         <span class="who-text">
           <span class="who-line">
+            <span
+              v-if="sample"
+              class="who-name"
+            >{{ name }}</span>
             <NuxtLink
+              v-else
               :to="`/u/${post.author.username}`"
               class="who-name"
             >{{ name }}</NuxtLink>
@@ -78,6 +84,7 @@ async function remove() {
         </span>
       </div>
       <CommunityReportMenu
+        v-if="!sample"
         target-type="post"
         :target-id="post.id"
         :author-id="post.author_id"
@@ -88,6 +95,13 @@ async function remove() {
     </header>
 
     <div class="tags">
+      <span
+        v-if="sample"
+        class="badge sample"
+      >
+        <UIcon name="i-tabler-flask-2" />
+        {{ t('feed.demo.badge') }}
+      </span>
       <span
         class="badge cat"
         :class="`cat-${post.category}`"
@@ -229,6 +243,10 @@ async function remove() {
 </template>
 
 <style scoped>
+.sample {
+  color: var(--text-2);
+}
+
 .post {
   display: flex;
   flex-direction: column;

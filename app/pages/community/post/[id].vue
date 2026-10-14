@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useOnlineRetry } from '~/utils/feed/online'
 import { useFeedActions } from '~/utils/feed/actions'
-import { authorName, COMMENT_SELECT, ensureSchema, isHelp, POST_SELECT, type Comment, type Post } from '~/utils/feed/feed'
+import { authorName, COMMENT_SELECT, ensureSchema, isDemoPost, isHelp, POST_SELECT, type Comment, type Post } from '~/utils/feed/feed'
 import { haptic } from '~/utils/haptics'
 
 definePageMeta({ hideNav: true })
@@ -16,6 +16,7 @@ const { confirm } = useConfirm()
 const { loadMine, fail, preCheck } = useFeedActions()
 
 const id = computed(() => String(route.params.id))
+const sample = computed(() => isDemoPost(id.value))
 const post = ref<Post | null>(null)
 const status = ref<'loading' | 'ok' | 'missing' | 'error'>('loading')
 const comments = ref<Comment[]>([])
@@ -27,6 +28,17 @@ useHead({ title: () => post.value?.title || t('feed.detail.title') })
 
 async function load() {
   status.value = 'loading'
+  if (sample.value) {
+    const feed = (await import('~/utils/feed/demoFeed')).demoFeed()
+    post.value = feed.posts.find(p => p.id === id.value) ?? null
+    comments.value = feed.comments.get(id.value) ?? []
+    status.value = post.value ? 'ok' : 'missing'
+    if (post.value && route.hash === '#comments') {
+      await nextTick()
+      document.getElementById('comments')?.scrollIntoView({ block: 'start' })
+    }
+    return
+  }
   await ensureSchema()
   const sb = useSupabase()
   const [p, c] = await Promise.all([
@@ -122,7 +134,12 @@ const canAccept = (c: Comment) => isOwner.value && isQuestion.value && c.author_
 
 // ── Comment actions ────────────────────────────────────────────────
 
+function readOnly() {
+  notify(t('feed.demo.readOnly'), { tone: 'info', icon: 'i-tabler-flask-2' })
+}
+
 async function likeComment(c: Comment) {
+  if (sample.value) return readOnly()
   if (!requireAuth() || !user.value) return
   const on = !likedComments.value.has(c.id)
   const apply = (v: boolean) => {
@@ -212,12 +229,14 @@ const sending = ref(false)
 const input = ref<HTMLTextAreaElement | null>(null)
 
 function startReply(c: Comment) {
+  if (sample.value) return readOnly()
   if (!requireAuth()) return
   replyTo.value = c
   input.value?.focus()
 }
 
 function focusComposer() {
+  if (sample.value) return readOnly()
   if (!requireAuth()) return
   input.value?.focus()
 }
@@ -395,7 +414,15 @@ useOnlineRetry(() => status.value === 'error', load)
         </section>
       </div>
 
+      <p
+        v-if="sample"
+        class="composer sample-closed"
+      >
+        <UIcon name="i-tabler-flask-2" />
+        <span>{{ t('feed.demo.closed') }}</span>
+      </p>
       <form
+        v-else
         class="composer"
         @submit.prevent="send"
       >
@@ -455,6 +482,15 @@ useOnlineRetry(() => status.value === 'error', load)
 </template>
 
 <style scoped>
+.sample-closed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
 .detail-root {
   min-height: 100%;
   display: flex;

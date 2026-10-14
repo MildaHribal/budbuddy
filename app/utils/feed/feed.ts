@@ -24,6 +24,10 @@ export interface Author {
   first_grow?: boolean | null
 }
 
+/** ids of the web demo's sample posts (utils/feed/demoFeed), comments and authors */
+export const DEMO_POST_PREFIX = '00000000-0000-4000-8000-'
+export const isDemoPost = (id: string | null | undefined) => !!id?.startsWith(DEMO_POST_PREFIX)
+
 export const HELP_CATEGORIES: readonly Category[] = ['question', 'problem']
 
 export const SYMPTOMS = ['yellowing', 'spots', 'burn', 'claw', 'droop', 'curl', 'purple', 'pests', 'mould', 'slow', 'other'] as const

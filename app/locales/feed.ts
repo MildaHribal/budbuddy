@@ -155,6 +155,12 @@ export default {
     end: 'You’re all caught up',
     loadError: 'Couldn’t load posts',
     retry: 'Try again',
+    demo: {
+      note: 'Sample posts for the demo garden. Real posts from growers come first.',
+      badge: 'Sample',
+      readOnly: 'This is a sample post. Get the app and sign in to join the real community.',
+      closed: 'Sample post: replies are open on real posts in the community.'
+    },
     removed: 'Removed by moderation',
     removedText: 'Only you can see this post.',
     removedOnlyYou: 'only you can see it',
@@ -414,6 +420,12 @@ export default {
     end: 'Máš všechno přečtené',
     loadError: 'Příspěvky se nepodařilo načíst',
     retry: 'Zkusit znovu',
+    demo: {
+      note: 'Ukázkové příspěvky k demo zahradě. Skutečné příspěvky pěstitelů jsou nahoře.',
+      badge: 'Ukázka',
+      readOnly: 'Tohle je ukázkový příspěvek. Stáhni si aplikaci a přihlas se do skutečné komunity.',
+      closed: 'Ukázkový příspěvek: odpovídat můžeš u skutečných příspěvků v komunitě.'
+    },
     removed: 'Odstraněno moderací',
     removedText: 'Tento příspěvek vidíš jen ty.',
     removedOnlyYou: 'vidíš ho jen ty',
