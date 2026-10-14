@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const { state } = useGrow()
+const { state, preview } = useGrow()
 const startOwnGarden = useOwnGarden()
 
 const RELEASES = 'https://github.com/MildaHribal/budbuddy/releases/latest'
@@ -77,7 +77,7 @@ const FEATURES = [
           type="button"
           class="sc-link"
           @click="startOwnGarden"
-        >{{ t('showcase.own.action') }}</button>
+        >{{ t(preview ? 'showcase.own.saved' : 'showcase.own.action') }}</button>
       </span>
     </p>
 

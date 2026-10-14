@@ -8,7 +8,8 @@ const photos = new Map<string, { id: string, blob: Blob, createdAt: string }>()
 let failSet = false
 let failGet = false
 
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }))
+let native = true
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => native } }))
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
     get: async ({ key }: { key: string }) => {
@@ -71,6 +72,8 @@ beforeEach(() => {
   photos.clear()
   failSet = false
   failGet = false
+  native = true
+  vi.stubGlobal('window', {})
 })
 // demo photo seeding is scheduled on window timers; it may fire after a test ended
 vi.stubGlobal('window', {})
@@ -259,5 +262,61 @@ describe('demo garden', () => {
     const mixed = normalizeData(demo)
     expect(mixed.plants.filter(p => p.demo)).toHaveLength(4)
     expect(mixed.settings.demo).toBe(false)
+  })
+})
+
+describe('desktop showcase', () => {
+  const desktop = () => {
+    native = false
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: true }) })
+  }
+
+  it('shows the demo over an old saved garden and never saves over it', async () => {
+    // a save still pending from the previous test would write into the shared map
+    await afterSave()
+    prefs.clear()
+    desktop()
+    const saved = JSON.stringify(userData())
+    prefs.set(KEY, saved)
+    photos.set('u1', photo('u1'))
+    const { useGrow } = await boot()
+    const grow = useGrow()
+    expect(grow.preview.value).toBe(true)
+    expect(grow.state.settings.demo).toBe(true)
+    grow.deletePlant(grow.state.plants[0]!.id)
+    grow.addPlant({ name: 'Tried it' })
+    await afterSave()
+    expect(prefs.get(KEY)).toBe(saved)
+    expect(photos.has('u1')).toBe(true)
+  })
+
+  it('opens the saved garden on request and remembers it', async () => {
+    desktop()
+    prefs.set(KEY, JSON.stringify(userData()))
+    const { useGrow } = await boot()
+    await useGrow().startOwnGarden()
+    expect(useGrow().preview.value).toBe(false)
+    expect(useGrow().state.plants.map(p => p.name)).toEqual(['Mine'])
+    const again = await boot()
+    expect(again.useGrow().preview.value).toBe(false)
+    expect(again.useGrow().state.plants.map(p => p.name)).toEqual(['Mine'])
+  })
+
+  it('keeps a garden saved since the showcase existed', async () => {
+    native = true
+    prefs.set(KEY, JSON.stringify(userData()))
+    const { useGrow } = await boot()
+    useGrow().updatePlant('p1', { notes: 'x' })
+    await afterSave()
+    desktop()
+    const again = await boot()
+    expect(again.useGrow().preview.value).toBe(false)
+  })
+
+  it('leaves the demo garden itself alone', async () => {
+    desktop()
+    const { useGrow } = await boot()
+    expect(useGrow().preview.value).toBe(false)
+    expect(useGrow().state.settings.demo).toBe(true)
   })
 })

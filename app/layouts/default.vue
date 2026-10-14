@@ -6,7 +6,7 @@ const scroller = ref<HTMLElement | null>(null)
 const hideNav = computed(() => route.meta.hideNav === true)
 
 // Web visitors land in the demo garden; offer the way out at the end of home.
-const { state } = useGrow()
+const { state, preview } = useGrow()
 const { t } = useI18n()
 const startOwnGarden = useOwnGarden()
 const demoNote = computed(() => !Capacitor.isNativePlatform() && (state.settings.demo || state.plants.some(p => p.demo)) && route.path === '/')
@@ -39,7 +39,7 @@ watch(() => route.path, () => {
           class="btn btn-soft"
           @click="startOwnGarden"
         >
-          {{ t('showcase.own.action') }}
+          {{ t(preview ? 'showcase.own.saved' : 'showcase.own.action') }}
         </button>
       </div>
     </main>

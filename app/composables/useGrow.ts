@@ -24,6 +24,9 @@ const READINGS_KEY = 'budbuddy:readings'
 const CORRUPT_PREFIX = `${STORAGE_KEY}.corrupt-`
 const RECOVERY_SEEN_KEY = 'budbuddy:recovery-seen'
 const LEGACY_PLANTS_KEY = 'my-trees-data'
+/** set once this browser saved a garden of its own: the desktop showcase then shows it instead of the demo */
+const SHOWCASE_OWN_KEY = 'budbuddy:showcase-own'
+export const SHOWCASE_MEDIA = '(pointer: fine) and (min-width: 1100px) and (min-height: 640px)'
 const READINGS_EVERY = 60_000
 
 // Module-level singleton: every component shares one source of truth.
@@ -35,6 +38,9 @@ const loadError = ref<string | null>(null)
 const recovered = ref<string | null>(null)
 /** last save failed (cleared by the next successful one) */
 const saveError = ref<string | null>(null)
+/** the desktop showcase shows the demo over an older saved garden; nothing is saved meanwhile */
+const preview = ref(false)
+let ownMarked = false
 /** bumped on every change of the journal data (not on sensor readings) – cheap to watch */
 export const growRevision = ref(0)
 /** photos saved in this session that are not referenced yet (an open form) – never garbage-collect them */
@@ -61,7 +67,7 @@ async function writeReadings() {
     clearTimeout(readingsTimer)
     readingsTimer = null
   }
-  if (loadError.value) return
+  if (loadError.value || preview.value) return
   readingsDirty = false
   try {
     await Preferences.set({ key: READINGS_KEY, value: JSON.stringify(toRaw(state.environment)?.readings ?? []) })
@@ -77,13 +83,17 @@ async function writeNow() {
     clearTimeout(saveTimer)
     saveTimer = null
   }
-  // never overwrite data that could not be read
-  if (loadError.value) return
+  // never overwrite data that could not be read, nor the saved garden with the showcase demo
+  if (loadError.value || preview.value) return
   try {
     // readings first: the main blob no longer carries them
     if (readingsDirty) await writeReadings()
     await Preferences.set({ key: STORAGE_KEY, value: mainJson() })
     saveError.value = null
+    if (!ownMarked && !state.settings.demo) {
+      ownMarked = true
+      await Preferences.set({ key: SHOWCASE_OWN_KEY, value: '1' })
+    }
   } catch (e) {
     saveError.value = errorText(e)
     throw e
@@ -192,7 +202,7 @@ async function rawCopyKeys(): Promise<string[]> {
 
 /** Deletes stored photos that no plant or entry points to any more. */
 async function collectGarbagePhotos() {
-  if (loadError.value || recovered.value) return
+  if (loadError.value || recovered.value || preview.value) return
   const used = new Set<string>(pendingPhotos)
   for (const p of state.plants) if (p.photoId) used.add(p.photoId)
   for (const e of state.entries) e.photoIds.forEach(id => used.add(id))
@@ -225,7 +235,18 @@ async function readStoredReadings(): Promise<unknown[] | null> {
   }
 }
 
-type LoadStatus = 'ok' | 'legacy' | 'fresh' | 'recovered'
+type LoadStatus = 'ok' | 'legacy' | 'fresh' | 'recovered' | 'preview'
+
+/**
+ * Wide desktop web (the portfolio showcase): a garden this browser has not saved since the showcase
+ * existed is most likely an old visit, so the phone frame shows the current demo instead.
+ */
+async function showcasePreview(data: GrowData): Promise<boolean> {
+  if (data.settings.demo || Capacitor.isNativePlatform()) return false
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function' || !window.matchMedia(SHOWCASE_MEDIA).matches) return false
+  ownMarked = (await Preferences.get({ key: SHOWCASE_OWN_KEY })).value === '1'
+  return !ownMarked
+}
 
 async function load(): Promise<LoadStatus> {
   const { value } = await Preferences.get({ key: STORAGE_KEY })
@@ -254,6 +275,11 @@ async function load(): Promise<LoadStatus> {
       await writeNow().catch(() => {})
       seedDemoInBackground()
       return 'recovered'
+    }
+    if (!preview.value && await showcasePreview(data)) {
+      preview.value = true
+      replaceState(buildDemoData())
+      return 'preview'
     }
     const upgraded = upgradeDemo(data)
     replaceState(upgraded ?? data)
@@ -607,6 +633,7 @@ async function importBackup(json: string): Promise<{ plants: number, entries: nu
   replaceState(data)
   // restoring is the way out of unreadable data
   loadError.value = null
+  preview.value = false
   await writeNow()
   startWatching()
   pruneChats(data.plants.map(p => p.id)).catch(() => {})
@@ -615,6 +642,7 @@ async function importBackup(json: string): Promise<{ plants: number, entries: nu
 
 async function eraseAll() {
   if (loadError.value) return
+  preview.value = false
   await photoStore.clear()
   const fresh = emptyData()
   fresh.settings.initialized = true
@@ -622,9 +650,18 @@ async function eraseAll() {
   await writeNow()
 }
 
+/** Leaves the showcase demo for the garden saved in this browser. */
+async function showSavedGarden() {
+  await Preferences.set({ key: SHOWCASE_OWN_KEY, value: '1' })
+  preview.value = false
+  await load()
+  collectGarbagePhotos().catch(() => {})
+}
+
 /** Leaves the demo garden: demo plants go, the grower's own plants and settings stay. */
 async function startOwnGarden() {
   if (loadError.value) return
+  if (preview.value) return showSavedGarden()
   dataEpoch++
   demoSeedDue = false
   const wasDemo = state.settings.demo
@@ -647,6 +684,7 @@ async function startOwnGarden() {
 
 async function loadDemo() {
   if (loadError.value) return
+  preview.value = false
   const demo = buildDemoData()
   demo.guide = JSON.parse(JSON.stringify(state.guide))
   demo.settings = { ...JSON.parse(JSON.stringify(state.settings)), demo: true, demoVersion: DEMO_VERSION, initialized: true, onboarded: true }
@@ -701,6 +739,7 @@ export function useGrow() {
     environmentData,
     loadError,
     recovered,
+    preview: readonly(preview),
     rawCopy,
     dismissRecovery,
     saveError,

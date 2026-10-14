@@ -6,6 +6,12 @@ export function useOwnGarden() {
   const { t } = useI18n()
 
   return async function startOwnGarden() {
+    if (grow.preview.value) {
+      await grow.startOwnGarden()
+      notify(t('showcase.own.savedDone'))
+      navigateTo('/')
+      return
+    }
     const ok = await confirm({
       title: t('showcase.own.title'),
       message: t('showcase.own.message'),

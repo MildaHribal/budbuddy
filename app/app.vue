@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core'
 import { COMMUNITY_NAMESPACES, loadNamespaces } from '~/composables/useI18n'
+import { SHOWCASE_MEDIA } from '~/composables/useGrow'
 import { authUiWanted } from '~/utils/authUi'
 
 const { ready, loadError, recovered, state } = useGrow()
@@ -57,7 +58,7 @@ useHead({
 
 // Wide desktop web: a short product presentation beside the phone frame.
 const native = Capacitor.isNativePlatform()
-const wide = useMediaQuery('(pointer: fine) and (min-width: 1100px) and (min-height: 640px)')
+const wide = useMediaQuery(SHOWCASE_MEDIA)
 const showcase = computed(() => !native && wide.value)
 </script>
 

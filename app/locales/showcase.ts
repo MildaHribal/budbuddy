@@ -22,7 +22,9 @@ export default {
       title: 'Start your own garden?',
       message: 'The demo plants and their journal are removed and you begin with an empty garden. You can load the demo again in Settings.',
       confirm: 'Start empty',
-      done: 'Your garden is ready'
+      done: 'Your garden is ready',
+      saved: 'Open my saved garden',
+      savedDone: 'Your saved garden is back'
     }
   },
   cs: {
@@ -48,7 +50,9 @@ export default {
       title: 'Založit vlastní zahradu?',
       message: 'Ukázkové rostliny a jejich deník se smažou a začneš s prázdnou zahradou. Ukázku můžeš znovu načíst v Nastavení.',
       confirm: 'Začít načisto',
-      done: 'Tvoje zahrada je připravená'
+      done: 'Tvoje zahrada je připravená',
+      saved: 'Otevřít mou uloženou zahradu',
+      savedDone: 'Tvoje uložená zahrada je zpátky'
     }
   }
 }
