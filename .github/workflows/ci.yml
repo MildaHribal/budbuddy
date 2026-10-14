@@ -112,17 +112,20 @@ jobs:
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
+      # Never publish a debug or unsigned build as a public release
       - name: Name the installable APK
+        id: release_apk
         run: |
-          mkdir -p dist-release
-          if [ -n "$KEYSTORE_PATH" ] && [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk "dist-release/BudBuddy-v${{ steps.package_version.outputs.VERSION }}.apk"
-          else
-            echo "::warning::No signing key – publishing the debug APK instead."
-            cp android/app/build/outputs/apk/debug/app-debug.apk "dist-release/BudBuddy-v${{ steps.package_version.outputs.VERSION }}-debug.apk"
+          if [ -z "$KEYSTORE_PATH" ]; then
+            echo "::warning::No signing key – skipping the GitHub release."
+            exit 0
           fi
+          mkdir -p dist-release
+          cp android/app/build/outputs/apk/release/app-release.apk "dist-release/BudBuddy-v${{ steps.package_version.outputs.VERSION }}.apk"
+          echo "ready=true" >> $GITHUB_OUTPUT
 
       - uses: softprops/action-gh-release@v2
+        if: steps.release_apk.outputs.ready == 'true'
         with:
           files: dist-release/*.apk
           tag_name: build-v${{ steps.package_version.outputs.VERSION }}-${{ github.run_number }}

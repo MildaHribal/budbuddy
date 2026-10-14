@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home Assistant usually runs on plain http in the LAN (http://192.168.x.x:8123).
-     The app only allows http for private/LAN hosts (app/utils/env/homeAssistant.ts → normalizeHaUrl). -->
+<!-- Home Assistant usually runs on plain http in the LAN (http://192.168.x.x:8123). domain-config
+     can't express IP ranges, so cleartext stays allowed here; the app only allows http for
+     private/LAN hosts (app/utils/env/homeAssistant.ts → isLanHost) and the WebView blocks mixed content. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
