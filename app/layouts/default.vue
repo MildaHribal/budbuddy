@@ -9,7 +9,7 @@ const hideNav = computed(() => route.meta.hideNav === true)
 const { state } = useGrow()
 const { t } = useI18n()
 const startOwnGarden = useOwnGarden()
-const demoNote = computed(() => !Capacitor.isNativePlatform() && state.settings.demo && route.path === '/')
+const demoNote = computed(() => !Capacitor.isNativePlatform() && (state.settings.demo || state.plants.some(p => p.demo)) && route.path === '/')
 
 // Each page starts at the top – the scroll container is ours, not the window's.
 watch(() => route.path, () => {

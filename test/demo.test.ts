@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildDemoData } from '../app/utils/demo'
-import { DEMO_PHOTO_CREDITS, demoPhotoId, seedDemoPhotos } from '../app/utils/demoPhotos'
+import { DEMO_PHOTO_CREDITS, demoPhotoId } from '../app/utils/demoCredits'
+import { seedDemoPhotos } from '../app/utils/demoPhotos'
 
 const put = vi.fn()
 vi.mock('../app/utils/photoStore', () => ({ photoStore: { put: (p: unknown) => put(p) } }))
@@ -65,6 +66,16 @@ describe('demo photos', () => {
     const before = JSON.stringify(demo)
     await seedDemoPhotos(demo, () => false)
     expect(JSON.stringify(demo)).toBe(before)
+    expect(put).not.toHaveBeenCalled()
+  })
+
+  it('stores nothing when the data is replaced while fetching', async () => {
+    let current = true
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      current = false
+      return new Response(new Blob(['x'], { type: 'image/jpeg' }))
+    }))
+    await seedDemoPhotos(buildDemoData('2026-10-11'), () => current)
     expect(put).not.toHaveBeenCalled()
   })
 })

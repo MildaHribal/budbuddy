@@ -149,11 +149,25 @@ export function normalizePlant(raw: Record<string, unknown>): Plant {
 }
 
 // optional keys stay absent on plants that never used them
-function withGrouping(raw: Record<string, unknown>): Pick<Plant, 'spaceId' | 'wateringAuto'> {
-  const out: Pick<Plant, 'spaceId' | 'wateringAuto'> = {}
+function withGrouping(raw: Record<string, unknown>): Pick<Plant, 'spaceId' | 'wateringAuto' | 'demo'> {
+  const out: Pick<Plant, 'spaceId' | 'wateringAuto' | 'demo'> = {}
   if (typeof raw.spaceId === 'string' && raw.spaceId) out.spaceId = raw.spaceId
   if (raw.wateringAuto === true) out.wateringAuto = true
+  if (raw.demo === true) out.demo = true
   return out
+}
+
+/**
+ * Saves from before demo plants were tagged: the demo plants share one createdAt stamp
+ * (and bundled demo-* photos). Any other plant is the grower's own, so the garden is no longer a demo.
+ */
+function tagLegacyDemo(data: GrowData) {
+  if (!data.settings.demo || data.plants.some(p => p.demo)) return
+  const seen = new Map<string, number>()
+  for (const p of data.plants) seen.set(p.createdAt, (seen.get(p.createdAt) ?? 0) + 1)
+  const stamps = new Set(data.plants.filter(p => p.photoId?.startsWith('demo-') || seen.get(p.createdAt)! > 1).map(p => p.createdAt))
+  for (const p of data.plants) if (stamps.has(p.createdAt)) p.demo = true
+  if (data.plants.some(p => !p.demo)) data.settings.demo = false
 }
 
 // only shared plants carry the key
@@ -236,6 +250,7 @@ export function normalizeData(raw: unknown): GrowData {
     onboarded: s.onboarded === true || (s.onboarded === undefined && data.plants.length > 0),
     demo: s.demo === true
   }
+  tagLegacyDemo(data)
   data.guide = normalizeGuide(r.guide)
   // optional collections stay absent in saves that never used them
   if (r.feeding) data.feeding = normalizeFeeding(r.feeding, ids)

@@ -33,6 +33,7 @@ export function buildDemoData(today = todayISO()): GrowData {
     archived: false,
     createdAt: now,
     updatedAt: now,
+    demo: true,
     stageHistory: history.map(([stage, d]) => ({ stage, date: ago(d) })),
     ...p
   })

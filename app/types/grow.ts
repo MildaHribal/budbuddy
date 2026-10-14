@@ -60,6 +60,8 @@ export interface Plant {
   spaceId?: string | null
   /** watering reminders follow the interval learned from the journal */
   wateringAuto?: boolean
+  /** part of the bundled demo garden */
+  demo?: boolean
 }
 
 export interface PlantSharing {

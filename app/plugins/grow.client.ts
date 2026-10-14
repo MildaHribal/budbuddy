@@ -5,7 +5,7 @@ import { locale } from '~/utils/locale'
 export default defineNuxtPlugin(() => {
   initGrow()
 
-  const { state } = useGrow()
+  const { state, revision } = useGrow()
   watchEffect(() => {
     locale.value = state.settings.language
     document.documentElement.lang = state.settings.language
@@ -35,7 +35,7 @@ export default defineNuxtPlugin(() => {
     // Re-plan reminders whenever the journal changes or the app comes back.
     initReminders(route => router.push(route))
     const sync = useDebounceFn(() => syncReminders().catch(() => {}), 1500)
-    watch(() => [state.plants, state.entries, state.tasks, state.settings], sync, { deep: true, immediate: true })
+    watch(revision, sync, { immediate: true })
     App.addListener('resume', sync)
   }
 

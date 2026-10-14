@@ -1,7 +1,9 @@
 import { Capacitor } from '@capacitor/core'
 import { Preferences } from '@capacitor/preferences'
-import { reactive, readonly, ref, watch } from 'vue'
+import { reactive, readonly, ref, toRaw, watch } from 'vue'
+import type { EnvironmentData } from '~/types/environment'
 import type { GrowData, Harvest, JournalEntry, Plant, StageId, Task } from '~/types/grow'
+import { pruneChats } from '~/utils/chatStore'
 import { addDays, daysBetween, todayISO } from '~/utils/date'
 import { buildDemoData } from '~/utils/demo'
 import { skipsOnboarding } from '~/utils/firstVisit'
@@ -14,27 +16,79 @@ import { isGrowing, stageStartDate } from '~/utils/stages'
 import { suggestWatering, type WateringSuggestion } from '~/utils/watering'
 import { resetPhotoUrls, THUMB_SUFFIX } from './useUi'
 import { emptyEnvironment } from '~/utils/env/schema'
+import { readGameForBackup, restoreGameFromBackup } from '~/utils/gameBackup'
 import { emptyData, migrateLegacy, normalizeData, normalizePlant, type LegacyInput } from '~/utils/schema'
 
 const STORAGE_KEY = 'budbuddy:data'
+/** sensor readings live under their own key: thousands of them, written at most once a minute */
+const READINGS_KEY = 'budbuddy:readings'
+const CORRUPT_PREFIX = `${STORAGE_KEY}.corrupt-`
+const RECOVERY_SEEN_KEY = 'budbuddy:recovery-seen'
 const LEGACY_PLANTS_KEY = 'my-trees-data'
+const READINGS_EVERY = 60_000
 
 // Module-level singleton: every component shares one source of truth.
 const state = reactive<GrowData>(emptyData())
 const ready = ref(false)
 /** set when stored data could not be read – saving is disabled so nothing gets overwritten */
 const loadError = ref<string | null>(null)
+/** key of an unreadable copy of the data that was set aside; photos are not cleaned up while set */
+const recovered = ref<string | null>(null)
+/** last save failed (cleared by the next successful one) */
+const saveError = ref<string | null>(null)
+/** bumped on every change of the journal data (not on sensor readings) – cheap to watch */
+export const growRevision = ref(0)
 /** photos saved in this session that are not referenced yet (an open form) – never garbage-collect them */
 const pendingPhotos = new Set<string>()
 let initPromise: Promise<void> | null = null
 let saveTimer: ReturnType<typeof setTimeout> | null = null
+let readingsTimer: ReturnType<typeof setTimeout> | null = null
+let readingsDirty = false
+let watching = false
+
+const errorText = (e: unknown) => String((e as Error)?.message ?? e)
+
+/** The main blob without the sensor readings (the Android widget reads it too). */
+function mainJson(): string {
+  const raw = toRaw(state)
+  const env = raw.environment
+  return JSON.stringify(raw, function (this: unknown, key: string, value: unknown) {
+    return key === 'readings' && env && this === env ? undefined : value
+  })
+}
+
+async function writeReadings() {
+  if (readingsTimer) {
+    clearTimeout(readingsTimer)
+    readingsTimer = null
+  }
+  if (loadError.value) return
+  readingsDirty = false
+  try {
+    await Preferences.set({ key: READINGS_KEY, value: JSON.stringify(toRaw(state.environment)?.readings ?? []) })
+  } catch (e) {
+    readingsDirty = true
+    saveError.value = errorText(e)
+    throw e
+  }
+}
 
 async function writeNow() {
   if (saveTimer) {
     clearTimeout(saveTimer)
     saveTimer = null
   }
-  await Preferences.set({ key: STORAGE_KEY, value: JSON.stringify(state) })
+  // never overwrite data that could not be read
+  if (loadError.value) return
+  try {
+    // readings first: the main blob no longer carries them
+    if (readingsDirty) await writeReadings()
+    await Preferences.set({ key: STORAGE_KEY, value: mainJson() })
+    saveError.value = null
+  } catch (e) {
+    saveError.value = errorText(e)
+    throw e
+  }
 }
 
 function scheduleSave() {
@@ -42,6 +96,28 @@ function scheduleSave() {
   saveTimer = setTimeout(() => {
     writeNow().catch(e => console.error('[BudBuddy] save failed', e))
   }, 250)
+}
+
+function scheduleReadingsSave() {
+  readingsDirty = true
+  readingsTimer ??= setTimeout(() => {
+    readingsTimer = null
+    writeReadings().catch(e => console.error('[BudBuddy] saving readings failed', e))
+  }, READINGS_EVERY)
+}
+
+function startWatching() {
+  if (watching) return
+  watching = true
+  watch(() => Object.keys(state).filter(k => k !== 'environment').map(k => state[k as keyof GrowData]), () => {
+    growRevision.value++
+    scheduleSave()
+  }, { deep: true })
+  watch(() => {
+    const env = state.environment
+    return env && Object.keys(env).filter(k => k !== 'readings').map(k => env[k as keyof EnvironmentData])
+  }, scheduleSave, { deep: true })
+  watch(() => state.environment?.readings, scheduleReadingsSave, { deep: true })
 }
 
 let dataEpoch = 0
@@ -66,6 +142,8 @@ function replaceState(data: GrowData) {
   state.hunts = data.hunts ?? []
   state.cure = data.cure
   state.treatments = data.treatments
+  readingsDirty = true
+  growRevision.value++
 }
 
 /** Writable store for feature composables (useSpaces, useHunts); pages use useGrow().state. */
@@ -107,28 +185,81 @@ async function removeLegacyKeys() {
   )
 }
 
+/** Unreadable copies set aside by load(); their photos must survive. */
+async function rawCopyKeys(): Promise<string[]> {
+  const { keys } = await Preferences.keys()
+  return keys.filter(k => k.startsWith(CORRUPT_PREFIX)).sort((a, b) => Number(a.slice(CORRUPT_PREFIX.length)) - Number(b.slice(CORRUPT_PREFIX.length)))
+}
+
 /** Deletes stored photos that no plant or entry points to any more. */
 async function collectGarbagePhotos() {
-  if (loadError.value) return
+  if (loadError.value || recovered.value) return
   const used = new Set<string>(pendingPhotos)
   for (const p of state.plants) if (p.photoId) used.add(p.photoId)
   for (const e of state.entries) e.photoIds.forEach(id => used.add(id))
-  for (const id of [...used]) used.add(id + THUMB_SUFFIX)
+  const raws = await Promise.all((await rawCopyKeys()).map(async key => (await Preferences.get({ key })).value ?? ''))
   const all = await photoStore.all()
-  await Promise.all(all.filter(p => !used.has(p.id)).map(p => photoStore.delete(p.id)))
+  const keep = (id: string) => {
+    const base = id.endsWith(THUMB_SUFFIX) ? id.slice(0, -THUMB_SUFFIX.length) : id
+    return used.has(base) || raws.some(raw => raw.includes(base))
+  }
+  await Promise.all(all.filter(p => !keep(p.id)).map(p => photoStore.delete(p.id)))
 }
 
-async function load() {
+/** Shows the recovery notice until the grower dismisses it. */
+async function findRecovery() {
+  const newest = (await rawCopyKeys()).pop()
+  if (!newest) return
+  const { value: seen } = await Preferences.get({ key: RECOVERY_SEEN_KEY })
+  if (seen !== newest) recovered.value = newest
+}
+
+async function readStoredReadings(): Promise<unknown[] | null> {
+  const { value } = await Preferences.get({ key: READINGS_KEY })
+  if (!value) return null
+  try {
+    const list = JSON.parse(value)
+    return Array.isArray(list) ? list : null
+  } catch (e) {
+    console.error('[BudBuddy] stored sensor readings are unreadable', e)
+    return null
+  }
+}
+
+type LoadStatus = 'ok' | 'legacy' | 'fresh' | 'recovered'
+
+async function load(): Promise<LoadStatus> {
   const { value } = await Preferences.get({ key: STORAGE_KEY })
   if (value) {
+    let data: GrowData | null = null
+    let migrateReadings = false
     try {
-      replaceState(normalizeData(JSON.parse(value)))
-      return
+      const raw = JSON.parse(value) as Record<string, unknown>
+      const env = raw?.environment as { readings?: unknown } | undefined
+      if (env && typeof env === 'object') {
+        // saves made before readings had their own key (or by an older app version) carry them inline
+        if (Array.isArray(env.readings) && env.readings.length) migrateReadings = true
+        else env.readings = (await readStoredReadings()) ?? []
+      }
+      data = normalizeData(raw)
     } catch (e) {
-      // Keep the unreadable copy so it can be recovered by hand, then start over.
+      // Keep the unreadable copy so it can be exported, then start over with the demo.
       console.error('[BudBuddy] stored data is corrupted, starting fresh', e)
-      await Preferences.set({ key: `${STORAGE_KEY}.corrupt-${Date.now()}`, value })
+      const key = `${CORRUPT_PREFIX}${Date.now()}`
+      await Preferences.set({ key, value })
+      // the demo would overwrite the readings that belong to the unreadable copy
+      const readings = (await Preferences.get({ key: READINGS_KEY })).value
+      if (readings) await Preferences.set({ key: `${READINGS_KEY}.corrupt-${Date.now()}`, value: readings })
+      recovered.value = key
+      replaceState(buildDemoData())
+      await writeNow().catch(() => {})
+      seedDemoInBackground()
+      return 'recovered'
     }
+    replaceState(data)
+    readingsDirty = migrateReadings
+    if (migrateReadings) await writeNow().catch(e => console.error('[BudBuddy] moving readings failed', e))
+    return 'ok'
   }
 
   const legacy = await readLegacy()
@@ -144,12 +275,13 @@ async function load() {
     replaceState(data)
     await writeNow()
     await removeLegacyKeys()
-    return
+    return 'legacy'
   }
 
   replaceState(buildDemoData())
-  await writeNow()
+  await writeNow().catch(() => {})
   seedDemoInBackground()
+  return 'fresh'
 }
 
 function seedDemoNow(): Promise<void> {
@@ -174,25 +306,28 @@ function seedDemoInBackground(delay = 4000) {
   setTimeout(() => ('requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 5000 }) : run()), delay)
 }
 
+function flushOnHide() {
+  if (document.visibilityState !== 'hidden') return
+  if (saveTimer) writeNow().catch(e => console.error('[BudBuddy] save failed', e))
+  else if (readingsDirty && watching) writeReadings().catch(e => console.error('[BudBuddy] saving readings failed', e))
+}
+
 export function initGrow() {
   if (!initPromise) {
     initPromise = load()
-      .then(() => {
+      .then(async (status) => {
         if (skipsOnboarding(state.settings, Capacitor.isNativePlatform())) state.settings.onboarded = true
-        watch(state, scheduleSave, { deep: true })
-        collectGarbagePhotos().catch(() => {})
+        startWatching()
+        await findRecovery().catch(() => {})
+        if (status === 'ok' || status === 'legacy') collectGarbagePhotos().catch(() => {})
       })
       .catch((e) => {
         console.error('[BudBuddy] failed to load data', e)
-        loadError.value = String((e as Error)?.message ?? e)
+        loadError.value = errorText(e)
       })
       .finally(() => {
         ready.value = true
-        if (typeof document !== 'undefined') {
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden' && saveTimer) writeNow()
-          })
-        }
+        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', flushOnHide)
       })
   }
   return initPromise
@@ -220,7 +355,10 @@ function addPlant(input: PlantInput): Plant {
   const plant = normalizePlant({ ...input, id: createId(), createdAt: now, updatedAt: now })
   plant.photoId = input.photoId ?? null
   plant.stageHistory = [{ stage: plant.stage, date: plant.startDate }]
+  delete plant.demo
   state.plants.unshift(plant)
+  // the first own plant turns the demo garden into a real one (backups, reminders)
+  state.settings.demo = false
   return plant
 }
 
@@ -235,17 +373,23 @@ function updatePlant(id: string, patch: Partial<Plant>) {
   touch(plant)
 }
 
-function deletePlant(id: string) {
-  state.plants = state.plants.filter(p => p.id !== id)
-  state.entries = state.entries.filter(e => e.plantId !== id)
-  state.tasks = state.tasks.filter(t => t.plantId !== id)
+function removePlants(ids: Set<string>) {
+  if (!ids.size) return
+  state.plants = state.plants.filter(p => !ids.has(p.id))
+  state.entries = state.entries.filter(e => !ids.has(e.plantId))
+  state.tasks = state.tasks.filter(t => !t.plantId || !ids.has(t.plantId))
   for (const h of state.hunts ?? []) {
-    h.candidates = h.candidates.filter(c => c.plantId !== id)
-    if (h.keeper?.plantId === id) h.keeper = null
+    h.candidates = h.candidates.filter(c => !ids.has(c.plantId))
+    if (h.keeper && ids.has(h.keeper.plantId)) h.keeper = null
   }
-  if (state.cure) state.cure = { checks: state.cure.checks.filter(c => c.plantId !== id), jars: state.cure.jars.filter(j => j.plantId !== id) }
-  if (state.treatments) state.treatments = state.treatments.filter(p => p.plantId !== id)
+  if (state.cure) state.cure = { checks: state.cure.checks.filter(c => !ids.has(c.plantId)), jars: state.cure.jars.filter(j => !ids.has(j.plantId)) }
+  if (state.treatments) state.treatments = state.treatments.filter(p => !ids.has(p.plantId))
+}
+
+function deletePlant(id: string) {
+  removePlants(new Set([id]))
   collectGarbagePhotos().catch(() => {})
+  pruneChats(state.plants.map(p => p.id)).catch(() => {})
 }
 
 function setStage(id: string, stage: StageId, date = todayISO()) {
@@ -412,7 +556,8 @@ async function exportBackup(write: (chunk: string) => Promise<void>, opts: { pho
   if (demoSeedDue || demoSeed) await seedDemoNow()
   await collectGarbagePhotos()
   const data = JSON.parse(JSON.stringify(state)) as GrowData
-  const head = JSON.stringify({ app: 'budbuddy', exportedAt: new Date().toISOString(), ...data })
+  const game = await readGameForBackup().catch(() => null)
+  const head = JSON.stringify({ app: 'budbuddy', exportedAt: new Date().toISOString(), ...data, ...(game ? { game } : {}) })
   if (opts.photos === false) {
     await write(`${head.slice(0, -1)},"photosIncluded":false,"photos":[]}`)
     return { photos: 0 }
@@ -457,11 +602,18 @@ async function importBackup(json: string): Promise<{ plants: number, entries: nu
   // a backup made without photos keeps the photos already on this device
   if (raw.photosIncluded !== false) await photoStore.replaceAll(photos)
   replaceState(data)
+  // restoring is the way out of unreadable data
+  loadError.value = null
   await writeNow()
+  // a backup without a game keeps the game on this device
+  if (raw.game) await restoreGameFromBackup(raw.game).catch(e => console.error('[BudBuddy] game not restored', e))
+  startWatching()
+  pruneChats(data.plants.map(p => p.id)).catch(() => {})
   return { plants: data.plants.length, entries: data.entries.length, photos: photos.length, skipped }
 }
 
 async function eraseAll() {
+  if (loadError.value) return
   await photoStore.clear()
   const fresh = emptyData()
   fresh.settings.initialized = true
@@ -469,20 +621,53 @@ async function eraseAll() {
   await writeNow()
 }
 
-/** Leaves the demo garden for an empty one, like "Start empty" in the onboarding. */
+/** Leaves the demo garden: demo plants go, the grower's own plants and settings stay. */
 async function startOwnGarden() {
-  const { growerName, language, lightsOn } = state.settings
-  await eraseAll()
-  Object.assign(state.settings, { growerName, language, lightsOn, onboarded: true })
+  if (loadError.value) return
+  dataEpoch++
+  demoSeedDue = false
+  const wasDemo = state.settings.demo
+  removePlants(new Set(state.plants.filter(p => p.demo).map(p => p.id)))
+  if (wasDemo && !state.plants.length) {
+    // the demo's tents, tasks, feeding plans, costs and stock go with it
+    const fresh = emptyData()
+    state.tasks = []
+    state.spaces = []
+    state.feeding = fresh.feeding
+    state.costs = fresh.costs
+    state.inventory = fresh.inventory
+    state.settings.lightHours = fresh.settings.lightHours
+  }
+  Object.assign(state.settings, { demo: false, initialized: true, onboarded: true })
+  await writeNow()
+  await collectGarbagePhotos().catch(() => {})
+  pruneChats(state.plants.map(p => p.id)).catch(() => {})
 }
 
 async function loadDemo() {
-  await photoStore.clear()
+  if (loadError.value) return
   const demo = buildDemoData()
   demo.guide = JSON.parse(JSON.stringify(state.guide))
+  demo.settings = { ...JSON.parse(JSON.stringify(state.settings)), demo: true, initialized: true, onboarded: true }
   replaceState(demo)
   await writeNow()
+  // old photos go, except those a set-aside unreadable copy still refers to
+  await collectGarbagePhotos().catch(() => {})
+  pruneChats(demo.plants.map(p => p.id)).catch(() => {})
   seedDemoInBackground(0)
+}
+
+/** The unreadable copy set aside by load(), for exporting. */
+async function rawCopy(): Promise<string | null> {
+  if (!recovered.value) return null
+  return (await Preferences.get({ key: recovered.value })).value
+}
+
+/** Hides the recovery notice; the copy itself stays on the device. */
+async function dismissRecovery() {
+  if (!recovered.value) return
+  await Preferences.set({ key: RECOVERY_SEEN_KEY, value: recovered.value })
+  recovered.value = null
 }
 
 export function useGrow() {
@@ -514,6 +699,11 @@ export function useGrow() {
     cleanupPhotos,
     environmentData,
     loadError,
+    recovered,
+    rawCopy,
+    dismissRecovery,
+    saveError,
+    revision: growRevision,
     exportBackup,
     importBackup,
     eraseAll,

@@ -24,6 +24,18 @@ export default {
     loading: 'Loading',
     loadError: 'Your data could not be loaded.',
     loadErrorHint: 'Nothing was changed or overwritten – please restart the app.',
+    recovered: {
+      title: 'Your saved data couldn’t be read.',
+      text: 'The app started with the example garden. An untouched copy of your data and all your photos are still on this device – export the copy to keep it safe, or restore a backup in Settings.',
+      export: 'Export copy',
+      dismiss: 'Dismiss',
+      exportFailed: 'Couldn’t export the copy'
+    },
+    saveError: {
+      title: 'Couldn’t save.',
+      text: 'Your latest changes may be lost when the app closes. Export a backup now.',
+      action: 'Back up'
+    },
     notFound: { title: 'Page not found', text: 'This page does not exist. Maybe the link is old.', home: 'Back home' },
     crash: { title: 'Something went wrong', text: 'Your journal is safe. Go back home and try again.', offline: 'You are offline and this page has not been loaded yet. Your journal works offline.' }
   },
@@ -52,6 +64,18 @@ export default {
     loading: 'Načítání',
     loadError: 'Data se nepodařilo načíst.',
     loadErrorHint: 'Nic se nezměnilo ani nepřepsalo – restartuj prosím aplikaci.',
+    recovered: {
+      title: 'Uložená data se nepodařilo přečíst.',
+      text: 'Aplikace se spustila s ukázkovou zahradou. Nedotčená kopie tvých dat i všechny fotky zůstaly v zařízení – kopii si exportuj, nebo obnov zálohu v Nastavení.',
+      export: 'Exportovat kopii',
+      dismiss: 'Skrýt',
+      exportFailed: 'Kopii se nepodařilo exportovat'
+    },
+    saveError: {
+      title: 'Nepodařilo se uložit.',
+      text: 'Poslední změny se po zavření aplikace můžou ztratit. Hned si udělej zálohu.',
+      action: 'Zálohovat'
+    },
     notFound: { title: 'Stránka nenalezena', text: 'Tahle stránka neexistuje. Možná je odkaz starý.', home: 'Zpět domů' },
     crash: { title: 'Něco se pokazilo', text: 'Deník je v bezpečí. Vrať se domů a zkus to znovu.', offline: 'Jsi offline a tahle stránka se ještě nenačetla. Deník funguje i bez připojení.' }
   }

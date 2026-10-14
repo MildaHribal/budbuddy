@@ -3,15 +3,18 @@ import { Capacitor } from '@capacitor/core'
 import { COMMUNITY_NAMESPACES, loadNamespaces } from '~/composables/useI18n'
 import { authUiWanted } from '~/utils/authUi'
 
-const { ready, loadError, state } = useGrow()
+const { ready, loadError, recovered, state } = useGrow()
 const { t } = useI18n()
+
+// Never over unreadable or set-aside data: its "Start empty" would wipe what is left.
+const onboarding = computed(() => ready.value && !loadError.value && !recovered.value && !state.settings.onboarded)
 
 // First run: the onboarding covers the page, so mount the page (and its photos) a moment later
 // instead of competing with the onboarding's first paint.
 const pageWarm = ref(false)
 watch(ready, (v) => {
   if (!v || pageWarm.value) return
-  if (state.settings.onboarded) pageWarm.value = true
+  if (!onboarding.value) pageWarm.value = true
   else setTimeout(() => (pageWarm.value = true), 1500)
 }, { immediate: true })
 watch(() => state.settings.onboarded, (v) => {
@@ -65,7 +68,7 @@ const showcase = computed(() => !native && wide.value)
   >
     <LazyDesktopShowcase v-if="showcase && ready" />
     <div class="device">
-      <OnboardingGuide v-if="ready && !state.settings.onboarded" />
+      <OnboardingGuide v-if="onboarding" />
       <div id="overlays" />
       <Transition name="splash">
         <div
@@ -84,14 +87,7 @@ const showcase = computed(() => !native && wide.value)
           <span>BudBuddy</span>
         </div>
       </Transition>
-      <div
-        v-if="loadError"
-        class="load-error"
-        role="alert"
-      >
-        <strong>{{ t('common.loadError') }}</strong>
-        {{ t('common.loadErrorHint') }} ({{ loadError }})
-      </div>
+      <DataAlerts v-if="ready" />
       <NuxtLayout v-if="ready && pageWarm">
         <NuxtPage />
       </NuxtLayout>
@@ -148,15 +144,6 @@ const showcase = computed(() => !native && wide.value)
 
 .splash-logo {
   border-radius: 26px;
-}
-
-.load-error {
-  padding: calc(10px + var(--safe-top)) 16px 10px;
-  background: var(--danger-soft);
-  border-bottom: 1px solid var(--line);
-  color: var(--red);
-  font-size: 13px;
-  line-height: 1.4;
 }
 
 .splash-leave-active {

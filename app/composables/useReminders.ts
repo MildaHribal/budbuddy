@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import type { Task } from '~/types/grow'
 import { addDays, todayISO } from '~/utils/date'
 import { lightWindow, planNags, type NagItem } from '~/utils/nag'
 import { planReminders } from '~/utils/reminders'
@@ -31,16 +32,19 @@ export async function syncReminders() {
   if (!remindersSupported()) return
   const { state, wateringStatus } = useGrow()
   await cancelOurs()
-  if (!state.settings.reminders) return
+  // the example garden never nags
+  if (!state.settings.reminders || state.settings.demo) return
   if ((await LocalNotifications.checkPermissions()).display !== 'granted') return
 
+  const demoIds = new Set(state.plants.filter(p => p.demo).map(p => p.id))
+  const ownTasks = state.tasks.filter(t => !t.plantId || !demoIds.has(t.plantId))
   const plants = state.plants
-    .filter(p => !p.archived)
+    .filter(p => !p.archived && !p.demo)
     .map((p) => {
       const w = wateringStatus(p)
       return { id: p.id, name: p.name, nextWater: w?.nextDate ?? null, interval: w?.interval ?? null }
     })
-  const tasks = state.tasks.map(t => ({ title: t.title, date: t.date, done: t.done }))
+  const tasks = ownTasks.map(t => ({ title: t.title, date: t.date, done: t.done }))
   const nagging = state.settings.nag
   const nagEnd = addDays(todayISO(), NAG_DAYS - 1)
   const days = planReminders({ plants, tasks }, state.settings.reminderTime, new Date(), SPAN)
@@ -62,7 +66,7 @@ export async function syncReminders() {
       extra: { route: day.water.length === 1 && !day.tasks.length ? `/plants/${day.water[0]!.id}` : '/' }
     }
   })
-  if (nagging) notifications.push(...nagNotifications(plants))
+  if (nagging) notifications.push(...nagNotifications(plants, ownTasks))
   if (notifications.length) await LocalNotifications.schedule({ notifications })
 }
 
@@ -76,13 +80,13 @@ function plantWindow(plantId: string | null) {
   return lightWindow(state.settings.lightsOn, state.settings.lightHours)
 }
 
-function nagNotifications(plants: { id: string, name: string, nextWater: string | null }[]) {
+function nagNotifications(plants: { id: string, name: string, nextWater: string | null }[], tasks: readonly Task[]) {
   const { state } = useGrow()
   const items: NagItem[] = []
   for (const p of plants) {
     if (p.nextWater) items.push({ kind: 'water', id: p.id, label: p.name, due: p.nextWater, window: plantWindow(p.id), route: `/plants/${p.id}` })
   }
-  for (const t of state.tasks) {
+  for (const t of tasks) {
     if (!t.done) items.push({ kind: 'task', id: t.id, label: t.title, due: t.date, window: plantWindow(t.plantId), route: t.plantId ? `/plants/${t.plantId}` : '/' })
   }
   const slots = planNags(items, { everyHours: state.settings.nagEvery, quietNight: state.settings.nagQuiet, days: NAG_DAYS, max: NAG_MAX })

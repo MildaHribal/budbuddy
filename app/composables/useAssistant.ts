@@ -13,11 +13,12 @@ import { findPassages, searchRemoteKb } from '~/ai/remoteKb'
 import { AI_PACK_URL, deletePack as removeDownloadedPack, downloadPack, resolveAiSource, storedBytes, type AiSource } from '~/ai/pack'
 import { AiPack, assetPackAvailable, assetPackBase, type AssetPackState } from '~/ai/assetPack'
 import { AI_GENERATION } from '../../shared/aiModels'
+import { CHAT_KEY, chatSnapshot, setChatPruner } from '~/utils/chatStore'
 import { createId } from '~/utils/id'
 import { locale } from '~/utils/locale'
 import { blobToDataUrl, compressImage } from '~/utils/image'
 
-const STORAGE_KEY = 'budbuddy:ai-chat'
+const STORAGE_KEY = CHAT_KEY
 const MAX_MESSAGES = 40
 export const GENERAL_THREAD = 'general'
 
@@ -36,6 +37,8 @@ export interface AssistantMessage {
   createdAt: string
   /** data URL preview of the attached photo */
   thumb?: string
+  /** had a photo whose preview was dropped from storage */
+  thumbDropped?: boolean
   diag?: DiagHit[]
   diagModel?: string
   unsupported?: string[]
@@ -73,17 +76,20 @@ let aiSettings: ReturnType<typeof useAiSettings> | null = null
 const lastAttempt = shallowReactive(new Map<string, { question: string, file: Blob | null }>())
 
 function persist() {
-  const data: Record<string, AssistantMessage[]> = {}
-  for (const [key, list] of Object.entries(threads)) {
-    const done = list.filter(m => !m.pending).slice(-MAX_MESSAGES)
-    if (done.length) data[key] = done
-  }
+  const data = chatSnapshot(threads, MAX_MESSAGES)
   Preferences.set({ key: STORAGE_KEY, value: JSON.stringify({ threads: data, lastThread: lastThread.value }) })
     .catch(e => console.error('[BudBuddy] could not save the chat', e))
 }
 
 function loadChats(): Promise<void> {
   if (!loadPromise) {
+    // threads of removed plants are dropped here too, or the next save would bring them back
+    setChatPruner(async (keep) => {
+      await loadPromise
+      for (const key of Object.keys(threads)) if (!keep(key)) Reflect.deleteProperty(threads, key)
+      if (lastThread.value && !keep(lastThread.value)) lastThread.value = null
+      persist()
+    })
     loadPromise = Preferences.get({ key: STORAGE_KEY })
       .then(({ value }) => {
         if (!value) return
@@ -274,7 +280,7 @@ function historyOf(list: AssistantMessage[]): HistoryTurn[] {
     if (m.pending || m.error) continue
     const next = list[i + 1]
     if (m.role === 'user' && next?.error) continue
-    turns.push({ role: m.role, text: m.text, hadPhoto: !!m.thumb })
+    turns.push({ role: m.role, text: m.text, hadPhoto: !!m.thumb || !!m.thumbDropped })
   }
   return turns
 }

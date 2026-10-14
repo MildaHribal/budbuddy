@@ -124,7 +124,8 @@ export default {
     history: {
       all: 'All',
       emptyTitle: 'No entries yet',
-      emptyText: 'Everything you log shows up here as a timeline.'
+      emptyText: 'Everything you log shows up here as a timeline.',
+      more: 'Show more ({n} left)'
     },
     info: {
       strain: 'Strain',
@@ -370,7 +371,8 @@ export default {
     history: {
       all: 'Vše',
       emptyTitle: 'Zatím žádné záznamy',
-      emptyText: 'Všechno, co zapíšeš, se tu objeví na časové ose.'
+      emptyText: 'Všechno, co zapíšeš, se tu objeví na časové ose.',
+      more: 'Zobrazit další (zbývá {n})'
     },
     info: {
       strain: 'Odrůda',

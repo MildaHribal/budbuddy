@@ -102,10 +102,15 @@ function removeEntry(entry: JournalEntry) {
 // ── History ───────────────────────────────────────────────────────
 const historyFilter = ref<EntryType | null>(null)
 const historyTypes = computed(() => entryTypes().filter(x => entries.value.some(e => e.type === x.type)))
+// long journals render in pages
+const HISTORY_PAGE = 40
+const historyLimit = ref(HISTORY_PAGE)
+watch([historyFilter, plantId], () => (historyLimit.value = HISTORY_PAGE))
+const historyEntries = computed(() => (historyFilter.value ? entries.value.filter(e => e.type === historyFilter.value) : entries.value))
+const historyHidden = computed(() => Math.max(0, historyEntries.value.length - historyLimit.value))
 const historyGroups = computed(() => {
   const groups: { date: string, items: JournalEntry[] }[] = []
-  for (const e of entries.value) {
-    if (historyFilter.value && e.type !== historyFilter.value) continue
+  for (const e of historyEntries.value.slice(0, historyLimit.value)) {
     const last = groups[groups.length - 1]
     if (last?.date === e.date) last.items.push(e)
     else groups.push({ date: e.date, items: [e] })
@@ -1092,6 +1097,14 @@ function duplicate() {
           />
         </div>
       </div>
+      <button
+        v-if="historyHidden"
+        type="button"
+        class="btn btn-soft btn-block"
+        @click="historyLimit += HISTORY_PAGE"
+      >
+        {{ t('plant.history.more', { n: historyHidden }) }}
+      </button>
     </div>
 
     <!-- Info -->
