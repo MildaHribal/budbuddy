@@ -7,12 +7,14 @@ import { isIssueId } from '../app/utils/treatment'
 
 const assets = new URL('../app/assets/', import.meta.url).pathname
 
-// diag + unsupported classes of public/ai/classifier/meta.json (model 1.0.0); the model is not in git
+// diag (v2 groups) + unsupported classes of public/ai/classifier/meta.json; the model is not in git
 const CLASSIFIER = [
-  'aphids', 'b_def', 'botrytis', 'ca_def', 'caterpillars', 'fe_def', 'fungus_gnats', 'fusarium_wilt', 'healthy', 'k_def',
-  'leaf_miners', 'mealybugs', 'mg_def', 'mn_def', 'n_def', 'p_def', 'powdery_mildew', 'root_rot', 'russet_broad_mites', 's_def',
-  'septoria', 'spider_mites', 'thrips', 'underwatering', 'whiteflies', 'yellowing_wilting',
-  'cold_stress', 'hlvd', 'nutrient_burn', 'rust', 'zn_def'
+  'aphids', 'spider_mites', 'russet_broad_mites', 'thrips', 'whiteflies', 'caterpillars', 'leaf_miners',
+  'fungus_gnats', 'mealybugs', 'sooty_mold', 'powdery_mildew', 'botrytis', 'leaf_spot', 'fusarium_wilt', 'root_rot',
+  'healthy_roots', 'root_bound', 'male_plant', 'hermaphrodite', 'female_preflower', 'foxtailing', 'trichomes_clear',
+  'trichomes_cloudy', 'trichomes_amber', 'dried_buds', 'healthy', 'senescence', 'n_def', 'interveinal_chlorosis',
+  'new_leaf_chlorosis', 'tip_burn', 'n_toxicity', 'leaf_necrosis', 'deformed_growth', 'drooping', 'light_heat',
+  'cold_stress', 'high_humidity', 'hlvd', 'low_humidity', 'mo_def', 'ph_lockout', 'wind_burn'
 ]
 
 function guideCredits(): Map<string, { author: string, license: string, sourceUrl: string }> {
@@ -50,8 +52,10 @@ describe('problem atlas content', () => {
   it('the class list matches the local model when it is present', () => {
     const path = new URL('../public/ai/classifier/meta.json', import.meta.url).pathname
     if (!existsSync(path)) return
-    const meta = JSON.parse(readFileSync(path, 'utf8')) as { diag: { cls: string }[], unsupported: { cls: string }[] }
+    const meta = JSON.parse(readFileSync(path, 'utf8')) as { diag: { cls: string, atlas?: string[] }[], unsupported: { cls: string }[] }
     expect([...meta.diag, ...meta.unsupported].map(c => c.cls).sort()).toEqual([...CLASSIFIER].sort())
+    expect(meta.diag.flatMap(d => (d.atlas ?? []).filter(id => !getProblem(id)).map(id => `${d.cls} → ${id}`))).toEqual([])
+    expect(meta.unsupported.filter(u => !getProblem(u.cls)).map(u => u.cls)).toEqual([])
   })
 
   it('every problem has the fields the pages show', () => {

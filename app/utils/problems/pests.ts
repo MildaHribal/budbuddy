@@ -488,6 +488,7 @@ export const PEST_PROBLEMS: Problem[] = [
     ],
     severity: 'high',
     stages: ['vegetative', 'flowering'],
+    classifier: 'aphids',
     guide: PESTS_GUIDE
   },
   {
@@ -642,7 +643,7 @@ export const PEST_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['vegetative', 'flowering'],
-    classifier: 'septoria'
+    classifier: 'leaf_spot'
   },
   {
     id: 'fusarium_wilt',

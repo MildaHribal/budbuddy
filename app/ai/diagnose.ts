@@ -1,7 +1,8 @@
 // On-device cannabis photo classifier (onnxruntime-web, WASM). Files: diag.onnx + meta.json under baseUrl.
 import * as ort from 'onnxruntime-web/wasm'
 
-export interface DiagHit { cls: string, label: string, p: number, evidence: 'tested' | 'weak' | 'transfer-only' }
+/** `atlas`: problem atlas ids the class stands for (a group class lists several); `checkArea`: symptom checker area. */
+export interface DiagHit { cls: string, label: string, p: number, evidence: 'tested' | 'weak' | 'transfer-only', atlas?: string[], checkArea?: string }
 export interface DiagResult {
   diag: DiagHit[]
   stage: { cls: string, label: string, p: number }[]
@@ -16,7 +17,7 @@ export interface ClassifierMeta {
   modelVersion: string
   input: { name: string, shape: number[], layout: string, range: [number, number], preprocessing: string }
   outputs: { diag: string, stage: string }
-  diag: { cls: string, label: I18nLabel, evidence: 'tested' | 'weak' | 'transfer-only' }[]
+  diag: { cls: string, label: I18nLabel, evidence: 'tested' | 'weak' | 'transfer-only', atlas?: string[], checkArea?: string }[]
   stage: { cls: string, label: I18nLabel }[]
   unsupported: { cls: string, label: I18nLabel }[]
   [k: string]: unknown
@@ -93,7 +94,11 @@ function topk<T>(p: Float32Array, k: number, f: (i: number, p: number) => T): T[
 export function buildResult(diagP: Float32Array, stageP: Float32Array, m: ClassifierMeta, k = 3, lang: Lang = 'cs'): DiagResult {
   const label = (l: I18nLabel) => l[lang] ?? l.cs
   return {
-    diag: topk(diagP, k, (i, p) => ({ cls: m.diag[i]!.cls, label: label(m.diag[i]!.label), p, evidence: m.diag[i]!.evidence })),
+    diag: topk(diagP, k, (i, p) => {
+      const d = m.diag[i]!
+      // models before v2 have no atlas field: the class id is the atlas id
+      return { cls: d.cls, label: label(d.label), p, evidence: d.evidence, atlas: d.atlas ?? [d.cls], ...(d.checkArea ? { checkArea: d.checkArea } : {}) }
+    }),
     stage: topk(stageP, stageP.length, (i, p) => ({ cls: m.stage[i]!.cls, label: label(m.stage[i]!.label), p })),
     unsupported: m.unsupported.map(u => label(u.label)),
     modelVersion: m.modelVersion

@@ -243,6 +243,12 @@ const guideChip = (g: GuideLink) => {
   return ref ? { to: `/guide/${ref.chapter.id}#${ref.lesson.id}`, label: ref.lesson.title[locale.value] || ref.lesson.title.en } : null
 }
 const guideChips = (m: AssistantMessage) => (m.guide ?? []).map(guideChip).filter(x => !!x)
+// a group class (e.g. Mg / Mn) stands for several atlas problems: link each and the symptom checker
+const diagAtlas = (d: DiagHit) => (d.atlas ?? [d.cls]).map(id => getProblem(id)).filter(p => !!p)
+const diagLink = (d: DiagHit) => {
+  const a = diagAtlas(d)
+  return a.length === 1 ? `/problems/${a[0]!.id}` : null
+}
 const lowConfidence = (m: AssistantMessage) => (m.diag?.[0]?.p ?? 0) < DIAG_RELIABLE
 
 // ── Report an answer ──────────────────────────────────────────────
@@ -460,8 +466,8 @@ onMounted(async () => {
                   >
                     <div class="diag-line">
                       <NuxtLink
-                        v-if="getProblem(d.cls)"
-                        :to="`/problems/${d.cls}`"
+                        v-if="diagLink(d)"
+                        :to="diagLink(d)!"
                         class="diag-label diag-link"
                       >{{ d.label }}</NuxtLink>
                       <span
@@ -478,6 +484,26 @@ onMounted(async () => {
                       :style="{ color: EVIDENCE_TONE[d.evidence] }"
                       :title="evidenceLabel(d.evidence)"
                     >{{ t(`ai.evidenceShort.${d.evidence}`) }}</span>
+                    <p
+                      v-if="diagAtlas(d).length > 1"
+                      class="diag-atlas"
+                    >
+                      {{ t('ai.page.diagCandidates') }}
+                      <template
+                        v-for="(p, i) in diagAtlas(d)"
+                        :key="p.id"
+                      >
+                        {{ i ? ', ' : ' ' }}<NuxtLink
+                          :to="`/problems/${p.id}`"
+                          class="diag-link"
+                        >{{ p.name }}</NuxtLink>
+                      </template>
+                      ·
+                      <NuxtLink
+                        :to="{ path: '/problems', query: d.checkArea ? { area: d.checkArea } : {} }"
+                        class="diag-link"
+                      >{{ t('ai.page.diagChecker') }}</NuxtLink>
+                    </p>
                   </div>
                 </div>
 
@@ -706,8 +732,8 @@ onMounted(async () => {
                   >
                     <div class="diag-line">
                       <NuxtLink
-                        v-if="getProblem(d.cls)"
-                        :to="`/problems/${d.cls}`"
+                        v-if="diagLink(d)"
+                        :to="diagLink(d)!"
                         class="diag-label diag-link"
                       >{{ d.label }}</NuxtLink>
                       <span
@@ -724,6 +750,26 @@ onMounted(async () => {
                       :style="{ color: EVIDENCE_TONE[d.evidence] }"
                       :title="evidenceLabel(d.evidence)"
                     >{{ t(`ai.evidenceShort.${d.evidence}`) }}</span>
+                    <p
+                      v-if="diagAtlas(d).length > 1"
+                      class="diag-atlas"
+                    >
+                      {{ t('ai.page.diagCandidates') }}
+                      <template
+                        v-for="(p, i) in diagAtlas(d)"
+                        :key="p.id"
+                      >
+                        {{ i ? ', ' : ' ' }}<NuxtLink
+                          :to="`/problems/${p.id}`"
+                          class="diag-link"
+                        >{{ p.name }}</NuxtLink>
+                      </template>
+                      ·
+                      <NuxtLink
+                        :to="{ path: '/problems', query: d.checkArea ? { area: d.checkArea } : {} }"
+                        class="diag-link"
+                      >{{ t('ai.page.diagChecker') }}</NuxtLink>
+                    </p>
                   </div>
                   <p
                     v-if="lowConfidence(m)"
@@ -1543,6 +1589,14 @@ onMounted(async () => {
 
 .diag-row .progress {
   grid-column: 1;
+}
+
+.diag-atlas {
+  grid-column: 1;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.4;
 }
 
 .diag-row .badge {

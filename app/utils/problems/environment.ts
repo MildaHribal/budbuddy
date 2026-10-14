@@ -50,6 +50,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['flowering'],
+    classifier: 'light_heat',
     guide: '/guide/problems#problems-burn-lockout'
   },
   {
@@ -99,6 +100,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'low',
     stages: ['vegetative', 'flowering'],
+    classifier: 'light_heat',
     guide: '/guide/environment#environment-light'
   },
   {
@@ -246,6 +248,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['seedling', 'vegetative'],
+    classifier: 'drooping',
     guide: '/guide/media#media-watering'
   },
   {
@@ -294,7 +297,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['vegetative', 'flowering'],
-    classifier: 'underwatering',
+    classifier: 'drooping',
     guide: '/guide/media#media-watering'
   },
   {
@@ -401,6 +404,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['vegetative', 'flowering'],
+    classifier: 'light_heat',
     guide: '/guide/problems#problems-burn-lockout'
   },
   {
@@ -449,6 +453,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'low',
     stages: ['vegetative', 'flowering'],
+    classifier: 'cold_stress',
     guide: '/guide/environment#environment-climate'
   },
   {
@@ -636,6 +641,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'high',
     stages: ['flowering'],
+    classifier: 'hermaphrodite',
     guide: '/guide/problems#problems-hermies'
   },
   {
@@ -683,6 +689,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'low',
     stages: ['seedling', 'vegetative'],
+    classifier: 'drooping',
     guide: '/guide/vegetative#vegetative-transplanting'
   },
   {
@@ -728,6 +735,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'low',
     stages: ['flowering'],
+    classifier: 'foxtailing',
     guide: '/guide/problems#problems-burn-lockout'
   },
   {
@@ -784,7 +792,7 @@ export const GROW_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: [],
-    classifier: 'yellowing_wilting',
+    classifier: 'n_def',
     guide: '/guide/problems#problems-diagnose'
   }
 ]

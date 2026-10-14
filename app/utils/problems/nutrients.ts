@@ -104,7 +104,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['flowering', 'vegetative'],
-    classifier: 'p_def',
+    classifier: 'leaf_necrosis',
     guide: DEFICIENCIES
   },
   {
@@ -153,7 +153,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['flowering'],
-    classifier: 'k_def',
+    classifier: 'tip_burn',
     guide: DEFICIENCIES
   },
   {
@@ -205,7 +205,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['vegetative', 'flowering'],
-    classifier: 'ca_def',
+    classifier: 'leaf_necrosis',
     guide: CALMAG
   },
   {
@@ -255,7 +255,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['flowering', 'vegetative'],
-    classifier: 'mg_def',
+    classifier: 'interveinal_chlorosis',
     guide: CALMAG
   },
   {
@@ -299,7 +299,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'low',
     stages: ['vegetative', 'flowering'],
-    classifier: 's_def',
+    classifier: 'new_leaf_chlorosis',
     guide: DEFICIENCIES
   },
   {
@@ -350,7 +350,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['seedling', 'vegetative', 'flowering'],
-    classifier: 'fe_def',
+    classifier: 'new_leaf_chlorosis',
     guide: DEFICIENCIES
   },
   {
@@ -396,7 +396,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: [],
-    classifier: 'zn_def',
+    classifier: 'new_leaf_chlorosis',
     guide: DEFICIENCIES
   },
   {
@@ -443,7 +443,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'low',
     stages: [],
-    classifier: 'mn_def',
+    classifier: 'interveinal_chlorosis',
     guide: DEFICIENCIES
   },
   {
@@ -490,7 +490,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: [],
-    classifier: 'b_def',
+    classifier: 'deformed_growth',
     guide: DEFICIENCIES
   },
   {
@@ -536,6 +536,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'low',
     stages: [],
+    classifier: 'deformed_growth',
     guide: DEFICIENCIES
   },
   {
@@ -626,6 +627,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['seedling', 'vegetative', 'flowering'],
+    classifier: 'tip_burn',
     guide: '/guide/nutrition#nutrition-overfeeding'
   },
   {
@@ -673,6 +675,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['vegetative', 'flowering'],
+    classifier: 'n_toxicity',
     guide: '/guide/nutrition#nutrition-overfeeding'
   },
   {
@@ -775,6 +778,7 @@ export const NUTRIENT_PROBLEMS: Problem[] = [
     ],
     severity: 'medium',
     stages: ['vegetative', 'flowering'],
+    classifier: 'tip_burn',
     guide: '/guide/nutrition#nutrition-runoff'
   }
 ]
