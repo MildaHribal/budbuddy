@@ -11,6 +11,8 @@ export default {
     },
     settings: 'Settings',
     demo: 'Demo garden',
+    tourLead: 'New here? See how BudBuddy works in a minute.',
+    tourStart: 'Start the tour',
     lightCycle: 'Light cycle',
     editLight: 'Edit light schedule',
     tasks: {
@@ -122,6 +124,8 @@ export default {
     },
     settings: 'Nastavení',
     demo: 'Ukázková zahrada',
+    tourLead: 'Jsi tu poprvé? Za minutu ti ukážeme, jak BudBuddy funguje.',
+    tourStart: 'Spustit prohlídku',
     lightCycle: 'Světelný cyklus',
     editLight: 'Upravit světelný režim',
     tasks: {

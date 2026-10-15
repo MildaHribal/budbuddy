@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LightboxItem } from '~/components/PhotoLightbox.vue'
 import type { EntryType, JournalEntry, Plant, StageId, Task } from '~/types/grow'
+import { Capacitor } from '@capacitor/core'
 import { loadNamespaces } from '~/composables/useI18n'
 import { formatDuration, lightState } from '~/utils/light'
 import { milestones, repeatDates } from '~/utils/upcoming'
@@ -14,6 +15,11 @@ const { state } = grow
 const { notify } = useNotify()
 
 const today = useToday()
+
+// web only: the app starts the tour after its onboarding
+const webTour = !Capacitor.isNativePlatform()
+const appTour = useAppTour()
+const startTour = () => appTour.replay().catch(e => console.error('[BudBuddy] tour failed', e))
 // community tips need the network; skipping them offline also avoids a failed chunk load
 const online = useOnline()
 // community tips sit below the fold and pull in supabase-js: load them only when scrolled near
@@ -388,6 +394,20 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
           />
         </NuxtLink>
       </header>
+
+      <div
+        v-if="webTour"
+        class="card tour-cta"
+      >
+        <p>{{ t('home.tourLead') }}</p>
+        <button
+          type="button"
+          class="btn btn-primary"
+          @click="startTour"
+        >
+          {{ t('home.tourStart') }}
+        </button>
+      </div>
 
       <!-- alerts only show when relevant -->
       <EnvironmentHomeAlert />
@@ -1146,6 +1166,20 @@ const tip = computed(() => tips.value[tipIndex.value % tips.value.length]!)
 }
 
 /* Header */
+.tour-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+}
+
+.tour-cta p {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
 .dash-head {
   display: flex;
   align-items: center;

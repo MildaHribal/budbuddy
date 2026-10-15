@@ -8,7 +8,8 @@ const { ready, loadError, recovered, state } = useGrow()
 const { t } = useI18n()
 const { active: tourActive } = useAppTour()
 const { status: ageStatus } = useAgeGate()
-const ageOk = computed(() => ageStatus.value === 'ok')
+// the web is a showcase over the demo garden, so only the app asks
+const ageOk = computed(() => !Capacitor.isNativePlatform() || ageStatus.value === 'ok')
 
 // Never over unreadable or set-aside data: its "Start empty" would wipe what is left.
 const onboarding = computed(() => ageOk.value && ready.value && !loadError.value && !recovered.value && !state.settings.onboarded)
@@ -72,7 +73,7 @@ const showcase = computed(() => !native && wide.value)
   >
     <LazyDesktopShowcase v-if="showcase && ready" />
     <div class="device">
-      <AgeGate v-if="ready && (ageStatus === 'ask' || ageStatus === 'blocked')" />
+      <AgeGate v-if="ready && !ageOk && ageStatus !== 'loading'" />
       <OnboardingGuide v-if="onboarding" />
       <div id="overlays" />
       <Transition name="splash">
