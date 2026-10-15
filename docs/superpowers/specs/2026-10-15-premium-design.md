@@ -37,6 +37,12 @@ Money comes from one one-time purchase (**BudBuddy Premium**, about 5 USD) and o
   The web demo garden shows Premium features as a sample.
 - Locked items show a short preview and a button to `/premium`. No paywall ever opens on its own.
 - The current signed-in limit of 40 AI requests/day is replaced by the table above (env overrides kept).
+- **Admins** (`profiles.is_admin`, today the owner `fetak`) get everything without buying:
+  - Server: `ai_quota_take` skips the daily limits and credits for admins, but keeps a safety cap
+    (`AI_ADMIN_DAILY_LIMIT`, default 500/day) so a leaked session or a loop cannot burn the Gemini budget.
+  - App: `usePremium().isPremium` is true while the signed-in profile is admin; the flag is cached in Preferences
+    so Premium features stay unlocked offline. Signing out drops it.
+  - Admins get no supporter badge (they are not buyers); the existing admin marking stays.
 
 ## Architecture
 
