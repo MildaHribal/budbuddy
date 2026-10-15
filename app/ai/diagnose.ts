@@ -42,8 +42,7 @@ export function initClassifier(baseUrl: string, ortPath?: ort.Env.WasmPrefixOrFi
   loading = (async () => {
     try {
       ort.env.wasm.wasmPaths = ortPath ?? `${base}../ort/`
-      // Threads need cross-origin isolation, which the Capacitor WebView does not have.
-      ort.env.wasm.numThreads = (globalThis as { crossOriginIsolated?: boolean }).crossOriginIsolated === true ? 2 : 1
+      ort.env.wasm.numThreads = wasmThreads()
       const metaRes = await fetchImpl(`${base}meta.json`)
       if (!metaRes.ok) return false
       const m = (await metaRes.json()) as ClassifierMeta
@@ -61,12 +60,19 @@ export function initClassifier(baseUrl: string, ortPath?: ort.Env.WasmPrefixOrFi
   return loading
 }
 
+/**
+ * Threads need SharedArrayBuffer (cross-origin isolation). Without it ORT falls back to 1 thread itself,
+ * so asking for more is safe. 4 threads ≈ 3.5× faster than 1 in Chrome.
+ */
+export function wasmThreads(g: { SharedArrayBuffer?: unknown, navigator?: { hardwareConcurrency?: number } } = globalThis): number {
+  if (typeof g.SharedArrayBuffer === 'undefined') return 1
+  return Math.max(1, Math.min(4, Math.floor((g.navigator?.hardwareConcurrency ?? 2) / 2)))
+}
+
 export async function initFromBytes(model: Uint8Array, m: ClassifierMeta): Promise<void> {
   session = await ort.InferenceSession.create(model, {
     executionProviders: ['wasm'],
-    graphOptimizationLevel: 'all',
-    intraOpNumThreads: 2,
-    interOpNumThreads: 1
+    graphOptimizationLevel: 'all'
   })
   meta = m
 }
