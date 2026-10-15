@@ -24,7 +24,7 @@ Kvůli drogám počítej s ratingem typu PEGI 18 / ESRB Mature 17+ / USK 18. To 
 - **Cílové věkové skupiny:** jen **18 a více**.
 - **Může aplikace zaujmout děti?** Ne (tmavý technický design, bez postaviček a her).
 - **Reklamy:** Ne.
-- **App access:** „The grow journal, guide, tools and reminders work without an account. The community and the AI assistant require Sign in with Google: tap Community (or AI) → Sign in with Google, use any Google account, then choose a username and confirm you are 18+ and accept the terms. No test credentials are needed.“
+- **App access:** „On first launch the app asks for country and date of birth (age check: 21+ in Czechia and the US, 18+ elsewhere); enter any adult date. The grow journal, guide, tools and reminders work without an account. The community and the AI assistant require Sign in with Google: tap Community (or AI) → Sign in with Google, use any Google account, then choose a username and confirm you are 18+ and accept the terms. No test credentials are needed.“
 - **Government app, Financial features, Health, News, COVID-19:** ne.
 - **Data safety:** viz `DATA_SAFETY.md`.
 - **Smazání účtu (URL):** https://budbuddy.hribal.site/delete-account.html

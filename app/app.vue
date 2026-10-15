@@ -7,9 +7,11 @@ import { authUiWanted } from '~/utils/authUi'
 const { ready, loadError, recovered, state } = useGrow()
 const { t } = useI18n()
 const { active: tourActive } = useAppTour()
+const { status: ageStatus } = useAgeGate()
+const ageOk = computed(() => ageStatus.value === 'ok')
 
 // Never over unreadable or set-aside data: its "Start empty" would wipe what is left.
-const onboarding = computed(() => ready.value && !loadError.value && !recovered.value && !state.settings.onboarded)
+const onboarding = computed(() => ageOk.value && ready.value && !loadError.value && !recovered.value && !state.settings.onboarded)
 
 // First run: the onboarding covers the page, so mount the page (and its photos) a moment later
 // instead of competing with the onboarding's first paint.
@@ -70,6 +72,7 @@ const showcase = computed(() => !native && wide.value)
   >
     <LazyDesktopShowcase v-if="showcase && ready" />
     <div class="device">
+      <AgeGate v-if="ready && (ageStatus === 'ask' || ageStatus === 'blocked')" />
       <OnboardingGuide v-if="onboarding" />
       <div id="overlays" />
       <Transition name="splash">
@@ -90,10 +93,10 @@ const showcase = computed(() => !native && wide.value)
         </div>
       </Transition>
       <DataAlerts v-if="ready" />
-      <NuxtLayout v-if="ready && pageWarm">
+      <NuxtLayout v-if="ready && pageWarm && ageOk">
         <NuxtPage />
       </NuxtLayout>
-      <LazyAppTour v-if="ready && pageWarm && tourActive" />
+      <LazyAppTour v-if="ready && pageWarm && ageOk && tourActive" />
       <AppToaster />
       <ConfirmDialog />
       <LazyCommunitySignInSheet v-if="ready && authUi" />
