@@ -77,7 +77,7 @@ describe('sign-in gate', () => {
         if (auth === 'Bearer a.b.down') return new Response('x', { status: 500 })
         return auth === 'Bearer a.b.good' ? Response.json({ id: UID }) : Response.json({ msg: 'bad jwt' }, { status: 401 })
       }
-      if (u.endsWith('/rpc/ai_quota_take')) return Response.json(quota)
+      if (u.endsWith('/rpc/ai_quota_take2')) return Response.json(quota === 'limit' ? { status: 'limit', tier: 'free', limit: 5 } : { status: quota, tier: 'free' })
       if (u.endsWith('/rpc/ai_anon_quota_take')) return Response.json(true)
       return new Response(`data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] })}\n\n`)
     })
@@ -102,19 +102,29 @@ describe('sign-in gate', () => {
   })
 
   it('takes one from the daily quota and answers', async () => {
-    vi.stubEnv('AI_DAILY_LIMIT', '7')
+    vi.stubEnv('AI_FREE_TEXT_LIMIT', '7')
     const res = await handler()(req(CHAT, { headers: auth('a.b.good') }))
     expect(res.status).toBe(200)
-    expect(JSON.parse(String(calls('ai_quota_take')[0]![1].body))).toEqual({ uid: UID, lim: 7 })
-    expect(calls('ai_quota_take')[0]![1].headers).toMatchObject({ Authorization: 'Bearer service' })
+    const sent = JSON.parse(String(calls('ai_quota_take2')[0]![1].body))
+    expect(sent).toMatchObject({ uid: UID, kind: 'text', lims: { free: { text: 7, photo: 3 }, unlimited: { text: 200, photo: 50 } } })
+    expect(calls('ai_quota_take2')[0]![1].headers).toMatchObject({ Authorization: 'Bearer service' })
     expect(await res.text()).toContain('ok')
+  })
+
+  it('bills a request whose newest user message has an image as a photo', async () => {
+    const image = { inlineData: { mimeType: 'image/jpeg', data: 'AAAA' } }
+    const withPhoto = { ...body, contents: [{ role: 'user', parts: [{ text: 'what is this' }, image] }] }
+    await handler()(req(CHAT, { headers: auth('a.b.good'), body: withPhoto }))
+    const followUp = { ...body, contents: [...withPhoto.contents, { role: 'model', parts: [{ text: 'a' }] }, { role: 'user', parts: [{ text: 'and?' }] }] }
+    await handler()(req(CHAT, { headers: auth('a.b.good'), body: followUp }))
+    expect(calls('ai_quota_take2').map(c => JSON.parse(String(c[1].body)).kind)).toEqual(['photo', 'text'])
   })
 
   it('refuses over the daily limit and banned accounts', async () => {
     quota = 'limit'
     const limit = await handler()(req(CHAT, { headers: auth('a.b.good') }))
     expect(limit.status).toBe(429)
-    expect((await limit.json()).error).toMatchObject({ reason: 'daily_limit', daily: true, limit: 40 })
+    expect((await limit.json()).error).toMatchObject({ reason: 'daily_limit', daily: true, limit: 5, kind: 'text', tier: 'free' })
     quota = 'banned'
     expect((await handler()(req(CHAT, { headers: auth('a.b.good') }))).status).toBe(403)
     expect(calls('generativelanguage')).toHaveLength(0)
@@ -123,7 +133,7 @@ describe('sign-in gate', () => {
   it('does not charge invalid requests', async () => {
     const res = await handler()(req(CHAT, { headers: auth('a.b.good'), body: { ...body, model: 'other' } }))
     expect(res.status).toBe(400)
-    expect(calls('ai_quota_take')).toHaveLength(0)
+    expect(calls('ai_quota_take2')).toHaveLength(0)
   })
 
   it('lets tokenless requests through only in the transition mode, strictly limited', async () => {
