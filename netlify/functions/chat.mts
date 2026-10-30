@@ -27,14 +27,13 @@ export type ErrorReason = 'not_configured' | 'unauthorized' | 'forbidden_origin'
 
 /** A refusal from the gate (sign-in, bans, quotas). */
 export interface Rejection { status: number, reason: string, message: string, extra?: Record<string, unknown> }
-/** What the charge step is billed for: 'photo' when the newest user message carries an image. */
+/** What the charge step is billed for: 'photo' when any message carries an image (the app sends history as text only). */
 export type ChatKind = 'text' | 'photo'
 /** Runs before the body is read: rejects, or returns a charge step that runs once the request is valid. */
 export type ChatGate = (req: Request) => Promise<Rejection | ((kind: ChatKind) => Promise<Rejection | null>)>
 
 export function chatKind(body: GeminiBody): ChatKind {
-  const last = body.contents.findLast(c => c.role === 'user')
-  return last?.parts.some(p => p.inlineData) ? 'photo' : 'text'
+  return body.contents.some(c => c.parts.some(p => p.inlineData)) ? 'photo' : 'text'
 }
 
 export function isAllowedOrigin(origin: string | null): boolean {

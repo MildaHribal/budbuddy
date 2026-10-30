@@ -111,13 +111,15 @@ describe('sign-in gate', () => {
     expect(await res.text()).toContain('ok')
   })
 
-  it('bills a request whose newest user message has an image as a photo', async () => {
+  it('bills any request carrying an image as a photo', async () => {
     const image = { inlineData: { mimeType: 'image/jpeg', data: 'AAAA' } }
     const withPhoto = { ...body, contents: [{ role: 'user', parts: [{ text: 'what is this' }, image] }] }
     await handler()(req(CHAT, { headers: auth('a.b.good'), body: withPhoto }))
     const followUp = { ...body, contents: [...withPhoto.contents, { role: 'model', parts: [{ text: 'a' }] }, { role: 'user', parts: [{ text: 'and?' }] }] }
     await handler()(req(CHAT, { headers: auth('a.b.good'), body: followUp }))
-    expect(calls('ai_quota_take2').map(c => JSON.parse(String(c[1].body)).kind)).toEqual(['photo', 'text'])
+    await handler()(req(CHAT, { headers: auth('a.b.good') }))
+    // an image hidden in an earlier turn is still a photo request
+    expect(calls('ai_quota_take2').map(c => JSON.parse(String(c[1].body)).kind)).toEqual(['photo', 'photo', 'text'])
   })
 
   it('refuses over the daily limit and banned accounts', async () => {
