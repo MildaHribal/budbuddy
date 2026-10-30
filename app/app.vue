@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core'
+import { Preferences } from '@capacitor/preferences'
+import { AI_TIER_KEY } from '~/composables/useAiPlan'
 import { COMMUNITY_NAMESPACES, loadNamespaces } from '~/composables/useI18n'
 import { SHOWCASE_MEDIA } from '~/composables/useGrow'
 import { authUiWanted } from '~/utils/authUi'
@@ -55,6 +57,21 @@ watch(ready, (v) => {
   else setTimeout(show, 2500)
 }, { immediate: true })
 
+// Sideloaded app: look for a new APK, otherwise now and then ask for support. Never over the first-run flow.
+const updates = useUpdates()
+const support = useSupport()
+const promptsReady = computed(() => ready.value && pageWarm.value && ageOk.value && !onboarding.value && !tourActive.value)
+watch(promptsReady, (v) => {
+  if (!v) return
+  setTimeout(async () => {
+    if (!promptsReady.value) return
+    await updates.checkOnStart()
+    if (updates.prompt.value) return
+    const tier = (await Preferences.get({ key: AI_TIER_KEY }).catch(() => ({ value: null }))).value
+    await support.onStart(!!tier && tier !== 'free')
+  }, 4000)
+}, { once: true })
+
 // meta, og tags and icons are static in nuxt.config.ts
 useHead({
   titleTemplate: chunk => (chunk ? `${chunk} · BudBuddy` : 'BudBuddy – free grow journal for home growers')
@@ -98,6 +115,8 @@ const showcase = computed(() => !native && wide.value)
         <NuxtPage />
       </NuxtLayout>
       <LazyAppTour v-if="ready && pageWarm && ageOk && tourActive" />
+      <LazySupportSheet v-if="ready && support.open.value" />
+      <LazyUpdateSheet v-if="ready && updates.prompt.value" />
       <AppToaster />
       <ConfirmDialog />
       <LazyCommunitySignInSheet v-if="ready && authUi" />

@@ -5,11 +5,11 @@ useHead({ title: () => t('admin.title') })
 const { profile, ready, signedIn, requireAuth } = useAuth()
 const isAdmin = computed(() => profile.value?.is_admin === true)
 
-const TABS = ['reports', 'photos', 'ai', 'hidden', 'strains', 'challenges', 'users'] as const
+const TABS = ['stats', 'users', 'config', 'reports', 'photos', 'ai', 'hidden', 'strains', 'challenges'] as const
 type Tab = typeof TABS[number]
 const route = useRoute()
 const router = useRouter()
-const tab = ref<Tab>(TABS.includes(route.query.tab as Tab) ? route.query.tab as Tab : 'reports')
+const tab = ref<Tab>(TABS.includes(route.query.tab as Tab) ? route.query.tab as Tab : 'stats')
 watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
 </script>
 
@@ -68,13 +68,15 @@ watch(tab, v => router.replace({ query: { ...route.query, tab: v } }))
         </div>
         <div role="tabpanel">
           <KeepAlive>
-            <AdminReports v-if="tab === 'reports'" />
+            <AdminStats v-if="tab === 'stats'" />
+            <AdminConfig v-else-if="tab === 'config'" />
+            <AdminReports v-else-if="tab === 'reports'" />
             <AdminStrainPhotos v-else-if="tab === 'photos'" />
             <AdminAiReports v-else-if="tab === 'ai'" />
             <AdminHidden v-else-if="tab === 'hidden'" />
             <AdminStrains v-else-if="tab === 'strains'" />
             <AdminChallenges v-else-if="tab === 'challenges'" />
-            <AdminUsers v-else />
+            <AdminUsers v-else-if="tab === 'users'" />
           </KeepAlive>
         </div>
       </template>

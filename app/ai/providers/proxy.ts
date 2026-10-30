@@ -48,7 +48,7 @@ const msg = (key: string, params?: Params) => translate(`ai.errors.${key}`, para
 const safetyError = () => new LlmError('safety', msg('safety'))
 
 interface ProxyErrorBody {
-  error?: { reason?: string, message?: string, retryAfterSec?: number, daily?: boolean, limit?: number }
+  error?: { reason?: string, message?: string, retryAfterSec?: number, daily?: boolean, limit?: number, kind?: string, tier?: string }
 }
 
 /** Free-tier daily quotas reset at midnight Pacific time; returns e.g. "zítra kolem 9:00". */
@@ -84,7 +84,8 @@ export function proxyError(status: number, body: ProxyErrorBody | null, model: s
     case 'banned':
       return new LlmError('banned', msg('banned'))
     case 'daily_limit':
-      return new LlmError('quota', msg('dailyLimit', { n: err.limit ?? '', when: utcResetLabel() }))
+      return new LlmError(err.tier === 'free' ? 'daily-limit' : 'quota',
+        msg(err.kind === 'photo' ? 'dailyLimitPhoto' : 'dailyLimit', { n: err.limit ?? '', when: utcResetLabel() }))
     case 'not_configured':
       return new LlmError('not-configured', msg('notConfigured'))
     case 'server_key':

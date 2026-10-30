@@ -32,7 +32,7 @@ export interface LlmAnswer {
 }
 
 /** auth: signed out or the session expired (the page offers sign-in) */
-export type LlmErrorCode = 'not-configured' | 'quota' | 'rate-limit' | 'safety' | 'offline' | 'model' | 'overloaded' | 'timeout' | 'aborted' | 'empty' | 'auth' | 'banned' | 'unknown'
+export type LlmErrorCode = 'not-configured' | 'quota' | 'rate-limit' | 'safety' | 'offline' | 'model' | 'overloaded' | 'timeout' | 'aborted' | 'empty' | 'auth' | 'banned' | 'daily-limit' | 'unknown'
 
 /** Message is localised, ready to show. */
 export class LlmError extends Error {

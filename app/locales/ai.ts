@@ -77,7 +77,8 @@ export default {
       guideLinks: 'Related guide lessons',
       signInTitle: 'Sign in to ask the assistant',
       signInBody: 'The AI assistant needs a free BudBuddy account (Google sign-in) so we can keep it free and stop abuse. Your journal stays on this device.',
-      signInAction: 'Sign in'
+      signInAction: 'Sign in',
+      unlimitedAction: 'Get unlimited AI'
     },
     report: {
       action: 'Report answer',
@@ -147,7 +148,8 @@ export default {
       generic: 'Something went wrong. Please try again.',
       signIn: 'Sign in to ask the assistant – your session may have expired.',
       banned: 'This account can no longer use the assistant.',
-      dailyLimit: 'You have used all {n} AI questions for today. More {when}.'
+      dailyLimit: 'You have used all {n} AI questions for today. More {when}.',
+      dailyLimitPhoto: 'You have used all {n} AI photo checks for today. More {when}.'
     },
     notes: {
       timeoutCut: '_(Cut off by the server time limit – ask “continue”.)_',
@@ -342,7 +344,8 @@ export default {
       guideLinks: 'Související lekce průvodce',
       signInTitle: 'Pro dotazy na asistenta se přihlas',
       signInBody: 'AI asistent potřebuje bezplatný účet BudBuddy (přihlášení přes Google), aby mohl zůstat zdarma a nedal se zneužít. Tvůj deník zůstává v tomto zařízení.',
-      signInAction: 'Přihlásit se'
+      signInAction: 'Přihlásit se',
+      unlimitedAction: 'Neomezená AI'
     },
     report: {
       action: 'Nahlásit odpověď',
@@ -412,7 +415,8 @@ export default {
       generic: 'Něco se pokazilo. Zkus to prosím znovu.',
       signIn: 'Pro dotazy na asistenta se přihlas – přihlášení možná vypršelo.',
       banned: 'Tento účet už asistenta používat nemůže.',
-      dailyLimit: 'Dnešních {n} dotazů na AI je vyčerpaných. Další {when}.'
+      dailyLimit: 'Dnešních {n} dotazů na AI je vyčerpaných. Další {when}.',
+      dailyLimitPhoto: 'Dnešní {n} kontroly fotek AI jsou vyčerpané. Další {when}.'
     },
     notes: {
       timeoutCut: '_(Odpověď přerušil časový limit serveru – zeptej se „pokračuj“.)_',

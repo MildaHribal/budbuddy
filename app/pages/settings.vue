@@ -7,6 +7,7 @@ import { NotBackupError } from '~/composables/useGrow'
 import { DEMO_PHOTO_CREDITS } from '~/utils/demoCredits'
 import { LOCALES, type Locale } from '~/utils/locale'
 import AiPackRow from '~/ai/AiPackRow.vue'
+import { openExternal } from '~/utils/external'
 
 const { t } = useI18n()
 useHead({ title: () => t('settings.title') })
@@ -78,20 +79,44 @@ async function toggleReminders() {
 }
 
 // ── AI assistant ──────────────────────────────────────────────────
-const ai = useAiSettings()
-const testing = ref(false)
-const testResult = ref<{ ok: boolean, text: string } | null>(null)
+const plan = useAiPlan()
+const { signedIn } = useAuth()
+watch(signedIn, (v) => {
+  if (v && isNative) plan.refresh()
+}, { immediate: true })
+const planHint = computed(() => (plan.unlimited.value
+  ? t('premium.settingsRowOn')
+  : t('premium.settingsRowFree', { text: FREE_LIMITS.text, photo: FREE_LIMITS.photo })))
 
-async function testAi() {
-  testing.value = true
-  testResult.value = null
+// ── Sideloaded app: support, sharing, updates ─────────────────────
+const support = useSupport()
+const updates = useUpdates()
+onMounted(() => updates.loadCurrent())
+const appVersion = computed(() => updates.current.value?.version ?? '')
+const updateHint = computed(() => {
+  if (updates.checking.value) return t('premium.updateChecking')
+  if (updates.available.value) return t('premium.updateAvailable', { version: updates.available.value.version })
+  if (updates.failed.value) return t('premium.updateFailed')
+  return t(updates.current.value ? 'premium.updateCurrent' : 'premium.updateCheck', { version: appVersion.value })
+})
+async function onUpdate() {
+  if (updates.available.value) {
+    openExternal(updates.available.value.apkUrl)
+    return
+  }
+  await updates.check()
+}
+
+async function shareApp() {
+  const text = t('premium.shareText')
   try {
-    const version = await ai.provider.value.test()
-    testResult.value = { ok: true, text: t('ai.settings.testOk', { version }) }
+    if (isNative) await Share.share({ title: 'BudBuddy', text, url: DOWNLOAD_PAGE })
+    else {
+      await navigator.clipboard.writeText(`${text} ${DOWNLOAD_PAGE}`)
+      notify(t('premium.shareCopied'))
+    }
   } catch (e) {
-    testResult.value = { ok: false, text: (e as Error).message || t('ai.settings.testFailed') }
-  } finally {
-    testing.value = false
+    if (!/cancel/i.test(String(e))) notify(t('premium.shareCopied'))
   }
 }
 
@@ -566,34 +591,28 @@ async function erase() {
         <AiGetAppCard v-if="!isNative" />
         <div
           v-else
-          class="card pad form-stack"
+          class="form-stack"
         >
-          <button
-            type="button"
-            class="btn btn-soft"
-            :disabled="testing"
-            @click="testAi"
+          <NuxtLink
+            to="/premium"
+            class="card row"
           >
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-infinity"
+                class="size-5"
+              />
+            </span>
+            <span class="row-text">
+              <strong>{{ t('premium.settingsRow') }}</strong>
+              <span>{{ planHint }}</span>
+            </span>
             <UIcon
-              :name="testing ? 'i-tabler-loader-2' : 'i-tabler-plug-connected'"
-              class="size-5"
-              :class="{ 'animate-spin': testing }"
+              name="i-tabler-chevron-right"
+              class="size-5 trail"
             />
-            {{ t('ai.settings.test') }}
-          </button>
-          <p
-            v-if="testResult"
-            class="test-result"
-            :class="{ ok: testResult.ok }"
-            role="status"
-          >
-            <UIcon
-              :name="testResult.ok ? 'i-tabler-circle-check' : 'i-tabler-alert-triangle'"
-              class="size-5 shrink-0"
-            />
-            {{ testResult.text }}
-          </p>
-          <AiPackRow />
+          </NuxtLink>
+          <AiPackRow class="card pad" />
         </div>
         <p
           v-if="isNative"
@@ -601,6 +620,75 @@ async function erase() {
         >
           {{ t('ai.settings.privacy') }}
         </p>
+      </section>
+
+      <section aria-labelledby="h-app">
+        <div class="section-head">
+          <h2
+            id="h-app"
+            class="section-title"
+          >
+            {{ t('premium.section') }}
+          </h2>
+        </div>
+        <div class="card list">
+          <button
+            v-if="isNative"
+            type="button"
+            class="row"
+            @click="support.show()"
+          >
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-heart"
+                class="size-5"
+              />
+            </span>
+            <span class="row-text">
+              <strong>{{ t('premium.supportRow') }}</strong>
+              <span>{{ t('premium.supportRowHint') }}</span>
+            </span>
+            <UIcon
+              name="i-tabler-chevron-right"
+              class="size-5 trail"
+            />
+          </button>
+          <button
+            type="button"
+            class="row"
+            @click="shareApp"
+          >
+            <span class="row-tile">
+              <UIcon
+                name="i-tabler-share"
+                class="size-5"
+              />
+            </span>
+            <span class="row-text">
+              <strong>{{ t('premium.shareRow') }}</strong>
+              <span>{{ t('premium.shareRowHint') }}</span>
+            </span>
+          </button>
+          <button
+            v-if="isNative"
+            type="button"
+            class="row"
+            :disabled="updates.checking.value"
+            @click="onUpdate"
+          >
+            <span class="row-tile">
+              <UIcon
+                :name="updates.available.value ? 'i-tabler-download' : 'i-tabler-refresh'"
+                class="size-5"
+                :class="{ 'animate-spin': updates.checking.value }"
+              />
+            </span>
+            <span class="row-text">
+              <strong>{{ t('premium.updateRow') }}</strong>
+              <span class="num">{{ updateHint }}</span>
+            </span>
+          </button>
+        </div>
       </section>
 
       <section aria-labelledby="h-data">
@@ -963,19 +1051,6 @@ async function erase() {
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-3);
-}
-
-.test-result {
-  display: flex;
-  gap: 8px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--red);
-}
-
-.test-result.ok {
-  color: var(--green);
 }
 
 /* Standard toggle */

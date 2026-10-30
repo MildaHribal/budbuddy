@@ -829,6 +829,17 @@ onMounted(async () => {
                         />
                         {{ t('ai.page.signInAction') }}
                       </button>
+                      <NuxtLink
+                        v-if="m.errorCode === 'daily-limit' && isLast(m)"
+                        to="/premium"
+                        class="btn btn-primary btn-sm"
+                      >
+                        <UIcon
+                          name="i-tabler-infinity"
+                          class="size-4"
+                        />
+                        {{ t('ai.page.unlimitedAction') }}
+                      </NuxtLink>
                       <button
                         v-if="m === messages[messages.length - 1] && assistant.canRetry(threadKey)"
                         type="button"

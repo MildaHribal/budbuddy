@@ -9,6 +9,10 @@ interface UserRow {
   is_admin: boolean
   is_banned: boolean
   created_at: string
+  email: string | null
+  last_sign_in_at: string | null
+  ai_unlimited: boolean
+  note: string | null
 }
 
 interface Stats { posts: number, tips: number, reports: number }
@@ -30,8 +34,8 @@ const busy = ref<string | null>(null)
 
 let seq = 0
 async function search() {
-  const q = query.value.trim().toLowerCase().replace(/^@/, '').replace(/[^a-z0-9_]/g, '')
-  if (q.length < 2) {
+  const q = query.value.trim().toLowerCase()
+  if (q.replace(/^@/, '').length < 2) {
     results.value = []
     searched.value = false
     return
@@ -39,14 +43,27 @@ async function search() {
   const mine = ++seq
   searching.value = true
   failed.value = false
-  const { data, error } = await sb.from('profiles')
-    .select('id, username, display_name, avatar_url, bio, reputation, is_admin, is_banned, created_at')
-    .ilike('username', `%${q.replace(/_/g, '\\_')}%`).order('username').limit(20)
+  // e-mail lives in auth.users, so the search goes through an admin-only RPC
+  const found = await sb.rpc('admin_find_users', { q })
+  const ids = ((found.data ?? []) as { id: string }[]).map(r => r.id)
+  const profiles = ids.length && !found.error
+    ? await sb.from('profiles').select('id, avatar_url, bio, reputation').in('id', ids)
+    : { data: [], error: null }
   if (mine !== seq) return
   searching.value = false
   searched.value = true
-  if (error) failed.value = true
-  else results.value = (data ?? []) as UserRow[]
+  if (found.error || profiles.error) {
+    failed.value = true
+    return
+  }
+  const extra = new Map(((profiles.data ?? []) as Pick<UserRow, 'id' | 'avatar_url' | 'bio' | 'reputation'>[]).map(p => [p.id, p]))
+  results.value = ((found.data ?? []) as UserRow[]).map(u => ({
+    ...u,
+    username: u.username ?? '',
+    avatar_url: extra.get(u.id)?.avatar_url ?? null,
+    bio: extra.get(u.id)?.bio ?? null,
+    reputation: extra.get(u.id)?.reputation ?? 0
+  }))
 }
 
 const debounced = useDebounceFn(search, 300)
@@ -74,6 +91,26 @@ async function toggleBan(u: UserRow) {
     await mod.setBanned(u.id, ban)
     u.is_banned = ban
     notify(t(ban ? 'admin.users.bannedDone' : 'admin.users.unbannedDone', { name }))
+  } catch {
+    notify(t('admin.failed'), { tone: 'error' })
+  } finally {
+    busy.value = null
+  }
+}
+
+const notes = reactive(new Map<string, string>())
+async function toggleUnlimited(u: UserRow) {
+  const name = u.email || u.display_name || u.username
+  const on = !u.ai_unlimited
+  if (on && !(await confirm({ title: t('admin.users.unlimitedConfirm', { name }), message: t('admin.users.unlimitedText'), confirmLabel: t('admin.users.unlimitedOn') }))) return
+  busy.value = u.id
+  try {
+    const note = notes.get(u.id)?.trim() || null
+    const { error } = await sb.rpc('admin_set_ai_unlimited', { uid: u.id, enabled: on, note })
+    if (error) throw error
+    u.ai_unlimited = on
+    if (note) u.note = note
+    notify(t(on ? 'admin.users.unlimitedDone' : 'admin.users.unlimitedOffDone', { name }))
   } catch {
     notify(t('admin.failed'), { tone: 'error' })
   } finally {
@@ -156,7 +193,7 @@ const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nu
           />
           <span class="user-text">
             <span class="user-name">{{ u.display_name || u.username }}</span>
-            <span class="user-handle">@{{ u.username }}</span>
+            <span class="user-handle">{{ u.username ? `@${u.username}` : t('admin.users.noProfile') }}<template v-if="u.email"> · {{ u.email }}</template></span>
           </span>
           <span
             v-if="u.is_admin"
@@ -166,6 +203,10 @@ const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nu
             v-if="u.is_banned"
             class="badge banned-badge"
           >{{ t('admin.users.banned') }}</span>
+          <span
+            v-if="u.ai_unlimited"
+            class="badge unlimited-badge"
+          >{{ t('admin.users.unlimited') }}</span>
           <UIcon
             name="i-tabler-chevron-down"
             class="chev"
@@ -186,12 +227,42 @@ const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nu
           <p class="facts num">
             <span>{{ t('admin.users.joined', { date: joined(u.created_at) }) }}</span>
             <span>{{ t('admin.users.reputation', { n: u.reputation }) }}</span>
+            <span v-if="u.last_sign_in_at">{{ t('admin.users.lastSignIn', { date: joined(u.last_sign_in_at) }) }}</span>
             <template v-if="stats.get(u.id)">
               <span>{{ t('admin.users.posts', { n: stats.get(u.id)!.posts }) }}</span>
               <span>{{ t('admin.users.tips', { n: stats.get(u.id)!.tips }) }}</span>
               <span :class="{ warn: stats.get(u.id)!.reports }">{{ t('admin.users.reportsAgainst', { n: stats.get(u.id)!.reports }) }}</span>
             </template>
           </p>
+          <div
+            v-if="!u.is_admin"
+            class="unlimited"
+          >
+            <p
+              v-if="u.note"
+              class="bio"
+            >
+              {{ t('admin.users.note') }}: {{ u.note }}
+            </p>
+            <input
+              :value="notes.get(u.id) ?? ''"
+              class="input"
+              maxlength="500"
+              :placeholder="t('admin.users.notePlaceholder')"
+              :aria-label="t('admin.users.note')"
+              @input="notes.set(u.id, ($event.target as HTMLInputElement).value)"
+            >
+            <button
+              type="button"
+              class="btn"
+              :class="u.ai_unlimited ? 'btn-soft' : 'btn-primary'"
+              :disabled="busy === u.id"
+              @click="toggleUnlimited(u)"
+            >
+              <UIcon name="i-tabler-infinity" />
+              {{ u.ai_unlimited ? t('admin.users.unlimitedOff') : t('admin.users.unlimitedOn') }}
+            </button>
+          </div>
           <div
             v-if="!u.is_admin"
             class="actions"
@@ -267,12 +338,22 @@ const joined = (iso: string) => new Intl.DateTimeFormat(intlLocale(), { day: 'nu
 }
 
 .user-handle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12px;
   color: var(--text-3);
 }
 
 .admin-badge { color: var(--green); }
 .banned-badge { color: var(--red); }
+.unlimited-badge { color: var(--amber); }
+
+.unlimited {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 .chev {
   flex-shrink: 0;
