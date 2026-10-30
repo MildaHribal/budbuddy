@@ -77,7 +77,7 @@ begin
   if not private.is_admin() then raise exception 'admin only' using errcode = '42501'; end if;
   if char_length(s) < 2 then return; end if;
   return query
-    select u.id, u.email::text, p.username, p.display_name, u.created_at, u.last_sign_in_at,
+    select u.id, u.email::text, p.username::text, p.display_name::text, u.created_at, u.last_sign_in_at,
       coalesce(p.is_admin, false), coalesce(p.is_banned, false), coalesce(e.ai_unlimited, false), e.note
     from auth.users u
     left join public.profiles p on p.id = u.id

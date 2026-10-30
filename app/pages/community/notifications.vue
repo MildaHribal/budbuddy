@@ -3,7 +3,7 @@ import { useOnlineRetry } from '~/utils/feed/online'
 import { isMissingSchema } from '~/utils/dbErrors'
 import { badgeDesc, badgeGlyph, badgeName } from '~/composables/useBadges'
 
-type Kind = 'like' | 'reaction' | 'comment' | 'reply' | 'follow' | 'accepted' | 'tip_vote' | 'challenge' | 'moderation' | 'badge' | 'solve_ping' | 'update'
+type Kind = 'like' | 'reaction' | 'comment' | 'reply' | 'follow' | 'accepted' | 'tip_vote' | 'challenge' | 'moderation' | 'badge' | 'solve_ping' | 'update' | 'payment'
 interface Actor { id: string, username: string, display_name: string | null, avatar_url: string | null }
 interface Row {
   id: string
@@ -39,7 +39,8 @@ const GLYPH: Record<Kind, { icon: string, color: string }> = {
   moderation: { icon: 'i-tabler-shield-check', color: 'var(--text-2)' },
   badge: { icon: 'i-tabler-award', color: 'var(--amber)' },
   solve_ping: { icon: 'i-tabler-circle-check', color: 'var(--amber)' },
-  update: { icon: 'photo', color: 'var(--green)' }
+  update: { icon: 'photo', color: 'var(--green)' },
+  payment: { icon: 'i-tabler-cash', color: 'var(--amber)' }
 }
 const REACTION_KINDS = ['like', 'healthy', 'training', 'frosty', 'helpful']
 
@@ -204,6 +205,11 @@ function line(i: Item): string {
       if (meta(r, 'status') === 'approved') return t('notifications.types.photoApproved', { strain })
       return reason ? t('notifications.types.photoRejectedWhy', { strain, reason }) : t('notifications.types.photoRejected', { strain })
     }
+    case 'payment': {
+      const email = meta(r, 'email')
+      if (meta(r, 'kind') === 'donate') return email ? t('notifications.types.donate', { email }) : t('notifications.types.donateAny')
+      return email ? t('notifications.types.payment', { email }) : t('notifications.types.paymentAny')
+    }
     case 'update': {
       const week = meta(r, 'week_no') || meta(r, 'week')
       const plant = meta(r, 'plant_name') || meta(r, 'plant')
@@ -234,6 +240,8 @@ function link(i: Item): string | null {
     }
     case 'solve_ping':
       return r.post_id ? `/community/post/${r.post_id}?solve=1` : null
+    case 'payment':
+      return meta(r, 'email') ? `/admin?tab=users&q=${encodeURIComponent(meta(r, 'email'))}` : '/admin?tab=users'
     case 'moderation':
       if (meta(r, 'target_type') === 'strain_photo') return meta(r, 'slug') ? `/strains/${meta(r, 'slug')}` : null
       return r.post_id ? `/community/post/${r.post_id}${r.comment_id ? `#c-${r.comment_id}` : ''}` : null

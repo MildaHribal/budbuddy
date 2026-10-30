@@ -33,7 +33,11 @@ export default {
       solvePingAny: 'Did an answer fix it? Mark it as solved',
       update: '{name} posted week {week} of {plant}',
       updateWeek: '{name} posted week {week} of their grow diary',
-      updateAny: '{name} posted a new diary week'
+      updateAny: '{name} posted a new diary week',
+      payment: '{email} opened the payment link. Check Revolut and unlock their AI.',
+      paymentAny: 'Someone signed out opened the payment link',
+      donate: '{email} opened the support link',
+      donateAny: 'Someone opened the support link'
     },
     reactionKind: '{name} reacted “{kind}” to your post',
     grouped: {
@@ -79,7 +83,11 @@ export default {
       solvePingAny: 'Pomohla ti některá odpověď? Označ ji jako řešení',
       update: '{name} přidává {week}. týden deníku {plant}',
       updateWeek: '{name} přidává do deníku {week}. týden',
-      updateAny: '{name} přidává nový týden do deníku'
+      updateAny: '{name} přidává nový týden do deníku',
+      payment: '{email} otevřel(a) odkaz na platbu. Zkontroluj Revolut a odemkni AI.',
+      paymentAny: 'Nepřihlášený uživatel otevřel odkaz na platbu',
+      donate: '{email} otevřel(a) odkaz na podporu',
+      donateAny: 'Někdo otevřel odkaz na podporu'
     },
     reactionKind: '{name} reaguje „{kind}“ na tvůj příspěvek',
     grouped: {

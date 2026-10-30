@@ -12,6 +12,7 @@ watch(support.open, (v) => {
 const donateUrl = computed(() => safeUrl(remote.config.value.donate_url))
 
 function donate() {
+  logPaymentClick('donate')
   openExternal(donateUrl.value)
   support.open.value = false
 }

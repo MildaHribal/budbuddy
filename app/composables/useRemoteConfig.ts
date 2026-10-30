@@ -39,6 +39,11 @@ async function fetchConfig() {
   await Preferences.set({ key: KEY, value: JSON.stringify(config.value) }).catch(() => {})
 }
 
+/** Tells the admins someone opened the payment or donate link (fire and forget). */
+export function logPaymentClick(kind: 'pay' | 'donate') {
+  useSupabase().rpc('log_payment_click', { kind }).then(() => {}, () => {})
+}
+
 /** Only http(s) links leave the app. */
 export const safeUrl = (u: string) => (/^https?:\/\/\S+$/i.test(u.trim()) ? u.trim() : '')
 

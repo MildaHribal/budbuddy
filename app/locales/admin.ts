@@ -172,6 +172,9 @@ export default {
     users: {
       search: 'Search by e-mail or username',
       noProfile: 'no profile yet',
+      pendingTitle: 'Maybe paid',
+      pendingHint: 'Opened the payment link in the last 30 days and has no unlimited AI yet. Check Revolut, then tap to unlock.',
+      pendingClicks: { one: 'tapped once, {when}', other: 'tapped {n}×, last {when}' },
       lastSignIn: 'Last sign-in {date}',
       unlimited: 'Unlimited AI',
       unlimitedOn: 'Unlock unlimited AI',
@@ -373,6 +376,9 @@ export default {
     users: {
       search: 'Hledat podle e-mailu nebo jména',
       noProfile: 'zatím bez profilu',
+      pendingTitle: 'Možná zaplatili',
+      pendingHint: 'Za posledních 30 dní otevřeli odkaz na platbu a ještě nemají neomezenou AI. Zkontroluj Revolut a klepnutím odemkni.',
+      pendingClicks: { one: 'klepl(a) jednou, {when}', few: 'klepl(a) {n}×, naposledy {when}', other: 'klepl(a) {n}×, naposledy {when}' },
       lastSignIn: 'Naposledy přihlášen {date}',
       unlimited: 'Neomezená AI',
       unlimitedOn: 'Odemknout neomezenou AI',

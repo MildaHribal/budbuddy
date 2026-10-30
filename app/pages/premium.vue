@@ -36,6 +36,11 @@ async function copyEmail() {
   }
 }
 
+function pay() {
+  logPaymentClick('pay')
+  openExternal(payUrl.value)
+}
+
 function mail() {
   const q = new URLSearchParams({ subject: t('premium.mailSubject'), body: t('premium.mailBody', { email: email.value || '?' }) })
   openExternal(`mailto:${contactEmail.value}?${q.toString().replace(/\+/g, '%20')}`)
@@ -153,7 +158,7 @@ const native = Capacitor.isNativePlatform()
                   v-if="payUrl"
                   type="button"
                   class="btn btn-soft btn-sm"
-                  @click="openExternal(payUrl)"
+                  @click="pay"
                 >
                   <UIcon
                     name="i-tabler-external-link"
