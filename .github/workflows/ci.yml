@@ -41,7 +41,13 @@ jobs:
 
       - name: Read version from package.json
         id: package_version
-        run: echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+        run: |
+          V=$(jq -r .version package.json)
+          echo "VERSION=$V" >> $GITHUB_OUTPUT
+          # 1.0.0-beta -> "Beta 1.0", 1.2.0 -> "1.2"
+          LABEL=$(echo "$V" | sed -E 's/^([0-9]+\.[0-9]+)\.0(-beta)?/\1\2/; s/^([0-9.]+)-beta.*$/Beta \1/')
+          echo "LABEL=$LABEL" >> $GITHUB_OUTPUT
+          echo "FILE=BudBuddy-$(echo "$LABEL" | tr ' ' '-')" >> $GITHUB_OUTPUT
 
       - uses: actions/setup-node@v4
         with:
@@ -121,16 +127,17 @@ jobs:
             exit 0
           fi
           mkdir -p dist-release
-          cp android/app/build/outputs/apk/release/app-release.apk "dist-release/BudBuddy-v${{ steps.package_version.outputs.VERSION }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "dist-release/${{ steps.package_version.outputs.FILE }}.apk"
           echo "ready=true" >> $GITHUB_OUTPUT
 
       - uses: softprops/action-gh-release@v2
         if: steps.release_apk.outputs.ready == 'true'
         with:
           files: dist-release/*.apk
-          tag_name: build-v${{ steps.package_version.outputs.VERSION }}-${{ github.run_number }}
+          tag_name: v${{ steps.package_version.outputs.VERSION }}-${{ github.run_number }}
+          name: BudBuddy ${{ steps.package_version.outputs.LABEL }} (build ${{ github.run_number }})
           body: |
-            📱 **BudBuddy ${{ steps.package_version.outputs.VERSION }}**
+            📱 **BudBuddy ${{ steps.package_version.outputs.LABEL }}**
 
             Download the `.apk` below and open it on your Android phone to install.
             Install guide: https://budbuddy.hribal.site/download.html
