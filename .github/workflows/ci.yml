@@ -133,4 +133,8 @@ jobs:
             📱 **BudBuddy ${{ steps.package_version.outputs.VERSION }}**
 
             Download the `.apk` below and open it on your Android phone to install.
+            Install guide: https://budbuddy.hribal.site/download.html
+
+            versionName: ${{ steps.package_version.outputs.VERSION }}
+            versionCode: ${{ env.VERSION_CODE }}
             Commit: ${{ github.sha }}

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Download BudBuddy for Android</title>
+<meta name="description" content="BudBuddy, a free grow journal for home growers. Download the Android app (APK).">
+<meta property="og:title" content="BudBuddy, free grow journal for Android">
+<meta property="og:description" content="Plants, journal, reminders, grow guide and an AI helper. Free, no ads, your garden stays on your phone.">
+<meta property="og:image" content="https://budbuddy.hribal.site/icon.png">
+<link rel="icon" href="/icon.webp"><style>
+:root{color-scheme:dark;--bg:#0e100f;--panel:#171a18;--text:#f2f4f1;--muted:#a5ada8;--leaf:#3dd173;--line:rgba(255,255,255,.08)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:32px 16px 64px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:20px}header img{width:64px;height:64px;border-radius:16px}
+h1{font-size:28px;line-height:1.2;margin:0}h2{font-size:19px;margin:32px 0 8px}
+p,li{color:var(--muted)}strong{color:var(--text)}a{color:var(--leaf)}ol,ul{padding-left:20px}li{margin:6px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:12px;background:var(--leaf);color:#06140b;font-weight:700;text-decoration:none;font-size:17px}
+.meta{font-size:14px;margin:10px 0 0}code{font-size:13px;word-break:break-all;color:var(--text)}
+nav{display:flex;gap:10px;margin:0 0 24px}nav a{padding:8px 14px;border:1px solid var(--line);border-radius:999px;text-decoration:none;background:var(--panel)}
+hr{border:0;border-top:1px solid var(--line);margin:48px 0}
+</style></head>
+<body><main>
+<header><img src="/icon.webp" alt=""><div><h1>BudBuddy</h1><div>Free grow journal for Android</div></div></header>
+<nav><a href="#en">English</a><a href="#cs">Čeština</a></nav>
+
+<div class="card">
+<a class="btn" id="apk" href="https://github.com/MildaHribal/budbuddy/releases/latest">Download for Android</a>
+<p class="meta" id="ver">Latest version from GitHub Releases.</p>
+</div>
+
+<section id="en">
+<p>Plants, a photo journal, watering and feeding reminders, a 10-chapter grow guide, a strain catalogue, a community and an AI helper that checks photos of your plants. No ads, no tracking. Your garden stays on your phone. 18+ only.</p>
+<h2>How to install</h2>
+<ol>
+<li>Tap <strong>Download for Android</strong> and open the downloaded <code>BudBuddy-v….apk</code>.</li>
+<li>Android asks to allow installs from this source (your browser or file manager). Allow it, then go back.</li>
+<li>Tap <strong>Install</strong>. If Play Protect warns that the app is unknown, tap <strong>More details → Install anyway</strong>. BudBuddy is not in Google Play, so Play Protect has not seen it before.</li>
+</ol>
+<h2>Updates</h2>
+<p>The app checks for a new version once a day and offers the download. Installing a new APK over the old one keeps your garden. Backups: Settings → Data → Export.</p>
+<h2>Is it safe?</h2>
+<p>The source code is public on <a href="https://github.com/MildaHribal/budbuddy">GitHub</a> and every APK is built and signed there automatically. Download it only from this page or GitHub.</p>
+<p><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></p>
+</section>
+<hr>
+<section id="cs" lang="cs">
+<p>Rostliny, fotodeník, připomínky zálivky a hnojení, průvodce v 10 kapitolách, katalog odrůd, komunita a AI pomocník, který zkontroluje fotky tvých rostlin. Bez reklam a sledování. Zahrada zůstává v telefonu. Jen pro 18+.</p>
+<h2>Jak nainstalovat</h2>
+<ol>
+<li>Klepni na <strong>Download for Android</strong> a otevři stažený soubor <code>BudBuddy-v….apk</code>.</li>
+<li>Android se zeptá, jestli povolit instalaci z tohoto zdroje (prohlížeč nebo správce souborů). Povol a vrať se zpět.</li>
+<li>Klepni na <strong>Instalovat</strong>. Pokud Play Protect hlásí neznámou aplikaci, klepni na <strong>Další podrobnosti → Přesto nainstalovat</strong>. BudBuddy není v Google Play, proto ho Play Protect nezná.</li>
+</ol>
+<h2>Aktualizace</h2>
+<p>Appka jednou denně zkontroluje novou verzi a nabídne stažení. Nové APK nainstalované přes staré zachová tvoji zahradu. Zálohy: Nastavení → Data → Export.</p>
+<h2>Je to bezpečné?</h2>
+<p>Zdrojový kód je veřejně na <a href="https://github.com/MildaHribal/budbuddy">GitHubu</a> a každé APK se tam automaticky sestaví a podepíše. Stahuj jen z této stránky nebo z GitHubu.</p>
+<p><a href="/privacy.html">Soukromí</a> · <a href="/terms.html">Podmínky</a></p>
+</section>
+<script>
+fetch('https://api.github.com/repos/MildaHribal/budbuddy/releases/latest').then(function (r) { return r.ok ? r.json() : null }).then(function (r) {
+  if (!r) return
+  var apk = (r.assets || []).filter(function (a) { return /\.apk$/.test(a.name) && a.browser_download_url.indexOf('https://github.com/') === 0 })[0]
+  if (!apk) return
+  document.getElementById('apk').href = apk.browser_download_url
+  var mb = (apk.size / 1048576).toFixed(0)
+  var day = new Date(r.published_at).toLocaleDateString()
+  document.getElementById('ver').textContent = apk.name.replace(/\.apk$/, '') + ' · ' + mb + ' MB · ' + day
+}).catch(function () {})
+</script>
+</main></body></html>
