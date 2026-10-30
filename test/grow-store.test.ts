@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildDemoData } from '../app/utils/demo'
 import { emptyData } from '../app/utils/schema'
 
@@ -65,6 +65,9 @@ async function boot() {
   await flush()
   return mod
 }
+
+// a debounced save (250 ms) of the previous test must not land in the next one's storage
+afterEach(() => new Promise(resolve => setTimeout(resolve, 300)))
 
 beforeEach(() => {
   prefs.clear()
