@@ -66,11 +66,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'germination-paper-towel',
+          photo: 'germination-paper-towel.webp',
           caption: {
-            en: 'Paper towel method: damp (not dripping) towel between two plates, kept warm and dark.',
-            cs: 'Metoda s ubrouskem: vlhký (ne mokrý) ubrousek mezi dvěma talíři, v teple a ve tmě.'
-          }
+            en: 'Paper towel method (melon seeds here): seeds on a damp, not dripping towel in a closed bag, kept warm and dark until a root tip shows.',
+            cs: 'Metoda s ubrouskem (tady semínka melounu): semínka na vlhkém, ne mokrém ubrousku v uzavřeném sáčku, v teple a ve tmě, dokud nevykoukne kořínek.'
+          },
+          credit: 'Downtowngal · CC BY-SA 3.0 (Wikimedia Commons), resized'
         },
         {
           type: 'steps',
@@ -265,11 +266,12 @@ export default {
       blocks: [
         {
           type: 'figure',
-          illustration: 'seedling-stretch',
+          photo: 'media-soil-seedling.webp',
           caption: {
-            en: 'Left: a stretched seedling reaching for light. Right: a compact, healthy one.',
-            cs: 'Vlevo vytáhlá sazenice, která se natahuje za světlem. Vpravo kompaktní a zdravá.'
-          }
+            en: 'A compact, healthy seedling: short, sturdy stem and leaves close to the soil. Compare it with the stretched ones below.',
+            cs: 'Kompaktní, zdravá sazenice: krátký pevný stonek a lístky těsně nad zemí. Porovnej ji s vytáhlými sazenicemi níž.'
+          },
+          credit: 'Grower · Public domain (Wikimedia Commons)'
         },
         {
           type: 'text',

@@ -101,7 +101,6 @@ export default {
           caption: { en: 'During the stretch the plant shoots up and spaces its bud sites along the stems.', cs: 'Během natahování rostlina vyrazí do výšky a rozmístí květy podél stonků.' },
           credit: 'blumenbiene · CC BY 2.0 (Flickr), resized'
         },
-        { type: 'figure', illustration: 'stretch', caption: { en: 'Same plant at the flip and three weeks later.', cs: 'Stejná rostlina v den přepnutí a o tři týdny později.' } },
         {
           type: 'steps',
           items: [
@@ -299,7 +298,15 @@ export default {
             }
           ]
         },
-        { type: 'figure', illustration: 'bud-rot', caption: { en: 'Bud rot: a single brown, dry leaf poking out of an otherwise healthy bud is the first sign.', cs: 'Plíseň v palici: prvním znakem bývá jediný hnědý suchý lístek trčící ze zdánlivě zdravé palice.' } },
+        {
+          type: 'figure',
+          photo: 'flowering-bud-rot.webp',
+          caption: {
+            en: 'Bud rot (botrytis) on a cannabis bud: grey, fuzzy mould. Early on you often see only a single brown, dry leaf poking out of a healthy-looking bud.',
+            cs: 'Plíseň šedá (botrytida) na palici konopí: šedý chlupatý povlak. Zpočátku často uvidíš jen jediný hnědý suchý lístek trčící ze zdánlivě zdravé palice.'
+          },
+          credit: 'Tim Sage · CC BY-SA 4.0 (iNaturalist), resized'
+        },
         {
           type: 'callout',
           tone: 'warning',
@@ -404,7 +411,15 @@ export default {
             cs: 'Trichomy jsou drobné pryskyřičné žlázky, díky kterým jsou palice lepkavé a ojíněné. Jak rostlina zraje, mění jejich hlavičky barvu — a to je nejspolehlivější znamení sklizně. Pestíky (chloupky) napoví taky, jenže hnědnou i od tepla, osahávání nebo stresu.'
           }
         },
-        { type: 'figure', illustration: 'trichome-stages', caption: { en: 'Clear → cloudy → amber trichome heads under magnification.', cs: 'Hlavičky trichomů pod zvětšením: čiré → mléčné → jantarové.' } },
+        {
+          type: 'figure',
+          photo: 'flowering-trichome-heads.webp',
+          caption: {
+            en: 'Trichomes under a microscope: a round resin head on a thin stalk. Under a loupe the heads go from clear to cloudy to amber as the plant ripens.',
+            cs: 'Trichomy pod mikroskopem: kulatá pryskyřičná hlavička na tenké stopce. Pod lupou se hlavičky během zrání mění z čirých na mléčné a pak jantarové.'
+          },
+          credit: 'rodzief · CC BY 4.0 (Wikimedia Commons)'
+        },
         {
           type: 'figure',
           photo: 'flowering-trichomes-close.webp',

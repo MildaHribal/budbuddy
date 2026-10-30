@@ -1,26 +1,25 @@
 <script setup lang="ts">
-import { asyncRegistry, componentKey } from '~/guide/resolve'
-
-// Chapter cover: one of the lesson illustrations, drawn without its labels.
+// Chapter cover: one real photo from that chapter's lessons.
 const COVERS: Record<string, string> = {
-  start: 'plant-anatomy',
-  environment: 'setup-indoor',
-  media: 'medium-soil',
-  germination: 'germination-paper-towel',
-  vegetative: 'leaf-healthy',
-  training: 'stretch',
-  nutrition: 'leaf-magnesium',
-  flowering: 'trichome-stages',
-  harvest: 'drying-hang',
-  problems: 'pest-spider-mites'
+  start: 'start-legal-home-plant.webp',
+  environment: 'environment-tent-filter.webp',
+  media: 'media-potting-soil.webp',
+  germination: 'germination-sprouting-seed.webp',
+  vegetative: 'vegetative-young-plant-coco.webp',
+  training: 'training-scrog-canopy.webp',
+  nutrition: 'nutrition-healthy-leaf.webp',
+  flowering: 'flowering-pistils.webp',
+  harvest: 'harvest-curing-jar.webp',
+  problems: 'problems-aphid-colony.webp'
 }
 
 const props = defineProps<{ chapter: string, glyph: string, color: string }>()
 
-const illustrations = asyncRegistry(import.meta.glob('./illustrations/*.vue'))
-const comp = computed(() => {
+const photos = import.meta.glob<string>('~/assets/guide/*.{jpg,jpeg,webp,png}', { eager: true, query: '?url', import: 'default' })
+const src = computed(() => {
   const name = COVERS[props.chapter]
-  return name ? illustrations.get(componentKey(name)) : undefined
+  if (!name) return undefined
+  return Object.entries(photos).find(([path]) => path.split('/').pop() === name)?.[1]
 })
 </script>
 
@@ -30,10 +29,13 @@ const comp = computed(() => {
     :style="{ '--c': color }"
     aria-hidden="true"
   >
-    <component
-      :is="comp"
-      v-if="comp"
-    />
+    <img
+      v-if="src"
+      :src="src"
+      alt=""
+      loading="lazy"
+      decoding="async"
+    >
     <GrowIcon
       v-else
       :name="glyph"
@@ -50,18 +52,11 @@ const comp = computed(() => {
   background: var(--well);
 }
 
-.cover :deep(svg) {
+.cover img {
   display: block;
   width: 100%;
   height: 100%;
-  padding: 10px 12px;
-  box-sizing: border-box;
-}
-
-/* labels are unreadable at cover size */
-.cover :deep(text),
-.cover :deep(.ga-callout) {
-  display: none;
+  object-fit: cover;
 }
 
 .cover-glyph {

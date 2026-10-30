@@ -290,14 +290,6 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'pre-flowers',
-          caption: {
-            en: 'Pre-flowers at the nodes: female – a teardrop calyx with white hairs (pistils). Male – a small round ball on a short stalk, no hairs.',
-            cs: 'Předkvěty v uzlech: samice – kapkovitý kalich s bílými chloupky (pestíky). Samec – malá kulička na krátké stopce, bez chloupků.'
-          }
-        },
-        {
-          type: 'figure',
           photo: 'vegetative-female-preflowers.webp',
           caption: {
             en: 'Female: thin white pistils poking out of the nodes along the stem.',

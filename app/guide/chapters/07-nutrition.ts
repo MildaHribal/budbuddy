@@ -269,8 +269,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-nutrient-burn',
-          caption: { en: 'Nutrient burn: yellow-brown, crispy tips that slowly creep inward.', cs: 'Spálení hnojivem: žlutohnědé, křupavé špičky, které se pomalu šíří dovnitř.' }
+          photo: 'nutrient-burn.jpg',
+          caption: {
+            en: 'Nutrient burn on a cannabis leaf: brown, crispy tips and spots that slowly creep inward.',
+            cs: 'Spálení hnojivem na listu konopí: hnědé, křupavé špičky a skvrny, které se pomalu šíří dovnitř.'
+          },
+          credit: 'Fenrisulfir · CC BY-SA 3.0 (Wikimedia Commons)'
         },
         {
           type: 'figure',

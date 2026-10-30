@@ -83,8 +83,12 @@ export default {
       blocks: [
         {
           type: 'figure',
-          illustration: 'medium-soil',
-          caption: { en: 'Soil holds water and nutrients and releases them slowly.', cs: 'Hlína drží vodu i živiny a pouští je pomalu.' }
+          photo: 'media-potting-soil.webp',
+          caption: {
+            en: 'Potting soil with white perlite: it holds water and nutrients and releases them slowly.',
+            cs: 'Zahradní substrát s bílým perlitem: drží vodu i živiny a pouští je pomalu.'
+          },
+          credit: 'Chris Radcliff · CC BY-SA 2.0 (Wikimedia Commons)'
         },
         {
           type: 'text',
@@ -164,8 +168,12 @@ export default {
       blocks: [
         {
           type: 'figure',
-          illustration: 'medium-coco',
-          caption: { en: 'Coco fibre holds water and air at the same time, but no food.', cs: 'Kokosové vlákno drží vodu i vzduch zároveň, ale žádné živiny.' }
+          photo: 'media-coco-peat.webp',
+          caption: {
+            en: 'Moist coco peat in seedling trays: loose fibre that holds water and air at the same time, but no food.',
+            cs: 'Navlhčený kokosový substrát v sadbovačích: kypré vlákno, které drží vodu i vzduch zároveň, ale žádné živiny.'
+          },
+          credit: 'Lawrence756 · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'text',
@@ -217,11 +225,6 @@ export default {
       minutes: 5,
       media: ['hydro'],
       blocks: [
-        {
-          type: 'figure',
-          illustration: 'medium-hydro',
-          caption: { en: 'In DWC the roots hang in aerated nutrient water.', cs: 'V DWC visí kořeny v okysličeném živném roztoku.' }
-        },
         {
           type: 'text',
           md: {

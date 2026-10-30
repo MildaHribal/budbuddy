@@ -82,11 +82,12 @@ export default {
       blocks: [
         {
           type: 'figure',
-          illustration: 'setup-indoor',
+          photo: 'environment-tent-filter.webp',
           caption: {
-            en: 'A basic tent: LED on top, exhaust fan pulling air through a carbon filter, passive intake at the bottom, clip fan in the canopy.',
-            cs: 'Základní stan: nahoře LED, odsávání tahá vzduch přes uhlíkový filtr, dole pasivní nasávání, ve výšce rostlin ventilátor na klip.'
-          }
+            en: 'Inside a tent: the lamp hangs from the frame and an exhaust fan pulls air through a carbon filter and out via the ducting. Add a passive intake at the bottom and a clip fan in the canopy.',
+            cs: 'Uvnitř stanu: lampa visí z konstrukce a odsávací ventilátor tahá vzduch přes uhlíkový filtr a ven potrubím. Dole doplň pasivní nasávání a ve výšce rostlin ventilátor na klip.'
+          },
+          credit: 'Plantlady223 · CC BY-SA 4.0 (Wikimedia Commons), resized'
         },
         {
           type: 'table',
@@ -318,11 +319,12 @@ export default {
       blocks: [
         {
           type: 'figure',
-          illustration: 'setup-outdoor',
+          photo: 'environment-outdoor-garden.webp',
           caption: {
-            en: 'A good outdoor spot: full sun from the south, shelter from wind, water within reach and out of sight.',
-            cs: 'Dobré místo venku: plné slunce z jihu, závětří, voda po ruce a mimo zraky.'
-          }
+            en: 'An outdoor cannabis garden in full sun. Pick a spot with sun most of the day, shelter from wind, water within reach and out of sight.',
+            cs: 'Venkovní zahrádka s konopím na plném slunci. Vyber místo se sluncem většinu dne, v závětří, s vodou po ruce a mimo zraky.'
+          },
+          credit: 'Cannabis Training University · CC BY-SA 3.0 (Wikimedia Commons), resized'
         },
         {
           type: 'steps',
@@ -405,11 +407,12 @@ export default {
       blocks: [
         {
           type: 'figure',
-          illustration: 'setup-greenhouse',
+          photo: 'environment-greenhouse-vents.webp',
           caption: {
-            en: 'Roof vents and an open door let hot, humid air escape; a fan keeps it moving between plants.',
-            cs: 'Střešní větrání a otevřené dveře pustí ven horký vlhký vzduch, ventilátor ho rozhýbe mezi rostlinami.'
-          }
+            en: 'Vents along the roof ridge of a glasshouse. Opened, they let hot, humid air escape; an open door and a fan between the plants keep the air moving.',
+            cs: 'Větrací okna podél hřebene skleníku. Když je otevřeš, unikne jimi horký vlhký vzduch; otevřené dveře a ventilátor mezi rostlinami udrží vzduch v pohybu.'
+          },
+          credit: 'Dave Croker · CC BY-SA 2.0 (Wikimedia Commons), cropped & resized'
         },
         {
           type: 'text',

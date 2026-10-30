@@ -158,7 +158,15 @@ export default {
             cs: 'Při pomalém sušení se kvalita buď vytvoří, nebo ztratí. Moc rychle (teplo, sucho, průvan) a palice chutnají jako seno. Moc pomalu a vlhko a zplesniví. Klasikou je **60/60** — asi 15–16 °C a 60 % vlhkosti; doma dobře funguje **18–20 °C a 55–62 %**.'
           }
         },
-        { type: 'figure', illustration: 'drying-hang', caption: { en: 'Branches hung upside down with space between them, in the dark.', cs: 'Větve zavěšené vzhůru nohama s mezerami mezi sebou, ve tmě.' } },
+        {
+          type: 'figure',
+          photo: 'harvest-drying-tent.webp',
+          caption: {
+            en: 'Branches hung upside down in a dark tent, with space between them and a fan moving the air.',
+            cs: 'Větve zavěšené vzhůru nohama v temném stanu, s mezerami mezi sebou a s ventilátorem, který hýbe vzduchem.'
+          },
+          credit: 'Cannabis Pictures · CC BY 2.0 (Flickr), resized'
+        },
         {
           type: 'figure',
           photo: 'harvest-hanging-bud.webp',
@@ -236,7 +244,6 @@ export default {
             cs: 'Zrání (curing) je pomalé, kontrolované dokončení v neprodyšných sklenicích. Vlhkost z nitra palice se rovnoměrně rozloží, chlorofyl se rozkládá a drsná, travnatá chuť mizí. Dej tomu **aspoň 2 týdny**, ideálně 4–8.'
           }
         },
-        { type: 'figure', illustration: 'curing-jar', caption: { en: 'Jar about ¾ full with a small hygrometer inside.', cs: 'Sklenice zhruba ze ¾ plná, uvnitř malý vlhkoměr.' } },
         {
           type: 'figure',
           photo: 'harvest-curing-jar.webp',

@@ -138,8 +138,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-healthy',
-          caption: { en: 'For comparison: a healthy, evenly green fan leaf.', cs: 'Pro srovnání: zdravý, rovnoměrně zelený list.' }
+          photo: 'nutrition-healthy-leaf.webp',
+          caption: {
+            en: 'For comparison: a healthy, evenly green fan leaf.',
+            cs: 'Pro srovnání: zdravý, rovnoměrně zelený list.'
+          },
+          credit: `Lode Van de Velde · CC0 (${WIKI}), resized`
         },
         {
           type: 'callout',
@@ -159,8 +163,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-nitrogen',
-          caption: { en: 'Nitrogen: even yellowing on old leaves, starting at the tip.', cs: 'Dusík: rovnoměrné žloutnutí starých listů od špičky.' }
+          photo: 'problems-leaf-nitrogen.webp',
+          caption: {
+            en: 'Nitrogen: lower leaves turn evenly pale yellow while the top stays green.',
+            cs: 'Dusík: spodní listy rovnoměrně blednou do žluta, vršek zůstává zelený.'
+          },
+          credit: 'Cockson et al. (Appl. Sci. 2019) · CC BY 4.0 (MDPI), cropped & resized'
         },
         {
           type: 'text',
@@ -171,8 +179,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-phosphorus',
-          caption: { en: 'Phosphorus: dark leaves with bronze blotches and purple stems.', cs: 'Fosfor: tmavé listy s bronzovými skvrnami a fialové řapíky.' }
+          photo: 'problems-leaf-phosphorus.webp',
+          caption: {
+            en: 'Phosphorus: dull, dark fan leaves with brown spots spreading across the leaflets.',
+            cs: 'Fosfor: matné, tmavé listy s hnědými skvrnami, které se šíří po lístcích.'
+          },
+          credit: 'Llewellyn et al. (Plants 2023) · CC BY 4.0 (MDPI), cropped & resized'
         },
         {
           type: 'figure',
@@ -189,8 +201,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-potassium',
-          caption: { en: 'Potassium: yellow-brown, crispy edges on older leaves.', cs: 'Draslík: žlutohnědé, křehké okraje starších listů.' }
+          photo: 'problems-leaf-potassium.webp',
+          caption: {
+            en: 'Potassium: yellowing starts at the leaflet edges and tips, which later turn brown and crispy.',
+            cs: 'Draslík: žloutnutí začíná na okrajích a špičkách lístků, které později hnědnou a křehnou.'
+          },
+          credit: 'Cockson et al. (Appl. Sci. 2019) · CC BY 4.0 (MDPI), cropped & resized'
         },
         {
           type: 'figure',
@@ -210,8 +226,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-calcium',
-          caption: { en: 'Calcium: rusty brown spots on new and middle leaves.', cs: 'Vápník: rezavé hnědé skvrny na nových a středních listech.' }
+          photo: 'problems-leaf-calcium.webp',
+          caption: {
+            en: 'Calcium: distorted new growth with brown, dying leaf edges.',
+            cs: 'Vápník: zdeformované nové přírůstky s hnědými, odumírajícími okraji listů.'
+          },
+          credit: 'Cockson et al. (Appl. Sci. 2019) · CC BY 4.0 (MDPI), cropped & resized'
         },
         {
           type: 'text',
@@ -222,8 +242,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-magnesium',
-          caption: { en: 'Magnesium: interveinal yellowing, veins stay green.', cs: 'Hořčík: žloutnutí mezi žilkami, žilky zůstávají zelené.' }
+          photo: 'problems-leaf-magnesium.webp',
+          caption: {
+            en: 'Magnesium: yellowing between the veins while the veins stay green.',
+            cs: 'Hořčík: žloutnutí mezi žilkami, žilky zůstávají zelené.'
+          },
+          credit: 'Cockson et al. (Appl. Sci. 2019) · CC BY 4.0 (MDPI), cropped & resized'
         },
         {
           type: 'figure',
@@ -243,8 +267,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-iron',
-          caption: { en: 'Iron: bright yellow new leaves with green veins.', cs: 'Železo: jasně žluté nové listy se zelenými žilkami.' }
+          photo: 'problems-leaf-iron.webp',
+          caption: {
+            en: 'Iron: a young leaf turned pale yellow, its veins only faintly green.',
+            cs: 'Železo: mladý list zežloutl, žilky jsou jen slabě zelené.'
+          },
+          credit: 'Cockson et al. (Appl. Sci. 2019) · CC BY 4.0 (MDPI), cropped & resized'
         },
         {
           type: 'text',
@@ -255,8 +283,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-sulfur',
-          caption: { en: 'Sulfur: new leaves evenly pale, veins included.', cs: 'Síra: nové listy rovnoměrně bledé, i se žilkami.' }
+          photo: 'problems-leaf-sulfur.webp',
+          caption: {
+            en: 'Sulfur: young growth evenly pale yellow-green across the top of the plant.',
+            cs: 'Síra: mladé přírůstky v horní části rostliny jsou rovnoměrně bledě žlutozelené.'
+          },
+          credit: 'Cockson et al. (Appl. Sci. 2019) · CC BY 4.0 (MDPI), cropped & resized'
         },
         {
           type: 'text',
@@ -267,8 +299,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-zinc',
-          caption: { en: 'Zinc: small, twisted new leaves with interveinal yellowing.', cs: 'Zinek: malé, pokroucené nové listy se žloutnutím mezi žilkami.' }
+          photo: 'problems-leaf-zinc.webp',
+          caption: {
+            en: 'Zinc: young leaves with yellowing between the veins and narrow, wavy leaflets.',
+            cs: 'Zinek: mladé listy se žloutnutím mezi žilkami a úzkými, zvlněnými lístky.'
+          },
+          credit: 'Cockson et al. (Appl. Sci. 2019) · CC BY 4.0 (MDPI), cropped & resized'
         },
         {
           type: 'callout',
@@ -301,11 +337,6 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'leaf-nutrient-burn',
-          caption: { en: 'Nutrient burn: brown, crispy tips creeping inwards.', cs: 'Přehnojení: hnědé, křehké špičky, které se šíří dovnitř.' }
-        },
-        {
-          type: 'figure',
           photo: 'nutrient-burn.jpg',
           caption: { en: 'Fertiliser burn on a cannabis leaf.', cs: 'Spálení hnojivem na listu konopí.' },
           credit: `Fenrisulfir · CC BY-SA 3.0 (${WIKI})`
@@ -334,11 +365,6 @@ export default {
           }
         },
         {
-          type: 'figure',
-          illustration: 'leaf-light-burn',
-          caption: { en: 'Light burn: bleached leaves right under the lamp.', cs: 'Spálení světlem: vybledlé listy přímo pod lampou.' }
-        },
-        {
           type: 'compare',
           columns: [
             {
@@ -362,16 +388,6 @@ export default {
               ]
             }
           ]
-        },
-        {
-          type: 'figure',
-          illustration: 'leaf-overwatering',
-          caption: { en: 'Overwatering: firm leaves curling down.', cs: 'Přelití: pevné listy stočené dolů.' }
-        },
-        {
-          type: 'figure',
-          illustration: 'leaf-underwatering',
-          caption: { en: 'Underwatering: limp, papery leaves.', cs: 'Nedostatek vody: zplihlé listy jako papír.' }
         },
         {
           type: 'text',
@@ -420,8 +436,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'pest-spider-mites',
-          caption: { en: 'Spider mites: stippling on top, mites and webs below.', cs: 'Svilušky: tečkování nahoře, roztoči a pavučinky zespodu.' }
+          photo: 'problems-spider-mite-webbing.webp',
+          caption: {
+            en: 'Spider mites, advanced: fine webbing across the leaves and growing tips.',
+            cs: 'Svilušky v pokročilé fázi: jemné pavučinky přes listy a vrcholky.'
+          },
+          credit: 'Whitney Cranshaw, Colorado State University, Bugwood.org · CC BY 3.0 US (IPM Images), resized'
         },
         {
           type: 'figure',
@@ -438,8 +458,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'pest-fungus-gnats',
-          caption: { en: 'Fungus gnats: adults on the surface, larvae in wet soil.', cs: 'Smutnice: dospělci na povrchu, larvy ve vlhkém substrátu.' }
+          photo: 'problems-fungus-gnat-larva.webp',
+          caption: {
+            en: 'Fungus gnat larva: a see-through white grub with a black head. Larvae live in the top layer of wet growing medium.',
+            cs: 'Larva smutnice: průsvitný bílý červík s černou hlavičkou. Larvy žijí ve vrchní vrstvě mokrého substrátu.'
+          },
+          credit: `Sciara fly fan · CC BY 4.0 (${WIKI}), resized`
         },
         {
           type: 'figure',
@@ -456,8 +480,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'pest-thrips',
-          caption: { en: 'Thrips: silvery streaks with black specks.', cs: 'Třásněnky: stříbřité čárky s černými tečkami.' }
+          photo: 'problems-thrips-damage.webp',
+          caption: {
+            en: 'Thrips damage on cannabis: silvery feeding scars with black specks.',
+            cs: 'Poškození konopí třásněnkami: stříbřité stopy po sání s černými tečkami.'
+          },
+          credit: 'Whitney Cranshaw, Colorado State University, Bugwood.org · CC BY 3.0 US (IPM Images), resized'
         },
         {
           type: 'figure',
@@ -474,8 +502,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'pest-aphids',
-          caption: { en: 'Aphids: soft-bodied clusters on stems and leaf undersides.', cs: 'Mšice: shluky na stoncích a spodní straně listů.' }
+          photo: 'problems-aphid-colony.webp',
+          caption: {
+            en: 'Aphids: a colony on the underside of a cannabis leaf.',
+            cs: 'Mšice: kolonie na spodní straně listu konopí.'
+          },
+          credit: 'Whitney Cranshaw, Colorado State University, Bugwood.org · CC BY 3.0 US (IPM Images), resized'
         },
         {
           type: 'figure',
@@ -516,8 +548,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'bud-rot',
-          caption: { en: 'Bud rot: a wilting sugar leaf hides grey rot inside the cola.', cs: 'Hniloba palic: zvadlý lísteček skrývá šedou hnilobu uvnitř palice.' }
+          photo: 'problems-bud-rot.webp',
+          caption: {
+            en: 'Bud rot: grey, fuzzy mould inside a cannabis bud. On the plant it often hides under a single wilting sugar leaf.',
+            cs: 'Hniloba palic: šedý chlupatý povlak uvnitř palice. Na rostlině se často skrývá pod jediným zvadlým lístečkem.'
+          },
+          credit: 'Tim Sage · CC BY-SA 4.0 (iNaturalist), resized'
         },
         {
           type: 'figure',
@@ -537,8 +573,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'powdery-mildew',
-          caption: { en: 'Powdery mildew: white, flour-like spots on leaves.', cs: 'Padlí: bílé skvrny jako od mouky na listech.' }
+          photo: 'problems-powdery-mildew-leaf.webp',
+          caption: {
+            en: 'Powdery mildew on a cannabis leaf: white, flour-like patches.',
+            cs: 'Padlí na listu konopí: bílé skvrny jako od mouky.'
+          },
+          credit: 'Whitney Cranshaw, Colorado State University, Bugwood.org · CC BY 3.0 US (IPM Images), resized'
         },
         {
           type: 'figure',
@@ -626,11 +666,12 @@ export default {
         },
         {
           type: 'figure',
-          illustration: 'pre-flowers',
+          photo: 'problems-hermie-bananas.webp',
           caption: {
-            en: 'Know the difference: female pistils vs. male pollen sacs.',
-            cs: 'Pozor na rozdíl: samičí pestíky a samčí pylové váčky.'
-          }
+            en: 'A hermaphrodite: yellow male anthers ("bananas") growing among the female flowers. Female pistils are white hairs; male parts are smooth pods or round pollen sacs.',
+            cs: 'Hermafrodit: žluté samčí prašníky („banány“) rostoucí mezi samičími květy. Samičí pestíky jsou bílé chloupky, samčí části jsou hladké lusky nebo kulaté pylové váčky.'
+          },
+          credit: 'Punja & Holmes (Front. Plant Sci. 2020) · CC BY 4.0 (Frontiers), cropped & resized'
         },
         {
           type: 'figure',
